@@ -98,8 +98,6 @@ static bool is_upper(const char *s) {
 static Node *parse_expr(Parser *p);
 static Node *parse_block(Parser *p);
 static Node *parse_pattern(Parser *p);
-static Node *parse_decl_fn(Parser *p, bool allow_nobody);
-
 
 /* ---- types ---- */
 
@@ -219,7 +217,7 @@ static Node *parse_string_node(Parser *p, Token *t) {
         sub.quiet = p->quiet;
         jmp_buf jb;
         sub.jb = &jb;
-        Node *e = NULL;
+        Node *volatile e = NULL;
         if (setjmp(jb) == 0) {
             skip_nl(&sub);
             if (kind(&sub) == TK_EOF) perr(&sub, sp->pos, "empty `${}` in a string");
@@ -855,6 +853,224 @@ static Node *parse_block(Parser *p) {
     return b;
 }
 
+/* ---- declarations ---- */
+
+static Node *parse_fn(Parser *p, bool allow_nobody) {
+    Token *fnt = expect(p, TK_FN, "`fn`");
+    Node *n = node_new(D_FN, fnt->pos);
+    Token *name = expect(p, TK_IDENT, "a function name");
+    n->name = name->text;
+    n->pos = name->pos;
+    parse_tparams(p, &n->list2);
+    expect(p, TK_LPAREN, "`(` after the function name");
+    while (kind(p) != TK_RPAREN) {
+        if (kind(p) == TK_ELLIPSIS) {
+            Node *pm = node_new(N_PARAM, next(p)->pos);
+            pm->flag3 = true;
+            vec_push(&n->list, pm);
+            break;
+        }
+        Node *pm = node_new(N_PARAM, peek(p)->pos);
+        if (kind(p) == TK_MUT) {
+            next(p);
+            pm->flag = true;
+        } else if (kind(p) == TK_IDENT && strcmp(peek(p)->text, "params") == 0 && peek_at(p, 1)->k == TK_IDENT) {
+            next(p);
+            pm->flag2 = true;
+        }
+        pm->pos = peek(p)->pos;
+        pm->name = expect_ident(p, "a parameter name");
+        expect(p, TK_COLON, "`:` and the parameter's type (parameter types are required)");
+        pm->a = parse_type(p);
+        vec_push(&n->list, pm);
+        if (!accept(p, TK_COMMA)) break;
+    }
+    expect(p, TK_RPAREN, "`)` after the parameters");
+    if (accept(p, TK_ARROW)) n->a = parse_type(p);
+    if (kind(p) == TK_ASSIGN && allow_nobody) {
+        next(p);
+        Token *s = expect(p, TK_STRING, "the C name as a string");
+        n->name2 = s->nparts ? s->parts[0].s : "";
+    }
+    if (kind(p) == TK_LBRACE) {
+        n->b = parse_block(p);
+    } else if (!allow_nobody) {
+        perr(p, peek(p)->pos, "expected `{` and the body of function `%s`", n->name);
+    }
+    return n;
+}
+
+static void parse_implements(Parser *p, Node *n) {
+    if (accept(p, TK_COLON)) {
+        vec_push(&n->list3, parse_type(p));
+        while (accept(p, TK_COMMA)) vec_push(&n->list3, parse_type(p));
+    }
+}
+
+static Node *parse_field(Parser *p, bool is_static) {
+    Token *name = expect(p, TK_IDENT, "a field name");
+    Node *f = node_new(N_FIELD, name->pos);
+    f->name = name->text;
+    f->flag = is_static;
+    expect(p, TK_COLON, "`:` and the field's type");
+    f->a = parse_type(p);
+    if (accept(p, TK_ASSIGN)) f->b = parse_expr(p);
+    return f;
+}
+
+/* One member of a struct, class, enum or interface body. */
+static void parse_member(Parser *p, Node *decl, NodeKind dk) {
+    bool is_static = false, is_mut = false;
+    if (kind(p) == TK_STATIC) {
+        next(p);
+        is_static = true;
+    } else if (kind(p) == TK_MUT) {
+        next(p);
+        is_mut = true;
+    }
+    if (kind(p) == TK_FN) {
+        Node *fn = parse_fn(p, dk == D_INTERFACE);
+        fn->is_static = is_static;
+        fn->is_mut_fn = is_mut;
+        vec_push(&decl->list, fn);
+        return;
+    }
+    if (is_static || is_mut) {
+        if (is_static && kind(p) == TK_IDENT) {
+            vec_push(&decl->list, parse_field(p, true));
+            return;
+        }
+        perr(p, peek(p)->pos, "expected `fn` after `%s`", is_static ? "static" : "mut");
+    }
+    if (dk == D_ENUM) {
+        Token *name = expect(p, TK_IDENT, "a variant name or `fn`");
+        Node *v = node_new(N_VARIANT, name->pos);
+        v->name = name->text;
+        if (accept(p, TK_LPAREN)) {
+            parse_type_list(p, &v->list, TK_RPAREN);
+            expect(p, TK_RPAREN, "`)`");
+        } else if (kind(p) == TK_LBRACE) {
+            next(p);
+            v->flag = true;
+            skip_nl(p);
+            while (kind(p) != TK_RBRACE) {
+                vec_push(&v->list2, parse_field(p, false));
+                skip_nl(p);
+                if (!accept(p, TK_COMMA)) break;
+                skip_nl(p);
+            }
+            expect(p, TK_RBRACE, "`}`");
+        }
+        vec_push(&decl->list, v);
+        return;
+    }
+    if (dk == D_INTERFACE) perr(p, peek(p)->pos, "an interface can only contain methods");
+    vec_push(&decl->list, parse_field(p, false));
+}
+
+static Node *parse_type_decl(Parser *p, NodeKind dk) {
+    Token *kw = next(p);
+    Node *n = node_new(dk, kw->pos);
+    Token *name = expect(p, TK_IDENT, "a type name");
+    n->name = name->text;
+    n->pos = name->pos;
+    parse_tparams(p, &n->list2);
+    parse_implements(p, n);
+    expect(p, TK_LBRACE, "`{` and the body of the type");
+    skip_nl(p);
+    while (kind(p) != TK_RBRACE) {
+        if (kind(p) == TK_EOF) perr(p, kw->pos, "this `{` is never closed");
+        jmp_buf here;
+        jmp_buf *prev = p->jb;
+        p->jb = &here;
+        if (setjmp(here) == 0) {
+            parse_member(p, n, dk);
+            if (kind(p) != TK_NL && kind(p) != TK_RBRACE && kind(p) != TK_COMMA)
+                perr(p, peek(p)->pos, "expected a new line or `}` after the member, found %s", describe(peek(p)));
+        } else {
+            p->jb = prev;
+            if (p->quiet) longjmp(*p->jb, 1);
+            sync_stmt(p);
+        }
+        p->jb = prev;
+        while (kind(p) == TK_NL || kind(p) == TK_COMMA) next(p);
+    }
+    next(p);
+    return n;
+}
+
+static Node *parse_extern(Parser *p) {
+    Token *kw = next(p);
+    Node *n = node_new(D_EXTERN, kw->pos);
+    Token *abi = expect(p, TK_STRING, "the ABI string (`\"C\"`)");
+    n->name = abi->nparts ? abi->parts[0].s : "";
+    if (kind(p) != TK_LBRACE) {
+        perr(p, peek(p)->pos, "expected `{` after `extern \"C\"`");
+    }
+    next(p);
+    skip_nl(p);
+    while (kind(p) != TK_RBRACE) {
+        if (kind(p) == TK_FN) {
+            vec_push(&n->list, parse_fn(p, true));
+        } else if (kind(p) == TK_STRUCT) {
+            Node *s = parse_type_decl(p, D_STRUCT);
+            vec_push(&n->list, s);
+        } else {
+            perr(p, peek(p)->pos, "an `extern` block can contain only `fn` and `struct` declarations");
+        }
+        skip_nl(p);
+    }
+    next(p);
+    return n;
+}
+
+static Node *parse_decl(Parser *p) {
+    Token *t = peek(p);
+    switch (t->k) {
+    case TK_FN: return parse_fn(p, false);
+    case TK_STRUCT: return parse_type_decl(p, D_STRUCT);
+    case TK_CLASS: return parse_type_decl(p, D_CLASS);
+    case TK_ENUM: return parse_type_decl(p, D_ENUM);
+    case TK_INTERFACE: return parse_type_decl(p, D_INTERFACE);
+    case TK_EXTERN: return parse_extern(p);
+    case TK_EXPORT: {
+        next(p);
+        Token *abi = expect(p, TK_STRING, "the ABI string (`\"C\"`)");
+        Node *fn = parse_fn(p, false);
+        fn->is_export = true;
+        fn->name2 = abi->nparts ? abi->parts[0].s : "C";
+        return fn;
+    }
+    case TK_LET: {
+        next(p);
+        Node *n = node_new(D_CONST, t->pos);
+        Token *name = expect(p, TK_IDENT, "a constant name");
+        n->name = name->text;
+        n->pos = name->pos;
+        expect(p, TK_COLON, "`:` and the constant's type");
+        n->a = parse_type(p);
+        expect(p, TK_ASSIGN, "`=` and the value");
+        n->b = parse_expr(p);
+        return n;
+    }
+    case TK_MUT:
+        perr(p, t->pos, "`mut` is not allowed at the top level (global mutable state is not supported)");
+    case TK_IDENT:
+        if (strcmp(t->text, "test") == 0 && peek_at(p, 1)->k == TK_STRING) {
+            next(p);
+            Token *s = next(p);
+            Node *n = node_new(D_TEST, t->pos);
+            n->name = s->nparts ? s->parts[0].s : "";
+            n->b = parse_block(p);
+            return n;
+        }
+        /* fall through */
+    default:
+        perr(p, t->pos, "unexpected %s at the top level (expected `fn`, `struct`, `class`, `enum`, `interface`, `extern`, `let` or `test`)",
+             describe(t));
+    }
+}
+
 /* ---- module header ---- */
 
 static void parse_dotted(Parser *p, Vec *path, const char *what) {
@@ -864,8 +1080,6 @@ static void parse_dotted(Parser *p, Vec *path, const char *what) {
         vec_push(path, expect_ident(p, what));
     }
 }
-
-static Node *stub_decl(Parser *p);
 
 SourceFile *parse_file(int file, const char *text, size_t len) {
     TokenList tl = lex(file, text, len, 1, 1);
@@ -901,7 +1115,7 @@ SourceFile *parse_file(int file, const char *text, size_t len) {
         jmp_buf *prev = p->jb;
         p->jb = &here;
         if (setjmp(here) == 0) {
-            Node *d = stub_decl(p);
+            Node *d = parse_decl(p);
             if (d) vec_push(&sf->decls, d);
         } else {
             /* recover: skip to the next top-level declaration keyword */
@@ -921,8 +1135,3 @@ SourceFile *parse_file(int file, const char *text, size_t len) {
     }
     return sf;
 }
-
-static Node *stub_decl(Parser *p) {
-    perr(p, peek(p)->pos, "unexpected %s at the top level", describe(peek(p)));
-}
-
