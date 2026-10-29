@@ -1,6 +1,14 @@
+#define _POSIX_C_SOURCE 200809L
 #include "util.h"
 
 #include <sys/stat.h>
+
+#ifndef S_ISREG
+#define S_ISREG(m) (((m) & _S_IFMT) == _S_IFREG)
+#endif
+#ifndef S_ISDIR
+#define S_ISDIR(m) (((m) & _S_IFMT) == _S_IFDIR)
+#endif
 
 void *zalloc(size_t n) {
     void *p = calloc(1, n ? n : 1);
@@ -186,10 +194,10 @@ char *read_file(const char *path, size_t *len) {
 
 bool file_exists(const char *path) {
     struct stat st;
-    return stat(path, &st) == 0 && (st.st_mode & S_IFMT) == S_IFREG;
+    return stat(path, &st) == 0 && S_ISREG(st.st_mode);
 }
 
 bool dir_exists(const char *path) {
     struct stat st;
-    return stat(path, &st) == 0 && (st.st_mode & S_IFMT) == S_IFDIR;
+    return stat(path, &st) == 0 && S_ISDIR(st.st_mode);
 }
