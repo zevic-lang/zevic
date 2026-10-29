@@ -1,0 +1,20 @@
+module Zevic.Console
+
+// Console output. `Printf` and `Eprintf` are checked by the compiler itself.
+
+extern "zevic" {
+    fn zevic_print(s: String)
+    fn zevic_println(s: String)
+    fn zevic_eprint(s: String)
+    fn zevic_eprintln(s: String)
+}
+
+extern "intrinsic" {
+    fn Printf(fmt: String, ...)
+    fn Eprintf(fmt: String, ...)
+}
+
+fn Print(s: String) { zevic_print(s) }
+fn Println(s: String) { zevic_println(s) }
+fn Eprint(s: String) { zevic_eprint(s) }
+fn Eprintln(s: String) { zevic_eprintln(s) }
