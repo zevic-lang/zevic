@@ -362,3 +362,210 @@ static Inst *get_inst(Gen *g, Decl *d, Type *self, Vec *targs) {
     if (!is_extern) vec_push(&g->worklist, in);
     return in;
 }
+
+/* =========================================================================
+ * Function context and IR emission
+ * ========================================================================= */
+
+typedef struct {
+    Type *t;
+    char *v; /* LLVM operand ("%t3", "42", "{ ptr @.str.0, i64 5 }", "zeroinitializer") */
+} Val;
+
+typedef struct Local {
+    char *name;
+    Type *t;
+    char *ptr; /* the alloca */
+    bool mut;
+    Pos pos;
+} Local;
+
+typedef struct Scope {
+    struct Scope *up;
+    Vec locals; /* Local* */
+    Vec defers; /* Node* */
+} Scope;
+
+typedef struct {
+    char *brk, *cont;
+    Scope *scope;
+} Loop;
+
+typedef struct FnCtx {
+    Gen *g;
+    Inst *inst;
+    SourceFile *file;
+    Env *env;
+    SB code, allocas, cold;
+    int ntmp, nlbl, nslot;
+    char *cur;
+    bool term;
+    Type *ret;
+    Scope *scope;
+    Vec loops;
+    bool this_mut;
+    Local *this_local;
+} FnCtx;
+
+static bool is_err(Type *t) { return t == ty_err; }
+
+static Val unit_val(void) {
+    Val v = {ty_unit, "zeroinitializer"};
+    return v;
+}
+
+static Val err_val(void) {
+    Val v = {ty_err, "undef"};
+    return v;
+}
+
+/* The value of an expression that never completes, typed as `want`. */
+static Val never_val(Type *want) {
+    Val v = {want ? want : ty_never, "undef"};
+    return v;
+}
+
+static char *tmp(FnCtx *F) {
+    return zsprintf("%%t%d", F->ntmp++);
+}
+
+static char *newlabel(FnCtx *F, const char *hint) {
+    return zsprintf("%s.%d", hint, F->nlbl++);
+}
+
+static void start_block(FnCtx *F, const char *label) {
+    sb_printf(&F->code, "%s:\n", label);
+    F->cur = zstrdup(label);
+    F->term = false;
+}
+
+static void emit(FnCtx *F, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+static void emit(FnCtx *F, const char *fmt, ...) {
+    if (F->term) start_block(F, newlabel(F, "dead")); /* unreachable code gets its own block */
+    va_list ap;
+    va_start(ap, fmt);
+    char *s = zvsprintf(fmt, ap);
+    va_end(ap);
+    sb_printf(&F->code, "  %s\n", s);
+}
+
+/* Terminate the current block with a branch and start `label`. */
+static void goto_block(FnCtx *F, const char *label) {
+    if (!F->term) {
+        sb_printf(&F->code, "  br label %%%s\n", label);
+        F->term = true;
+    }
+    start_block(F, label);
+}
+
+static void br(FnCtx *F, const char *label) {
+    emit(F, "br label %%%s", label);
+    F->term = true;
+}
+
+static void condbr(FnCtx *F, const char *cond, const char *t, const char *f) {
+    emit(F, "br i1 %s, label %%%s, label %%%s", cond, t, f);
+    F->term = true;
+}
+
+static char *new_slot(FnCtx *F, Type *t) {
+    char *name = zsprintf("%%s%d", F->nslot++);
+    sb_printf(&F->allocas, "  %s = alloca %s, align %lld\n", name, ty_ll(t), (long long)(ty_align(t) < 1 ? 1 : ty_align(t)));
+    return name;
+}
+
+static char *type_ll(Type *t) {
+    return (char *)ty_ll(t);
+}
+
+static void type_error(Pos pos, Type *want, Type *got, const char *what) {
+    if (is_err(want) || is_err(got)) return;
+    diag_error(pos, "type mismatch%s%s: expected `%s`, found `%s`", what ? " in " : "", what ? what : "", want->name,
+               got->name);
+}
+
+/* Check that `v` has type `want`; a value of type Never fits everywhere. */
+static Val coerce(FnCtx *F, Pos pos, Val v, Type *want, const char *what) {
+    (void)F;
+    if (v.t == want || is_err(v.t) || is_err(want)) return v;
+    if (v.t == ty_never) return never_val(want);
+    type_error(pos, want, v.t, what);
+    return err_val();
+}
+
+/* Is this expression a number literal whose type comes from the context? */
+static bool is_untyped_lit(Node *n) {
+    if (n->kind == N_UNARY && n->op == TK_MINUS) return is_untyped_lit(n->a);
+    return (n->kind == N_INT || n->kind == N_FLOAT) && !n->suffix;
+}
+
+/* A runtime call that panics, in the cold section; returns the label to branch to. */
+static char *cold_panic(FnCtx *F, const char *msg, Pos pos) {
+    Gen *g = F->g;
+    declare(g, "zevic_panic", "declare void @zevic_panic(ptr, i64, ptr, i32) noreturn");
+    char *label = newlabel(F, "panic");
+    const char *file = src_name(pos.file);
+    char *m = str_const(g, msg, (int)strlen(msg));
+    char *fl = str_const(g, file, (int)strlen(file));
+    /* the constants are `{ ptr @x, i64 n }`; the runtime takes the pieces */
+    char *mp = zstrndup(m + 6, strchr(m, ',') - (m + 6));
+    char *fp = zstrndup(fl + 6, strchr(fl, ',') - (fl + 6));
+    sb_printf(&F->cold, "%s:\n  call void @zevic_panic(ptr %s, i64 %d, ptr %s, i32 %d)\n  unreachable\n", label, mp,
+              (int)strlen(msg), fp, pos.line);
+    return label;
+}
+
+/* ---- scopes ---- */
+
+static void push_scope(FnCtx *F) {
+    Scope *s = zalloc(sizeof *s);
+    s->up = F->scope;
+    F->scope = s;
+}
+
+static Local *find_local(FnCtx *F, const char *name) {
+    for (Scope *s = F->scope; s; s = s->up)
+        for (int i = s->locals.n - 1; i >= 0; i--)
+            if (strcmp(((Local *)s->locals.v[i])->name, name) == 0) return s->locals.v[i];
+    return NULL;
+}
+
+static Local *declare_local(FnCtx *F, const char *name, Type *t, bool mut, Pos pos) {
+    for (int i = 0; i < F->scope->locals.n; i++) {
+        Local *o = F->scope->locals.v[i];
+        if (strcmp(o->name, name) == 0) {
+            diag_error(pos, "`%s` is already declared in this scope", name);
+            diag_note("the first declaration is at line %d", o->pos.line);
+            break;
+        }
+    }
+    Local *l = zalloc(sizeof *l);
+    l->name = zstrdup(name);
+    l->t = t;
+    l->mut = mut;
+    l->pos = pos;
+    l->ptr = new_slot(F, t);
+    vec_push(&F->scope->locals, l);
+    return l;
+}
+
+static Val load_local(FnCtx *F, Local *l) {
+    if (l->t == ty_unit) return unit_val();
+    char *t = tmp(F);
+    emit(F, "%s = load %s, ptr %s", t, type_ll(l->t), l->ptr);
+    Val v = {l->t, t};
+    return v;
+}
+
+static void store_to(FnCtx *F, Type *t, Val v, const char *ptr) {
+    emit(F, "store %s %s, ptr %s", type_ll(t), v.v, ptr);
+}
+
+static void run_defers_in(FnCtx *F, Scope *s);
+
+/* Leave the innermost scope on the normal path. */
+static void pop_scope(FnCtx *F) {
+    Scope *s = F->scope;
+    if (!F->term) run_defers_in(F, s);
+    F->scope = s->up;
+}
