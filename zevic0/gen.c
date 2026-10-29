@@ -38,8 +38,12 @@ struct Gen {
     int tmp_global;
 };
 
+/* The type of an expression that already produced an error: it matches everything. */
+static Type *ty_err;
+
 Gen *gen_new(Program *pg) {
     types_init();
+    ty_err = ty_param("error");
     Gen *g = zalloc(sizeof *g);
     g->pg = pg;
     return g;
@@ -180,7 +184,7 @@ static Type *instantiate(Gen *g, Decl *d, Vec targs, Pos pos) {
             diag_error(pos, "type `%s` takes no type arguments", d->name);
         else
             diag_error(pos, "type `%s` needs %d type argument(s), found %d", d->name, n->list2.n, targs.n);
-        return ty_unit;
+        return ty_err;
     }
     TKind k = n->kind == D_STRUCT ? T_STRUCT : n->kind == D_CLASS ? T_CLASS : T_ENUM;
     return ty_named(k, d, qualified_name(d), targs);
@@ -263,7 +267,7 @@ static Type *resolve_type(Gen *g, SourceFile *f, Env *env, Node *te) {
             if (strcmp(name, "Self") == 0) {
                 if (!env || !env->self) {
                     diag_error(te->pos, "`Self` can only be used inside a type or interface");
-                    return ty_unit;
+                    return ty_err;
                 }
                 return env->self;
             }
@@ -276,21 +280,21 @@ static Type *resolve_type(Gen *g, SourceFile *f, Env *env, Node *te) {
             if (strcmp(name, "Array") == 0) {
                 if (te->list.n != 1) {
                     diag_error(te->pos, "`Array` needs exactly one type argument, like `Array<I32>`");
-                    return ty_unit;
+                    return ty_err;
                 }
                 return ty_array(resolve_type(g, f, env, te->list.v[0]));
             }
         }
         int used = 0;
         Decl *d = find_decl(g, f, segs, n, &used, te->pos);
-        if (used < 0) return ty_unit;
+        if (used < 0) return ty_err;
         if (!d || used != n) {
             diag_error(te->pos, "unknown type `%s`", path_join(&te->path, "."));
-            return ty_unit;
+            return ty_err;
         }
         if (d->node->kind != D_STRUCT && d->node->kind != D_CLASS && d->node->kind != D_ENUM) {
             diag_error(te->pos, "`%s` is not a type", d->name);
-            return ty_unit;
+            return ty_err;
         }
         Vec targs = {0};
         for (int i = 0; i < te->list.n; i++) vec_push(&targs, resolve_type(g, f, env, te->list.v[i]));
@@ -298,7 +302,7 @@ static Type *resolve_type(Gen *g, SourceFile *f, Env *env, Node *te) {
     }
     default:
         diag_error(te->pos, "expected a type");
-        return ty_unit;
+        return ty_err;
     }
 }
 
