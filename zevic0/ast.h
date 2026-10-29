@@ -96,6 +96,7 @@ struct Node {
     Node *a, *b, *c, *d;
     Vec list, list2, list3;
     Vec path; /* char* segments */
+    void *aux; /* scratch for later passes (e.g. the Decl wrapper of a method) */
 };
 
 typedef struct {

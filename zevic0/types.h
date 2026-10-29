@@ -54,6 +54,8 @@ extern Type *ty_i8, *ty_i16, *ty_i32, *ty_i64, *ty_u8, *ty_u16, *ty_u32, *ty_u64
 extern Type *ty_f32, *ty_f64, *ty_bool, *ty_char, *ty_string, *ty_unit, *ty_never;
 
 void types_init(void);
+/* Set when a layout needs a type that contains itself by value (infinite size). */
+extern Type *ty_cycle;
 
 Type *ty_tuple(Vec elems);
 Type *ty_array(Type *elem);

@@ -3,6 +3,7 @@
 Type *ty_i8, *ty_i16, *ty_i32, *ty_i64, *ty_u8, *ty_u16, *ty_u32, *ty_u64;
 Type *ty_f32, *ty_f64, *ty_bool, *ty_char, *ty_string, *ty_unit, *ty_never;
 
+Type *ty_cycle;
 static Dict g_types;
 static int g_next_id;
 
@@ -163,6 +164,10 @@ static void struct_layout(Vec *types, int64_t *size, int64_t *align) {
     int64_t off = 0, al = 1;
     for (int i = 0; i < types->n; i++) {
         Type *ft = types->v[i];
+        if (ft->laid_out && !ft->ll) {
+            ty_cycle = ft;
+            continue;
+        }
         ty_layout(ft);
         off = round_up(off, ft->align);
         off += ft->size;
@@ -194,6 +199,11 @@ void ty_layout(Type *t) {
         for (int i = 0; i < t->args.n; i++) {
             if (i) sb_puts(&sb, ", ");
             Type *e = t->args.v[i];
+            if (e->laid_out && !e->ll) {
+                ty_cycle = e;
+                sb_puts(&sb, "{}");
+                continue;
+            }
             ty_layout(e);
             sb_puts(&sb, e->ll);
         }
@@ -208,9 +218,13 @@ void ty_layout(Type *t) {
         sb_puts(&sb, "{ ");
         for (int i = 0; i < t->fields.n; i++) {
             Field *f = t->fields.v[i];
+            if (f->t->laid_out && !f->t->ll) {
+                ty_cycle = f->t;
+                continue;
+            }
             ty_layout(f->t);
             vec_push(&ts, f->t);
-            if (i) sb_puts(&sb, ", ");
+            if (ts.n > 1) sb_puts(&sb, ", ");
             sb_puts(&sb, f->t->ll);
         }
         sb_puts(&sb, t->fields.n ? " }" : "}");
@@ -223,6 +237,10 @@ void ty_layout(Type *t) {
         for (int i = 0; i < t->variants.n; i++) {
             Variant *v = t->variants.v[i];
             if (v->payload) {
+                if (v->payload->laid_out && !v->payload->ll) {
+                    ty_cycle = t;
+                    continue;
+                }
                 ty_layout(v->payload);
                 if (v->payload->size > max) max = v->payload->size;
             }
