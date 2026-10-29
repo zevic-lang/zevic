@@ -1010,6 +1010,437 @@ static Val gen_unary(FnCtx *F, Node *n, Type *expect) {
     }
 }
 
-/* temporary stubs, replaced by the next commits */
-static void run_defers_in(FnCtx *F, Scope *s) { (void)F; (void)s; }
-static Val gen_expr(FnCtx *F, Node *n, Type *expect) { (void)F; (void)n; (void)expect; return err_val(); }
+/* =========================================================================
+ * Expressions
+ * ========================================================================= */
+
+static Val gen_block(FnCtx *F, Node *blk, Type *expect);
+static Val gen_call(FnCtx *F, Node *n, Type *expect);
+static void gen_stmt(FnCtx *F, Node *s);
+
+static Val gen_ident(FnCtx *F, Node *n) {
+    Local *l = find_local(F, n->name);
+    if (l) return load_local(F, l);
+    /* a constant */
+    char *seg[1] = {n->name};
+    int used = 0;
+    Decl *d = find_decl(F->g, F->file, seg, 1, &used, n->pos);
+    if (used < 0) return err_val();
+    if (d && d->node->kind == D_CONST) {
+        Type *t = resolve_type(F->g, d->file, make_env(d, NULL, NULL), d->node->a);
+        Val v = gen_expr(F, d->node->b, t);
+        return coerce(F, d->node->b->pos, v, t, "a constant");
+    }
+    diag_error(n->pos, "unknown name `%s`", n->name);
+    return err_val();
+}
+
+static Val gen_tuple(FnCtx *F, Node *n, Type *expect) {
+    Vec vals = {0}, tys = {0};
+    for (int i = 0; i < n->list.n; i++) {
+        Type *e = (expect && expect->k == T_TUPLE && i < expect->args.n) ? expect->args.v[i] : NULL;
+        Val *v = zalloc(sizeof *v);
+        *v = gen_expr(F, n->list.v[i], e);
+        if (v->t == ty_never) return never_val(expect);
+        vec_push(&vals, v);
+        vec_push(&tys, v->t);
+    }
+    for (int i = 0; i < tys.n; i++)
+        if (is_err(tys.v[i])) return err_val();
+    Type *tt = ty_tuple(tys);
+    char *acc = "undef";
+    for (int i = 0; i < vals.n; i++) {
+        Val *v = vals.v[i];
+        char *r = tmp(F);
+        emit(F, "%s = insertvalue %s %s, %s %s, %d", r, type_ll(tt), acc, type_ll(v->t), v->v, i);
+        acc = r;
+    }
+    Val res = {tt, acc};
+    return res;
+}
+
+static Val gen_if(FnCtx *F, Node *n, Type *expect) {
+    Val c = gen_expr(F, n->a, ty_bool);
+    c = coerce(F, n->a->pos, c, ty_bool, "an `if` condition");
+    if (c.t == ty_never) return never_val(expect);
+    char *then_l = newlabel(F, "then"), *else_l = newlabel(F, "else"), *end_l = newlabel(F, "endif");
+    condbr(F, c.v, then_l, n->c ? else_l : end_l);
+    start_block(F, then_l);
+    Type *want = (expect && expect != ty_unit) ? expect : NULL;
+    Val v1 = gen_block(F, n->b, n->c ? want : ty_unit);
+    char *pred1 = F->cur;
+    bool live1 = !F->term;
+    if (live1) br(F, end_l);
+    if (!n->c) {
+        start_block(F, end_l);
+        return unit_val();
+    }
+    start_block(F, else_l);
+    Type *t1 = (v1.t == ty_never) ? want : v1.t;
+    Val v2;
+    if (n->c->kind == N_IF) v2 = gen_if(F, n->c, t1);
+    else v2 = gen_block(F, n->c, t1);
+    char *pred2 = F->cur;
+    bool live2 = !F->term;
+    if (live2) br(F, end_l);
+    start_block(F, end_l);
+    if (!live1 && !live2) {
+        emit(F, "unreachable");
+        F->term = true;
+        return never_val(want);
+    }
+    Type *rt = live1 ? v1.t : v2.t;
+    if (live1 && live2 && v1.t != v2.t && !is_err(v1.t) && !is_err(v2.t)) {
+        diag_error(n->c->pos, "the branches of this `if` have different types: `%s` and `%s`", v1.t->name, v2.t->name);
+        return err_val();
+    }
+    if (is_err(rt)) return err_val();
+    if (rt == ty_unit) return unit_val();
+    char *r = tmp(F);
+    if (live1 && live2)
+        emit(F, "%s = phi %s [ %s, %%%s ], [ %s, %%%s ]", r, type_ll(rt), v1.v, pred1, v2.v, pred2);
+    else if (live1)
+        emit(F, "%s = phi %s [ %s, %%%s ]", r, type_ll(rt), v1.v, pred1);
+    else
+        emit(F, "%s = phi %s [ %s, %%%s ]", r, type_ll(rt), v2.v, pred2);
+    Val res = {rt, r};
+    return res;
+}
+
+static Val gen_block(FnCtx *F, Node *blk, Type *expect) {
+    push_scope(F);
+    for (int i = 0; i < blk->list.n; i++) gen_stmt(F, blk->list.v[i]);
+    Val v = unit_val();
+    if (blk->a) {
+        v = gen_expr(F, blk->a, expect == ty_unit ? NULL : expect);
+        if (expect == ty_unit && v.t != ty_never) v = unit_val();
+    }
+    pop_scope(F);
+    if (F->term && v.t != ty_never) return never_val(expect ? expect : v.t);
+    return v;
+}
+
+static Val gen_expr(FnCtx *F, Node *n, Type *expect) {
+    switch (n->kind) {
+    case N_INT: return gen_int_lit(F, n, expect, false);
+    case N_FLOAT: return gen_float_lit(F, n, expect, false);
+    case N_BOOL: {
+        Val v = {ty_bool, n->ival ? "true" : "false"};
+        return v;
+    }
+    case N_CHAR: {
+        Val v = {ty_char, zsprintf("%llu", (unsigned long long)n->ival)};
+        return v;
+    }
+    case N_BYTE: {
+        Val v = {ty_u8, zsprintf("%llu", (unsigned long long)n->ival)};
+        return v;
+    }
+    case N_STRING: return gen_string_lit(F, n);
+    case N_UNIT: return unit_val();
+    case N_IDENT: return gen_ident(F, n);
+    case N_TUPLE: return gen_tuple(F, n, expect);
+    case N_UNARY: return gen_unary(F, n, expect);
+    case N_BINARY: return gen_binary(F, n, expect);
+    case N_IF: return gen_if(F, n, expect);
+    case N_BLOCK: return gen_block(F, n, expect);
+    case N_CALL: return gen_call(F, n, expect);
+    case N_RETURN: {
+        Val v = unit_val();
+        if (n->a) {
+            v = gen_expr(F, n->a, F->ret);
+            v = coerce(F, n->a->pos, v, F->ret, "a `return` value");
+            if (v.t == ty_never) return v;
+        } else if (F->ret != ty_unit && !is_err(F->ret)) {
+            diag_error(n->pos, "this function returns `%s`, so `return` needs a value", F->ret->name);
+        }
+        for (Scope *s = F->scope; s; s = s->up) run_defers_in(F, s);
+        if (F->ret == ty_unit || F->ret == ty_never) emit(F, "ret void");
+        else emit(F, "ret %s %s", type_ll(F->ret), v.v);
+        F->term = true;
+        return never_val(expect);
+    }
+    case N_BREAK: case N_CONTINUE: {
+        if (!F->loops.n) {
+            diag_error(n->pos, "`%s` can only be used inside a loop", n->kind == N_BREAK ? "break" : "continue");
+            return err_val();
+        }
+        Loop *lp = F->loops.v[F->loops.n - 1];
+        for (Scope *s = F->scope; s && s != lp->scope; s = s->up) run_defers_in(F, s);
+        br(F, n->kind == N_BREAK ? lp->brk : lp->cont);
+        return never_val(expect);
+    }
+    default:
+        diag_error(n->pos, "this kind of expression is not supported yet (%s)", node_kind_name(n->kind));
+        return err_val();
+    }
+}
+
+/* =========================================================================
+ * Statements
+ * ========================================================================= */
+
+static void run_defers_in(FnCtx *F, Scope *s) {
+    for (int i = s->defers.n - 1; i >= 0; i--) {
+        Scope *saved = F->scope;
+        Scope *t = zalloc(sizeof *t);
+        t->up = s;
+        F->scope = t;
+        Node *d = s->defers.v[i];
+        if (d->kind == N_BLOCK) {
+            Val v = gen_block(F, d, ty_unit);
+            (void)v;
+        } else {
+            gen_stmt(F, d);
+        }
+        F->scope = saved;
+    }
+}
+
+/* Bind an irrefutable pattern to a value. */
+static void bind_pattern(FnCtx *F, Node *pat, Val v, bool mut) {
+    switch (pat->kind) {
+    case P_WILD:
+        return;
+    case P_BIND: {
+        if (is_err(v.t)) {
+            declare_local(F, pat->name, ty_err, mut, pat->pos);
+            return;
+        }
+        Local *l = declare_local(F, pat->name, v.t, mut, pat->pos);
+        if (v.t != ty_unit) store_to(F, v.t, v, l->ptr);
+        return;
+    }
+    case P_TUPLE: {
+        if (v.t->k != T_TUPLE) {
+            if (!is_err(v.t)) diag_error(pat->pos, "cannot destructure a value of type `%s` as a tuple", v.t->name);
+            return;
+        }
+        if (v.t->args.n != pat->list.n) {
+            diag_error(pat->pos, "the tuple pattern has %d element(s), but the value has %d", pat->list.n, v.t->args.n);
+            return;
+        }
+        for (int i = 0; i < pat->list.n; i++) {
+            Type *et = v.t->args.v[i];
+            char *r = tmp(F);
+            emit(F, "%s = extractvalue %s %s, %d", r, type_ll(v.t), v.v, i);
+            Val ev = {et, r};
+            bind_pattern(F, pat->list.v[i], ev, mut);
+        }
+        return;
+    }
+    default:
+        diag_error(pat->pos, "this pattern can fail to match; only `_`, names and tuples can be used here");
+    }
+}
+
+static TokKind base_op(TokKind k) {
+    switch (k) {
+    case TK_PLUSEQ: return TK_PLUS;
+    case TK_MINUSEQ: return TK_MINUS;
+    case TK_STAREQ: return TK_STAR;
+    case TK_SLASHEQ: return TK_SLASH;
+    case TK_PERCENTEQ: return TK_PERCENT;
+    case TK_AMPEQ: return TK_AMP;
+    case TK_PIPEEQ: return TK_PIPE;
+    case TK_CARETEQ: return TK_CARET;
+    case TK_SHLEQ: return TK_SHL;
+    case TK_SHREQ: return TK_SHR;
+    default: return TK_ASSIGN;
+    }
+}
+
+/* The address of an assignable place; sets *t to its type. NULL after an error. */
+static char *gen_lvalue(FnCtx *F, Node *n, Type **t) {
+    if (n->kind == N_IDENT) {
+        Local *l = find_local(F, n->name);
+        if (!l) {
+            diag_error(n->pos, "cannot assign to `%s`: it is not a variable", n->name);
+            return NULL;
+        }
+        if (!l->mut) {
+            diag_error(n->pos, "cannot assign to `%s` because it is not `mut`", n->name);
+            diag_note("declare it with `mut %s: %s = ...` to allow changes", n->name, l->t->name);
+            return NULL;
+        }
+        *t = l->t;
+        return l->ptr;
+    }
+    diag_error(n->pos, "this expression cannot be assigned to");
+    return NULL;
+}
+
+static void gen_assign(FnCtx *F, Node *n) {
+    Type *t = NULL;
+    char *ptr = gen_lvalue(F, n->a, &t);
+    if (!ptr) {
+        gen_expr(F, n->b, NULL);
+        return;
+    }
+    if (n->op == TK_ASSIGN) {
+        Val v = gen_expr(F, n->b, t);
+        v = coerce(F, n->b->pos, v, t, "an assignment");
+        if (v.t == ty_never || is_err(v.t)) return;
+        store_to(F, t, v, ptr);
+        return;
+    }
+    TokKind op = base_op(n->op);
+    char *cur = tmp(F);
+    emit(F, "%s = load %s, ptr %s", cur, type_ll(t), ptr);
+    Val a = {t, cur};
+    bool shift = op == TK_SHL || op == TK_SHR;
+    Val b = gen_expr(F, n->b, shift ? ty_i32 : t);
+    if (b.t == ty_never || is_err(b.t) || is_err(t)) return;
+    Val r;
+    if (shift) {
+        if (!ty_is_int(t) || b.t != ty_i32) {
+            diag_error(n->pos, "`%s` needs an integer variable and an `I32` amount", tok_name(n->op));
+            return;
+        }
+        r = gen_shift(F, op, a, b, n->pos);
+    } else {
+        b = coerce(F, n->b->pos, b, t, "a compound assignment");
+        if (is_err(b.t)) return;
+        if (t == ty_string && op == TK_PLUS) {
+            char *ap, *an, *bp, *bn;
+            str_parts(F, a, &ap, &an);
+            str_parts(F, b, &bp, &bn);
+            rt_decl(F, "zevic_str_concat", "declare void @zevic_str_concat(ptr, ptr, i64, ptr, i64)");
+            r = call_str_out(F, "zevic_str_concat", zsprintf("ptr %s, i64 %s, ptr %s, i64 %s", ap, an, bp, bn));
+        } else if (ty_is_float(t) && op != TK_AMP && op != TK_PIPE && op != TK_CARET) {
+            r = gen_float_arith(F, op, a, b);
+        } else if (ty_is_int(t)) {
+            r = gen_int_arith(F, op, a, b, n->pos);
+        } else {
+            diag_error(n->pos, "`%s` cannot be used with values of type `%s`", tok_name(n->op), t->name);
+            return;
+        }
+    }
+    store_to(F, t, r, ptr);
+}
+
+static void gen_while(FnCtx *F, Node *n) {
+    char *head = newlabel(F, "while.cond"), *body = newlabel(F, "while.body"), *end = newlabel(F, "while.end");
+    goto_block(F, head);
+    Val c = gen_expr(F, n->a, ty_bool);
+    c = coerce(F, n->a->pos, c, ty_bool, "a `while` condition");
+    if (c.t != ty_never) condbr(F, c.v, body, end);
+    start_block(F, body);
+    Loop lp = {end, head, F->scope};
+    vec_push(&F->loops, &lp);
+    gen_block(F, n->b, ty_unit);
+    F->loops.n--;
+    if (!F->term) br(F, head);
+    start_block(F, end);
+}
+
+static void gen_loop(FnCtx *F, Node *n) {
+    char *body = newlabel(F, "loop.body"), *end = newlabel(F, "loop.end");
+    goto_block(F, body);
+    Loop lp = {end, body, F->scope};
+    vec_push(&F->loops, &lp);
+    gen_block(F, n->b, ty_unit);
+    F->loops.n--;
+    if (!F->term) br(F, body);
+    start_block(F, end);
+}
+
+static void gen_for_range(FnCtx *F, Node *n) {
+    Node *r = n->d;
+    Val a, b;
+    gen_pair(F, r->a, r->b, NULL, &a, &b);
+    if (a.t == ty_never || b.t == ty_never || is_err(a.t) || is_err(b.t)) return;
+    if (!ty_is_int(a.t) || a.t != b.t) {
+        diag_error(r->pos, "the bounds of a range must be integers of the same type, found `%s` and `%s`", a.t->name, b.t->name);
+        return;
+    }
+    Type *t = a.t;
+    char *ll = type_ll(t);
+    bool sgn = ty_is_signed(t);
+    push_scope(F);
+    char *ctr = new_slot(F, t);
+    store_to(F, t, a, ctr);
+    char *head = newlabel(F, "for.cond"), *body = newlabel(F, "for.body"), *cont = newlabel(F, "for.next"),
+         *end = newlabel(F, "for.end");
+    goto_block(F, head);
+    char *cur = tmp(F), *c = tmp(F);
+    emit(F, "%s = load %s, ptr %s", cur, ll, ctr);
+    const char *pred = r->flag ? (sgn ? "sle" : "ule") : (sgn ? "slt" : "ult");
+    emit(F, "%s = icmp %s %s %s, %s", c, pred, ll, cur, b.v);
+    condbr(F, c, body, end);
+    start_block(F, body);
+    /* the loop variable is an immutable alias of the counter */
+    if (n->a->kind == P_BIND) {
+        Local *l = zalloc(sizeof *l);
+        l->name = n->a->name;
+        l->t = t;
+        l->ptr = ctr;
+        l->mut = false;
+        l->pos = n->a->pos;
+        vec_push(&F->scope->locals, l);
+    } else if (n->a->kind != P_WILD) {
+        diag_error(n->a->pos, "a range loop variable must be a name or `_`");
+    }
+    if (n->c) diag_error(n->c->pos, "a range has no index; use a single loop variable");
+    Loop lp = {end, cont, F->scope->up};
+    vec_push(&F->loops, &lp);
+    gen_block(F, n->b, ty_unit);
+    F->loops.n--;
+    if (!F->term) br(F, cont);
+    start_block(F, cont);
+    char *cur2 = tmp(F);
+    emit(F, "%s = load %s, ptr %s", cur2, ll, ctr);
+    if (r->flag) {
+        /* inclusive: stop after the upper bound without overflowing */
+        char *last = tmp(F);
+        char *step = newlabel(F, "for.step");
+        emit(F, "%s = icmp eq %s %s, %s", last, ll, cur2, b.v);
+        condbr(F, last, end, step);
+        start_block(F, step);
+    }
+    char *nx = tmp(F);
+    emit(F, "%s = add %s %s, 1", nx, ll, cur2);
+    store_to(F, t, (Val){t, nx}, ctr);
+    br(F, head);
+    start_block(F, end);
+    pop_scope(F);
+}
+
+static void gen_for(FnCtx *F, Node *n) {
+    if (n->d->kind == N_RANGE) {
+        gen_for_range(F, n);
+        return;
+    }
+    diag_error(n->d->pos, "`for` can only loop over a range (like `0..10`) so far");
+}
+
+static void gen_let(FnCtx *F, Node *n) {
+    Type *t = resolve_type(F->g, F->file, F->env, n->b);
+    Val v = gen_expr(F, n->c, t);
+    v = coerce(F, n->c->pos, v, t, "a variable declaration");
+    if (v.t == ty_never) {
+        /* the initialiser never completes; still declare the names so later code can be checked */
+        v = (Val){t, "undef"};
+    }
+    if (is_err(v.t)) v = (Val){t, "undef"};
+    bind_pattern(F, n->a, v, n->flag);
+}
+
+static void gen_stmt(FnCtx *F, Node *s) {
+    switch (s->kind) {
+    case N_LET: gen_let(F, s); break;
+    case N_ASSIGN: gen_assign(F, s); break;
+    case N_EXPRSTMT: gen_expr(F, s->a, NULL); break;
+    case N_WHILE: gen_while(F, s); break;
+    case N_LOOP: gen_loop(F, s); break;
+    case N_FOR: gen_for(F, s); break;
+    case N_DEFER: vec_push(&F->scope->defers, s->a); break;
+    default: gen_expr(F, s, NULL); break;
+    }
+}
+
+static Val gen_call(FnCtx *F, Node *n, Type *expect) {
+    (void)expect;
+    diag_error(n->pos, "calls are not supported yet");
+    return err_val();
+}
