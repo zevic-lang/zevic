@@ -487,11 +487,356 @@ static bool lex_number(Lexer *lx) {
     t->suffix = suffix;
     return true;
 }
-static bool lex_string(Lexer *lx, bool raw) {
-    advance(lx); (void)raw;
-    return false;
+/* ---- characters and strings ---- */
+
+/* Decode one UTF-8 sequence. Returns its length, or 0 when invalid. */
+static int utf8_decode(const char *s, size_t n, uint32_t *cp) {
+    unsigned char c = (unsigned char)s[0];
+    if (c < 0x80) { *cp = c; return 1; }
+    int len = (c >> 5) == 0x6 ? 2 : (c >> 4) == 0xE ? 3 : (c >> 3) == 0x1E ? 4 : 0;
+    if (!len || (size_t)len > n) return 0;
+    uint32_t v = len == 2 ? (c & 0x1Fu) : len == 3 ? (c & 0x0Fu) : (c & 0x07u);
+    for (int k = 1; k < len; k++) {
+        if (((unsigned char)s[k] & 0xC0) != 0x80) return 0;
+        v = (v << 6) | ((unsigned char)s[k] & 0x3Fu);
+    }
+    if ((len == 2 && v < 0x80) || (len == 3 && v < 0x800) || (len == 4 && v < 0x10000) ||
+        v > 0x10FFFF || (v >= 0xD800 && v <= 0xDFFF))
+        return 0;
+    *cp = v;
+    return len;
 }
+
+static void utf8_put(SB *sb, uint32_t cp) {
+    if (cp < 0x80) {
+        sb_putc(sb, (char)cp);
+    } else if (cp < 0x800) {
+        sb_putc(sb, (char)(0xC0 | (cp >> 6)));
+        sb_putc(sb, (char)(0x80 | (cp & 0x3F)));
+    } else if (cp < 0x10000) {
+        sb_putc(sb, (char)(0xE0 | (cp >> 12)));
+        sb_putc(sb, (char)(0x80 | ((cp >> 6) & 0x3F)));
+        sb_putc(sb, (char)(0x80 | (cp & 0x3F)));
+    } else {
+        sb_putc(sb, (char)(0xF0 | (cp >> 18)));
+        sb_putc(sb, (char)(0x80 | ((cp >> 12) & 0x3F)));
+        sb_putc(sb, (char)(0x80 | ((cp >> 6) & 0x3F)));
+        sb_putc(sb, (char)(0x80 | (cp & 0x3F)));
+    }
+}
+
+/* Decode the escape whose backslash was just consumed; s[*i] is the letter.
+ * `max_x` is the largest \xNN value allowed. Returns NULL on success or an error text. */
+static const char *read_escape(const char *s, size_t n, size_t *i, uint32_t *cp, uint32_t max_x) {
+    if (*i >= n) return "unfinished escape sequence";
+    char c = s[(*i)++];
+    switch (c) {
+    case 'n': *cp = '\n'; return NULL;
+    case 'r': *cp = '\r'; return NULL;
+    case 't': *cp = '\t'; return NULL;
+    case '\\': *cp = '\\'; return NULL;
+    case '"': *cp = '"'; return NULL;
+    case '\'': *cp = '\''; return NULL;
+    case '0': *cp = 0; return NULL;
+    case '$': *cp = '$'; return NULL;
+    case 'x': {
+        if (*i + 2 > n || digit_value((unsigned char)s[*i]) > 15 || digit_value((unsigned char)s[*i + 1]) > 15)
+            return "`\\x` must be followed by two hex digits";
+        *cp = (uint32_t)(digit_value((unsigned char)s[*i]) * 16 + digit_value((unsigned char)s[*i + 1]));
+        *i += 2;
+        if (*cp > max_x) return max_x == 0x7F ? "`\\xNN` in a string must be 00 to 7F (use `\\u{...}` for other characters)"
+                                               : "`\\xNN` is out of range";
+        return NULL;
+    }
+    case 'u': {
+        if (*i >= n || s[*i] != '{') return "`\\u` must be followed by `{hex digits}`";
+        (*i)++;
+        uint32_t v = 0;
+        int nd = 0;
+        while (*i < n && s[*i] != '}') {
+            int d = digit_value((unsigned char)s[*i]);
+            if (d > 15 || nd >= 6) return "invalid `\\u{...}` escape";
+            v = v * 16 + (uint32_t)d;
+            nd++;
+            (*i)++;
+        }
+        if (*i >= n || nd == 0) return "invalid `\\u{...}` escape";
+        (*i)++;
+        if (v > 0x10FFFF || (v >= 0xD800 && v <= 0xDFFF)) return "`\\u{...}` is not a valid Unicode scalar value";
+        *cp = v;
+        return NULL;
+    }
+    default:
+        return "unknown escape sequence";
+    }
+}
+
+/* Cursor is on the opening quote (a preceding `b` was already consumed). */
 static bool lex_char(Lexer *lx, bool is_byte) {
-    advance(lx); (void)is_byte;
-    return false;
+    Pos pos = here(lx);
+    if (is_byte) pos.col--; /* point at the `b` */
+    advance(lx);
+    uint32_t cp = 0;
+    const char *s = lx->s;
+    size_t i = lx->i, n = lx->n;
+    if (i >= n || s[i] == '\n') {
+        diag_error(pos, "unterminated character literal");
+        return false;
+    }
+    if (s[i] == '\'') {
+        diag_error(pos, "empty character literal");
+        advance(lx);
+        return false;
+    }
+    size_t start = i;
+    if (s[i] == '\\') {
+        i++;
+        const char *err = read_escape(s, n, &i, &cp, is_byte ? 0xFF : 0x10FFFF);
+        if (err) {
+            diag_error(pos, "%s", err);
+            return false;
+        }
+    } else {
+        int len = utf8_decode(s + i, n - i, &cp);
+        if (!len) {
+            diag_error(pos, "invalid UTF-8 in character literal");
+            return false;
+        }
+        i += (size_t)len;
+        if (is_byte && cp >= 0x80) diag_error(pos, "a byte literal must be ASCII (use `b'\\xNN'` for other values)");
+    }
+    if (i >= n || s[i] != '\'') {
+        diag_error(pos, "a character literal holds exactly one character (use a string for more)");
+        /* resync: skip to the closing quote on this line */
+        while (lx->i < lx->n && peekc(lx, 0) != '\'' && peekc(lx, 0) != '\n') advance(lx);
+        if (peekc(lx, 0) == '\'') advance(lx);
+        return false;
+    }
+    i++;
+    while (lx->i < i) advance(lx);
+    (void)start;
+    Token *t = push_tok(lx, is_byte ? TK_BYTE : TK_CHAR, pos);
+    t->ival = cp;
+    return true;
+}
+
+/* Skip over `${ ... }` (i is just after the `${`). Returns the index of the matching `}`. */
+static size_t skip_interp(const char *s, size_t n, size_t i);
+
+/* Skip a string body; i is just after the opening quote. Returns the index just after the closing quote. */
+static size_t skip_nested_string(const char *s, size_t n, size_t i) {
+    while (i < n) {
+        char c = s[i];
+        if (c == '\\') {
+            i += 2;
+        } else if (c == '"') {
+            return i + 1;
+        } else if (c == '$' && i + 1 < n && s[i + 1] == '{') {
+            i = skip_interp(s, n, i + 2) + 1;
+        } else {
+            i++;
+        }
+    }
+    return n;
+}
+
+static size_t skip_interp(const char *s, size_t n, size_t i) {
+    int depth = 1;
+    while (i < n) {
+        char c = s[i];
+        if (c == '{') {
+            depth++;
+        } else if (c == '}') {
+            if (--depth == 0) return i;
+        } else if (c == '"') {
+            i = skip_nested_string(s, n, i + 1);
+            continue;
+        } else if (c == '\'') {
+            i++;
+            if (i < n && s[i] == '\\') i++;
+            while (i < n && s[i] != '\'' && s[i] != '\n') i++;
+        }
+        i++;
+    }
+    return n;
+}
+
+typedef struct {
+    StrPart *v;
+    int n, cap;
+} Parts;
+
+static void parts_add(Parts *ps, bool is_expr, const char *s, size_t n, Pos pos) {
+    if (ps->n == ps->cap) {
+        int nc = ps->cap ? ps->cap * 2 : 4;
+        ps->v = zrealloc(ps->v, sizeof(StrPart) * (size_t)ps->cap, sizeof(StrPart) * (size_t)nc);
+        ps->cap = nc;
+    }
+    StrPart *p = &ps->v[ps->n++];
+    p->is_expr = is_expr;
+    p->s = zstrndup(s, n);
+    p->n = (int)n;
+    p->pos = pos;
+}
+
+/* Turn the body of a string literal into literal and `${}` parts. */
+static void split_body(const char *s, size_t n, bool raw, Pos pos, Parts *ps) {
+    SB cur = {0};
+    size_t i = 0;
+    int line = pos.line, col = pos.col;
+    Pos cur_pos = pos;
+    while (i < n) {
+        char c = s[i];
+        if (!raw && c == '\\') {
+            size_t j = i + 1;
+            uint32_t cp;
+            const char *err = read_escape(s, n, &j, &cp, 0x7F);
+            if (err) {
+                Pos ep = {pos.file, line, col};
+                diag_error(ep, "%s", err);
+                j = i + 2 > n ? n : i + 2;
+            } else {
+                utf8_put(&cur, cp);
+            }
+            col += (int)(j - i);
+            i = j;
+        } else if (!raw && c == '$' && i + 1 < n && s[i + 1] == '{') {
+            size_t end = skip_interp(s, n, i + 2);
+            if (end >= n) {
+                Pos ep = {pos.file, line, col};
+                diag_error(ep, "unterminated `${` in a string");
+                return;
+            }
+            if (cur.len) {
+                parts_add(ps, false, sb_str(&cur), cur.len, cur_pos);
+                cur.len = 0;
+            }
+            Pos ep = {pos.file, line, col + 2};
+            parts_add(ps, true, s + i + 2, end - (i + 2), ep);
+            for (size_t k = i; k <= end; k++) {
+                if (s[k] == '\n') { line++; col = 1; } else if (((unsigned char)s[k] & 0xC0) != 0x80) col++;
+            }
+            i = end + 1;
+            cur_pos.line = line;
+            cur_pos.col = col;
+        } else {
+            if (cur.len == 0) { cur_pos.line = line; cur_pos.col = col; }
+            sb_putc(&cur, c);
+            if (c == '\n') { line++; col = 1; } else if (((unsigned char)c & 0xC0) != 0x80) col++;
+            i++;
+        }
+    }
+    if (cur.len) parts_add(ps, false, sb_str(&cur), cur.len, cur_pos);
+}
+
+static void check_utf8(const char *s, size_t n, Pos pos) {
+    size_t i = 0;
+    while (i < n) {
+        uint32_t cp;
+        int len = utf8_decode(s + i, n - i, &cp);
+        if (!len) {
+            diag_error(pos, "invalid UTF-8 in a string literal");
+            return;
+        }
+        i += (size_t)len;
+    }
+}
+
+/* Cursor is on the opening quote. */
+static bool lex_string(Lexer *lx, bool raw) {
+    Pos pos = here(lx);
+    if (raw) pos.col--; /* the `r` */
+    const char *s = lx->s;
+    size_t n = lx->n, i = lx->i;
+    bool triple = i + 2 < n && s[i + 1] == '"' && s[i + 2] == '"';
+    Parts ps = {0};
+    size_t body_start, body_end;
+    if (triple) {
+        i += 3;
+        /* the opening quotes must be followed by a newline */
+        size_t j = i;
+        while (j < n && (s[j] == ' ' || s[j] == '\t' || s[j] == '\r')) j++;
+        if (j >= n || s[j] != '\n') {
+            diag_error(pos, "a `\"\"\"` string must start on a new line (put the text after the line break)");
+        } else {
+            i = j + 1;
+        }
+        body_start = i;
+        size_t k = i;
+        for (;;) {
+            if (k >= n) {
+                diag_error(pos, "unterminated multi-line string");
+                while (lx->i < n) advance(lx);
+                return false;
+            }
+            if (!raw && s[k] == '\\') { k += 2; continue; }
+            if (!raw && s[k] == '$' && k + 1 < n && s[k + 1] == '{') { k = skip_interp(s, n, k + 2) + 1; continue; }
+            if (s[k] == '"' && k + 2 < n && s[k + 1] == '"' && s[k + 2] == '"') break;
+            k++;
+        }
+        body_end = k;
+        size_t total = k + 3;
+        /* dedent: the closing line's indentation is removed from every line */
+        size_t ls = body_end;
+        while (ls > body_start && s[ls - 1] != '\n') ls--;
+        size_t indent = body_end - ls;
+        bool blank = true;
+        for (size_t q = ls; q < body_end; q++)
+            if (s[q] != ' ' && s[q] != '\t') blank = false;
+        SB text = {0};
+        if (!blank) {
+            diag_error(pos, "the closing `\"\"\"` must be on its own line");
+            sb_putn(&text, s + body_start, body_end - body_start);
+        } else {
+            size_t p = body_start;
+            size_t content_end = ls == body_start ? body_start : ls - 1; /* drop the last newline */
+            bool first = true;
+            while (p <= content_end && ls > body_start) {
+                size_t e = p;
+                while (e < content_end && s[e] != '\n') e++;
+                size_t lstart = p;
+                size_t skip = 0;
+                while (skip < indent && lstart + skip < e && (s[lstart + skip] == ' ' || s[lstart + skip] == '\t')) skip++;
+                if (skip < indent && e > lstart + skip) {
+                    Pos lp = {pos.file, pos.line, pos.col};
+                    diag_error(lp, "a line in a multi-line string is indented less than the closing `\"\"\"`");
+                }
+                if (!first) sb_putc(&text, '\n');
+                first = false;
+                size_t cut = e;
+                if (cut > lstart && s[cut - 1] == '\r') cut--;
+                sb_putn(&text, s + lstart + skip, cut - (lstart + skip));
+                if (e >= content_end) break;
+                p = e + 1;
+            }
+        }
+        Pos bp = {pos.file, pos.line + 1, 1};
+        check_utf8(text.p ? text.p : "", text.len, pos);
+        split_body(text.p ? text.p : "", text.len, raw, bp, &ps);
+        while (lx->i < total) advance(lx);
+    } else {
+        i += 1;
+        body_start = i;
+        size_t k = i;
+        for (;;) {
+            if (k >= n || s[k] == '\n') {
+                diag_error(pos, "unterminated string (a string cannot span lines; use `\"\"\"` for that)");
+                while (lx->i < k) advance(lx);
+                return false;
+            }
+            if (!raw && s[k] == '\\') { k += 2; continue; }
+            if (!raw && s[k] == '$' && k + 1 < n && s[k + 1] == '{') { k = skip_interp(s, n, k + 2) + 1; continue; }
+            if (s[k] == '"') break;
+            k++;
+        }
+        body_end = k;
+        check_utf8(s + body_start, body_end - body_start, pos);
+        Pos bp = {pos.file, pos.line, pos.col + (raw ? 2 : 1)};
+        split_body(s + body_start, body_end - body_start, raw, bp, &ps);
+        while (lx->i < body_end + 1) advance(lx);
+    }
+    Token *t = push_tok(lx, TK_STRING, pos);
+    t->parts = ps.v;
+    t->nparts = ps.n;
+    return true;
 }
