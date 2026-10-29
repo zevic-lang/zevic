@@ -569,3 +569,447 @@ static void pop_scope(FnCtx *F) {
     if (!F->term) run_defers_in(F, s);
     F->scope = s->up;
 }
+
+/* =========================================================================
+ * Literals
+ * ========================================================================= */
+
+static Val gen_expr(FnCtx *F, Node *n, Type *expect);
+
+static Type *type_from_suffix(const char *s) {
+    return ty_prim_by_name(s);
+}
+
+static Val gen_int_lit(FnCtx *F, Node *n, Type *expect, bool neg) {
+    Type *t;
+    if (n->suffix) t = type_from_suffix(n->suffix);
+    else if (expect && ty_is_int(expect)) t = expect;
+    else if (expect && ty_is_float(expect)) {
+        diag_error(n->pos, "expected `%s`, found an integer (write `%llu.0` for a decimal number)", expect->name,
+                   (unsigned long long)n->ival);
+        return err_val();
+    } else t = ty_i64;
+    int bits = ty_bits(t);
+    uint64_t v = n->ival;
+    if (ty_is_signed(t)) {
+        uint64_t max = ((uint64_t)1 << (bits - 1)) - 1 + (neg ? 1 : 0);
+        if (v > max) {
+            diag_error(n->pos, "the number %s%llu does not fit in `%s` (range %lld to %lld)", neg ? "-" : "",
+                       (unsigned long long)v, t->name, (long long)(-(int64_t)(max - (neg ? 1 : 0)) - 1),
+                       (long long)(max - (neg ? 1 : 0)));
+            return err_val();
+        }
+    } else {
+        if (neg && v != 0) {
+            diag_error(n->pos, "an unsigned type (`%s`) cannot hold a negative number", t->name);
+            return err_val();
+        }
+        uint64_t max = bits == 64 ? UINT64_MAX : (((uint64_t)1 << bits) - 1);
+        if (v > max) {
+            diag_error(n->pos, "the number %llu does not fit in `%s` (maximum %llu)", (unsigned long long)v, t->name,
+                       (unsigned long long)max);
+            return err_val();
+        }
+    }
+    int64_t sv = neg ? (int64_t)(0 - v) : (int64_t)v;
+    Val r = {t, zsprintf("%lld", (long long)sv)};
+    (void)F;
+    return r;
+}
+
+static char *double_hex(double d) {
+    union { double d; uint64_t u; } x;
+    x.d = d;
+    return zsprintf("0x%016llX", (unsigned long long)x.u);
+}
+
+static Val gen_float_lit(FnCtx *F, Node *n, Type *expect, bool neg) {
+    Type *t;
+    (void)F;
+    if (n->suffix) t = type_from_suffix(n->suffix);
+    else if (expect && ty_is_float(expect)) t = expect;
+    else if (expect && ty_is_int(expect)) {
+        diag_error(n->pos, "expected `%s`, found a decimal number", expect->name);
+        return err_val();
+    } else t = ty_f64;
+    double d = neg ? -n->fval : n->fval;
+    if (t == ty_f32) d = (double)(float)d; /* f32 constants are written as doubles that are exactly representable */
+    Val r = {t, double_hex(d)};
+    return r;
+}
+
+/* ---- runtime helpers ---- */
+
+static void rt_decl(FnCtx *F, const char *name, const char *line) {
+    declare(F->g, name, line);
+}
+
+static Val str_val(char *constant) {
+    Val v = {ty_string, constant};
+    return v;
+}
+
+static void str_parts(FnCtx *F, Val s, char **p, char **n) {
+    if (strncmp(s.v, "{ ptr ", 6) == 0 && strchr(s.v, '@')) {
+        /* a constant: take the pieces apart textually */
+        char *comma = strchr(s.v, ',');
+        *p = zstrndup(s.v + 6, (size_t)(comma - (s.v + 6)));
+        char *len = strstr(s.v, "i64 ");
+        *n = zstrndup(len + 4, strlen(len + 4) - 2);
+        return;
+    }
+    *p = tmp(F);
+    *n = tmp(F);
+    emit(F, "%s = extractvalue { ptr, i64 } %s, 0", *p, s.v);
+    emit(F, "%s = extractvalue { ptr, i64 } %s, 1", *n, s.v);
+}
+
+/* Call a runtime function that returns a String through an out pointer. */
+static Val call_str_out(FnCtx *F, const char *fn, const char *args) {
+    char *slot = new_slot(F, ty_string);
+    emit(F, "call void @%s(ptr %s%s%s)", fn, slot, args[0] ? ", " : "", args);
+    char *t = tmp(F);
+    emit(F, "%s = load { ptr, i64 }, ptr %s", t, slot);
+    Val v = {ty_string, t};
+    return v;
+}
+
+/* x.ToString() for the built-in types. */
+static Val gen_to_string(FnCtx *F, Val v, Pos pos) {
+    Type *t = v.t;
+    if (is_err(t)) return str_val("{ ptr null, i64 0 }");
+    if (t == ty_string) return v;
+    if (ty_is_int(t)) {
+        int bits = ty_bits(t);
+        char *x = v.v;
+        if (bits < 64) {
+            x = tmp(F);
+            emit(F, "%s = %s i%d %s to i64", x, ty_is_signed(t) ? "sext" : "zext", bits, v.v);
+        }
+        if (ty_is_signed(t)) {
+            rt_decl(F, "zevic_i64_to_str", "declare void @zevic_i64_to_str(ptr, i64)");
+            return call_str_out(F, "zevic_i64_to_str", zsprintf("i64 %s", x));
+        }
+        rt_decl(F, "zevic_u64_to_str", "declare void @zevic_u64_to_str(ptr, i64)");
+        return call_str_out(F, "zevic_u64_to_str", zsprintf("i64 %s", x));
+    }
+    if (ty_is_float(t)) {
+        char *x = v.v;
+        if (t == ty_f32) {
+            x = tmp(F);
+            emit(F, "%s = fpext float %s to double", x, v.v);
+        }
+        rt_decl(F, "zevic_f64_to_str", "declare void @zevic_f64_to_str(ptr, double)");
+        return call_str_out(F, "zevic_f64_to_str", zsprintf("double %s", x));
+    }
+    if (t == ty_bool) {
+        char *x = tmp(F);
+        emit(F, "%s = zext i1 %s to i32", x, v.v);
+        rt_decl(F, "zevic_bool_to_str", "declare void @zevic_bool_to_str(ptr, i32)");
+        return call_str_out(F, "zevic_bool_to_str", zsprintf("i32 %s", x));
+    }
+    if (t == ty_char) {
+        rt_decl(F, "zevic_char_to_str", "declare void @zevic_char_to_str(ptr, i32)");
+        return call_str_out(F, "zevic_char_to_str", zsprintf("i32 %s", v.v));
+    }
+    if (t == ty_unit) return str_val(str_const(F->g, "()", 2));
+    diag_error(pos, "`ToString` is not available for type `%s` yet", t->name);
+    return str_val("{ ptr null, i64 0 }");
+}
+
+static Val gen_string_lit(FnCtx *F, Node *n) {
+    if (n->list.n == 0) return str_val(str_const(F->g, "", 0));
+    if (n->list.n == 1 && ((Node *)n->list.v[0])->kind == N_STR_LIT) {
+        Node *lit = n->list.v[0];
+        return str_val(str_const(F->g, lit->name, lit->slen));
+    }
+    /* interpolation: build the result in a runtime string builder */
+    rt_decl(F, "zevic_sb_new", "declare ptr @zevic_sb_new()");
+    rt_decl(F, "zevic_sb_add", "declare void @zevic_sb_add(ptr, ptr, i64)");
+    rt_decl(F, "zevic_sb_finish", "declare void @zevic_sb_finish(ptr, ptr)");
+    char *sb = tmp(F);
+    emit(F, "%s = call ptr @zevic_sb_new()", sb);
+    for (int i = 0; i < n->list.n; i++) {
+        Node *part = n->list.v[i];
+        Val s;
+        if (part->kind == N_STR_LIT) {
+            s = str_val(str_const(F->g, part->name, part->slen));
+        } else {
+            Val v = gen_expr(F, part, NULL);
+            if (v.t == ty_never) return never_val(ty_string);
+            s = gen_to_string(F, v, part->pos);
+        }
+        char *p, *len;
+        str_parts(F, s, &p, &len);
+        emit(F, "call void @zevic_sb_add(ptr %s, ptr %s, i64 %s)", sb, p, len);
+    }
+    return call_str_out(F, "zevic_sb_finish", zsprintf("ptr %s", sb));
+}
+
+/* =========================================================================
+ * Operators
+ * ========================================================================= */
+
+static char *int_intrinsic(FnCtx *F, const char *op, Type *t) {
+    int bits = ty_bits(t);
+    char *name = zsprintf("llvm.%s.with.overflow.i%d", op, bits);
+    declare(F->g, name, zsprintf("declare { i%d, i1 } @%s(i%d, i%d)", bits, name, bits, bits));
+    return name;
+}
+
+static Val gen_int_arith(FnCtx *F, TokKind op, Val a, Val b, Pos pos) {
+    Type *t = a.t;
+    int bits = ty_bits(t);
+    bool sgn = ty_is_signed(t);
+    char *ll = type_ll(t);
+    if (op == TK_PLUS || op == TK_MINUS || op == TK_STAR) {
+        const char *nm = op == TK_PLUS ? (sgn ? "sadd" : "uadd") : op == TK_MINUS ? (sgn ? "ssub" : "usub") : (sgn ? "smul" : "umul");
+        char *fn = int_intrinsic(F, nm, t);
+        char *r = tmp(F), *v = tmp(F), *o = tmp(F);
+        emit(F, "%s = call { %s, i1 } @%s(%s %s, %s %s)", r, ll, fn, ll, a.v, ll, b.v);
+        emit(F, "%s = extractvalue { %s, i1 } %s, 0", v, ll, r);
+        emit(F, "%s = extractvalue { %s, i1 } %s, 1", o, ll, r);
+        char *ok = newlabel(F, "ok");
+        condbr(F, o, cold_panic(F, "integer overflow", pos), ok);
+        start_block(F, ok);
+        Val res = {t, v};
+        return res;
+    }
+    if (op == TK_SLASH || op == TK_PERCENT) {
+        char *z = tmp(F);
+        emit(F, "%s = icmp eq %s %s, 0", z, ll, b.v);
+        char *ok = newlabel(F, "ok");
+        condbr(F, z, cold_panic(F, op == TK_SLASH ? "division by zero" : "remainder by zero", pos), ok);
+        start_block(F, ok);
+        if (sgn) {
+            /* MIN / -1 overflows */
+            char *min = zsprintf("%lld", bits == 64 ? (long long)INT64_MIN : -((long long)1 << (bits - 1)));
+            char *c1 = tmp(F), *c2 = tmp(F), *both = tmp(F);
+            emit(F, "%s = icmp eq %s %s, %s", c1, ll, a.v, min);
+            emit(F, "%s = icmp eq %s %s, -1", c2, ll, b.v);
+            emit(F, "%s = and i1 %s, %s", both, c1, c2);
+            char *ok2 = newlabel(F, "ok");
+            condbr(F, both, cold_panic(F, "integer overflow", pos), ok2);
+            start_block(F, ok2);
+        }
+        char *r = tmp(F);
+        emit(F, "%s = %s %s %s, %s", r, op == TK_SLASH ? (sgn ? "sdiv" : "udiv") : (sgn ? "srem" : "urem"), ll, a.v, b.v);
+        Val res = {t, r};
+        return res;
+    }
+    const char *ins = NULL;
+    switch (op) {
+    case TK_AMP: ins = "and"; break;
+    case TK_PIPE: ins = "or"; break;
+    case TK_CARET: ins = "xor"; break;
+    default: break;
+    }
+    char *r = tmp(F);
+    emit(F, "%s = %s %s %s, %s", r, ins, ll, a.v, b.v);
+    Val res = {t, r};
+    return res;
+}
+
+/* a << n and a >> n: the amount is an I32 and must be below the width. */
+static Val gen_shift(FnCtx *F, TokKind op, Val a, Val amt, Pos pos) {
+    Type *t = a.t;
+    int bits = ty_bits(t);
+    char *ll = type_ll(t);
+    char *bad = tmp(F);
+    emit(F, "%s = icmp uge i32 %s, %d", bad, amt.v, bits);
+    char *ok = newlabel(F, "ok");
+    condbr(F, bad, cold_panic(F, "shift amount is out of range", pos), ok);
+    start_block(F, ok);
+    char *x = amt.v;
+    if (bits != 32) {
+        x = tmp(F);
+        emit(F, "%s = %s i32 %s to %s", x, bits < 32 ? "trunc" : "zext", amt.v, ll);
+    }
+    char *r = tmp(F);
+    emit(F, "%s = %s %s %s, %s", r, op == TK_SHL ? "shl" : (ty_is_signed(t) ? "ashr" : "lshr"), ll, a.v, x);
+    Val res = {t, r};
+    return res;
+}
+
+static Val gen_float_arith(FnCtx *F, TokKind op, Val a, Val b) {
+    const char *ins = op == TK_PLUS ? "fadd" : op == TK_MINUS ? "fsub" : op == TK_STAR ? "fmul" : op == TK_SLASH ? "fdiv" : "frem";
+    char *r = tmp(F);
+    emit(F, "%s = %s %s %s, %s", r, ins, type_ll(a.t), a.v, b.v);
+    Val res = {a.t, r};
+    return res;
+}
+
+static Val gen_compare(FnCtx *F, TokKind op, Val a, Val b, Pos pos) {
+    Type *t = a.t;
+    char *r = tmp(F);
+    Val res = {ty_bool, r};
+    if (ty_is_int(t) || t == ty_char || t == ty_bool) {
+        bool sgn = ty_is_signed(t);
+        const char *p = op == TK_EQEQ ? "eq" : op == TK_NEQ ? "ne"
+                      : op == TK_LT ? (sgn ? "slt" : "ult") : op == TK_LE ? (sgn ? "sle" : "ule")
+                      : op == TK_GT ? (sgn ? "sgt" : "ugt") : (sgn ? "sge" : "uge");
+        emit(F, "%s = icmp %s %s %s, %s", r, p, type_ll(t), a.v, b.v);
+        return res;
+    }
+    if (ty_is_float(t)) {
+        const char *p = op == TK_EQEQ ? "oeq" : op == TK_NEQ ? "une" : op == TK_LT ? "olt" : op == TK_LE ? "ole" : op == TK_GT ? "ogt" : "oge";
+        emit(F, "%s = fcmp %s %s %s, %s", r, p, type_ll(t), a.v, b.v);
+        return res;
+    }
+    if (t == ty_string) {
+        char *ap, *an, *bp, *bn;
+        str_parts(F, a, &ap, &an);
+        str_parts(F, b, &bp, &bn);
+        char *c = tmp(F);
+        if (op == TK_EQEQ || op == TK_NEQ) {
+            rt_decl(F, "zevic_str_eq", "declare i32 @zevic_str_eq(ptr, i64, ptr, i64)");
+            emit(F, "%s = call i32 @zevic_str_eq(ptr %s, i64 %s, ptr %s, i64 %s)", c, ap, an, bp, bn);
+            emit(F, "%s = icmp %s i32 %s, 0", r, op == TK_EQEQ ? "ne" : "eq", c);
+        } else {
+            rt_decl(F, "zevic_str_cmp", "declare i32 @zevic_str_cmp(ptr, i64, ptr, i64)");
+            emit(F, "%s = call i32 @zevic_str_cmp(ptr %s, i64 %s, ptr %s, i64 %s)", c, ap, an, bp, bn);
+            const char *p = op == TK_LT ? "slt" : op == TK_LE ? "sle" : op == TK_GT ? "sgt" : "sge";
+            emit(F, "%s = icmp %s i32 %s, 0", r, p, c);
+        }
+        return res;
+    }
+    if (t == ty_unit) {
+        Val v = {ty_bool, op == TK_EQEQ ? "true" : "false"};
+        return v;
+    }
+    diag_error(pos, "`%s` cannot compare values of type `%s` yet", tok_name(op), t->name);
+    return err_val();
+}
+
+/* Generate two operands; a bare number literal takes the other side's type. */
+static void gen_pair(FnCtx *F, Node *na, Node *nb, Type *hint, Val *va, Val *vb) {
+    if (is_untyped_lit(na) && !is_untyped_lit(nb)) {
+        *vb = gen_expr(F, nb, hint);
+        *va = gen_expr(F, na, (is_err(vb->t) || vb->t == ty_never) ? hint : vb->t);
+    } else {
+        *va = gen_expr(F, na, hint);
+        *vb = gen_expr(F, nb, (is_err(va->t) || va->t == ty_never) ? hint : va->t);
+    }
+}
+
+static Val gen_logic(FnCtx *F, Node *n) {
+    bool is_and = n->op == TK_ANDAND;
+    Val a = gen_expr(F, n->a, ty_bool);
+    a = coerce(F, n->a->pos, a, ty_bool, "the operand of a logical operator");
+    if (a.t == ty_never) return never_val(ty_bool);
+    char *from = F->cur;
+    char *rhs = newlabel(F, is_and ? "and.rhs" : "or.rhs");
+    char *end = newlabel(F, is_and ? "and.end" : "or.end");
+    if (is_and) condbr(F, a.v, rhs, end);
+    else condbr(F, a.v, end, rhs);
+    start_block(F, rhs);
+    Val b = gen_expr(F, n->b, ty_bool);
+    b = coerce(F, n->b->pos, b, ty_bool, "the operand of a logical operator");
+    char *from2 = F->cur;
+    bool b_live = !F->term;
+    if (b_live) br(F, end);
+    start_block(F, end);
+    char *r = tmp(F);
+    if (b_live)
+        emit(F, "%s = phi i1 [ %s, %%%s ], [ %s, %%%s ]", r, is_and ? "false" : "true", from, b.v, from2);
+    else
+        emit(F, "%s = phi i1 [ %s, %%%s ]", r, is_and ? "false" : "true", from);
+    Val res = {ty_bool, r};
+    return res;
+}
+
+static Val gen_binary(FnCtx *F, Node *n, Type *expect) {
+    TokKind op = n->op;
+    if (op == TK_ANDAND || op == TK_OROR) return gen_logic(F, n);
+    bool cmp = op == TK_EQEQ || op == TK_NEQ || op == TK_LT || op == TK_GT || op == TK_LE || op == TK_GE;
+    bool shift = op == TK_SHL || op == TK_SHR;
+    Val a, b;
+    if (shift) {
+        a = gen_expr(F, n->a, expect);
+        b = gen_expr(F, n->b, ty_i32);
+    } else {
+        gen_pair(F, n->a, n->b, cmp ? NULL : expect, &a, &b);
+    }
+    if (a.t == ty_never || b.t == ty_never) return never_val(cmp ? ty_bool : expect);
+    if (is_err(a.t) || is_err(b.t)) return err_val();
+    if (shift) {
+        if (!ty_is_int(a.t)) {
+            diag_error(n->pos, "`%s` needs an integer on the left, found `%s`", tok_name(op), a.t->name);
+            return err_val();
+        }
+        if (b.t != ty_i32) {
+            diag_error(n->b->pos, "the shift amount must be `I32`, found `%s`", b.t->name);
+            return err_val();
+        }
+        return gen_shift(F, op, a, b, n->pos);
+    }
+    if (a.t != b.t) {
+        diag_error(n->pos, "the operands of `%s` have different types: `%s` and `%s` (convert one explicitly, e.g. with `ToI64()`)",
+                   tok_name(op), a.t->name, b.t->name);
+        return err_val();
+    }
+    if (cmp) return gen_compare(F, op, a, b, n->pos);
+    Type *t = a.t;
+    if (t == ty_string && op == TK_PLUS) {
+        char *ap, *an, *bp, *bn;
+        str_parts(F, a, &ap, &an);
+        str_parts(F, b, &bp, &bn);
+        rt_decl(F, "zevic_str_concat", "declare void @zevic_str_concat(ptr, ptr, i64, ptr, i64)");
+        return call_str_out(F, "zevic_str_concat", zsprintf("ptr %s, i64 %s, ptr %s, i64 %s", ap, an, bp, bn));
+    }
+    if (ty_is_float(t)) {
+        if (op == TK_PLUS || op == TK_MINUS || op == TK_STAR || op == TK_SLASH || op == TK_PERCENT)
+            return gen_float_arith(F, op, a, b);
+        diag_error(n->pos, "`%s` is only for integers, found `%s`", tok_name(op), t->name);
+        return err_val();
+    }
+    if (ty_is_int(t)) return gen_int_arith(F, op, a, b, n->pos);
+    diag_error(n->pos, "`%s` cannot be used with values of type `%s`", tok_name(op), t->name);
+    return err_val();
+}
+
+static Val gen_unary(FnCtx *F, Node *n, Type *expect) {
+    if (n->op == TK_MINUS) {
+        Node *x = n->a;
+        if (x->kind == N_INT) return gen_int_lit(F, x, expect, true);
+        if (x->kind == N_FLOAT) return gen_float_lit(F, x, expect, true);
+    }
+    Val v = gen_expr(F, n->a, n->op == TK_BANG ? ty_bool : expect);
+    if (v.t == ty_never || is_err(v.t)) return v;
+    Type *t = v.t;
+    char *r = tmp(F);
+    Val res = {t, r};
+    switch (n->op) {
+    case TK_MINUS:
+        if (ty_is_float(t)) {
+            emit(F, "%s = fneg %s %s", r, type_ll(t), v.v);
+            return res;
+        }
+        if (ty_is_signed(t)) {
+            Val zero = {t, "0"};
+            return gen_int_arith(F, TK_MINUS, zero, v, n->pos);
+        }
+        diag_error(n->pos, "cannot negate a value of type `%s`", t->name);
+        return err_val();
+    case TK_BANG:
+        if (t != ty_bool) {
+            diag_error(n->pos, "`!` needs a `Bool`, found `%s`", t->name);
+            return err_val();
+        }
+        emit(F, "%s = xor i1 %s, true", r, v.v);
+        return res;
+    case TK_TILDE:
+        if (!ty_is_int(t)) {
+            diag_error(n->pos, "`~` needs an integer, found `%s`", t->name);
+            return err_val();
+        }
+        emit(F, "%s = xor %s %s, -1", r, type_ll(t), v.v);
+        return res;
+    default:
+        return err_val();
+    }
+}
+
+/* temporary stubs, replaced by the next commits */
+static void run_defers_in(FnCtx *F, Scope *s) { (void)F; (void)s; }
+static Val gen_expr(FnCtx *F, Node *n, Type *expect) { (void)F; (void)n; (void)expect; return err_val(); }
