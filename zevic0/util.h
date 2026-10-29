@@ -45,6 +45,17 @@ typedef struct {
 
 void vec_push(Vec *v, void *x);
 
+/* String-keyed hash map (keys are copied; values are borrowed). */
+typedef struct {
+    char **keys;
+    void **vals;
+    size_t cap, n;
+} Dict;
+
+void *dict_get(const Dict *d, const char *key);
+void dict_put(Dict *d, const char *key, void *val);
+bool dict_has(const Dict *d, const char *key);
+
 /* Source files and diagnostics. */
 int src_add(const char *name, char *text);
 const char *src_name(int file);

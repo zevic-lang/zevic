@@ -98,6 +98,55 @@ void vec_push(Vec *v, void *x) {
     v->v[v->n++] = x;
 }
 
+/* ---- dictionary ---- */
+
+static size_t hash_str(const char *s) {
+    size_t h = 1469598103934665603ull;
+    while (*s) h = (h ^ (unsigned char)*s++) * 1099511628211ull;
+    return h;
+}
+
+static size_t dict_slot(const Dict *d, const char *key) {
+    size_t i = hash_str(key) & (d->cap - 1);
+    while (d->keys[i] && strcmp(d->keys[i], key) != 0) i = (i + 1) & (d->cap - 1);
+    return i;
+}
+
+void *dict_get(const Dict *d, const char *key) {
+    if (!d->cap) return NULL;
+    size_t i = dict_slot(d, key);
+    return d->keys[i] ? d->vals[i] : NULL;
+}
+
+bool dict_has(const Dict *d, const char *key) {
+    if (!d->cap) return false;
+    return d->keys[dict_slot(d, key)] != NULL;
+}
+
+void dict_put(Dict *d, const char *key, void *val) {
+    if (d->cap == 0 || (d->n + 1) * 2 > d->cap) {
+        Dict nd = {0};
+        nd.cap = d->cap ? d->cap * 2 : 16;
+        nd.keys = zalloc(sizeof(char *) * nd.cap);
+        nd.vals = zalloc(sizeof(void *) * nd.cap);
+        for (size_t i = 0; i < d->cap; i++) {
+            if (d->keys[i]) {
+                size_t j = dict_slot(&nd, d->keys[i]);
+                nd.keys[j] = d->keys[i];
+                nd.vals[j] = d->vals[i];
+                nd.n++;
+            }
+        }
+        *d = nd;
+    }
+    size_t i = dict_slot(d, key);
+    if (!d->keys[i]) {
+        d->keys[i] = zstrdup(key);
+        d->n++;
+    }
+    d->vals[i] = val;
+}
+
 /* ---- source files ---- */
 
 static Vec g_names, g_texts;
