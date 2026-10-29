@@ -1,0 +1,5 @@
+module Main
+
+fn Main() {
+    let x: I32 = "hello"
+}
