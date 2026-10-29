@@ -161,3 +161,200 @@ static void declare(Gen *g, const char *name, const char *line) {
     dict_put(&g->declared, name, (void *)line);
     sb_printf(&g->decls, "%s\n", line);
 }
+
+/* =========================================================================
+ * Types from syntax
+ * ========================================================================= */
+
+static Type *resolve_type(Gen *g, SourceFile *f, Env *env, Node *te);
+
+static char *qualified_name(Decl *d) {
+    if (strcmp(d->mod->name, "Zevic.Core") == 0) return d->name;
+    return zsprintf("%s.%s", d->mod->name, d->name);
+}
+
+static Type *instantiate(Gen *g, Decl *d, Vec targs, Pos pos) {
+    Node *n = d->node;
+    if (n->list2.n != targs.n) {
+        if (n->list2.n == 0)
+            diag_error(pos, "type `%s` takes no type arguments", d->name);
+        else
+            diag_error(pos, "type `%s` needs %d type argument(s), found %d", d->name, n->list2.n, targs.n);
+        return ty_unit;
+    }
+    TKind k = n->kind == D_STRUCT ? T_STRUCT : n->kind == D_CLASS ? T_CLASS : T_ENUM;
+    return ty_named(k, d, qualified_name(d), targs);
+}
+
+/* Resolve the fields (struct, class) or variants (enum) of a type. */
+static void ensure_members(Gen *g, Type *t) {
+    if (t->members_done) return;
+    t->members_done = true;
+    if (!t->decl) return;
+    Node *n = t->decl->node;
+    Env *env = env_new();
+    env->self = t;
+    for (int i = 0; i < n->list2.n; i++) env_add(env, ((Node *)n->list2.v[i])->name, t->args.v[i]);
+    SourceFile *f = t->decl->file;
+    if (n->kind == D_STRUCT || n->kind == D_CLASS) {
+        for (int i = 0; i < n->list.n; i++) {
+            Node *m = n->list.v[i];
+            if (m->kind != N_FIELD || m->flag) continue;
+            Field *fl = zalloc(sizeof *fl);
+            fl->name = m->name;
+            fl->t = resolve_type(g, f, env, m->a);
+            vec_push(&t->fields, fl);
+        }
+    } else if (n->kind == D_ENUM) {
+        int tag = 0;
+        for (int i = 0; i < n->list.n; i++) {
+            Node *m = n->list.v[i];
+            if (m->kind != N_VARIANT) continue;
+            Variant *v = zalloc(sizeof *v);
+            v->name = m->name;
+            v->tag = tag++;
+            v->named = m->flag;
+            Vec ptypes = {0};
+            if (m->flag) {
+                for (int k = 0; k < m->list2.n; k++) {
+                    Node *fn = m->list2.v[k];
+                    Field *fl = zalloc(sizeof *fl);
+                    fl->name = fn->name;
+                    fl->t = resolve_type(g, f, env, fn->a);
+                    vec_push(&v->fields, fl);
+                    vec_push(&ptypes, fl->t);
+                }
+            } else {
+                for (int k = 0; k < m->list.n; k++) {
+                    Field *fl = zalloc(sizeof *fl);
+                    fl->name = zsprintf("%d", k);
+                    fl->t = resolve_type(g, f, env, m->list.v[k]);
+                    vec_push(&v->fields, fl);
+                    vec_push(&ptypes, fl->t);
+                }
+            }
+            if (ptypes.n) v->payload = ty_tuple(ptypes);
+            vec_push(&t->variants, v);
+        }
+    }
+}
+
+static Type *resolve_type(Gen *g, SourceFile *f, Env *env, Node *te) {
+    switch (te->kind) {
+    case N_TYPE_TUPLE: {
+        Vec elems = {0};
+        for (int i = 0; i < te->list.n; i++) vec_push(&elems, resolve_type(g, f, env, te->list.v[i]));
+        return ty_tuple(elems);
+    }
+    case N_TYPE_FN: {
+        Vec ps = {0};
+        for (int i = 0; i < te->list.n; i++) vec_push(&ps, resolve_type(g, f, env, te->list.v[i]));
+        return ty_fn(ps, resolve_type(g, f, env, te->a));
+    }
+    case N_TYPE_PTR:
+        return ty_ptr(resolve_type(g, f, env, te->a));
+    case N_TYPE_NAME: {
+        char **segs = (char **)te->path.v;
+        int n = te->path.n;
+        if (n == 1) {
+            const char *name = segs[0];
+            Type *bound = env_get(env, name);
+            if (bound) return bound;
+            if (strcmp(name, "Self") == 0) {
+                if (!env || !env->self) {
+                    diag_error(te->pos, "`Self` can only be used inside a type or interface");
+                    return ty_unit;
+                }
+                return env->self;
+            }
+            Type *p = ty_prim_by_name(name);
+            if (p) {
+                if (te->list.n) diag_error(te->pos, "type `%s` takes no type arguments", name);
+                return p;
+            }
+            if (strcmp(name, "Never") == 0) return ty_never;
+            if (strcmp(name, "Array") == 0) {
+                if (te->list.n != 1) {
+                    diag_error(te->pos, "`Array` needs exactly one type argument, like `Array<I32>`");
+                    return ty_unit;
+                }
+                return ty_array(resolve_type(g, f, env, te->list.v[0]));
+            }
+        }
+        int used = 0;
+        Decl *d = find_decl(g, f, segs, n, &used, te->pos);
+        if (used < 0) return ty_unit;
+        if (!d || used != n) {
+            diag_error(te->pos, "unknown type `%s`", path_join(&te->path, "."));
+            return ty_unit;
+        }
+        if (d->node->kind != D_STRUCT && d->node->kind != D_CLASS && d->node->kind != D_ENUM) {
+            diag_error(te->pos, "`%s` is not a type", d->name);
+            return ty_unit;
+        }
+        Vec targs = {0};
+        for (int i = 0; i < te->list.n; i++) vec_push(&targs, resolve_type(g, f, env, te->list.v[i]));
+        return instantiate(g, d, targs, te->pos);
+    }
+    default:
+        diag_error(te->pos, "expected a type");
+        return ty_unit;
+    }
+}
+
+/* =========================================================================
+ * Function instances
+ * ========================================================================= */
+
+static Env *make_env(Decl *d, Type *self, Vec *fn_targs) {
+    Env *e = env_new();
+    if (self) {
+        e->self = self;
+        Node *td = self->decl ? self->decl->node : NULL;
+        if (td)
+            for (int i = 0; i < td->list2.n && i < self->args.n; i++)
+                env_add(e, ((Node *)td->list2.v[i])->name, self->args.v[i]);
+    }
+    Node *fn = d->node;
+    for (int i = 0; i < fn->list2.n; i++)
+        if (fn_targs && i < fn_targs->n) env_add(e, ((Node *)fn->list2.v[i])->name, fn_targs->v[i]);
+    return e;
+}
+
+static Inst *get_inst(Gen *g, Decl *d, Type *self, Vec *targs) {
+    Node *fn = d->node;
+    SB key = {0};
+    bool is_extern = d->abi != NULL;
+    if (is_extern) {
+        sb_puts(&key, fn->name2 ? fn->name2 : fn->name);
+    } else if (self) {
+        sb_printf(&key, "zevic_%s_%s", mangle_part(self->name), fn->name);
+    } else {
+        sb_printf(&key, "zevic_%s_%s", mangle_part(d->mod->name), fn->name);
+    }
+    if (targs && targs->n && !is_extern) {
+        sb_putc(&key, '<');
+        for (int i = 0; i < targs->n; i++) sb_printf(&key, "%s%s", i ? ", " : "", ((Type *)targs->v[i])->name);
+        sb_putc(&key, '>');
+    }
+    char *k = sb_str(&key);
+    Inst *in = dict_get(&g->insts, k);
+    if (in) return in;
+    in = zalloc(sizeof *in);
+    in->decl = d;
+    in->self = self;
+    in->name = k;
+    in->is_extern = is_extern;
+    in->env = make_env(d, self, targs);
+    for (int i = 0; i < fn->list.n; i++) {
+        Node *p = fn->list.v[i];
+        if (p->flag3) continue; /* `...` */
+        Type *pt = resolve_type(g, d->file, in->env, p->a);
+        if (p->flag2) pt = ty_array(pt); /* params x: T arrives as Array<T> */
+        vec_push(&in->ptypes, pt);
+    }
+    in->ret = fn->a ? resolve_type(g, d->file, in->env, fn->a) : ty_unit;
+    dict_put(&g->insts, k, in);
+    if (!is_extern) vec_push(&g->worklist, in);
+    return in;
+}
