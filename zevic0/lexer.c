@@ -367,9 +367,125 @@ TokenList lex(int file, const char *text, size_t len, int line, int col) {
 
 /* ---- literals (filled in by later commits) ---- */
 
+static const char *g_suffixes[] = {"I8", "I16", "I32", "I64", "U8", "U16", "U32", "U64",
+                                   "F32", "F64", NULL};
+
+/* If the text at offset `off` is `_` followed by a type suffix, return it. */
+static const char *suffix_at(Lexer *lx, size_t off) {
+    if (peekc(lx, off) != '_') return NULL;
+    for (int k = 0; g_suffixes[k]; k++) {
+        size_t m = strlen(g_suffixes[k]);
+        if (lx->i + off + 1 + m <= lx->n && memcmp(lx->s + lx->i + off + 1, g_suffixes[k], m) == 0 &&
+            !is_ident_char(peekc(lx, off + 1 + m))) {
+            return g_suffixes[k];
+        }
+    }
+    return NULL;
+}
+
+static int digit_value(int c) {
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+    return 99;
+}
+
+/* Read digits of `base` with single underscores between digits into `out`. */
+static void read_digits(Lexer *lx, int base, SB *out, Pos pos) {
+    for (;;) {
+        int c = peekc(lx, 0);
+        if (c == '_') {
+            if (suffix_at(lx, 0)) return;
+            int d = peekc(lx, 1);
+            if (out->len == 0 || digit_value(d) >= base) {
+                diag_error(pos, "`_` in a number must sit between two digits");
+                advance(lx);
+                continue;
+            }
+            advance(lx);
+        } else if (c >= 0 && digit_value(c) < base && !(base <= 10 && !is_digit(c))) {
+            sb_putc(out, (char)c);
+            advance(lx);
+        } else {
+            return;
+        }
+    }
+}
+
 static bool lex_number(Lexer *lx) {
-    advance(lx);
-    return false;
+    Pos pos = here(lx);
+    SB digits = {0};
+    int base = 10;
+    bool is_float = false;
+    if (peekc(lx, 0) == '0' && (peekc(lx, 1) == 'x' || peekc(lx, 1) == 'b' || peekc(lx, 1) == 'o')) {
+        base = peekc(lx, 1) == 'x' ? 16 : peekc(lx, 1) == 'b' ? 2 : 8;
+        advance(lx);
+        advance(lx);
+        read_digits(lx, base, &digits, pos);
+        if (digits.len == 0) diag_error(pos, "expected digits after the number prefix");
+    } else {
+        read_digits(lx, 10, &digits, pos);
+        /* fraction: `.` must be followed by a digit (so `1..10` and `1.ToString()` work) */
+        if (peekc(lx, 0) == '.' && is_digit(peekc(lx, 1))) {
+            is_float = true;
+            sb_putc(&digits, '.');
+            advance(lx);
+            SB frac = {0};
+            read_digits(lx, 10, &frac, pos);
+            sb_putn(&digits, sb_str(&frac), frac.len);
+        } else if (peekc(lx, 0) == '.' && !is_ident_start(peekc(lx, 1)) && peekc(lx, 1) != '.') {
+            diag_error(pos, "a number needs digits on both sides of `.` (write `1.0`, not `1.`)");
+        }
+        int c = peekc(lx, 0);
+        if (c == 'e' || c == 'E') {
+            int d = peekc(lx, 1);
+            int sign = (d == '+' || d == '-') ? 1 : 0;
+            if (is_digit(peekc(lx, 1 + (size_t)sign))) {
+                is_float = true;
+                sb_putc(&digits, 'e');
+                advance(lx);
+                if (sign) {
+                    sb_putc(&digits, (char)peekc(lx, 0));
+                    advance(lx);
+                }
+                while (is_digit(peekc(lx, 0))) {
+                    sb_putc(&digits, (char)peekc(lx, 0));
+                    advance(lx);
+                }
+            }
+        }
+    }
+    const char *suffix = suffix_at(lx, 0);
+    if (suffix) {
+        for (size_t k = 0; k < strlen(suffix) + 1; k++) advance(lx);
+    }
+    if (is_ident_char(peekc(lx, 0))) {
+        diag_error(pos, "unexpected `%c` after a number (a type is written like `255_U8`)", peekc(lx, 0));
+        while (is_ident_char(peekc(lx, 0))) advance(lx);
+    }
+    char *txt = sb_str(&digits);
+    if (suffix && suffix[0] == 'F') is_float = true;
+    if (is_float) {
+        Token *t = push_tok(lx, TK_FLOAT, pos);
+        t->fval = strtod(txt, NULL);
+        t->suffix = suffix;
+        if (suffix && suffix[0] != 'F') diag_error(pos, "a decimal number cannot have the integer type `%s`", suffix);
+        return true;
+    }
+    if (base == 10 && digits.len > 1 && txt[0] == '0')
+        diag_error(pos, "a number cannot start with 0 (octal is written `0o17`)");
+    uint64_t v = 0;
+    bool overflow = false;
+    for (size_t k = 0; k < digits.len; k++) {
+        uint64_t d = (uint64_t)digit_value((unsigned char)txt[k]);
+        if (v > (UINT64_MAX - d) / (uint64_t)base) overflow = true;
+        v = v * (uint64_t)base + d;
+    }
+    if (overflow) diag_error(pos, "integer literal is too large (the maximum is 18446744073709551615)");
+    Token *t = push_tok(lx, TK_INT, pos);
+    t->ival = v;
+    t->suffix = suffix;
+    return true;
 }
 static bool lex_string(Lexer *lx, bool raw) {
     advance(lx); (void)raw;
