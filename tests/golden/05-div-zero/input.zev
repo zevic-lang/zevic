@@ -1,0 +1,8 @@
+module Main
+
+fn Divide(a: I32, b: I32) -> I32 { a / b }
+
+fn Main() {
+    let r: I32 = Divide(10, 0)
+    Panic("not reached ${r}")
+}

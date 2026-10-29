@@ -1,0 +1,12 @@
+module Main
+
+import Zevic.Console
+
+fn Main() {
+    mut x: I32 = 2147483600
+    Console.Println("before")
+    for (i in 0..100) {
+        x += 1
+    }
+    Console.Println("unreachable")
+}
