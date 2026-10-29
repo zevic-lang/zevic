@@ -596,6 +596,265 @@ static Node *parse_expr(Parser *p) {
     return n;
 }
 
+/* ---- patterns ---- */
+
+static Node *parse_pattern_atom(Parser *p);
+
+static Node *parse_literal_pattern(Parser *p) {
+    Token *t = peek(p);
+    Node *lit;
+    if (t->k == TK_MINUS) {
+        next(p);
+        Node *inner = parse_primary(p);
+        if (inner->kind != N_INT && inner->kind != N_FLOAT)
+            perr(p, t->pos, "`-` in a pattern must be followed by a number");
+        lit = node_new(N_UNARY, t->pos);
+        lit->op = TK_MINUS;
+        lit->a = inner;
+    } else {
+        lit = parse_primary(p);
+    }
+    return lit;
+}
+
+static Node *parse_pattern_atom(Parser *p) {
+    Token *t = peek(p);
+    Pos pos = t->pos;
+    switch (t->k) {
+    case TK_INT: case TK_FLOAT: case TK_CHAR: case TK_BYTE: case TK_STRING:
+    case TK_TRUE: case TK_FALSE: case TK_MINUS: {
+        Node *lit = parse_literal_pattern(p);
+        if (kind(p) == TK_DOTDOT || kind(p) == TK_DOTDOTEQ) {
+            Token *op = next(p);
+            Node *r = node_new(P_RANGE, pos);
+            r->flag = op->k == TK_DOTDOTEQ;
+            r->a = lit;
+            r->b = parse_literal_pattern(p);
+            return r;
+        }
+        Node *n = node_new(P_LIT, pos);
+        n->a = lit;
+        return n;
+    }
+    case TK_LPAREN: {
+        next(p);
+        Node *n = node_new(P_TUPLE, pos);
+        while (kind(p) != TK_RPAREN) {
+            vec_push(&n->list, parse_pattern(p));
+            if (!accept(p, TK_COMMA)) break;
+        }
+        expect(p, TK_RPAREN, "`)`");
+        if (n->list.n == 1) return n->list.v[0];
+        return n;
+    }
+    case TK_IDENT: {
+        next(p);
+        if (strcmp(t->text, "_") == 0 && !t->quoted) return node_new(P_WILD, pos);
+        bool qualified = kind(p) == TK_DOT && peek_at(p, 1)->k == TK_IDENT;
+        bool args = kind(p) == TK_LPAREN;
+        bool fields = kind(p) == TK_LBRACE && is_upper(t->text);
+        if (!qualified && !args && !fields && !is_upper(t->text)) {
+            Node *n = node_new(P_BIND, pos);
+            n->name = t->text;
+            return n;
+        }
+        Node *n = node_new(P_VARIANT, pos);
+        vec_push(&n->path, t->text);
+        while (kind(p) == TK_DOT && peek_at(p, 1)->k == TK_IDENT) {
+            next(p);
+            vec_push(&n->path, next(p)->text);
+        }
+        if (kind(p) == TK_LPAREN) {
+            next(p);
+            n->flag = true;
+            while (kind(p) != TK_RPAREN) {
+                vec_push(&n->list, parse_pattern(p));
+                if (!accept(p, TK_COMMA)) break;
+            }
+            expect(p, TK_RPAREN, "`)`");
+        } else if (kind(p) == TK_LBRACE) {
+            next(p);
+            n->flag2 = true;
+            skip_nl(p);
+            while (kind(p) != TK_RBRACE) {
+                if (accept(p, TK_DOTDOT)) {
+                    n->flag3 = true;
+                } else {
+                    Token *ft = expect(p, TK_IDENT, "a field name");
+                    Node *f = node_new(P_FIELD, ft->pos);
+                    f->name = ft->text;
+                    expect(p, TK_COLON, "`:` after the field name in a pattern");
+                    f->a = parse_pattern(p);
+                    vec_push(&n->list2, f);
+                }
+                skip_nl(p);
+                if (!accept(p, TK_COMMA)) break;
+                skip_nl(p);
+            }
+            skip_nl(p);
+            expect(p, TK_RBRACE, "`}`");
+        }
+        return n;
+    }
+    default:
+        perr(p, pos, "expected a pattern, found %s", describe(t));
+    }
+}
+
+static Node *parse_pattern(Parser *p) {
+    Node *first = parse_pattern_atom(p);
+    if (kind(p) != TK_PIPE) return first;
+    Node *or = node_new(P_OR, first->pos);
+    vec_push(&or->list, first);
+    while (accept(p, TK_PIPE)) vec_push(&or->list, parse_pattern_atom(p));
+    return or;
+}
+
+/* ---- statements and blocks ---- */
+
+static bool is_assign_op(TokKind k) {
+    switch (k) {
+    case TK_ASSIGN: case TK_PLUSEQ: case TK_MINUSEQ: case TK_STAREQ: case TK_SLASHEQ:
+    case TK_PERCENTEQ: case TK_AMPEQ: case TK_PIPEEQ: case TK_CARETEQ: case TK_SHLEQ: case TK_SHREQ:
+        return true;
+    default:
+        return false;
+    }
+}
+
+static Node *parse_stmt(Parser *p);
+
+static Node *parse_simple_stmt(Parser *p) {
+    Pos pos = peek(p)->pos;
+    Node *e = parse_expr(p);
+    if (is_assign_op(kind(p))) {
+        Token *op = next(p);
+        Node *a = node_new(N_ASSIGN, op->pos);
+        a->op = op->k;
+        a->a = e;
+        a->b = parse_expr(p);
+        return a;
+    }
+    Node *s = node_new(N_EXPRSTMT, pos);
+    s->a = e;
+    return s;
+}
+
+static Node *parse_stmt(Parser *p) {
+    Token *t = peek(p);
+    Pos pos = t->pos;
+    switch (t->k) {
+    case TK_LET: case TK_MUT: {
+        next(p);
+        Node *n = node_new(N_LET, pos);
+        n->flag = t->k == TK_MUT;
+        n->a = parse_pattern(p);
+        if (!accept(p, TK_COLON))
+            perr(p, peek(p)->pos, "a variable needs a type: write `%s name: Type = value`", t->k == TK_MUT ? "mut" : "let");
+        n->b = parse_type(p);
+        expect(p, TK_ASSIGN, "`=` and an initial value (a variable must be initialised)");
+        n->c = parse_expr(p);
+        return n;
+    }
+    case TK_DEFER: {
+        next(p);
+        Node *n = node_new(N_DEFER, pos);
+        if (kind(p) == TK_LBRACE) n->a = parse_block(p);
+        else n->a = parse_simple_stmt(p);
+        return n;
+    }
+    case TK_WHILE: {
+        next(p);
+        Node *n = node_new(N_WHILE, pos);
+        expect(p, TK_LPAREN, "`(` after `while` (conditions are written in parentheses)");
+        n->a = parse_expr(p);
+        expect(p, TK_RPAREN, "`)`");
+        if (kind(p) != TK_LBRACE) perr(p, peek(p)->pos, "expected `{` (the body of a loop must be in braces)");
+        n->b = parse_block(p);
+        return n;
+    }
+    case TK_LOOP: {
+        next(p);
+        Node *n = node_new(N_LOOP, pos);
+        if (kind(p) != TK_LBRACE) perr(p, peek(p)->pos, "expected `{` after `loop`");
+        n->b = parse_block(p);
+        return n;
+    }
+    case TK_FOR: {
+        next(p);
+        Node *n = node_new(N_FOR, pos);
+        expect(p, TK_LPAREN, "`(` after `for`");
+        n->a = parse_pattern(p);
+        if (accept(p, TK_COMMA)) {
+            n->c = n->a; /* index pattern */
+            n->a = parse_pattern(p);
+        }
+        expect(p, TK_IN, "`in`");
+        n->d = parse_expr(p);
+        expect(p, TK_RPAREN, "`)`");
+        if (kind(p) != TK_LBRACE) perr(p, peek(p)->pos, "expected `{` (the body of a loop must be in braces)");
+        n->b = parse_block(p);
+        return n;
+    }
+    case TK_FN: case TK_STRUCT: case TK_CLASS: case TK_ENUM: case TK_INTERFACE:
+        perr(p, pos, "declarations are only allowed at the top level (use a lambda for a local function)");
+    default:
+        return parse_simple_stmt(p);
+    }
+}
+
+/* Skip to the end of the statement after an error. */
+static void sync_stmt(Parser *p) {
+    int depth = 0;
+    while (kind(p) != TK_EOF) {
+        TokKind k = kind(p);
+        if (k == TK_LBRACE) depth++;
+        else if (k == TK_RBRACE) {
+            if (depth == 0) return;
+            depth--;
+        } else if (k == TK_NL && depth == 0) {
+            return;
+        }
+        next(p);
+    }
+}
+
+static Node *parse_block(Parser *p) {
+    Token *open = expect(p, TK_LBRACE, "`{`");
+    Node *b = node_new(N_BLOCK, open->pos);
+    skip_nl(p);
+    while (kind(p) != TK_RBRACE) {
+        if (kind(p) == TK_EOF) {
+            Pos pos = open->pos;
+            perr(p, pos, "this `{` is never closed");
+        }
+        jmp_buf here;
+        jmp_buf *prev = p->jb;
+        p->jb = &here;
+        if (setjmp(here) == 0) {
+            Node *s = parse_stmt(p);
+            vec_push(&b->list, s);
+            if (kind(p) != TK_NL && kind(p) != TK_RBRACE)
+                perr(p, peek(p)->pos, "expected a new line or `}` after the statement, found %s", describe(peek(p)));
+        } else {
+            p->jb = prev;
+            if (p->quiet) longjmp(*p->jb, 1);
+            sync_stmt(p);
+        }
+        p->jb = prev;
+        skip_nl(p);
+    }
+    next(p);
+    if (b->list.n > 0) {
+        Node *last = b->list.v[b->list.n - 1];
+        if (last->kind == N_EXPRSTMT) {
+            b->a = last->a;
+            b->list.n--;
+        }
+    }
+    return b;
+}
+
 /* ---- module header ---- */
 
 static void parse_dotted(Parser *p, Vec *path, const char *what) {
@@ -667,6 +926,3 @@ static Node *stub_decl(Parser *p) {
     perr(p, peek(p)->pos, "unexpected %s at the top level", describe(peek(p)));
 }
 
-/* temporary stubs, replaced in the next commit */
-static Node *parse_block(Parser *p) { perr(p, peek(p)->pos, "blocks are not parsed yet"); }
-static Node *parse_pattern(Parser *p) { perr(p, peek(p)->pos, "patterns are not parsed yet"); }
