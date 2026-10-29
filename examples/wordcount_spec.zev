@@ -1,0 +1,83 @@
+module Main
+
+import Zevic.Console
+import Zevic.Env
+import Zevic.Fs
+import Zevic.Text
+import Zevic.Test
+
+enum Command {
+    Count(String),
+    Top(String, I64),
+}
+
+class Counter {
+    counts: Map<String, I64> = Map.New()
+
+    mut fn Add(word: String) {
+        let n: I64 = this.counts.Get(word).UnwrapOr(0)
+        this.counts.Set(word, n + 1)
+    }
+
+    fn Top(limit: I64) -> Array<(String, I64)> {
+        mut items: Array<(String, I64)> = []
+        for ((w, n) in this.counts) {
+            items.Push((w, n))
+        }
+        items.SortBy((a, b) => b.1.Compare(a.1))
+        items.Slice(0, limit.Min(items.Len()))
+    }
+}
+
+fn Parse(args: Array<String>) -> Result<Command, Error> {
+    if (args.Len() < 2) {
+        return Err(Error.New(ErrorKind.Invalid, "usage: wc <count|top> <file> [n]"))
+    }
+    match (args[0]) {
+        "count" => Ok(Command.Count(args[1])),
+        "top" => {
+            let n: I64 = if (args.Len() > 2) { args[2].ToI64()? } else { 10 }
+            Ok(Command.Top(args[1], n))
+        },
+        other => Err(Error.New(ErrorKind.Invalid, "unknown command: ${other}")),
+    }
+}
+
+fn Load(path: String) -> Result<Counter, Error> {
+    let text: String = Fs.ReadAll(path).Context("cannot read ${path}")?
+    mut counter: Counter = Counter.New()
+    for (word in Text.Split(text.ToLower(), " ")) {
+        if (!word.IsEmpty()) { counter.Add(word) }
+    }
+    Ok(counter)
+}
+
+fn Run(args: Array<String>) -> Result<Unit, Error> {
+    match (Parse(args)?) {
+        Command.Count(path) => {
+            let c: Counter = Load(path)?
+            Console.Printf("%d distinct words\n", c.Top(I64.Max).Len())
+        },
+        Command.Top(path, n) => {
+            let c: Counter = Load(path)?
+            for (i, (w, k) in c.Top(n)) {
+                Console.Printf("%2d. %-12s %d\n", i + 1, w, k)
+            }
+        },
+    }
+    Ok(())
+}
+
+fn Main(args: Array<String>) {
+    match (Run(args)) {
+        Ok(_) => {},
+        Err(e) => {
+            Console.Eprintln(e.ToString())
+            Env.Exit(1)
+        },
+    }
+}
+
+test "Parse rejects an unknown command" {
+    Test.Err(Parse(["zzz", "a.txt"]))
+}
