@@ -106,6 +106,8 @@ typedef struct {
     Vec imports;  /* N_IMPORT */
     Vec decls;
     bool is_std;  /* loaded from the standard library */
+    struct Module *mod;
+    Dict import_map; /* name used in the source -> Module* */
 } SourceFile;
 
 Node *node_new(NodeKind k, Pos pos);
