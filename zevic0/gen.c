@@ -2,6 +2,8 @@
 
 #include "types.h"
 
+#include <math.h>
+
 /* =========================================================================
  * State
  * ========================================================================= */
@@ -1439,8 +1441,672 @@ static void gen_stmt(FnCtx *F, Node *s) {
     }
 }
 
-static Val gen_call(FnCtx *F, Node *n, Type *expect) {
+/* =========================================================================
+ * Calls
+ * ========================================================================= */
+
+static bool flatten_path(Node *n, Vec *segs, Vec *nodes) {
+    if (n->kind == N_IDENT) {
+        vec_push(segs, n->name);
+        vec_push(nodes, n);
+        return true;
+    }
+    if (n->kind == N_MEMBER && flatten_path(n->a, segs, nodes)) {
+        vec_push(segs, n->name);
+        vec_push(nodes, n);
+        return true;
+    }
+    return false;
+}
+
+static bool is_fn_tparam(Node *fn, const char *name) {
+    for (int i = 0; i < fn->list2.n; i++)
+        if (strcmp(((Node *)fn->list2.v[i])->name, name) == 0) return true;
+    return false;
+}
+
+/* Does this type syntax mention a type parameter of `fn` that is not bound yet? */
+static bool syntax_uses_unbound(Node *te, Node *fn, Env *env) {
+    switch (te->kind) {
+    case N_TYPE_NAME:
+        if (te->path.n == 1 && is_fn_tparam(fn, te->path.v[0]) && !env_get(env, te->path.v[0])) return true;
+        for (int i = 0; i < te->list.n; i++)
+            if (syntax_uses_unbound(te->list.v[i], fn, env)) return true;
+        return false;
+    case N_TYPE_TUPLE:
+        for (int i = 0; i < te->list.n; i++)
+            if (syntax_uses_unbound(te->list.v[i], fn, env)) return true;
+        return false;
+    case N_TYPE_FN:
+        for (int i = 0; i < te->list.n; i++)
+            if (syntax_uses_unbound(te->list.v[i], fn, env)) return true;
+        return syntax_uses_unbound(te->a, fn, env);
+    case N_TYPE_PTR:
+        return syntax_uses_unbound(te->a, fn, env);
+    default:
+        return false;
+    }
+}
+
+/* Bind the type parameters in `te` by matching it against `actual`. */
+static void unify(Node *te, Type *actual, Node *fn, Env *env) {
+    if (is_err(actual) || actual == ty_never) return;
+    switch (te->kind) {
+    case N_TYPE_NAME:
+        if (te->path.n == 1 && is_fn_tparam(fn, te->path.v[0])) {
+            if (!env_get(env, te->path.v[0])) env_add(env, te->path.v[0], actual);
+            return;
+        }
+        if (strcmp(te->path.v[te->path.n - 1], "Array") == 0 && actual->k == T_ARRAY && te->list.n == 1) {
+            unify(te->list.v[0], actual->args.v[0], fn, env);
+            return;
+        }
+        if (actual->decl && te->list.n == actual->args.n)
+            for (int i = 0; i < te->list.n; i++) unify(te->list.v[i], actual->args.v[i], fn, env);
+        return;
+    case N_TYPE_TUPLE:
+        if (actual->k == T_TUPLE && actual->args.n == te->list.n)
+            for (int i = 0; i < te->list.n; i++) unify(te->list.v[i], actual->args.v[i], fn, env);
+        return;
+    case N_TYPE_FN:
+        if (actual->k == T_FN && actual->args.n == te->list.n) {
+            for (int i = 0; i < te->list.n; i++) unify(te->list.v[i], actual->args.v[i], fn, env);
+            unify(te->a, actual->ret, fn, env);
+        }
+        return;
+    case N_TYPE_PTR:
+        if (actual->k == T_PTR) unify(te->a, actual->args.v[0], fn, env);
+        return;
+    default:
+        return;
+    }
+}
+
+/* The pointer part of a string constant `{ ptr @x, i64 n }`. */
+static char *const_ptr(const char *c) {
+    return zstrndup(c + 6, (size_t)(strchr(c, ',') - (c + 6)));
+}
+
+static void emit_panic_call(FnCtx *F, Val msg, Pos pos) {
+    declare(F->g, "zevic_panic", "declare void @zevic_panic(ptr, i64, ptr, i32) noreturn");
+    char *p, *n;
+    str_parts(F, msg, &p, &n);
+    const char *file = src_name(pos.file);
+    char *fc = str_const(F->g, file, (int)strlen(file));
+    emit(F, "call void @zevic_panic(ptr %s, i64 %s, ptr %s, i32 %d)", p, n, const_ptr(fc), pos.line);
+    emit(F, "unreachable");
+    F->term = true;
+}
+
+/* Emit a direct call to a function instance. */
+static Val emit_call(FnCtx *F, Inst *in, Vec *args) {
+    Gen *g = F->g;
+    SB a = {0};
+    Type *ret = in->ret;
+    char *slot = NULL;
+    bool zevic_abi = in->is_extern && in->decl->abi && strcmp(in->decl->abi, "zevic") == 0;
+    if (in->is_extern && !zevic_abi) {
+        diag_error(in->decl->node->pos, "`extern \"%s\"` functions are not supported yet", in->decl->abi);
+        return err_val();
+    }
+    if (zevic_abi) {
+        SB ptypes = {0};
+        if (ret == ty_string) {
+            slot = new_slot(F, ty_string);
+            sb_printf(&a, "ptr %s", slot);
+            sb_puts(&ptypes, "ptr");
+        }
+        for (int i = 0; i < args->n; i++) {
+            Val *v = args->v[i];
+            if (v->t == ty_unit) continue;
+            if (a.len) sb_puts(&a, ", ");
+            if (ptypes.len) sb_puts(&ptypes, ", ");
+            if (v->t == ty_string) {
+                char *p, *n;
+                str_parts(F, *v, &p, &n);
+                sb_printf(&a, "ptr %s, i64 %s", p, n);
+                sb_puts(&ptypes, "ptr, i64");
+            } else {
+                sb_printf(&a, "%s %s", type_ll(v->t), v->v);
+                sb_puts(&ptypes, type_ll(v->t));
+            }
+        }
+        const char *rl = (ret == ty_string || ret == ty_unit || ret == ty_never) ? "void" : type_ll(ret);
+        declare(g, in->name, zsprintf("declare %s @%s(%s)", rl, in->name, sb_str(&ptypes)));
+        if (ret == ty_string || ret == ty_unit || ret == ty_never) {
+            emit(F, "call void @%s(%s)", in->name, sb_str(&a));
+            if (ret == ty_never) {
+                emit(F, "unreachable");
+                F->term = true;
+                return never_val(NULL);
+            }
+            if (ret == ty_unit) return unit_val();
+            char *t = tmp(F);
+            emit(F, "%s = load { ptr, i64 }, ptr %s", t, slot);
+            Val r = {ty_string, t};
+            return r;
+        }
+        char *t = tmp(F);
+        emit(F, "%s = call %s @%s(%s)", t, type_ll(ret), in->name, sb_str(&a));
+        Val r = {ret, t};
+        return r;
+    }
+    for (int i = 0; i < args->n; i++) {
+        Val *v = args->v[i];
+        if (i) sb_puts(&a, ", ");
+        sb_printf(&a, "%s %s", type_ll(v->t), v->v);
+    }
+    if (ret == ty_unit || ret == ty_never) {
+        emit(F, "call void @\"%s\"(%s)", in->name, sb_str(&a));
+        if (ret == ty_never) {
+            emit(F, "unreachable");
+            F->term = true;
+            return never_val(NULL);
+        }
+        return unit_val();
+    }
+    char *t = tmp(F);
+    emit(F, "%s = call %s @\"%s\"(%s)", t, type_ll(ret), in->name, sb_str(&a));
+    Val r = {ret, t};
+    return r;
+}
+
+/* Call function `d` with the arguments of `call`, inferring generic arguments. */
+static Val gen_call_decl(FnCtx *F, Node *call, Decl *d, Type *self, Vec *explicit, Type *expect) {
+    Gen *g = F->g;
+    Node *fn = d->node;
+    int ntp = fn->list2.n;
+    Env *env = make_env(d, self, NULL);
+    if (explicit && explicit->n) {
+        if (explicit->n != ntp) {
+            diag_error(call->pos, "`%s` takes %d type argument(s), found %d", fn->name, ntp, explicit->n);
+            return err_val();
+        }
+        for (int i = 0; i < ntp; i++)
+            env_add(env, ((Node *)fn->list2.v[i])->name, resolve_type(g, F->file, F->env, explicit->v[i]));
+    }
+    int nparams = 0;
+    for (int i = 0; i < fn->list.n; i++)
+        if (!((Node *)fn->list.v[i])->flag3) nparams++;
+    if (call->list.n != nparams) {
+        diag_error(call->pos, "`%s` takes %d argument(s), but %d were given", fn->name, nparams, call->list.n);
+        return err_val();
+    }
+    Vec vals = {0};
+    bool never = false;
+    for (int i = 0; i < nparams; i++) {
+        Node *pn = fn->list.v[i];
+        Type *pexp = NULL;
+        if (!syntax_uses_unbound(pn->a, fn, env)) pexp = resolve_type(g, d->file, env, pn->a);
+        Val *v = zalloc(sizeof *v);
+        *v = gen_expr(F, call->list.v[i], pexp);
+        if (v->t == ty_never) never = true;
+        else if (!pexp) unify(pn->a, v->t, fn, env);
+        vec_push(&vals, v);
+    }
+    if (never) return never_val(expect);
+    Vec targs = {0};
+    for (int i = 0; i < ntp; i++) {
+        Node *tp = fn->list2.v[i];
+        Type *t = env_get(env, tp->name);
+        if (!t && expect && fn->a) {
+            unify(fn->a, expect, fn, env);
+            t = env_get(env, tp->name);
+        }
+        if (!t) {
+            diag_error(call->pos, "cannot infer the type parameter `%s` of `%s` (write it explicitly, like `%s<I32>(...)`)",
+                       tp->name, fn->name, fn->name);
+            return err_val();
+        }
+        vec_push(&targs, t);
+    }
+    Inst *in = get_inst(g, d, self, &targs);
+    for (int i = 0; i < nparams; i++) {
+        Val *v = vals.v[i];
+        char *what = zsprintf("argument %d of `%s`", i + 1, fn->name);
+        *v = coerce(F, ((Node *)call->list.v[i])->pos, *v, in->ptypes.v[i], what);
+        if (is_err(v->t)) return err_val();
+    }
+    return emit_call(F, in, &vals);
+}
+
+/* ---- Printf ---- */
+
+typedef struct {
+    bool is_spec;
+    char *text; /* literal text, or the C format fragment (e.g. "%5lld") */
+    int tlen;
+    char conv;
+} FmtPiece;
+
+static Val gen_printf(FnCtx *F, Node *n, bool to_err) {
+    if (n->list.n < 1 || ((Node *)n->list.v[0])->kind != N_STRING) {
+        diag_error(n->pos, "`Printf` needs a string literal as its format");
+        return err_val();
+    }
+    Node *fs = n->list.v[0];
+    SB fmt = {0};
+    for (int i = 0; i < fs->list.n; i++) {
+        Node *part = fs->list.v[i];
+        if (part->kind != N_STR_LIT) {
+            diag_error(fs->pos, "the format of `Printf` cannot contain `${...}`; pass the values as arguments");
+            return err_val();
+        }
+        sb_putn(&fmt, part->name, (size_t)part->slen);
+    }
+    Vec pieces = {0};
+    SB lit = {0};
+    char *f = sb_str(&fmt);
+    size_t len = fmt.len;
+    for (size_t i = 0; i < len; i++) {
+        if (f[i] != '%') {
+            sb_putc(&lit, f[i]);
+            continue;
+        }
+        if (i + 1 < len && f[i + 1] == '%') {
+            sb_putc(&lit, '%');
+            i++;
+            continue;
+        }
+        if (lit.len) {
+            FmtPiece *p = zalloc(sizeof *p);
+            p->text = zstrndup(lit.p, lit.len);
+            p->tlen = (int)lit.len;
+            vec_push(&pieces, p);
+            lit.len = 0;
+        }
+        SB flags = {0}, width = {0}, prec = {0};
+        size_t j = i + 1;
+        while (j < len && strchr("-+ 0#", f[j])) sb_putc(&flags, f[j++]);
+        while (j < len && f[j] >= '0' && f[j] <= '9') sb_putc(&width, f[j++]);
+        bool has_prec = false;
+        if (j < len && f[j] == '.') {
+            has_prec = true;
+            j++;
+            while (j < len && f[j] >= '0' && f[j] <= '9') sb_putc(&prec, f[j++]);
+        }
+        if (j >= len || !strchr("duxXfscDi", f[j])) {
+            diag_error(fs->pos, "invalid format specifier in `Printf` (use %%d %%u %%x %%f %%s %%c or %%%%)");
+            return err_val();
+        }
+        char conv = f[j] == 'i' ? 'd' : f[j];
+        FmtPiece *p = zalloc(sizeof *p);
+        p->is_spec = true;
+        p->conv = conv;
+        const char *length = (conv == 'd' || conv == 'u' || conv == 'x' || conv == 'X') ? "ll" : "";
+        char cconv = (conv == 'c') ? 's' : conv;
+        p->text = zsprintf("%%%s%s%s%s%s%c", sb_str(&flags), sb_str(&width), has_prec ? "." : "",
+                           has_prec ? (prec.len ? sb_str(&prec) : "0") : "", length, cconv);
+        p->tlen = (int)strlen(p->text);
+        vec_push(&pieces, p);
+        i = j;
+    }
+    if (lit.len) {
+        FmtPiece *p = zalloc(sizeof *p);
+        p->text = zstrndup(lit.p, lit.len);
+        p->tlen = (int)lit.len;
+        vec_push(&pieces, p);
+    }
+    int nspecs = 0;
+    for (int i = 0; i < pieces.n; i++)
+        if (((FmtPiece *)pieces.v[i])->is_spec) nspecs++;
+    if (nspecs != n->list.n - 1) {
+        diag_error(n->pos, "the format has %d placeholder(s), but %d value(s) were given", nspecs, n->list.n - 1);
+        return err_val();
+    }
+    /* evaluate the arguments first, in order */
+    Vec vals = {0};
+    int ai = 1;
+    for (int i = 0; i < pieces.n; i++) {
+        FmtPiece *p = pieces.v[i];
+        if (!p->is_spec) continue;
+        Node *an = n->list.v[ai++];
+        Type *hint = (p->conv == 'f') ? ty_f64 : NULL;
+        Val *v = zalloc(sizeof *v);
+        *v = gen_expr(F, an, hint);
+        if (v->t == ty_never) return never_val(NULL);
+        bool ok = true;
+        const char *need = "";
+        switch (p->conv) {
+        case 'd': case 'u': case 'x': case 'X': ok = ty_is_int(v->t); need = "an integer"; break;
+        case 'f': ok = ty_is_float(v->t); need = "a decimal number"; break;
+        case 's': ok = v->t == ty_string; need = "a `String`"; break;
+        case 'c': ok = v->t == ty_char; need = "a `Char`"; break;
+        default: break;
+        }
+        if (!ok && !is_err(v->t)) {
+            diag_error(an->pos, "`%%%c` needs %s, found `%s`", p->conv, need, v->t->name);
+            return err_val();
+        }
+        vec_push(&vals, v);
+    }
+    int stream = to_err ? 2 : 1;
+    rt_decl(F, "zevic_printf_lit", "declare void @zevic_printf_lit(i32, ptr, i64)");
+    rt_decl(F, "zevic_printf_i", "declare void @zevic_printf_i(i32, ptr, i64)");
+    rt_decl(F, "zevic_printf_f", "declare void @zevic_printf_f(i32, ptr, double)");
+    rt_decl(F, "zevic_printf_s", "declare void @zevic_printf_s(i32, ptr, ptr, i64)");
+    rt_decl(F, "zevic_printf_c", "declare void @zevic_printf_c(i32, ptr, i32)");
+    int vi = 0;
+    for (int i = 0; i < pieces.n; i++) {
+        FmtPiece *p = pieces.v[i];
+        char *c = str_const(F->g, p->text, p->tlen);
+        if (!p->is_spec) {
+            emit(F, "call void @zevic_printf_lit(i32 %d, ptr %s, i64 %d)", stream, const_ptr(c), p->tlen);
+            continue;
+        }
+        Val *v = vals.v[vi++];
+        if (is_err(v->t)) continue;
+        if (p->conv == 'd' || p->conv == 'u' || p->conv == 'x' || p->conv == 'X') {
+            char *x = v->v;
+            int bits = ty_bits(v->t);
+            if (bits < 64) {
+                x = tmp(F);
+                emit(F, "%s = %s i%d %s to i64", x, ty_is_signed(v->t) ? "sext" : "zext", bits, v->v);
+            }
+            emit(F, "call void @zevic_printf_i(i32 %d, ptr %s, i64 %s)", stream, const_ptr(c), x);
+        } else if (p->conv == 'f') {
+            char *x = v->v;
+            if (v->t == ty_f32) {
+                x = tmp(F);
+                emit(F, "%s = fpext float %s to double", x, v->v);
+            }
+            emit(F, "call void @zevic_printf_f(i32 %d, ptr %s, double %s)", stream, const_ptr(c), x);
+        } else if (p->conv == 's') {
+            char *sp, *sn;
+            str_parts(F, *v, &sp, &sn);
+            emit(F, "call void @zevic_printf_s(i32 %d, ptr %s, ptr %s, i64 %s)", stream, const_ptr(c), sp, sn);
+        } else {
+            emit(F, "call void @zevic_printf_c(i32 %d, ptr %s, i32 %s)", stream, const_ptr(c), v->v);
+        }
+    }
+    return unit_val();
+}
+
+/* ---- Panic and Assert ---- */
+
+static Val gen_panic_builtin(FnCtx *F, Node *n) {
+    if (n->list.n != 1) {
+        diag_error(n->pos, "`Panic` takes one argument, the message");
+        return err_val();
+    }
+    Val m = gen_expr(F, n->list.v[0], ty_string);
+    m = coerce(F, ((Node *)n->list.v[0])->pos, m, ty_string, "the message of `Panic`");
+    if (m.t == ty_never || is_err(m.t)) return m.t == ty_never ? m : err_val();
+    emit_panic_call(F, m, n->pos);
+    return never_val(NULL);
+}
+
+static Val gen_assert_builtin(FnCtx *F, Node *n) {
+    if (n->list.n != 2) {
+        diag_error(n->pos, "`Assert` takes two arguments: the condition and the message");
+        return err_val();
+    }
+    Val c = gen_expr(F, n->list.v[0], ty_bool);
+    c = coerce(F, ((Node *)n->list.v[0])->pos, c, ty_bool, "the condition of `Assert`");
+    if (c.t == ty_never) return c;
+    if (is_err(c.t)) return err_val();
+    char *fail = newlabel(F, "assert.fail"), *ok = newlabel(F, "assert.ok");
+    condbr(F, c.v, ok, fail);
+    start_block(F, fail);
+    Val m = gen_expr(F, n->list.v[1], ty_string);
+    m = coerce(F, ((Node *)n->list.v[1])->pos, m, ty_string, "the message of `Assert`");
+    if (m.t != ty_never && !is_err(m.t)) emit_panic_call(F, m, n->pos);
+    else if (!F->term) {
+        emit(F, "unreachable");
+        F->term = true;
+    }
+    start_block(F, ok);
+    return unit_val();
+}
+
+/* ---- methods on built-in types ---- */
+
+static bool int_fits(Type *from, Type *to) {
+    int fb = ty_bits(from), tb = ty_bits(to);
+    if (ty_is_signed(from) == ty_is_signed(to)) return tb >= fb;
+    if (!ty_is_signed(from) && ty_is_signed(to)) return tb > fb;
+    return false;
+}
+
+static Val cast_int(FnCtx *F, Val v, Type *to) {
+    int fb = ty_bits(v.t), tb = ty_bits(to);
+    if (fb == tb) {
+        Val r = {to, v.v};
+        return r;
+    }
+    char *r = tmp(F);
+    if (tb < fb) emit(F, "%s = trunc %s %s to %s", r, type_ll(v.t), v.v, type_ll(to));
+    else emit(F, "%s = %s %s %s to %s", r, ty_is_signed(v.t) ? "sext" : "zext", type_ll(v.t), v.v, type_ll(to));
+    Val res = {to, r};
+    return res;
+}
+
+static Val cast_float_to_int(FnCtx *F, Val v, Type *to, Pos pos) {
+    int bits = ty_bits(to);
+    bool sgn = ty_is_signed(to);
+    char *x = v.v;
+    if (v.t == ty_f32) {
+        x = tmp(F);
+        emit(F, "%s = fpext float %s to double", x, v.v);
+    }
+    double lo = sgn ? -ldexp(1.0, bits - 1) : 0.0;
+    double hi = ldexp(1.0, sgn ? bits - 1 : bits);
+    char *c1 = tmp(F), *c2 = tmp(F), *both = tmp(F);
+    emit(F, "%s = fcmp oge double %s, %s", c1, x, double_hex(lo));
+    emit(F, "%s = fcmp olt double %s, %s", c2, x, double_hex(hi));
+    emit(F, "%s = and i1 %s, %s", both, c1, c2);
+    char *ok = newlabel(F, "ok"), *bad = cold_panic(F, "conversion from a decimal number is out of range (or NaN)", pos);
+    condbr(F, both, ok, bad);
+    start_block(F, ok);
+    char *r = tmp(F);
+    emit(F, "%s = %s double %s to %s", r, sgn ? "fptosi" : "fptoui", x, type_ll(to));
+    Val res = {to, r};
+    return res;
+}
+
+static Val cast_to_float(FnCtx *F, Val v, Type *to) {
+    char *r = tmp(F);
+    if (ty_is_int(v.t)) emit(F, "%s = %s %s %s to %s", r, ty_is_signed(v.t) ? "sitofp" : "uitofp", type_ll(v.t), v.v, type_ll(to));
+    else if (v.t == to) return v;
+    else emit(F, "%s = %s %s %s to %s", r, to == ty_f64 ? "fpext" : "fptrunc", type_ll(v.t), v.v, type_ll(to));
+    Val res = {to, r};
+    return res;
+}
+
+static Val gen_prim_method(FnCtx *F, Node *call, Val recv, const char *name, Type *expect) {
     (void)expect;
-    diag_error(n->pos, "calls are not supported yet");
+    Type *t = recv.t;
+    int nargs = call->list.n;
+    if (strcmp(name, "ToString") == 0) {
+        if (nargs) {
+            diag_error(call->pos, "`ToString` takes no arguments");
+            return err_val();
+        }
+        return gen_to_string(F, recv, call->pos);
+    }
+    /* numeric conversions: ToI32, ToU8Wrap, ToF64, ... */
+    if (name[0] == 'T' && name[1] == 'o' && (ty_is_numeric(t))) {
+        char *base = zstrdup(name + 2);
+        bool wrap = false;
+        size_t bl = strlen(base);
+        if (bl > 4 && strcmp(base + bl - 4, "Wrap") == 0) {
+            wrap = true;
+            base[bl - 4] = 0;
+        }
+        Type *to = ty_prim_by_name(base);
+        if (to && ty_is_numeric(to)) {
+            if (nargs) {
+                diag_error(call->pos, "`%s` takes no arguments", name);
+                return err_val();
+            }
+            if (ty_is_float(to)) {
+                if (wrap) {
+                    diag_error(call->pos, "`%s` does not exist (only integer conversions have a `Wrap` form)", name);
+                    return err_val();
+                }
+                return cast_to_float(F, recv, to);
+            }
+            if (ty_is_int(t)) {
+                if (wrap || int_fits(t, to)) return cast_int(F, recv, to);
+                diag_error(call->pos,
+                           "`%s` may not fit in `%s`, so it returns a `Result` (not available yet); use `%sWrap()` to wrap around",
+                           name, to->name, name);
+                return err_val();
+            }
+            if (wrap) {
+                diag_error(call->pos, "`%s` does not exist for `%s`", name, t->name);
+                return err_val();
+            }
+            return cast_float_to_int(F, recv, to, call->pos);
+        }
+    }
+    if (ty_is_int(t) && (strcmp(name, "Min") == 0 || strcmp(name, "Max") == 0)) {
+        if (nargs != 1) {
+            diag_error(call->pos, "`%s` takes one argument", name);
+            return err_val();
+        }
+        Val o = gen_expr(F, call->list.v[0], t);
+        o = coerce(F, ((Node *)call->list.v[0])->pos, o, t, "the argument");
+        if (o.t == ty_never || is_err(o.t)) return o.t == ty_never ? o : err_val();
+        char *c = tmp(F), *r = tmp(F);
+        bool sgn = ty_is_signed(t);
+        const char *pred = strcmp(name, "Min") == 0 ? (sgn ? "slt" : "ult") : (sgn ? "sgt" : "ugt");
+        emit(F, "%s = icmp %s %s %s, %s", c, pred, type_ll(t), recv.v, o.v);
+        emit(F, "%s = select i1 %s, %s %s, %s %s", r, c, type_ll(t), recv.v, type_ll(t), o.v);
+        Val res = {t, r};
+        return res;
+    }
+    if (ty_is_int(t) && strcmp(name, "Abs") == 0 && !nargs) {
+        if (!ty_is_signed(t)) return recv;
+        char *neg = tmp(F), *r = tmp(F);
+        Val zero = {t, "0"};
+        Val n = gen_int_arith(F, TK_MINUS, zero, recv, call->pos);
+        neg = n.v;
+        emit(F, "%s = icmp slt %s %s, 0", r, type_ll(t), recv.v);
+        char *sel = tmp(F);
+        emit(F, "%s = select i1 %s, %s %s, %s %s", sel, r, type_ll(t), neg, type_ll(t), recv.v);
+        Val res = {t, sel};
+        return res;
+    }
+    if (ty_is_float(t) && strcmp(name, "Abs") == 0 && !nargs) {
+        char *r = tmp(F);
+        const char *intr = t == ty_f64 ? "llvm.fabs.f64" : "llvm.fabs.f32";
+        declare(F->g, intr, zsprintf("declare %s @%s(%s)", type_ll(t), intr, type_ll(t)));
+        emit(F, "%s = call %s @%s(%s %s)", r, type_ll(t), intr, type_ll(t), recv.v);
+        Val res = {t, r};
+        return res;
+    }
+    if (ty_is_float(t) && (strcmp(name, "IsNaN") == 0 || strcmp(name, "IsInf") == 0) && !nargs) {
+        char *r = tmp(F);
+        if (name[2] == 'N') {
+            emit(F, "%s = fcmp uno %s %s, %s", r, type_ll(t), recv.v, recv.v);
+        } else {
+            const char *intr = t == ty_f64 ? "llvm.fabs.f64" : "llvm.fabs.f32";
+            declare(F->g, intr, zsprintf("declare %s @%s(%s)", type_ll(t), intr, type_ll(t)));
+            char *a = tmp(F);
+            emit(F, "%s = call %s @%s(%s %s)", a, type_ll(t), intr, type_ll(t), recv.v);
+            emit(F, "%s = fcmp oeq %s %s, 0x7FF0000000000000", r, type_ll(t), a);
+        }
+        Val res = {ty_bool, r};
+        return res;
+    }
+    if (t == ty_string) {
+        if (strcmp(name, "Len") == 0 && !nargs) {
+            char *p, *n;
+            str_parts(F, recv, &p, &n);
+            Val res = {ty_i64, n};
+            return res;
+        }
+        if (strcmp(name, "IsEmpty") == 0 && !nargs) {
+            char *p, *n;
+            str_parts(F, recv, &p, &n);
+            char *r = tmp(F);
+            emit(F, "%s = icmp eq i64 %s, 0", r, n);
+            Val res = {ty_bool, r};
+            return res;
+        }
+        if (strcmp(name, "CharCount") == 0 && !nargs) {
+            char *p, *n;
+            str_parts(F, recv, &p, &n);
+            rt_decl(F, "zevic_str_char_count", "declare i64 @zevic_str_char_count(ptr, i64)");
+            char *r = tmp(F);
+            emit(F, "%s = call i64 @zevic_str_char_count(ptr %s, i64 %s)", r, p, n);
+            Val res = {ty_i64, r};
+            return res;
+        }
+        if (strcmp(name, "ByteAt") == 0 && nargs == 1) {
+            Val i = gen_expr(F, call->list.v[0], ty_i64);
+            i = coerce(F, ((Node *)call->list.v[0])->pos, i, ty_i64, "the argument of `ByteAt`");
+            if (i.t == ty_never || is_err(i.t)) return i.t == ty_never ? i : err_val();
+            char *p, *n;
+            str_parts(F, recv, &p, &n);
+            char *bad = tmp(F);
+            emit(F, "%s = icmp uge i64 %s, %s", bad, i.v, n);
+            char *ok = newlabel(F, "ok");
+            condbr(F, bad, cold_panic(F, "string index out of range", call->pos), ok);
+            start_block(F, ok);
+            char *gp = tmp(F), *r = tmp(F);
+            emit(F, "%s = getelementptr inbounds i8, ptr %s, i64 %s", gp, p, i.v);
+            emit(F, "%s = load i8, ptr %s", r, gp);
+            Val res = {ty_u8, r};
+            return res;
+        }
+    }
+    diag_error(call->pos, "type `%s` has no method `%s` (or it takes different arguments)", t->name, name);
+    return err_val();
+}
+
+static Val gen_method_call(FnCtx *F, Node *call, Node *recv_node, const char *name, Type *expect) {
+    Val recv = gen_expr(F, recv_node, NULL);
+    if (recv.t == ty_never) return recv;
+    if (is_err(recv.t)) {
+        for (int i = 0; i < call->list.n; i++) gen_expr(F, call->list.v[i], NULL);
+        return err_val();
+    }
+    return gen_prim_method(F, call, recv, name, expect);
+}
+
+static Val gen_call(FnCtx *F, Node *n, Type *expect) {
+    Node *callee = n->a;
+    Vec segs = {0}, nodes = {0};
+    if (flatten_path(callee, &segs, &nodes)) {
+        char *head = segs.v[0];
+        bool value_head = find_local(F, head) != NULL;
+        if (!value_head) {
+            char **sg = (char **)segs.v;
+            int used = 0;
+            Decl *d = find_decl(F->g, F->file, sg, segs.n, &used, callee->pos);
+            if (used < 0) return err_val();
+            if (d && d->node->kind == D_FN && used == segs.n) {
+                Node *last = nodes.v[nodes.n - 1];
+                if (d->abi && strcmp(d->abi, "intrinsic") == 0) {
+                    if (strcmp(d->name, "Printf") == 0) return gen_printf(F, n, false);
+                    if (strcmp(d->name, "Eprintf") == 0) return gen_printf(F, n, true);
+                    diag_error(n->pos, "unknown intrinsic `%s`", d->name);
+                    return err_val();
+                }
+                return gen_call_decl(F, n, d, NULL, &last->list2, expect);
+            }
+            if (d && d->node->kind == D_FN) {
+                diag_error(callee->pos, "function `%s` has no member `%s`", d->name, segs.v[used]);
+                return err_val();
+            }
+            if (!d && segs.n == 1) {
+                if (strcmp(head, "Panic") == 0) return gen_panic_builtin(F, n);
+                if (strcmp(head, "Assert") == 0) return gen_assert_builtin(F, n);
+            }
+            if (d) {
+                diag_error(callee->pos, "calling `%s` this way is not supported yet", path_join(&segs, "."));
+                return err_val();
+            }
+            if (callee->kind == N_IDENT) {
+                diag_error(callee->pos, "unknown function `%s`", head);
+                return err_val();
+            }
+            /* a.b(...) where `a` is not a module or type: fall through to a method call on a value */
+        }
+    }
+    if (callee->kind == N_MEMBER) return gen_method_call(F, n, callee->a, callee->name, expect);
+    diag_error(callee->pos, "this expression cannot be called");
     return err_val();
 }
