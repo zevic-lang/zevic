@@ -1,0 +1,138 @@
+name: build
+
+# Every push to main builds zevic on Linux, macOS and Windows, runs the tests and,
+# when all three succeed, publishes the executables as a GitHub release.
+# Pushing a tag like v0.1.0 publishes a normal (non-pre-release) release instead.
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: linux-x64, os: ubuntu-latest, exe: "", archive: tar.gz }
+          - { name: macos-arm64, os: macos-latest, exe: "", archive: tar.gz }
+          - { name: windows-x64, os: windows-latest, exe: ".exe", archive: zip }
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # zevic turns Zevic into LLVM IR and asks clang (15 or newer) to build it.
+      - name: Install LLVM (Linux, apt)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang
+      - name: Install LLVM (macOS)
+        if: runner.os == 'macOS'
+        run: clang --version
+      - name: Install LLVM (Windows, winget)
+        if: runner.os == 'Windows'
+        run: |
+          if ! command -v clang >/dev/null 2>&1 && [ ! -x "/c/Program Files/LLVM/bin/clang.exe" ]; then
+            winget install --id LLVM.LLVM -e --silent --accept-package-agreements --accept-source-agreements
+          fi
+          echo "C:\\Program Files\\LLVM\\bin" >> "$GITHUB_PATH"
+      - name: Show clang version
+        run: clang --version
+
+      - name: Build zevic
+        run: |
+          mkdir -p build
+          clang -std=c11 -O2 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function zevic0/*.c -o "build/zevic${{ matrix.exe }}"
+          "build/zevic${{ matrix.exe }}" --version
+
+      - name: Test
+        run: python tests/run.py
+
+      - name: Package
+        id: pkg
+        run: |
+          VERSION="$(cat VERSION)"
+          NAME="zevic-${VERSION}-${{ matrix.name }}"
+          mkdir -p "dist/$NAME/bin"
+          cp "build/zevic${{ matrix.exe }}" "dist/$NAME/bin/"
+          cp -r stdlib runtime examples "dist/$NAME/"
+          cp LICENSE README.md CHANGELOG.md VERSION "dist/$NAME/"
+          cd dist
+          if [ "${{ matrix.archive }}" = "zip" ]; then
+            7z a "$NAME.zip" "$NAME" >/dev/null
+            echo "file=dist/$NAME.zip" >> "$GITHUB_OUTPUT"
+          else
+            tar -czf "$NAME.tar.gz" "$NAME"
+            echo "file=dist/$NAME.tar.gz" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Smoke test the package
+        run: |
+          cd dist
+          if [ "${{ matrix.archive }}" = "zip" ]; then 7z x -y *.zip >/dev/null; else tar -xzf *.tar.gz; fi
+          cd zevic-*
+          ./bin/zevic${{ matrix.exe }} examples/01_hello.zev -o hello${{ matrix.exe }}
+          ./hello${{ matrix.exe }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zevic-${{ matrix.name }}
+          path: ${{ steps.pkg.outputs.file }}
+          if-no-files-found: error
+
+  release:
+    name: release
+    needs: build
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Decide the release tag
+        id: tag
+        run: |
+          VERSION="$(cat VERSION)"
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "name=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=v${VERSION}-build.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checksums
+        run: |
+          cd artifacts
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.name }}
+          name: zevic ${{ steps.tag.outputs.name }}
+          target_commitish: ${{ github.sha }}
+          prerelease: ${{ steps.tag.outputs.prerelease == 'true' }}
+          generate_release_notes: true
+          files: artifacts/*
