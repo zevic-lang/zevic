@@ -1,0 +1,22 @@
+module Main
+
+import Zevic.Console
+
+fn FizzBuzz(n: I32) -> String {
+    if (n % 15 == 0) {
+        "FizzBuzz"
+    } else if (n % 3 == 0) {
+        "Fizz"
+    } else if (n % 5 == 0) {
+        "Buzz"
+    } else {
+        "${n}"
+    }
+}
+
+fn Main() {
+    let last: I32 = 20
+    for (i in 1..=last) {
+        Console.Println(FizzBuzz(i))
+    }
+}

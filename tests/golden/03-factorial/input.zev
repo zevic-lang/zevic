@@ -1,0 +1,36 @@
+module Main
+
+import Zevic.Console
+
+fn Factorial(n: I64) -> I64 {
+    if (n <= 1) { return 1 }
+    n * Factorial(n - 1)
+}
+
+fn IsPrime(n: I32) -> Bool {
+    if (n < 2) { return false }
+    mut i: I32 = 2
+    while (i * i <= n) {
+        if (n % i == 0) { return false }
+        i += 1
+    }
+    true
+}
+
+fn Main() {
+    for (n in 0..=10) {
+        Console.Printf("%2d! = %d\n", n, Factorial(n))
+    }
+    mut count: I32 = 0
+    let limit: I32 = 50
+    for (n in 1..limit) {
+        if (IsPrime(n)) {
+            Console.Printf("%d ", n)
+            count += 1
+        }
+    }
+    Console.Println("")
+    Console.Println("primes below 50: ${count}")
+    let x: F64 = 2.5
+    Console.Printf("%.3f %s %c\n", x * 2.0, "str", 'z')
+}
