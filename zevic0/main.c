@@ -1,5 +1,7 @@
 /* main.c - command line entry point of zevic0 */
+#include "ast.h"
 #include "lexer.h"
+#include "parser.h"
 #include "util.h"
 
 static void dump_tokens(const char *path) {
@@ -40,7 +42,20 @@ static void dump_tokens(const char *path) {
     }
 }
 
+static void dump_ast(const char *path) {
+    size_t len;
+    char *text = read_file(path, &len);
+    if (!text) die("cannot read %s", path);
+    int file = src_add(path, text);
+    SourceFile *sf = parse_file(file, text, len);
+    if (!zv_error_count) ast_dump(sf, stdout);
+}
+
 int main(int argc, char **argv) {
+    if (argc == 3 && strcmp(argv[1], "--dump-ast") == 0) {
+        dump_ast(argv[2]);
+        return zv_error_count ? 1 : 0;
+    }
     if (argc == 3 && strcmp(argv[1], "--dump-tokens") == 0) {
         dump_tokens(argv[2]);
         return zv_error_count ? 1 : 0;
