@@ -1,0 +1,16 @@
+module Main
+
+import Zevic.Console
+
+fn Main() {
+    let a: U8 = 250
+    let b: I32 = 2147483647
+    let c: I8 = -128
+    Console.Println("${a.WrapAdd(10)} ${b.WrapAdd(1)} ${c.WrapSub(1)} ${a.WrapMul(2)} ${(100_U8).WrapSub(200)}")
+    let big: I64 = 3_000_000_000
+    match (big.ToI32()) {
+        Ok(v) => Console.Println("fits ${v}"),
+        Err(e) => Console.Println(e.Message()),
+    }
+    Console.Println("${big.ToI32Wrap()} ${b.ToU8Wrap()}")
+}

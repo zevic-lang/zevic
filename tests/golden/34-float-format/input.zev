@@ -1,0 +1,10 @@
+module Main
+
+import Zevic.Console
+
+fn Main() {
+    let xs: Array<F64> = [1000.0, 1e3, 0.5, 3.14, 1e15, 1e16, 1e-5, 0.00001234, 123456789.125, 1.0 / 3.0, 2.5e-7, 100.0]
+    for (x in xs) {
+        Console.Println("${x}")
+    }
+}

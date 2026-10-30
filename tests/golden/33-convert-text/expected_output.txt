@@ -1,0 +1,18 @@
+42: ok 42
+-17: ok -17
++8: ok 8
+abc: InvalidFormat: cannot read "abc" as a number: found a character that is not a digit
+empty: InvalidFormat: cannot read "" as a number: the text is empty
+big: OutOfRange: 5000000000 does not fit in I32
+min: ok -2147483648
+narrow: OutOfRange: 5000000000 does not fit in I32
+fits: ok 123
+u8 255
+256 does not fit in U8
+"-1" is negative and does not fit in U64
+u64 18446744073709551615
+i64 -9223372036854775808
+f64 3.25
+f64 1e+03
+cannot read "1." as a number: the format is not a decimal number
+-5 does not fit in U32

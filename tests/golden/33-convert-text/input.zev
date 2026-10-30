@@ -1,0 +1,33 @@
+module Main
+
+import Zevic.Console
+
+fn Show(label: String, r: Result<I32, Error>) {
+    match (r) {
+        Ok(v) => Console.Println("${label}: ok ${v}"),
+        Err(e) => Console.Println("${label}: ${e.ToString()}"),
+    }
+}
+
+fn Main() {
+    Show("42", "42".ToI32())
+    Show("-17", "-17".ToI32())
+    Show("+8", "+8".ToI32())
+    Show("abc", "abc".ToI32())
+    Show("empty", "".ToI32())
+    Show("big", "5000000000".ToI32())
+    Show("min", "-2147483648".ToI32())
+    let big: I64 = 5_000_000_000
+    Show("narrow", big.ToI32())
+    Show("fits", (123_I64).ToI32())
+    match ("255".ToU8()) { Ok(v) => Console.Println("u8 ${v}"), Err(e) => Console.Println(e.Message()) }
+    match ("256".ToU8()) { Ok(v) => Console.Println("u8 ${v}"), Err(e) => Console.Println(e.Message()) }
+    match ("-1".ToU64()) { Ok(v) => Console.Println("u64 ${v}"), Err(e) => Console.Println(e.Message()) }
+    match ("18446744073709551615".ToU64()) { Ok(v) => Console.Println("u64 ${v}"), Err(e) => Console.Println(e.Message()) }
+    match ("-9223372036854775808".ToI64()) { Ok(v) => Console.Println("i64 ${v}"), Err(e) => Console.Println(e.Message()) }
+    match ("3.25".ToF64()) { Ok(v) => Console.Println("f64 ${v}"), Err(e) => Console.Println(e.Message()) }
+    match ("1e3".ToF64()) { Ok(v) => Console.Println("f64 ${v}"), Err(e) => Console.Println(e.Message()) }
+    match ("1.".ToF64()) { Ok(v) => Console.Println("f64 ${v}"), Err(e) => Console.Println(e.Message()) }
+    let neg: I32 = -5
+    match (neg.ToU32()) { Ok(v) => Console.Println("u32 ${v}"), Err(e) => Console.Println(e.Message()) }
+}
