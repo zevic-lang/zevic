@@ -1,0 +1,31 @@
+module Main
+
+import Zevic.Console
+
+fn Show(label: String, a: Array<I32>) {
+    mut s: String = label + ":"
+    for (x in a) {
+        s += " ${x}"
+    }
+    Console.Println(s)
+}
+
+fn Main() {
+    mut a: Array<I32> = [10, 20, 30]
+    a.Insert(1, 15)
+    Show("insert", a)
+    let removed: I32 = a.RemoveAt(0)
+    Show("removed ${removed}", a)
+    a.Reverse()
+    Show("reverse", a)
+    let b: Array<I32> = a.Slice(1, 3)
+    Show("slice", b)
+    Show("concat", a.Concat(b))
+    mut c: Array<I32> = [1]
+    c.Extend(a)
+    c.Extend(c)
+    Show("extend", c)
+    Console.Println("${a.First().Unwrap()} ${a.Last().Unwrap()} ${a.Get(9).IsNone()} ${a.IsEmpty()}")
+    a.Clear()
+    Console.Println("${a.Len()} ${a.IsEmpty()} ${a.Pop().IsNone()}")
+}

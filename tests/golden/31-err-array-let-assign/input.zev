@@ -1,0 +1,7 @@
+module Main
+
+fn Main() {
+    let xs: Array<I32> = [1, 2, 3]
+    xs[0] = 9
+    xs.Push(4)
+}

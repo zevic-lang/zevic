@@ -1,0 +1,28 @@
+module Main
+
+import Zevic.Console
+
+fn Main() {
+    let xs: Array<I32> = [5, 6, 7, 8, 9]
+    for (i, x in xs) {
+        if (i == 1) { continue }
+        if (x == 9) { break }
+        Console.Println("${i}: ${x}")
+    }
+    let grid: Array<Array<I32>> = [[1, 2], [3], []]
+    mut total: I32 = 0
+    for (row in grid) {
+        for (v in row) {
+            total += v
+        }
+    }
+    Console.Println("total ${total}")
+    let pairs: Array<(I32, String)> = [(1, "one"), (2, "two")]
+    for ((n, name) in pairs) {
+        Console.Println("${n}=${name}")
+    }
+    for (_ in xs) {
+        total += 1
+    }
+    Console.Println("${total}")
+}

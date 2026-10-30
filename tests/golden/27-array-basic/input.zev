@@ -1,0 +1,26 @@
+module Main
+
+import Zevic.Console
+
+fn Sum(a: Array<I64>) -> I64 {
+    mut total: I64 = 0
+    for (x in a) {
+        total += x
+    }
+    total
+}
+
+fn Main() {
+    let nums: Array<I64> = [1, 2, 3]
+    Console.Println("len = ${nums.Len()}, first = ${nums[0]}, sum = ${Sum(nums)}")
+    mut xs: Array<I64> = []
+    for (i in 0..10) {
+        xs.Push(i * i)
+    }
+    xs[0] = 100
+    xs[1] += 5
+    Console.Println("${xs[0]} ${xs[1]} ${xs[9]}")
+    let words: Array<String> = ["a", "b"]
+    Console.Println(words[1])
+    Console.Println("${xs.Pop().Unwrap()} ${xs.Len()}")
+}

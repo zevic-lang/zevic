@@ -1,0 +1,2 @@
+cannot assign to an element of `xs` because it is not `mut`
+cannot call `mut fn Push` because `xs` is not `mut`

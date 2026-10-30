@@ -1,0 +1,10 @@
+module Main
+
+import Zevic.Console
+
+fn Main() {
+    let xs: Array<I32> = [1, 2, 3]
+    Console.Println("before")
+    Console.Println("${xs[3]}")
+    Console.Println("after")
+}

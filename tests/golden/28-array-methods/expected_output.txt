@@ -1,0 +1,8 @@
+insert: 10 15 20 30
+removed 10: 15 20 30
+reverse: 30 20 15
+slice: 20 15
+concat: 30 20 15 20 15
+extend: 1 30 20 15 1 30 20 15
+30 15 true false
+0 true true
