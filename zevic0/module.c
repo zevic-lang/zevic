@@ -125,6 +125,10 @@ static void resolve_file_imports(Program *pg, SourceFile *sf) {
     for (int i = 0; i < sf->imports.n; i++) {
         Node *im = sf->imports.v[i];
         char *name = path_join(&im->path, ".");
+        if (!sf->is_std && strncmp(name, "Zevic.Intrinsics", 16) == 0) {
+            diag_error(im->pos, "`Zevic.Intrinsics` is only for the standard library");
+            continue;
+        }
         Module *m = prog_find_module(pg, name);
         if (!m) {
             bool is_std = false;
