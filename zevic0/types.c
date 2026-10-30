@@ -64,14 +64,6 @@ Type *ty_tuple(Vec elems) {
     return intern(t);
 }
 
-Type *ty_array(Type *elem) {
-    Type *t = zalloc(sizeof *t);
-    t->k = T_ARRAY;
-    t->name = zsprintf("Array<%s>", elem->name);
-    vec_push(&t->args, elem);
-    return intern(t);
-}
-
 Type *ty_fn(Vec params, Type *ret) {
     SB sb = {0};
     sb_puts(&sb, "fn(");
@@ -149,7 +141,7 @@ int ty_bits(Type *t) {
     }
 }
 
-bool ty_is_ref(Type *t) { return t->k == T_CLASS || t->k == T_ARRAY; }
+bool ty_is_ref(Type *t) { return t->k == T_CLASS; }
 bool ty_is_value_agg(Type *t) {
     return t->k == T_STRUCT || t->k == T_ENUM || t->k == T_TUPLE || t->k == T_STRING;
 }
@@ -191,7 +183,7 @@ void ty_layout(Type *t) {
     case T_CHAR: t->size = t->align = 4; t->ll = "i32"; break;
     case T_STRING: t->size = 16; t->align = 8; t->ll = "{ ptr, i64 }"; break;
     case T_UNIT: case T_NEVER: t->size = 0; t->align = 1; t->ll = "{}"; break;
-    case T_ARRAY: case T_CLASS: case T_PTR: t->size = t->align = 8; t->ll = "ptr"; break;
+    case T_CLASS: case T_PTR: case T_BUF: t->size = t->align = 8; t->ll = "ptr"; break;
     case T_FN: t->size = 16; t->align = 8; t->ll = "{ ptr, ptr }"; break;
     case T_TUPLE: {
         SB sb = {0};

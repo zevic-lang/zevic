@@ -1,0 +1,14 @@
+module Zevic.Intrinsics
+
+// Building blocks for the standard library. Only files of the standard library may import this module.
+//
+// `Buf<T>` is a block of memory that holds a fixed number of `T` values. The compiler turns its
+// operations into LLVM instructions:
+//
+//   Buf<T>.New(capacity: I64) -> Buf<T>
+//   b.Get(i: I64) -> T                 // no range check: the caller does it
+//   b.Set(i: I64, v: T)
+//   b.Copy(src: Buf<T>, from: I64, to: I64, n: I64)    // copies n values; the ranges may overlap
+
+struct Buf<T> {
+}

@@ -8,10 +8,10 @@ typedef enum {
     T_I8, T_I16, T_I32, T_I64, T_U8, T_U16, T_U32, T_U64,
     T_F32, T_F64, T_BOOL, T_CHAR, T_STRING, T_UNIT, T_NEVER,
     T_TUPLE,  /* args = element types */
-    T_ARRAY,  /* args[0] = element type */
     T_FN,     /* args = parameter types, ret = result */
     T_STRUCT, T_CLASS, T_ENUM, /* decl + args = type arguments */
     T_PTR,    /* args[0] = pointee (C interop) */
+    T_BUF,    /* Zevic.Intrinsics.Buf<T>: a fixed-size block of T (args[0]); only the standard library uses it */
     T_CTYPE,  /* C types: name says which */
     T_PARAM   /* an unbound type parameter (only inside generic declarations) */
 } TKind;
@@ -58,7 +58,6 @@ void types_init(void);
 extern Type *ty_cycle;
 
 Type *ty_tuple(Vec elems);
-Type *ty_array(Type *elem);
 Type *ty_fn(Vec params, Type *ret);
 Type *ty_ptr(Type *pointee);
 Type *ty_param(const char *name);
