@@ -1,0 +1,26 @@
+module Main
+
+import Zevic.Console
+
+fn Half(n: I32) -> Option<I32> {
+    if (n % 2 == 0) { Some(n / 2) } else { None }
+}
+
+fn Main() {
+    let a: Option<I32> = Half(10)
+    let b: Option<I32> = Half(7)
+    Console.Println("a=${a.UnwrapOr(-1)} b=${b.UnwrapOr(-1)}")
+    Console.Println("${a.IsSome()} ${b.IsNone()}")
+    match (a) {
+        Some(v) => Console.Println("got ${v}"),
+        None => Console.Println("nothing"),
+    }
+    let r: Result<I32, Error> = Ok(5)
+    Console.Println("ok? ${r.IsOk()} value ${r.Unwrap()}")
+    let e: Result<I32, Error> = Err(Error.New(ErrorKind.Invalid, "bad"))
+    match (e) {
+        Ok(_) => Console.Println("?"),
+        Err(x) => Console.Println(x.ToString()),
+    }
+    Console.Println("${b.Unwrap()}")
+}

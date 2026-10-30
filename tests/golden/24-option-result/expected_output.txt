@@ -1,0 +1,5 @@
+a=5 b=-1
+true true
+got 5
+ok? true value 5
+Invalid: bad

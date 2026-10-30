@@ -1,0 +1,24 @@
+module Main
+
+fn Half(n: I32) -> Option<I32> {
+    if (n % 2 == 0) { Some(n / 2) } else { None }
+}
+
+fn A() -> Result<I32, Error> {
+    let x: I32 = Half(4)?
+    Ok(x)
+}
+
+fn B() {
+    let r: Result<I32, Error> = Ok(1)
+    let x: I32 = r?
+}
+
+fn C() -> I32 {
+    let n: I32 = 5?
+    n
+}
+
+fn Main() {
+    B()
+}

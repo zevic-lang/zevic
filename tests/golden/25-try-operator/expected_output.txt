@@ -1,0 +1,7 @@
+ok 18
+error: Invalid: negative: -1
+cleanup for 4
+ok 8
+cleanup for -5
+error: Invalid: while handling -5
+caused by: Invalid: negative: -5

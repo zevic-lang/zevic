@@ -1,0 +1,36 @@
+module Main
+
+import Zevic.Console
+
+fn Parse(n: I32) -> Result<I32, Error> {
+    if (n < 0) {
+        return Err(Error.New(ErrorKind.Invalid, "negative: ${n}"))
+    }
+    Ok(n * 2)
+}
+
+fn Twice(n: I32) -> Result<I32, Error> {
+    let a: I32 = Parse(n)?
+    let b: I32 = Parse(a)?
+    Ok(a + b)
+}
+
+fn Wrapped(n: I32) -> Result<I32, Error> {
+    defer Console.Println("cleanup for ${n}")
+    let a: I32 = Parse(n).Context("while handling ${n}")?
+    Ok(a)
+}
+
+fn Show(r: Result<I32, Error>) {
+    match (r) {
+        Ok(v) => Console.Println("ok ${v}"),
+        Err(e) => Console.Println("error: ${e.ToString()}"),
+    }
+}
+
+fn Main() {
+    Show(Twice(3))
+    Show(Twice(-1))
+    Show(Wrapped(4))
+    Show(Wrapped(-5))
+}
