@@ -25,6 +25,7 @@ typedef struct Inst {
     Type *ret;
     bool emitted;
     bool is_extern;
+    bool has_this; /* a method: the first parameter is `ptr %this` */
 } Inst;
 
 struct Gen {
@@ -179,6 +180,8 @@ static char *qualified_name(Decl *d) {
     return zsprintf("%s.%s", d->mod->name, d->name);
 }
 
+static void ensure_members(Gen *g, Type *t);
+
 static Type *instantiate(Gen *g, Decl *d, Vec targs, Pos pos) {
     Node *n = d->node;
     if (n->list2.n != targs.n) {
@@ -189,10 +192,13 @@ static Type *instantiate(Gen *g, Decl *d, Vec targs, Pos pos) {
         return ty_err;
     }
     TKind k = n->kind == D_STRUCT ? T_STRUCT : n->kind == D_CLASS ? T_CLASS : T_ENUM;
-    return ty_named(k, d, qualified_name(d), targs);
+    Type *t = ty_named(k, d, qualified_name(d), targs);
+    ensure_members(g, t);
+    return t;
 }
 
 /* Resolve the fields (struct, class) or variants (enum) of a type. */
+static Type *resolve_type(Gen *g, SourceFile *f, Env *env, Node *te);
 static void ensure_members(Gen *g, Type *t) {
     if (t->members_done) return;
     t->members_done = true;
@@ -351,6 +357,7 @@ static Inst *get_inst(Gen *g, Decl *d, Type *self, Vec *targs) {
     in->self = self;
     in->name = k;
     in->is_extern = is_extern;
+    in->has_this = self && !fn->is_static && !is_extern;
     in->env = make_env(d, self, targs);
     for (int i = 0; i < fn->list.n; i++) {
         Node *p = fn->list.v[i];
@@ -405,9 +412,21 @@ typedef struct FnCtx {
     Type *ret;
     Scope *scope;
     Vec loops;
-    bool this_mut;
-    Local *this_local;
+    bool has_this;   /* inside a method */
+    char *this_slot; /* address of the `this` value (a slot holding the pointer, for classes) */
+    Type *this_t;
+    bool this_mut;   /* may `this` be changed? (mut fn and Init) */
 } FnCtx;
+
+/* Where a value lives, and whether it may be changed through this path. */
+typedef struct {
+    char *ptr; /* address of the value */
+    Type *t;
+    bool mut;
+} Place;
+
+static Place gen_place(FnCtx *F, Node *n);
+static bool is_static_path(FnCtx *F, Node *n);
 
 static bool is_err(Type *t) { return t == ty_err; }
 
@@ -1018,6 +1037,8 @@ static Val gen_unary(FnCtx *F, Node *n, Type *expect) {
 
 static Val gen_block(FnCtx *F, Node *blk, Type *expect);
 static Val gen_call(FnCtx *F, Node *n, Type *expect);
+static Val gen_member(FnCtx *F, Node *n, Type *expect);
+static Val load_place(FnCtx *F, Place p);
 static void gen_stmt(FnCtx *F, Node *s);
 
 static Val gen_ident(FnCtx *F, Node *n) {
@@ -1147,6 +1168,12 @@ static Val gen_expr(FnCtx *F, Node *n, Type *expect) {
     case N_IF: return gen_if(F, n, expect);
     case N_BLOCK: return gen_block(F, n, expect);
     case N_CALL: return gen_call(F, n, expect);
+    case N_MEMBER: return gen_member(F, n, expect);
+    case N_THIS: {
+        Place p = gen_place(F, n);
+        if (is_err(p.t)) return err_val();
+        return load_place(F, p);
+    }
     case N_RETURN: {
         Val v = unit_val();
         if (n->a) {
@@ -1252,6 +1279,8 @@ static TokKind base_op(TokKind k) {
     }
 }
 
+static const char *root_name(Node *n);
+
 /* The address of an assignable place; sets *t to its type. NULL after an error. */
 static char *gen_lvalue(FnCtx *F, Node *n, Type **t) {
     if (n->kind == N_IDENT) {
@@ -1267,6 +1296,20 @@ static char *gen_lvalue(FnCtx *F, Node *n, Type **t) {
         }
         *t = l->t;
         return l->ptr;
+    }
+    if (n->kind == N_MEMBER && !is_static_path(F, n)) {
+        Place p = gen_place(F, n);
+        if (is_err(p.t) || p.t == ty_never || !p.ptr) return NULL;
+        if (!p.mut) {
+            const char *root = n->a->kind == N_THIS ? "this" : NULL;
+            if (root)
+                diag_error(n->pos, "cannot assign to field `%s` here: `this` can only be changed inside a `mut fn` (or `Init`)", n->name);
+            else
+                diag_error(n->pos, "cannot assign to field `%s` because `%s` is not `mut`", n->name, root_name(n));
+            return NULL;
+        }
+        *t = p.t;
+        return p.ptr;
     }
     diag_error(n->pos, "this expression cannot be assigned to");
     return NULL;
@@ -1522,6 +1565,471 @@ static void unify(Node *te, Type *actual, Node *fn, Env *env) {
     }
 }
 
+/* =========================================================================
+ * User types: members, places, construction
+ * ========================================================================= */
+
+static Val gen_member(FnCtx *F, Node *n, Type *expect);
+static Val gen_call_decl(FnCtx *F, Node *call, Decl *d, Type *self, Vec *explicit, Type *expect, Val *recv);
+
+static bool is_user_type(Type *t) {
+    return t->k == T_STRUCT || t->k == T_CLASS || t->k == T_ENUM;
+}
+
+static bool name_is_pub(const char *n) {
+    return n[0] >= 'A' && n[0] <= 'Z';
+}
+
+static Decl *method_decl(Type *t, Node *fn) {
+    if (fn->aux) return fn->aux;
+    Decl *d = zalloc(sizeof *d);
+    d->node = fn;
+    d->mod = t->decl->mod;
+    d->file = t->decl->file;
+    d->name = fn->name;
+    d->is_pub = name_is_pub(fn->name);
+    fn->aux = d;
+    return d;
+}
+
+static Node *find_member_fn(Type *t, const char *name) {
+    if (!t->decl) return NULL;
+    Node *td = t->decl->node;
+    for (int i = 0; i < td->list.n; i++) {
+        Node *m = td->list.v[i];
+        if (m->kind == D_FN && strcmp(m->name, name) == 0) return m;
+    }
+    return NULL;
+}
+
+static Node *find_static_field(Type *t, const char *name) {
+    if (!t->decl) return NULL;
+    Node *td = t->decl->node;
+    for (int i = 0; i < td->list.n; i++) {
+        Node *m = td->list.v[i];
+        if (m->kind == N_FIELD && m->flag && strcmp(m->name, name) == 0) return m;
+    }
+    return NULL;
+}
+
+static Field *find_field(Type *t, const char *name, int *idx) {
+    for (int i = 0; i < t->fields.n; i++) {
+        Field *f = t->fields.v[i];
+        if (strcmp(f->name, name) == 0) {
+            if (idx) *idx = i;
+            return f;
+        }
+    }
+    return NULL;
+}
+
+static Variant *find_variant(Type *t, const char *name) {
+    for (int i = 0; i < t->variants.n; i++) {
+        Variant *v = t->variants.v[i];
+        if (strcmp(v->name, name) == 0) return v;
+    }
+    return NULL;
+}
+
+/* A class object is laid out like a tuple of its fields. */
+static Type *obj_tuple(Type *cls) {
+    Vec ts = {0};
+    for (int i = 0; i < cls->fields.n; i++) vec_push(&ts, ((Field *)cls->fields.v[i])->t);
+    return ty_tuple(ts);
+}
+
+static bool check_vis(FnCtx *F, Type *t, const char *name, Pos pos, const char *what) {
+    if (name_is_pub(name) || !t->decl || t->decl->mod == F->file->mod) return true;
+    diag_error(pos, "%s `%s` of `%s` is private (names starting with a lowercase letter are only visible inside module `%s`)",
+               what, name, t->name, t->decl->mod->name);
+    return false;
+}
+
+static Place place_err(void) {
+    Place p = {NULL, ty_err, false};
+    return p;
+}
+
+static Val load_place(FnCtx *F, Place p) {
+    if (is_err(p.t)) return err_val();
+    if (p.t == ty_unit) return unit_val();
+    char *t = tmp(F);
+    emit(F, "%s = load %s, ptr %s", t, type_ll(p.t), p.ptr);
+    Val v = {p.t, t};
+    return v;
+}
+
+static Place spill(FnCtx *F, Val v) {
+    Place p = {NULL, v.t, false};
+    if (is_err(v.t) || v.t == ty_never) {
+        p.t = is_err(v.t) ? ty_err : ty_never;
+        return p;
+    }
+    p.ptr = new_slot(F, v.t);
+    if (v.t != ty_unit) store_to(F, v.t, v, p.ptr);
+    return p;
+}
+
+/* Is this a dotted path whose first name is not a variable (a module or type)? */
+static bool is_static_path(FnCtx *F, Node *n) {
+    Vec segs = {0}, nodes = {0};
+    if (!flatten_path(n, &segs, &nodes)) return false;
+    return find_local(F, segs.v[0]) == NULL;
+}
+
+static Place gen_place(FnCtx *F, Node *n) {
+    switch (n->kind) {
+    case N_IDENT: {
+        Local *l = find_local(F, n->name);
+        if (l) {
+            Place p = {l->ptr, l->t, l->mut};
+            return p;
+        }
+        break;
+    }
+    case N_THIS: {
+        if (!F->has_this) {
+            diag_error(n->pos, "`this` can only be used inside a method");
+            return place_err();
+        }
+        Place tp = {F->this_slot, F->this_t, F->this_mut};
+        return tp;
+    }
+    case N_MEMBER: {
+        if (is_static_path(F, n)) break;
+        Place b = gen_place(F, n->a);
+        if (is_err(b.t)) return place_err();
+        if (b.t == ty_never) return b;
+        Type *bt = b.t;
+        if (bt->k != T_STRUCT && bt->k != T_CLASS) {
+            diag_error(n->pos, "type `%s` has no field `%s`", bt->name, n->name);
+            return place_err();
+        }
+        int idx = 0;
+        Field *f = find_field(bt, n->name, &idx);
+        if (!f) {
+            if (find_member_fn(bt, n->name))
+                diag_error(n->pos, "`%s` is a method of `%s`; call it with `()`", n->name, bt->name);
+            else
+                diag_error(n->pos, "type `%s` has no field `%s`", bt->name, n->name);
+            return place_err();
+        }
+        if (!check_vis(F, bt, n->name, n->pos, "field")) return place_err();
+        char *base = b.ptr;
+        const char *sll;
+        if (bt->k == T_CLASS) {
+            base = tmp(F);
+            emit(F, "%s = load ptr, ptr %s", base, b.ptr);
+            sll = type_ll(obj_tuple(bt));
+        } else {
+            sll = type_ll(bt);
+        }
+        char *gep = tmp(F);
+        emit(F, "%s = getelementptr inbounds %s, ptr %s, i32 0, i32 %d", gep, sll, base, idx);
+        Place p = {gep, f->t, b.mut};
+        return p;
+    }
+    default:
+        break;
+    }
+    Val v = gen_expr(F, n, NULL);
+    return spill(F, v);
+}
+
+/* The name of the variable a path starts from (for messages). */
+static const char *root_name(Node *n) {
+    while (n && n->kind == N_MEMBER) n = n->a;
+    if (n && n->kind == N_IDENT) return n->name;
+    if (n && n->kind == N_THIS) return "this";
+    return "this value";
+}
+
+/* Build an aggregate value from already generated parts. */
+static Val make_aggregate(FnCtx *F, Type *tt, Vec *vals) {
+    char *acc = "undef";
+    for (int i = 0; i < vals->n; i++) {
+        Val *v = vals->v[i];
+        char *r = tmp(F);
+        emit(F, "%s = insertvalue %s %s, %s %s, %d", r, type_ll(tt), acc, type_ll(v->t), v->v, i);
+        acc = r;
+    }
+    if (vals->n == 0) acc = "zeroinitializer";
+    Val res = {tt, acc};
+    return res;
+}
+
+/* ---- enums ---- */
+
+static char *tag_ptr(FnCtx *F, Type *et, char *slot) {
+    char *p = tmp(F);
+    emit(F, "%s = getelementptr inbounds %s, ptr %s, i32 0, i32 0", p, type_ll(et), slot);
+    return p;
+}
+
+static char *payload_ptr(FnCtx *F, Type *et, char *slot) {
+    char *p = tmp(F);
+    emit(F, "%s = getelementptr inbounds %s, ptr %s, i32 0, i32 1", p, type_ll(et), slot);
+    return p;
+}
+
+static Val build_variant(FnCtx *F, Type *et, Variant *v, Vec *fieldvals) {
+    char *slot = new_slot(F, et);
+    emit(F, "store i32 %d, ptr %s", v->tag, tag_ptr(F, et, slot));
+    if (v->payload && fieldvals->n) {
+        Val pv = make_aggregate(F, v->payload, fieldvals);
+        emit(F, "store %s %s, ptr %s", type_ll(v->payload), pv.v, payload_ptr(F, et, slot));
+    }
+    char *t = tmp(F);
+    emit(F, "%s = load %s, ptr %s", t, type_ll(et), slot);
+    Val r = {et, t};
+    return r;
+}
+
+static Node *find_variant_node(Node *enum_decl, const char *name) {
+    for (int i = 0; i < enum_decl->list.n; i++) {
+        Node *m = enum_decl->list.v[i];
+        if (m->kind == N_VARIANT && strcmp(m->name, name) == 0) return m;
+    }
+    return NULL;
+}
+
+/* The type of a generic type's instance when it is known without looking at the arguments. */
+static Type *static_type(FnCtx *F, Decl *d, Node *tnode, Type *expect) {
+    Node *td = d->node;
+    if (td->list2.n == 0) {
+        Vec none = {0};
+        return instantiate(F->g, d, none, td->pos);
+    }
+    if (tnode && tnode->list2.n) {
+        Vec targs = {0};
+        for (int i = 0; i < tnode->list2.n; i++) vec_push(&targs, resolve_type(F->g, F->file, F->env, tnode->list2.v[i]));
+        return instantiate(F->g, d, targs, tnode->pos);
+    }
+    if (expect && expect->decl == d) return expect;
+    return NULL;
+}
+
+/* Shape.Circle(1.0), Some(x), None ... `call` may be NULL for a variant without data. */
+static Val gen_variant(FnCtx *F, Node *call, Pos pos, Decl *d, Type *et, const char *vname, Type *expect) {
+    Node *vn = find_variant_node(d->node, vname);
+    if (!vn) {
+        diag_error(pos, "enum `%s` has no variant `%s`", d->name, vname);
+        return err_val();
+    }
+    int nf = vn->flag ? vn->list2.n : vn->list.n;
+    int nargs = call ? call->list.n : 0;
+    if (nf != nargs) {
+        if (nf == 0)
+            diag_error(pos, "variant `%s.%s` has no data, so it is written without `(...)`", d->name, vname);
+        else if (!call)
+            diag_error(pos, "variant `%s.%s` needs %d value(s): write `%s.%s(...)`", d->name, vname, nf, d->name, vname);
+        else
+            diag_error(pos, "variant `%s.%s` takes %d value(s), but %d were given", d->name, vname, nf, nargs);
+        return err_val();
+    }
+    if (vn->flag) {
+        diag_error(pos, "variant `%s.%s` has named fields; it cannot be built like this yet", d->name, vname);
+        return err_val();
+    }
+    Vec vals = {0};
+    if (!et) {
+        Env *env = env_new();
+        for (int i = 0; i < nargs; i++) {
+            Node *fte = vn->list.v[i];
+            Type *pexp = syntax_uses_unbound(fte, d->node, env) ? NULL : resolve_type(F->g, d->file, env, fte);
+            Val *v = zalloc(sizeof *v);
+            *v = gen_expr(F, call->list.v[i], pexp);
+            if (v->t == ty_never) return never_val(expect);
+            if (!pexp) unify(fte, v->t, d->node, env);
+            vec_push(&vals, v);
+        }
+        Vec targs = {0};
+        for (int i = 0; i < d->node->list2.n; i++) {
+            Node *tp = d->node->list2.v[i];
+            Type *t = env_get(env, tp->name);
+            if (!t && expect && expect->decl == d) t = expect->args.v[i];
+            if (!t) {
+                diag_error(pos, "cannot infer the type parameter `%s` of `%s` (add a type annotation)", tp->name, d->name);
+                return err_val();
+            }
+            vec_push(&targs, t);
+        }
+        et = instantiate(F->g, d, targs, pos);
+    } else {
+        Variant *v0 = find_variant(et, vname);
+        for (int i = 0; i < nargs; i++) {
+            Val *v = zalloc(sizeof *v);
+            *v = gen_expr(F, call->list.v[i], ((Field *)v0->fields.v[i])->t);
+            if (v->t == ty_never) return never_val(expect);
+            vec_push(&vals, v);
+        }
+    }
+    Variant *var = find_variant(et, vname);
+    for (int i = 0; i < nargs; i++) {
+        Val *v = vals.v[i];
+        char *what = zsprintf("argument %d of `%s.%s`", i + 1, d->name, vname);
+        *v = coerce(F, ((Node *)call->list.v[i])->pos, *v, ((Field *)var->fields.v[i])->t, what);
+        if (is_err(v->t)) return err_val();
+    }
+    return build_variant(F, et, var, &vals);
+}
+
+/* Type.New(args) */
+static Val gen_construct(FnCtx *F, Node *call, Decl *d, Type *t, Type *expect) {
+    (void)expect;
+    Gen *g = F->g;
+    Node *td = d->node;
+    if (td->kind == D_ENUM) {
+        diag_error(call->pos, "an enum value is built with one of its variants, like `%s.%s(...)`", d->name,
+                   td->list.n ? ((Node *)td->list.v[0])->name : "Variant");
+        return err_val();
+    }
+    ensure_members(g, t);
+    bool is_class = t->k == T_CLASS;
+    char *obj;
+    Type *vt = is_class ? obj_tuple(t) : t;
+    if (is_class) {
+        rt_decl(F, "zevic_alloc", "declare ptr @zevic_alloc(i64)");
+        obj = tmp(F);
+        emit(F, "%s = call ptr @zevic_alloc(i64 %lld)", obj, (long long)ty_size(vt));
+    } else {
+        obj = new_slot(F, t);
+        emit(F, "store %s zeroinitializer, ptr %s", type_ll(t), obj);
+    }
+    /* field initial values, evaluated as the type's own code would */
+    Env *tenv = env_new();
+    tenv->self = t;
+    for (int i = 0; i < td->list2.n; i++) env_add(tenv, ((Node *)td->list2.v[i])->name, t->args.v[i]);
+    Node *init = find_member_fn(t, "Init");
+    for (int i = 0; i < t->fields.n; i++) {
+        Field *f = t->fields.v[i];
+        Node *fn = NULL;
+        for (int k = 0; k < td->list.n; k++) {
+            Node *m = td->list.v[k];
+            if (m->kind == N_FIELD && !m->flag && strcmp(m->name, f->name) == 0) fn = m;
+        }
+        if (!fn || !fn->b) {
+            if (!init && !fn->b) {
+                diag_error(call->pos, "`%s` has no `Init`, so every field needs an initial value (`%s` has none)", t->name,
+                           f->name);
+                return err_val();
+            }
+            continue;
+        }
+        SourceFile *sf = F->file;
+        Env *se = F->env;
+        Scope *ss = F->scope;
+        F->file = d->file;
+        F->env = tenv;
+        F->scope = zalloc(sizeof(Scope));
+        Val v = gen_expr(F, fn->b, f->t);
+        v = coerce(F, fn->b->pos, v, f->t, "a field initial value");
+        F->file = sf;
+        F->env = se;
+        F->scope = ss;
+        if (is_err(v.t) || v.t == ty_never) continue;
+        char *gep = tmp(F);
+        emit(F, "%s = getelementptr inbounds %s, ptr %s, i32 0, i32 %d", gep, type_ll(vt), obj, i);
+        store_to(F, f->t, v, gep);
+    }
+    if (init) {
+        Val recv = {ty_ptr(ty_u8), obj};
+        Decl *md = method_decl(t, init);
+        if (init->is_static) {
+            diag_error(init->pos, "`Init` cannot be static");
+            return err_val();
+        }
+        Val r = gen_call_decl(F, call, md, t, NULL, NULL, &recv);
+        if (is_err(r.t)) return r;
+        if (r.t == ty_never) return r;
+    } else if (call->list.n) {
+        diag_error(call->pos, "`%s` has no `Init`, so `New` takes no arguments", t->name);
+        return err_val();
+    }
+    if (is_class) {
+        Val r = {t, obj};
+        return r;
+    }
+    char *v = tmp(F);
+    emit(F, "%s = load %s, ptr %s", v, type_ll(t), obj);
+    Val r = {t, v};
+    return r;
+}
+
+/* `Type.member` without a call: unit variants, static fields; and `Module.CONST`. */
+static Val gen_static_member(FnCtx *F, Node *n, Type *expect) {
+    Vec segs = {0}, nodes = {0};
+    flatten_path(n, &segs, &nodes);
+    int used = 0;
+    Decl *d = NULL;
+    if (strcmp(segs.v[0], "Self") == 0 && F->env && F->env->self && F->env->self->decl) {
+        d = F->env->self->decl;
+        used = 1;
+    } else {
+        d = find_decl(F->g, F->file, (char **)segs.v, segs.n, &used, n->pos);
+    }
+    if (used < 0) return err_val();
+    if (!d) {
+        if (strcmp(segs.v[0], "None") == 0) {
+            /* handled by gen_ident */
+        }
+        diag_error(n->pos, "unknown name `%s`", path_join(&segs, "."));
+        return err_val();
+    }
+    Node *dn = d->node;
+    if (dn->kind == D_CONST && used == segs.n) {
+        Type *t = resolve_type(F->g, d->file, make_env(d, NULL, NULL), dn->a);
+        Val v = gen_expr(F, dn->b, t);
+        return coerce(F, dn->b->pos, v, t, "a constant");
+    }
+    if ((dn->kind == D_ENUM || dn->kind == D_STRUCT || dn->kind == D_CLASS) && used == segs.n - 1) {
+        const char *member = segs.v[used];
+        Node *tnode = nodes.v[used - 1];
+        Type *t = (strcmp(segs.v[0], "Self") == 0 && F->env->self) ? F->env->self : static_type(F, d, tnode, expect);
+        if (dn->kind == D_ENUM && find_variant_node(dn, member)) return gen_variant(F, NULL, n->pos, d, t, member, expect);
+        if (t) {
+            Node *sf = find_static_field(t, member);
+            if (sf) {
+                Env *tenv = env_new();
+                tenv->self = t;
+                for (int i = 0; i < dn->list2.n; i++) env_add(tenv, ((Node *)dn->list2.v[i])->name, t->args.v[i]);
+                Type *ft = resolve_type(F->g, d->file, tenv, sf->a);
+                SourceFile *osf = F->file;
+                Env *oe = F->env;
+                Scope *os = F->scope;
+                F->file = d->file;
+                F->env = tenv;
+                F->scope = zalloc(sizeof(Scope));
+                Val v = sf->b ? gen_expr(F, sf->b, ft) : err_val();
+                v = coerce(F, n->pos, v, ft, "a static field");
+                F->file = osf;
+                F->env = oe;
+                F->scope = os;
+                return v;
+            }
+            if (find_member_fn(t, member)) {
+                diag_error(n->pos, "`%s.%s` is a function; call it with `()`", d->name, member);
+                return err_val();
+            }
+        }
+        diag_error(n->pos, "type `%s` has no member `%s`", d->name, member);
+        return err_val();
+    }
+    if (dn->kind == D_FN) {
+        diag_error(n->pos, "`%s` is a function; call it with `()` (function values are not supported yet)", d->name);
+        return err_val();
+    }
+    diag_error(n->pos, "`%s` cannot be used as a value here", path_join(&segs, "."));
+    return err_val();
+}
+
+static Val gen_member(FnCtx *F, Node *n, Type *expect) {
+    if (is_static_path(F, n)) return gen_static_member(F, n, expect);
+    Place p = gen_place(F, n);
+    if (p.t == ty_never) return never_val(expect);
+    return load_place(F, p);
+}
+
 /* The pointer part of a string constant `{ ptr @x, i64 n }`. */
 static char *const_ptr(const char *c) {
     return zstrndup(c + 6, (size_t)(strchr(c, ',') - (c + 6)));
@@ -1612,7 +2120,7 @@ static Val emit_call(FnCtx *F, Inst *in, Vec *args) {
 }
 
 /* Call function `d` with the arguments of `call`, inferring generic arguments. */
-static Val gen_call_decl(FnCtx *F, Node *call, Decl *d, Type *self, Vec *explicit, Type *expect) {
+static Val gen_call_decl(FnCtx *F, Node *call, Decl *d, Type *self, Vec *explicit, Type *expect, Val *recv) {
     Gen *g = F->g;
     Node *fn = d->node;
     int ntp = fn->list2.n;
@@ -1666,6 +2174,13 @@ static Val gen_call_decl(FnCtx *F, Node *call, Decl *d, Type *self, Vec *explici
         char *what = zsprintf("argument %d of `%s`", i + 1, fn->name);
         *v = coerce(F, ((Node *)call->list.v[i])->pos, *v, in->ptypes.v[i], what);
         if (is_err(v->t)) return err_val();
+    }
+    if (recv) {
+        /* the receiver goes first */
+        Vec all = {0};
+        vec_push(&all, recv);
+        for (int i = 0; i < vals.n; i++) vec_push(&all, vals.v[i]);
+        return emit_call(F, in, &all);
     }
     return emit_call(F, in, &vals);
 }
@@ -2056,13 +2571,53 @@ static Val gen_prim_method(FnCtx *F, Node *call, Val recv, const char *name, Typ
     return err_val();
 }
 
-static Val gen_method_call(FnCtx *F, Node *call, Node *recv_node, const char *name, Type *expect) {
-    Val recv = gen_expr(F, recv_node, NULL);
-    if (recv.t == ty_never) return recv;
-    if (is_err(recv.t)) {
+/* x.Method(args) where x is a struct, class or enum. */
+static Val gen_user_method(FnCtx *F, Node *call, Place p, Node *recv_node, const char *name, Type *expect) {
+    Type *t = p.t;
+    Node *fn = find_member_fn(t, name);
+    if (!fn) {
+        if (find_field(t, name, NULL))
+            diag_error(call->pos, "`%s` is a field of `%s`, not a method", name, t->name);
+        else
+            diag_error(call->pos, "type `%s` has no method `%s`", t->name, name);
         for (int i = 0; i < call->list.n; i++) gen_expr(F, call->list.v[i], NULL);
         return err_val();
     }
+    if (strcmp(name, "Init") == 0) {
+        diag_error(call->pos, "`Init` cannot be called directly; create values with `%s.New(...)`", t->decl->name);
+        return err_val();
+    }
+    if (!check_vis(F, t, name, call->pos, "method")) return err_val();
+    if (fn->is_static) {
+        diag_error(call->pos, "`%s` is a static function; call it as `%s.%s(...)`", name, t->decl->name, name);
+        return err_val();
+    }
+    if (fn->is_mut_fn && !p.mut) {
+        if (recv_node->kind == N_THIS)
+            diag_error(call->pos, "`mut fn %s` cannot be called here: `this` can only be changed inside a `mut fn` (or `Init`)", name);
+        else
+            diag_error(call->pos, "cannot call `mut fn %s` because `%s` is not `mut`", name, root_name(recv_node));
+        return err_val();
+    }
+    Val recv = {ty_ptr(ty_u8), p.ptr};
+    if (t->k == T_CLASS) {
+        char *o = tmp(F);
+        emit(F, "%s = load ptr, ptr %s", o, p.ptr);
+        recv.v = o;
+    }
+    Decl *md = method_decl(t, fn);
+    return gen_call_decl(F, call, md, t, &call->a->list2, expect, &recv);
+}
+
+static Val gen_method_call(FnCtx *F, Node *call, Node *recv_node, const char *name, Type *expect) {
+    Place p = gen_place(F, recv_node);
+    if (p.t == ty_never) return never_val(expect);
+    if (is_err(p.t)) {
+        for (int i = 0; i < call->list.n; i++) gen_expr(F, call->list.v[i], NULL);
+        return err_val();
+    }
+    if (is_user_type(p.t)) return gen_user_method(F, call, p, recv_node, name, expect);
+    Val recv = load_place(F, p);
     return gen_prim_method(F, call, recv, name, expect);
 }
 
@@ -2075,8 +2630,47 @@ static Val gen_call(FnCtx *F, Node *n, Type *expect) {
         if (!value_head) {
             char **sg = (char **)segs.v;
             int used = 0;
-            Decl *d = find_decl(F->g, F->file, sg, segs.n, &used, callee->pos);
+            Decl *d = NULL;
+            if (strcmp(head, "Self") == 0 && F->env && F->env->self && F->env->self->decl) {
+                d = F->env->self->decl;
+                used = 1;
+            } else {
+                d = find_decl(F->g, F->file, sg, segs.n, &used, callee->pos);
+            }
             if (used < 0) return err_val();
+            if (d && (d->node->kind == D_STRUCT || d->node->kind == D_CLASS || d->node->kind == D_ENUM) &&
+                used == segs.n - 1) {
+                const char *member = segs.v[used];
+                Node *tnode = nodes.v[used - 1];
+                Type *t = (strcmp(head, "Self") == 0) ? F->env->self : static_type(F, d, tnode, expect);
+                if (d->node->kind == D_ENUM && find_variant_node(d->node, member))
+                    return gen_variant(F, n, n->pos, d, t, member, expect);
+                if (strcmp(member, "New") == 0) {
+                    if (!t) {
+                        diag_error(n->pos, "cannot infer the type arguments of `%s` (write `%s<...>.New(...)` or give the variable a type)",
+                                   d->name, d->name);
+                        return err_val();
+                    }
+                    return gen_construct(F, n, d, t, expect);
+                }
+                Node *fn = t ? find_member_fn(t, member) : NULL;
+                if (fn && fn->is_static) {
+                    if (!check_vis(F, t, member, n->pos, "function")) return err_val();
+                    Node *last = nodes.v[nodes.n - 1];
+                    return gen_call_decl(F, n, method_decl(t, fn), t, &last->list2, expect, NULL);
+                }
+                if (fn) {
+                    diag_error(n->pos, "`%s` is a method; call it on a value, like `value.%s(...)`", member, member);
+                    return err_val();
+                }
+                if (!t) {
+                    diag_error(n->pos, "cannot infer the type arguments of `%s`; write them like `%s<I32>.%s(...)`", d->name,
+                               d->name, member);
+                    return err_val();
+                }
+                diag_error(n->pos, "type `%s` has no function `%s`", d->name, member);
+                return err_val();
+            }
             if (d && d->node->kind == D_FN && used == segs.n) {
                 Node *last = nodes.v[nodes.n - 1];
                 if (d->abi && strcmp(d->abi, "intrinsic") == 0) {
@@ -2085,7 +2679,7 @@ static Val gen_call(FnCtx *F, Node *n, Type *expect) {
                     diag_error(n->pos, "unknown intrinsic `%s`", d->name);
                     return err_val();
                 }
-                return gen_call_decl(F, n, d, NULL, &last->list2, expect);
+                return gen_call_decl(F, n, d, NULL, &last->list2, expect, NULL);
             }
             if (d && d->node->kind == D_FN) {
                 diag_error(callee->pos, "function `%s` has no member `%s`", d->name, segs.v[used]);
@@ -2128,10 +2722,23 @@ static void emit_function(Gen *g, Inst *in) {
     F.cur = "entry";
     push_scope(&F);
     SB params = {0};
+    if (in->has_this) {
+        sb_puts(&params, "ptr %this");
+        F.has_this = true;
+        F.this_t = in->self;
+        F.this_mut = fn->is_mut_fn || strcmp(fn->name, "Init") == 0;
+        if (in->self->k == T_CLASS) {
+            /* a class `this` is an object pointer; keep it in a slot so it can be used like a variable */
+            F.this_slot = new_slot(&F, in->self);
+            emit(&F, "store ptr %%this, ptr %s", F.this_slot);
+        } else {
+            F.this_slot = "%this";
+        }
+    }
     for (int i = 0; i < in->ptypes.n; i++) {
         Node *pn = fn->list.v[i];
         Type *pt = in->ptypes.v[i];
-        if (i) sb_puts(&params, ", ");
+        if (params.len) sb_puts(&params, ", ");
         sb_printf(&params, "%s %%p%d", type_ll(pt), i);
         Local *l = declare_local(&F, pn->name, pt, pn->flag, pn->pos);
         char *pv = zsprintf("%%p%d", i);
@@ -2191,6 +2798,16 @@ bool gen_program(Gen *g, SB *out) {
             if (!m->decls.keys[k]) continue;
             Decl *d = m->decls.vals[k];
             if (d->node->kind == D_FN && !d->abi && d->node->list2.n == 0) get_inst(g, d, NULL, NULL);
+            NodeKind dk = d->node->kind;
+            if ((dk == D_STRUCT || dk == D_CLASS || dk == D_ENUM) && d->node->list2.n == 0) {
+                /* check every method of a non-generic type, even one that is never called */
+                Vec none = {0};
+                Type *t = instantiate(g, d, none, d->node->pos);
+                for (int j = 0; j < d->node->list.n; j++) {
+                    Node *m = d->node->list.v[j];
+                    if (m->kind == D_FN && m->list2.n == 0) get_inst(g, method_decl(t, m), t, NULL);
+                }
+            }
         }
     }
     for (int i = 0; i < g->worklist.n; i++) emit_function(g, g->worklist.v[i]);
