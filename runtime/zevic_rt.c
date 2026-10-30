@@ -219,6 +219,40 @@ void zevic_char_to_str(zevic_str *out, uint32_t cp) {
     str_set(out, buf, n);
 }
 
+/* ---- text to numbers ---- */
+
+/* Is the text a plain decimal number: [+-] digits [. digits] [e [+-] digits] ? */
+int32_t zevic_f64_valid(const char *p, int64_t n) {
+    int64_t i = 0, digits = 0;
+    if (i < n && (p[i] == '+' || p[i] == '-')) i++;
+    while (i < n && p[i] >= '0' && p[i] <= '9') { i++; digits++; }
+    if (i < n && p[i] == '.') {
+        i++;
+        int64_t frac = 0;
+        while (i < n && p[i] >= '0' && p[i] <= '9') { i++; frac++; }
+        if (frac == 0) return 0;
+    }
+    if (digits == 0) return 0;
+    if (i < n && (p[i] == 'e' || p[i] == 'E')) {
+        i++;
+        if (i < n && (p[i] == '+' || p[i] == '-')) i++;
+        int64_t ed = 0;
+        while (i < n && p[i] >= '0' && p[i] <= '9') { i++; ed++; }
+        if (ed == 0) return 0;
+    }
+    return i == n;
+}
+
+double zevic_f64_parse(const char *p, int64_t n) {
+    char *buf = malloc((size_t)n + 1);
+    if (!buf) exit(101);
+    memcpy(buf, p, (size_t)n);
+    buf[n] = 0;
+    double v = strtod(buf, NULL);
+    free(buf);
+    return v;
+}
+
 /* ---- string builder (used for "${...}" interpolation) ---- */
 
 typedef struct {
