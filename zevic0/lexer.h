@@ -53,6 +53,7 @@ typedef struct {
     StrPart *parts;  /* TK_STRING */
     int nparts;
     bool quoted;     /* identifier written with backticks */
+    bool generic_close; /* a `>` that closes type arguments (it does not continue the line) */
 } Token;
 
 typedef struct {

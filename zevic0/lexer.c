@@ -9,6 +9,7 @@ typedef struct {
     int nv, cap;
     char stack[256]; /* open brackets: ( [ { */
     int sp;
+    int angle; /* open `<` of type arguments, e.g. Array<I32> */
 } Lexer;
 
 static const char *g_tok_names[TK_COUNT] = {
@@ -160,8 +161,10 @@ static void newline(Lexer *lx, Pos pos) {
     if (lx->sp > 0 && lx->stack[lx->sp - 1] != '{') return; /* inside ( ) or [ ] */
     if (lx->nv == 0) return;
     TokKind last = lx->v[lx->nv - 1].k;
+    if (lx->v[lx->nv - 1].generic_close) last = TK_IDENT; /* `Array<I32>` ends a type, not an expression */
     if (last == TK_NL || continues_after(last)) return;
     if (next_line_continues(lx)) return;
+    lx->angle = 0;
     push_tok(lx, TK_NL, pos);
 }
 
@@ -275,7 +278,12 @@ static void lex_op(Lexer *lx) {
         if (d == '<') {
             if (e == '=') { k = TK_SHLEQ; len = 3; } else { k = TK_SHL; len = 2; }
         } else if (d == '=') { k = TK_LE; len = 2; }
-        else k = TK_LT;
+        else {
+            k = TK_LT;
+            /* `Name<...`: glued to a name and not followed by a space, so it opens type arguments */
+            if (lx->i > 0 && is_ident_char((unsigned char)lx->s[lx->i - 1]) && d != ' ' && d != '\t' && d != '\n' && d != -1)
+                lx->angle++;
+        }
         break;
     case '>':
         /* `>>` is only a shift token when it cannot close two generic lists;
@@ -315,7 +323,14 @@ static void lex_op(Lexer *lx) {
         return;
     }
     for (int j = 0; j < len; j++) advance(lx);
-    push_tok(lx, k, pos);
+    Token *t = push_tok(lx, k, pos);
+    if (k == TK_GT && lx->angle > 0) {
+        lx->angle--;
+        t->generic_close = true;
+    } else if (k == TK_SHR && lx->angle >= 2) {
+        lx->angle -= 2;
+        t->generic_close = true;
+    }
 }
 
 TokenList lex(int file, const char *text, size_t len, int line, int col) {
