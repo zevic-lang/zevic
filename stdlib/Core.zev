@@ -1,7 +1,9 @@
 module Zevic.Core
 
-// Core types of the prelude: Option, Result, Error and ErrorKind.
-// They are ordinary Zevic code: `Option` and `Result` are enums, `Error` is a class.
+import Zevic.Intrinsics
+
+// Core types of the prelude: Option, Result, Error, ErrorKind and Array.
+// They are ordinary Zevic code: `Option` and `Result` are enums, `Error` and `Array` are classes.
 
 enum Option<T> {
     Some(T),
@@ -137,5 +139,144 @@ class Error {
             Some(c) => head + "\ncaused by: " + c.ToString(),
             None => head,
         }
+    }
+}
+
+// A growable array. It sits on `Intrinsics.Buf<T>`, a fixed-size block of memory.
+//
+// The compiler turns the syntax into calls of this class:
+//   a[i]            ->  a.Index(i)
+//   a[i] = v        ->  a.SetIndex(i, v)
+//   for (x in a)    ->  a loop over Len() and Index(i)
+//   [1, 2, 3]       ->  builds the object directly, so the fields `buf`, `len` and `cap` below
+//                       must keep their names and order.
+class Array<T> {
+    buf: Intrinsics.Buf<T> = Intrinsics.Buf.New(0)
+    len: I64 = 0
+    cap: I64 = 0
+
+    fn Len() -> I64 { this.len }
+
+    fn IsEmpty() -> Bool { this.len == 0 }
+
+    fn Index(i: I64) -> T {
+        if (i < 0 || i >= this.len) {
+            Panic("index ${i} is out of range (length ${this.len})")
+        }
+        this.buf.Get(i)
+    }
+
+    mut fn SetIndex(i: I64, v: T) {
+        if (i < 0 || i >= this.len) {
+            Panic("index ${i} is out of range (length ${this.len})")
+        }
+        this.buf.Set(i, v)
+    }
+
+    fn Get(i: I64) -> Option<T> {
+        if (i < 0 || i >= this.len) {
+            None
+        } else {
+            Some(this.buf.Get(i))
+        }
+    }
+
+    fn First() -> Option<T> { this.Get(0) }
+
+    fn Last() -> Option<T> { this.Get(this.len - 1) }
+
+    // Make room for at least `need` elements (doubling, so Push is cheap on average).
+    mut fn grow(need: I64) {
+        if (need <= this.cap) {
+            return
+        }
+        mut nc: I64 = if (this.cap < 4) { 4 } else { this.cap * 2 }
+        while (nc < need) {
+            nc *= 2
+        }
+        let nb: Intrinsics.Buf<T> = Intrinsics.Buf.New(nc)
+        nb.Copy(this.buf, 0, 0, this.len)
+        this.buf = nb
+        this.cap = nc
+    }
+
+    // Append `n` elements of `src`, starting at `from`.
+    mut fn appendRange(src: Array<T>, from: I64, n: I64) {
+        this.grow(this.len + n)
+        this.buf.Copy(src.buf, from, this.len, n)
+        this.len += n
+    }
+
+    mut fn Push(x: T) {
+        this.grow(this.len + 1)
+        this.buf.Set(this.len, x)
+        this.len += 1
+    }
+
+    mut fn Pop() -> Option<T> {
+        if (this.len == 0) {
+            return None
+        }
+        this.len -= 1
+        Some(this.buf.Get(this.len))
+    }
+
+    mut fn Insert(i: I64, x: T) {
+        if (i < 0 || i > this.len) {
+            Panic("insert position ${i} is out of range (length ${this.len})")
+        }
+        this.grow(this.len + 1)
+        this.buf.Copy(this.buf, i, i + 1, this.len - i)
+        this.buf.Set(i, x)
+        this.len += 1
+    }
+
+    mut fn RemoveAt(i: I64) -> T {
+        if (i < 0 || i >= this.len) {
+            Panic("index ${i} is out of range (length ${this.len})")
+        }
+        let v: T = this.buf.Get(i)
+        this.buf.Copy(this.buf, i + 1, i, this.len - i - 1)
+        this.len -= 1
+        v
+    }
+
+    // Empty the array and let go of the old storage.
+    mut fn Clear() {
+        this.buf = Intrinsics.Buf.New(0)
+        this.len = 0
+        this.cap = 0
+    }
+
+    mut fn Reverse() {
+        mut i: I64 = 0
+        mut j: I64 = this.len - 1
+        while (i < j) {
+            let t: T = this.buf.Get(i)
+            this.buf.Set(i, this.buf.Get(j))
+            this.buf.Set(j, t)
+            i += 1
+            j -= 1
+        }
+    }
+
+    mut fn Extend(other: Array<T>) {
+        this.appendRange(other, 0, other.len)
+    }
+
+    fn Slice(from: I64, to: I64) -> Array<T> {
+        if (from < 0 || to > this.len || from > to) {
+            Panic("slice ${from}..${to} is out of range (length ${this.len})")
+        }
+        mut r: Array<T> = Array.New()
+        r.appendRange(this, from, to - from)
+        r
+    }
+
+    fn Concat(other: Array<T>) -> Array<T> {
+        mut r: Array<T> = Array.New()
+        r.appendRange(this, 0, this.len)
+        r.appendRange(other, 0, other.len)
+        r
     }
 }
