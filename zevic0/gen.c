@@ -1038,6 +1038,7 @@ static Val gen_unary(FnCtx *F, Node *n, Type *expect) {
 static Val gen_block(FnCtx *F, Node *blk, Type *expect);
 static Val gen_call(FnCtx *F, Node *n, Type *expect);
 static Val gen_member(FnCtx *F, Node *n, Type *expect);
+static Val gen_match(FnCtx *F, Node *n, Type *expect);
 static Val load_place(FnCtx *F, Place p);
 static void gen_stmt(FnCtx *F, Node *s);
 
@@ -1169,6 +1170,7 @@ static Val gen_expr(FnCtx *F, Node *n, Type *expect) {
     case N_BLOCK: return gen_block(F, n, expect);
     case N_CALL: return gen_call(F, n, expect);
     case N_MEMBER: return gen_member(F, n, expect);
+    case N_MATCH: return gen_match(F, n, expect);
     case N_THIS: {
         Place p = gen_place(F, n);
         if (is_err(p.t)) return err_val();
@@ -2030,6 +2032,470 @@ static Val gen_member(FnCtx *F, Node *n, Type *expect) {
     return load_place(F, p);
 }
 
+/* =========================================================================
+ * match
+ * ========================================================================= */
+
+static Node g_wild_node = {.kind = P_WILD};
+
+static Place field_place(FnCtx *F, char *base, Type *agg, int idx, Type *ft, bool mut) {
+    char *gep = tmp(F);
+    emit(F, "%s = getelementptr inbounds %s, ptr %s, i32 0, i32 %d", gep, type_ll(agg), base, idx);
+    Place p = {gep, ft, mut};
+    return p;
+}
+
+static const char *variant_pat_name(Node *pat) {
+    return pat->path.v[pat->path.n - 1];
+}
+
+static bool is_prelude_variant(const char *n) {
+    return strcmp(n, "Some") == 0 || strcmp(n, "None") == 0 || strcmp(n, "Ok") == 0 || strcmp(n, "Err") == 0;
+}
+
+/* Resolve the variant a pattern names, checking its shape. NULL after an error. */
+static Variant *pat_variant(Type *et, Node *pat) {
+    if (et->k != T_ENUM) {
+        diag_error(pat->pos, "cannot match a value of type `%s` against the variant pattern `%s`", et->name,
+                   path_join(&pat->path, "."));
+        return NULL;
+    }
+    const char *vname = variant_pat_name(pat);
+    if (pat->path.n >= 2) {
+        const char *tn = pat->path.v[pat->path.n - 2];
+        if (strcmp(tn, et->decl->name) != 0) {
+            diag_error(pat->pos, "the pattern `%s` belongs to a different type than the matched value (`%s`)",
+                       path_join(&pat->path, "."), et->name);
+            return NULL;
+        }
+    } else if (!is_prelude_variant(vname)) {
+        Variant *maybe = find_variant(et, vname);
+        if (maybe)
+            diag_error(pat->pos, "write the variant with its type name, like `%s.%s` (only `Some`, `None`, `Ok` and `Err` can be written alone)",
+                       et->decl->name, vname);
+        else
+            diag_error(pat->pos, "unknown variant `%s` of `%s`", vname, et->name);
+        return NULL;
+    }
+    Variant *v = find_variant(et, vname);
+    if (!v) {
+        diag_error(pat->pos, "type `%s` has no variant `%s`", et->name, vname);
+        return NULL;
+    }
+    int nf = v->fields.n;
+    if (pat->flag2) {
+        if (!v->named) {
+            diag_error(pat->pos, "variant `%s` has no named fields; write `%s(...)`", v->name, v->name);
+            return NULL;
+        }
+    } else if (v->named) {
+        diag_error(pat->pos, "variant `%s` has named fields; match it with `%s { Name: pattern, .. }`", v->name, v->name);
+        return NULL;
+    } else if (pat->list.n != nf) {
+        if (nf == 0)
+            diag_error(pat->pos, "variant `%s` has no data, so the pattern is written without `(...)`", v->name);
+        else
+            diag_error(pat->pos, "variant `%s` has %d value(s), but the pattern has %d", v->name, nf, pat->list.n);
+        return NULL;
+    }
+    return v;
+}
+
+static void pat_test(FnCtx *F, Node *pat, Place pl, const char *fail) {
+    if (is_err(pl.t)) return;
+    switch (pat->kind) {
+    case P_WILD: case P_BIND:
+        return;
+    case P_LIT: {
+        Val v = gen_expr(F, pat->a, pl.t);
+        if (is_err(v.t) || v.t == ty_never) return;
+        if (v.t != pl.t) {
+            type_error(pat->pos, pl.t, v.t, "a pattern");
+            return;
+        }
+        Val cur = load_place(F, pl);
+        Val eq = gen_compare(F, TK_EQEQ, cur, v, pat->pos);
+        if (is_err(eq.t)) return;
+        char *ok = newlabel(F, "pat.ok");
+        condbr(F, eq.v, ok, fail);
+        start_block(F, ok);
+        return;
+    }
+    case P_RANGE: {
+        Val lo = gen_expr(F, pat->a, pl.t), hi = gen_expr(F, pat->b, pl.t);
+        if (is_err(lo.t) || is_err(hi.t) || lo.t == ty_never || hi.t == ty_never) return;
+        if (lo.t != pl.t || hi.t != pl.t || !(ty_is_int(pl.t) || pl.t == ty_char)) {
+            diag_error(pat->pos, "a range pattern needs integers or characters of the matched type (`%s`)", pl.t->name);
+            return;
+        }
+        Val cur = load_place(F, pl);
+        Val c1 = gen_compare(F, TK_GE, cur, lo, pat->pos);
+        char *ok1 = newlabel(F, "pat.lo");
+        condbr(F, c1.v, ok1, fail);
+        start_block(F, ok1);
+        Val c2 = gen_compare(F, pat->flag ? TK_LE : TK_LT, cur, hi, pat->pos);
+        char *ok2 = newlabel(F, "pat.hi");
+        condbr(F, c2.v, ok2, fail);
+        start_block(F, ok2);
+        return;
+    }
+    case P_TUPLE: {
+        if (pl.t->k != T_TUPLE) {
+            diag_error(pat->pos, "cannot match a value of type `%s` against a tuple pattern", pl.t->name);
+            return;
+        }
+        if (pl.t->args.n != pat->list.n) {
+            diag_error(pat->pos, "the tuple pattern has %d element(s), but the value has %d", pat->list.n, pl.t->args.n);
+            return;
+        }
+        for (int i = 0; i < pat->list.n; i++)
+            pat_test(F, pat->list.v[i], field_place(F, pl.ptr, pl.t, i, pl.t->args.v[i], pl.mut), fail);
+        return;
+    }
+    case P_OR: {
+        char *done = newlabel(F, "pat.or");
+        for (int i = 0; i < pat->list.n; i++) {
+            bool last = i == pat->list.n - 1;
+            char *next = last ? (char *)fail : newlabel(F, "pat.alt");
+            pat_test(F, pat->list.v[i], pl, next);
+            if (!last) {
+                br(F, done);
+                start_block(F, next);
+            }
+        }
+        goto_block(F, done);
+        return;
+    }
+    case P_VARIANT: {
+        Variant *v = pat_variant(pl.t, pat);
+        if (!v) return;
+        char *tg = tmp(F), *eq = tmp(F);
+        emit(F, "%s = load i32, ptr %s", tg, tag_ptr(F, pl.t, pl.ptr));
+        emit(F, "%s = icmp eq i32 %s, %d", eq, tg, v->tag);
+        char *ok = newlabel(F, "pat.tag");
+        condbr(F, eq, ok, fail);
+        start_block(F, ok);
+        if (!v->fields.n) return;
+        char *pp = payload_ptr(F, pl.t, pl.ptr);
+        if (pat->flag2) {
+            for (int i = 0; i < pat->list2.n; i++) {
+                Node *fp = pat->list2.v[i];
+                int idx = -1;
+                for (int k = 0; k < v->fields.n; k++)
+                    if (strcmp(((Field *)v->fields.v[k])->name, fp->name) == 0) idx = k;
+                if (idx < 0) {
+                    diag_error(fp->pos, "variant `%s` has no field `%s`", v->name, fp->name);
+                    continue;
+                }
+                pat_test(F, fp->a, field_place(F, pp, v->payload, idx, ((Field *)v->fields.v[idx])->t, pl.mut), fail);
+            }
+            if (!pat->flag3 && pat->list2.n < v->fields.n)
+                diag_error(pat->pos, "the pattern does not mention every field of `%s`; add `..` to ignore the rest", v->name);
+        } else {
+            for (int i = 0; i < pat->list.n; i++)
+                pat_test(F, pat->list.v[i], field_place(F, pp, v->payload, i, ((Field *)v->fields.v[i])->t, pl.mut), fail);
+        }
+        return;
+    }
+    default:
+        diag_error(pat->pos, "this pattern is not supported here");
+    }
+}
+
+static bool pat_has_binding(Node *pat) {
+    switch (pat->kind) {
+    case P_BIND: return true;
+    case P_TUPLE: case P_OR: case P_VARIANT:
+        for (int i = 0; i < pat->list.n; i++)
+            if (pat_has_binding(pat->list.v[i])) return true;
+        for (int i = 0; i < pat->list2.n; i++)
+            if (pat_has_binding(((Node *)pat->list2.v[i])->a)) return true;
+        return false;
+    default:
+        return false;
+    }
+}
+
+static void pat_bind(FnCtx *F, Node *pat, Place pl, bool mut) {
+    if (is_err(pl.t)) return;
+    switch (pat->kind) {
+    case P_BIND: {
+        Local *l = declare_local(F, pat->name, pl.t, mut, pat->pos);
+        if (pl.t != ty_unit) {
+            Val v = load_place(F, pl);
+            store_to(F, pl.t, v, l->ptr);
+        }
+        return;
+    }
+    case P_TUPLE:
+        if (pl.t->k != T_TUPLE || pl.t->args.n != pat->list.n) return;
+        for (int i = 0; i < pat->list.n; i++)
+            pat_bind(F, pat->list.v[i], field_place(F, pl.ptr, pl.t, i, pl.t->args.v[i], pl.mut), mut);
+        return;
+    case P_OR:
+        for (int i = 0; i < pat->list.n; i++)
+            if (pat_has_binding(pat->list.v[i])) {
+                diag_error(pat->pos, "an `|` pattern cannot bind names (each alternative would bind different values)");
+                return;
+            }
+        return;
+    case P_VARIANT: {
+        if (pl.t->k != T_ENUM) return;
+        Variant *v = find_variant(pl.t, variant_pat_name(pat));
+        if (!v || !v->fields.n) return;
+        char *pp = payload_ptr(F, pl.t, pl.ptr);
+        if (pat->flag2) {
+            for (int i = 0; i < pat->list2.n; i++) {
+                Node *fp = pat->list2.v[i];
+                for (int k = 0; k < v->fields.n; k++)
+                    if (strcmp(((Field *)v->fields.v[k])->name, fp->name) == 0)
+                        pat_bind(F, fp->a, field_place(F, pp, v->payload, k, ((Field *)v->fields.v[k])->t, pl.mut), mut);
+            }
+        } else {
+            for (int i = 0; i < pat->list.n && i < v->fields.n; i++)
+                pat_bind(F, pat->list.v[i], field_place(F, pp, v->payload, i, ((Field *)v->fields.v[i])->t, pl.mut), mut);
+        }
+        return;
+    }
+    default:
+        return;
+    }
+}
+
+/* ---- exhaustiveness: does this set of pattern rows cover every value? ---- */
+
+static bool pat_is_wild(Node *p) {
+    return p->kind == P_WILD || p->kind == P_BIND;
+}
+
+static Vec *row_new(void) {
+    return zalloc(sizeof(Vec));
+}
+
+static Vec *row_with(Vec *first_part, Vec *rest, int skip) {
+    Vec *r = row_new();
+    for (int i = 0; i < first_part->n; i++) vec_push(r, first_part->v[i]);
+    for (int i = skip; i < rest->n; i++) vec_push(r, rest->v[i]);
+    return r;
+}
+
+static bool rows_cover(Vec *rows, Vec *tys);
+
+static bool rows_cover(Vec *rows_in, Vec *tys) {
+    if (rows_in->n == 0) return false;
+    if (tys->n == 0) return true;
+    Type *t = tys->v[0];
+    /* expand `a | b` in the first column into separate rows */
+    Vec rows = {0};
+    for (int i = 0; i < rows_in->n; i++) {
+        Vec *r = rows_in->v[i];
+        Node *p = r->v[0];
+        if (p->kind == P_OR) {
+            for (int k = 0; k < p->list.n; k++) {
+                Vec first = {0};
+                vec_push(&first, p->list.v[k]);
+                vec_push(&rows, row_with(&first, r, 1));
+            }
+        } else {
+            vec_push(&rows, r);
+        }
+    }
+    Vec rest_tys = {0};
+    for (int i = 1; i < tys->n; i++) vec_push(&rest_tys, tys->v[i]);
+    if (t->k == T_ENUM) {
+        for (int vi = 0; vi < t->variants.n; vi++) {
+            Variant *v = t->variants.v[vi];
+            Vec nrows = {0};
+            for (int i = 0; i < rows.n; i++) {
+                Vec *r = rows.v[i];
+                Node *p = r->v[0];
+                Vec sub = {0};
+                if (pat_is_wild(p)) {
+                    for (int k = 0; k < v->fields.n; k++) vec_push(&sub, &g_wild_node);
+                } else if (p->kind == P_VARIANT && strcmp(variant_pat_name(p), v->name) == 0) {
+                    if (p->flag2) {
+                        for (int k = 0; k < v->fields.n; k++) {
+                            Node *sp = &g_wild_node;
+                            for (int q = 0; q < p->list2.n; q++) {
+                                Node *fp = p->list2.v[q];
+                                if (strcmp(((Field *)v->fields.v[k])->name, fp->name) == 0) sp = fp->a;
+                            }
+                            vec_push(&sub, sp);
+                        }
+                    } else {
+                        for (int k = 0; k < v->fields.n; k++)
+                            vec_push(&sub, k < p->list.n ? p->list.v[k] : &g_wild_node);
+                    }
+                } else {
+                    continue;
+                }
+                vec_push(&nrows, row_with(&sub, r, 1));
+            }
+            Vec ntys = {0};
+            for (int k = 0; k < v->fields.n; k++) vec_push(&ntys, ((Field *)v->fields.v[k])->t);
+            for (int k = 0; k < rest_tys.n; k++) vec_push(&ntys, rest_tys.v[k]);
+            if (!rows_cover(&nrows, &ntys)) return false;
+        }
+        return true;
+    }
+    if (t->k == T_TUPLE) {
+        Vec nrows = {0};
+        for (int i = 0; i < rows.n; i++) {
+            Vec *r = rows.v[i];
+            Node *p = r->v[0];
+            Vec sub = {0};
+            if (pat_is_wild(p)) {
+                for (int k = 0; k < t->args.n; k++) vec_push(&sub, &g_wild_node);
+            } else if (p->kind == P_TUPLE) {
+                for (int k = 0; k < t->args.n; k++) vec_push(&sub, k < p->list.n ? p->list.v[k] : &g_wild_node);
+            } else {
+                continue;
+            }
+            vec_push(&nrows, row_with(&sub, r, 1));
+        }
+        Vec ntys = {0};
+        for (int k = 0; k < t->args.n; k++) vec_push(&ntys, t->args.v[k]);
+        for (int k = 0; k < rest_tys.n; k++) vec_push(&ntys, rest_tys.v[k]);
+        return rows_cover(&nrows, &ntys);
+    }
+    if (t == ty_bool) {
+        for (int b = 0; b < 2; b++) {
+            Vec nrows = {0};
+            for (int i = 0; i < rows.n; i++) {
+                Vec *r = rows.v[i];
+                Node *p = r->v[0];
+                bool take = pat_is_wild(p);
+                if (p->kind == P_LIT && p->a->kind == N_BOOL && (int)p->a->ival == b) take = true;
+                if (take) vec_push(&nrows, row_with(&(Vec){0}, r, 1));
+            }
+            if (!rows_cover(&nrows, &rest_tys)) return false;
+        }
+        return true;
+    }
+    /* numbers, characters, strings: only a catch-all row covers everything */
+    Vec nrows = {0};
+    for (int i = 0; i < rows.n; i++) {
+        Vec *r = rows.v[i];
+        if (pat_is_wild(r->v[0])) vec_push(&nrows, row_with(&(Vec){0}, r, 1));
+    }
+    return rows_cover(&nrows, &rest_tys);
+}
+
+static const char *missing_hint(Type *t, Vec *rows) {
+    /* name one enum variant that no arm mentions, to make the message concrete */
+    if (t->k == T_ENUM) {
+        for (int vi = 0; vi < t->variants.n; vi++) {
+            Variant *v = t->variants.v[vi];
+            Vec sub = {0};
+            Vec tys = {0};
+            vec_push(&tys, t);
+            for (int i = 0; i < rows->n; i++) vec_push(&sub, rows->v[i]);
+            /* a variant is missing when the rows restricted to it cover nothing */
+            Vec only = {0};
+            for (int i = 0; i < rows->n; i++) {
+                Vec *r = rows->v[i];
+                Node *p = r->v[0];
+                if (pat_is_wild(p) || (p->kind == P_VARIANT && strcmp(variant_pat_name(p), v->name) == 0)) vec_push(&only, r);
+                else if (p->kind == P_OR) {
+                    for (int k = 0; k < p->list.n; k++) {
+                        Node *q = p->list.v[k];
+                        if (q->kind == P_VARIANT && strcmp(variant_pat_name(q), v->name) == 0) vec_push(&only, r);
+                    }
+                }
+            }
+            if (only.n == 0) return zsprintf("`%s.%s` is not handled", t->decl->name, v->name);
+        }
+    }
+    return NULL;
+}
+
+static Val gen_match(FnCtx *F, Node *n, Type *expect) {
+    Place sp = gen_place(F, n->a);
+    if (sp.t == ty_never) return never_val(expect);
+    bool bad = is_err(sp.t);
+    if (!bad) {
+        Vec rows = {0}, tys = {0};
+        for (int i = 0; i < n->list.n; i++) {
+            Node *arm = n->list.v[i];
+            if (arm->b) continue; /* a guarded arm may fail, so it does not count */
+            Vec *r = row_new();
+            vec_push(r, arm->a);
+            vec_push(&rows, r);
+        }
+        vec_push(&tys, sp.t);
+        if (!rows_cover(&rows, &tys)) {
+            const char *hint = missing_hint(sp.t, &rows);
+            diag_error(n->pos, "this `match` does not cover every case%s%s", hint ? ": " : "",
+                       hint ? hint : " (add a `_ =>` arm)");
+            if (hint) diag_note("add an arm for it or a `_ =>` arm");
+        }
+    }
+    char *end_l = newlabel(F, "match.end");
+    Vec rvals = {0}, rlabels = {0};
+    Type *want = (expect && expect != ty_unit) ? expect : NULL;
+    Type *rt = NULL;
+    for (int i = 0; i < n->list.n; i++) {
+        Node *arm = n->list.v[i];
+        char *next = newlabel(F, "arm.next");
+        push_scope(F);
+        if (!bad) {
+            pat_test(F, arm->a, sp, next);
+            pat_bind(F, arm->a, sp, false);
+        }
+        if (arm->b) {
+            Val g = gen_expr(F, arm->b, ty_bool);
+            g = coerce(F, arm->b->pos, g, ty_bool, "a match guard");
+            if (g.t != ty_never && !is_err(g.t)) {
+                char *ok = newlabel(F, "guard.ok");
+                condbr(F, g.v, ok, next);
+                start_block(F, ok);
+            }
+        }
+        Type *arm_want = rt ? rt : want;
+        Val v = arm->c->kind == N_BLOCK ? gen_block(F, arm->c, arm_want) : gen_expr(F, arm->c, arm_want);
+        bool live = !F->term;
+        if (live) {
+            if (is_err(v.t)) {
+                /* keep going: the error is already reported */
+            } else if (!rt) {
+                rt = v.t;
+            } else if (v.t != rt && !is_err(rt)) {
+                diag_error(arm->c->pos, "the arms of this `match` have different types: `%s` and `%s`", rt->name, v.t->name);
+                v = err_val();
+            }
+        }
+        pop_scope(F);
+        if (live && !F->term) {
+            Val *pv = zalloc(sizeof *pv);
+            *pv = v;
+            vec_push(&rvals, pv);
+            vec_push(&rlabels, F->cur);
+            br(F, end_l);
+        }
+        start_block(F, next);
+    }
+    emit(F, "unreachable");
+    F->term = true;
+    start_block(F, end_l);
+    if (rvals.n == 0) {
+        emit(F, "unreachable");
+        F->term = true;
+        return never_val(expect);
+    }
+    for (int i = 0; i < rvals.n; i++)
+        if (is_err(((Val *)rvals.v[i])->t)) return err_val();
+    if (!rt || rt == ty_unit) return unit_val();
+    char *r = tmp(F);
+    SB sb = {0};
+    for (int i = 0; i < rvals.n; i++) {
+        Val *v = rvals.v[i];
+        sb_printf(&sb, "%s[ %s, %%%s ]", i ? ", " : "", v->v, (char *)rlabels.v[i]);
+    }
+    emit(F, "%s = phi %s %s", r, type_ll(rt), sb_str(&sb));
+    Val res = {rt, r};
+    return res;
+}
+
 /* The pointer part of a string constant `{ ptr @x, i64 n }`. */
 static char *const_ptr(const char *c) {
     return zstrndup(c + 6, (size_t)(strchr(c, ',') - (c + 6)));
@@ -2689,10 +3155,11 @@ static Val gen_call(FnCtx *F, Node *n, Type *expect) {
                 if (strcmp(head, "Panic") == 0) return gen_panic_builtin(F, n);
                 if (strcmp(head, "Assert") == 0) return gen_assert_builtin(F, n);
             }
-            if (d) {
+            if (d && (d->node->kind == D_INTERFACE || d->node->kind == D_EXTERN)) {
                 diag_error(callee->pos, "calling `%s` this way is not supported yet", path_join(&segs, "."));
                 return err_val();
             }
+            /* a type or constant followed by more names (`Shape.Empty.Area()`): a method call on a value */
             if (callee->kind == N_IDENT) {
                 diag_error(callee->pos, "unknown function `%s`", head);
                 return err_val();
