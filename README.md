@@ -19,7 +19,20 @@ fn Main() {
 
 ## ビルド
 
-必要なもの: C コンパイラ(clang 推奨)、`make`、`clang` 15 以上(生成した IR のビルドに使用)、`python3`(テスト用)。
+必要なもの: C コンパイラ、`make`、`python3`(テスト用)、そして **clang 15 以上**(`zevic` が生成した LLVM IR をビルドするために使います)。
+
+### LLVM(clang)のインストール
+
+| OS | コマンド |
+| --- | --- |
+| Ubuntu / Debian | `sudo apt install clang` |
+| Windows | `winget install LLVM.LLVM`(MSVC のライブラリが必要なので Visual Studio Build Tools も入れてください) |
+| macOS | `brew install llvm` |
+
+`zevic` は次の順で clang を探します: `--cc` → 環境変数 `ZEVIC_CLANG` → `PATH` 上の `clang` →
+よくあるインストール先(`C:\Program Files\LLVM\bin`、Homebrew、`/usr/lib/llvm-*/bin`)。
+見つからないとき、または古いときは、上のインストール方法を表示して終了します。
+
 
 ```sh
 make            # build/zevic を作る
