@@ -13,6 +13,6 @@ u8 255
 u64 18446744073709551615
 i64 -9223372036854775808
 f64 3.25
-f64 1e+03
+f64 1000.0
 cannot read "1." as a number: the format is not a decimal number
 -5 does not fit in U32
