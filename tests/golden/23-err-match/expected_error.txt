@@ -1,0 +1,5 @@
+the arms of this `match` have different types: `String` and `I64`
+variant `Circle` has 1 value(s), but the pattern has 2
+this `match` does not cover every case: `Light.Yellow` is not handled
+write the variant with its type name, like `Shape.Circle` (only `Some`, `None`, `Ok` and `Err` can be written alone)
+this `match` does not cover every case (add a `_ =>` arm)

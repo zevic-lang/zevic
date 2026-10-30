@@ -1,0 +1,69 @@
+module Main
+
+import Zevic.Console
+
+enum Shape {
+    Circle(I32),
+    Rect(I32, I32),
+    Empty,
+
+    fn Area() -> I32 {
+        match (this) {
+            Shape.Circle(r) => 3 * r * r,
+            Shape.Rect(w, h) => w * h,
+            Shape.Empty => 0,
+        }
+    }
+}
+
+enum Light { Red, Yellow, Green }
+
+fn Describe(n: I32) -> String {
+    match (n) {
+        0 => "zero",
+        1..=9 => "one digit",
+        10 | 20 | 30 => "round",
+        x if (x > 100) => "big",
+        _ => "other",
+    }
+}
+
+fn Next(l: Light) -> Light {
+    match (l) {
+        Light.Red => Light.Green,
+        Light.Green => Light.Yellow,
+        Light.Yellow => Light.Red,
+    }
+}
+
+fn Name(l: Light) -> String {
+    match (l) {
+        Light.Red => "red",
+        Light.Yellow => "yellow",
+        Light.Green => "green",
+    }
+}
+
+fn Main() {
+    let shapes: Shape = Shape.Rect(3, 4)
+    Console.Println("rect area ${shapes.Area()}")
+    Console.Println("circle area ${Shape.Circle(2).Area()}")
+    Console.Println("empty area ${Shape.Empty.Area()}")
+    Console.Println(Describe(0))
+    Console.Println(Describe(7))
+    Console.Println(Describe(20))
+    Console.Println(Describe(500))
+    Console.Println(Describe(50))
+    mut l: Light = Light.Red
+    for (i in 0..4) {
+        Console.Println("${i}: ${Name(l)}")
+        l = Next(l)
+    }
+    let pair: (Bool, I32) = (true, 5)
+    let msg: String = match (pair) {
+        (true, 0) => "true zero",
+        (true, n) => "true and ${n}",
+        (false, _) => "false",
+    }
+    Console.Println(msg)
+}

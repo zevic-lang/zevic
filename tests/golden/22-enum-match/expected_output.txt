@@ -1,0 +1,13 @@
+rect area 12
+circle area 12
+empty area 0
+zero
+one digit
+round
+big
+other
+0: red
+1: green
+2: yellow
+3: red
+true and 5

@@ -1,0 +1,53 @@
+module Main
+
+import Zevic.Console
+
+enum Light { Red, Yellow, Green }
+enum Shape { Circle(I32), Rect(I32, I32) }
+
+fn A(l: Light) -> String {
+    match (l) {
+        Light.Red => "red",
+        Light.Green => "green",
+    }
+}
+
+fn B(n: I32) -> String {
+    match (n) {
+        0 => "zero",
+        1 => "one",
+    }
+}
+
+fn C(l: Light) -> String {
+    match (l) {
+        Light.Red => "red",
+        Light.Yellow => 5,
+        _ => "x",
+    }
+}
+
+fn D(s: Shape) -> I32 {
+    match (s) {
+        Shape.Circle(r, x) => r,
+        Shape.Rect(w, h) => w + h,
+    }
+}
+
+fn E(s: Shape) -> I32 {
+    match (s) {
+        Circle(r) => r,
+        Shape.Rect(w, h) => w + h,
+    }
+}
+
+fn F(b: Bool, l: Light) -> I32 {
+    match ((b, l)) {
+        (true, Light.Red) => 1,
+        (false, _) => 2,
+    }
+}
+
+fn Main() {
+    Console.Println(A(Light.Red))
+}
