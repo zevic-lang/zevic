@@ -1,0 +1,141 @@
+module Zevic.Core
+
+// Core types of the prelude: Option, Result, Error and ErrorKind.
+// They are ordinary Zevic code: `Option` and `Result` are enums, `Error` is a class.
+
+enum Option<T> {
+    Some(T),
+    None,
+
+    fn IsSome() -> Bool {
+        match (this) {
+            Some(_) => true,
+            None => false,
+        }
+    }
+
+    fn IsNone() -> Bool {
+        match (this) {
+            Some(_) => false,
+            None => true,
+        }
+    }
+
+    fn Unwrap() -> T {
+        match (this) {
+            Some(v) => v,
+            None => Panic("called Unwrap on a None value"),
+        }
+    }
+
+    fn UnwrapOr(d: T) -> T {
+        match (this) {
+            Some(v) => v,
+            None => d,
+        }
+    }
+
+    fn OkOr(e: Error) -> Result<T, Error> {
+        match (this) {
+            Some(v) => Ok(v),
+            None => Err(e),
+        }
+    }
+}
+
+enum Result<T, E> {
+    Ok(T),
+    Err(E),
+
+    fn IsOk() -> Bool {
+        match (this) {
+            Ok(_) => true,
+            Err(_) => false,
+        }
+    }
+
+    fn IsErr() -> Bool {
+        match (this) {
+            Ok(_) => false,
+            Err(_) => true,
+        }
+    }
+
+    fn Unwrap() -> T {
+        match (this) {
+            Ok(v) => v,
+            Err(_) => Panic("called Unwrap on an Err value"),
+        }
+    }
+
+    fn UnwrapOr(d: T) -> T {
+        match (this) {
+            Ok(v) => v,
+            Err(_) => d,
+        }
+    }
+
+    // Wrap the error in a new one that says what was being done; the old one stays as the cause.
+    fn Context(msg: String) -> Result<T, Error> {
+        match (this) {
+            Ok(v) => Ok(v),
+            Err(e) => Err(Error.Wrap(msg, e)),
+        }
+    }
+}
+
+enum ErrorKind {
+    NotFound,
+    Invalid,
+    InvalidFormat,
+    OutOfRange,
+    Permission,
+    Io,
+    Parse,
+    Timeout,
+    Other,
+
+    fn ToString() -> String {
+        match (this) {
+            ErrorKind.NotFound => "NotFound",
+            ErrorKind.Invalid => "Invalid",
+            ErrorKind.InvalidFormat => "InvalidFormat",
+            ErrorKind.OutOfRange => "OutOfRange",
+            ErrorKind.Permission => "Permission",
+            ErrorKind.Io => "Io",
+            ErrorKind.Parse => "Parse",
+            ErrorKind.Timeout => "Timeout",
+            ErrorKind.Other => "Other",
+        }
+    }
+}
+
+class Error {
+    kind: ErrorKind
+    message: String
+    cause: Option<Error>
+
+    fn Init(kind: ErrorKind, message: String) {
+        this.kind = kind
+        this.message = message
+        this.cause = None
+    }
+
+    static fn Wrap(message: String, cause: Error) -> Error {
+        mut e: Error = Error.New(cause.kind, message)
+        e.cause = Some(cause)
+        e
+    }
+
+    fn Kind() -> ErrorKind { this.kind }
+    fn Message() -> String { this.message }
+    fn Cause() -> Option<Error> { this.cause }
+
+    fn ToString() -> String {
+        let head: String = this.kind.ToString() + ": " + this.message
+        match (this.cause) {
+            Some(c) => head + "\ncaused by: " + c.ToString(),
+            None => head,
+        }
+    }
+}

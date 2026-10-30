@@ -1042,7 +1042,11 @@ static Val gen_match(FnCtx *F, Node *n, Type *expect);
 static Val load_place(FnCtx *F, Place p);
 static void gen_stmt(FnCtx *F, Node *s);
 
-static Val gen_ident(FnCtx *F, Node *n) {
+static Decl *prelude_variant_owner(FnCtx *F, const char *name);
+static Val gen_variant(FnCtx *F, Node *call, Pos pos, Decl *d, Type *et, const char *vname, Type *expect);
+static Type *static_type(FnCtx *F, Decl *d, Node *tnode, Type *expect);
+
+static Val gen_ident(FnCtx *F, Node *n, Type *expect) {
     Local *l = find_local(F, n->name);
     if (l) return load_local(F, l);
     /* a constant */
@@ -1054,6 +1058,10 @@ static Val gen_ident(FnCtx *F, Node *n) {
         Type *t = resolve_type(F->g, d->file, make_env(d, NULL, NULL), d->node->a);
         Val v = gen_expr(F, d->node->b, t);
         return coerce(F, d->node->b->pos, v, t, "a constant");
+    }
+    if (!d) {
+        Decl *owner = prelude_variant_owner(F, n->name);
+        if (owner) return gen_variant(F, NULL, n->pos, owner, static_type(F, owner, NULL, expect), n->name, expect);
     }
     diag_error(n->pos, "unknown name `%s`", n->name);
     return err_val();
@@ -1162,7 +1170,7 @@ static Val gen_expr(FnCtx *F, Node *n, Type *expect) {
     }
     case N_STRING: return gen_string_lit(F, n);
     case N_UNIT: return unit_val();
-    case N_IDENT: return gen_ident(F, n);
+    case N_IDENT: return gen_ident(F, n, expect);
     case N_TUPLE: return gen_tuple(F, n, expect);
     case N_UNARY: return gen_unary(F, n, expect);
     case N_BINARY: return gen_binary(F, n, expect);
@@ -1785,6 +1793,15 @@ static Val build_variant(FnCtx *F, Type *et, Variant *v, Vec *fieldvals) {
     emit(F, "%s = load %s, ptr %s", t, type_ll(et), slot);
     Val r = {et, t};
     return r;
+}
+
+/* `Some` and `None` belong to Option, `Ok` and `Err` to Result (both live in Zevic.Core). */
+static Decl *prelude_variant_owner(FnCtx *F, const char *name) {
+    const char *owner = NULL;
+    if (strcmp(name, "Some") == 0 || strcmp(name, "None") == 0) owner = "Option";
+    else if (strcmp(name, "Ok") == 0 || strcmp(name, "Err") == 0) owner = "Result";
+    if (!owner) return NULL;
+    return lookup_in_prelude(F->g, owner);
 }
 
 static Node *find_variant_node(Node *enum_decl, const char *name) {
@@ -3152,6 +3169,8 @@ static Val gen_call(FnCtx *F, Node *n, Type *expect) {
                 return err_val();
             }
             if (!d && segs.n == 1) {
+                Decl *owner = prelude_variant_owner(F, head);
+                if (owner) return gen_variant(F, n, n->pos, owner, static_type(F, owner, NULL, expect), head, expect);
                 if (strcmp(head, "Panic") == 0) return gen_panic_builtin(F, n);
                 if (strcmp(head, "Assert") == 0) return gen_assert_builtin(F, n);
             }
