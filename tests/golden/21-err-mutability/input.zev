@@ -1,0 +1,19 @@
+module Main
+
+class Person {
+    name: String
+    Age: I32 = 0
+    fn Init(name: String) { this.name = name }
+    mut fn Birthday() { this.Age += 1 }
+    fn Peek() { this.Age = 5 }
+}
+
+fn Main() {
+    let p: Person = Person.New("Taro")
+    p.Birthday()
+    p.Age = 3
+    p.Nope()
+    p.Init("x")
+    let n: I32 = p.Age + p.Missing
+    Person.New()
+}

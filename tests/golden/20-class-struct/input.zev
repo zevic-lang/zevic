@@ -1,0 +1,43 @@
+module Main
+
+import Zevic.Console
+
+class Person {
+    name: String
+    Age: I32 = 0
+
+    fn Init(name: String, age: I32) {
+        this.name = name
+        this.Age = age
+    }
+
+    fn Name() -> String { this.name }
+    mut fn Birthday() { this.Age += 1 }
+    static fn Anonymous() -> Person { Person.New("?", 0) }
+}
+
+struct Point {
+    X: I32
+    Y: I32
+
+    fn Init(x: I32, y: I32) {
+        this.X = x
+        this.Y = y
+    }
+    fn Sum() -> I32 { this.X + this.Y }
+    mut fn MoveBy(dx: I32) { this.X += dx }
+}
+
+fn Main() {
+    mut p: Person = Person.New("Taro", 20)
+    p.Birthday()
+    Console.Println("${p.Name()} is ${p.Age}")
+    let a: Person = Person.Anonymous()
+    Console.Println("${a.Name()} ${a.Age}")
+    mut pt: Point = Point.New(1, 2)
+    pt.MoveBy(10)
+    Console.Println("sum = ${pt.Sum()}  x = ${pt.X}")
+    let q: Point = pt
+    pt.X = 100
+    Console.Println("copy keeps ${q.X}, original ${pt.X}")
+}

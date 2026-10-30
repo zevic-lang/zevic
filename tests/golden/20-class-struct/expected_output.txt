@@ -1,0 +1,4 @@
+Taro is 21
+? 0
+sum = 13  x = 11
+copy keeps 11, original 100

@@ -1,0 +1,6 @@
+cannot call `mut fn Birthday` because `p` is not `mut`
+cannot assign to field `Age` because `p` is not `mut`
+type `Main.Person` has no method `Nope`
+`Init` cannot be called directly; create values with `Person.New(...)`
+type `Main.Person` has no field `Missing`
+cannot assign to field `Age` here: `this` can only be changed inside a `mut fn` (or `Init`)
