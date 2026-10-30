@@ -192,9 +192,23 @@ static Type *instantiate(Gen *g, Decl *d, Vec targs, Pos pos) {
         return ty_err;
     }
     TKind k = n->kind == D_STRUCT ? T_STRUCT : n->kind == D_CLASS ? T_CLASS : T_ENUM;
+    if (d->mod->is_std && strcmp(d->mod->name, "Zevic.Intrinsics") == 0 && strcmp(d->name, "Buf") == 0) k = T_BUF;
     Type *t = ty_named(k, d, qualified_name(d), targs);
     ensure_members(g, t);
     return t;
+}
+
+/* Array<elem>: the class from Zevic.Core. */
+static Type *array_type(Gen *g, Type *elem) {
+    Decl *d = lookup_in_prelude(g, "Array");
+    if (!d) {
+        Pos none = {0};
+        diag_error(none, "the standard library file Core.zev is missing (cannot find `Array`)");
+        return ty_err;
+    }
+    Vec a = {0};
+    vec_push(&a, elem);
+    return instantiate(g, d, a, d->node->pos);
 }
 
 /* Resolve the fields (struct, class) or variants (enum) of a type. */
@@ -285,13 +299,6 @@ static Type *resolve_type(Gen *g, SourceFile *f, Env *env, Node *te) {
                 return p;
             }
             if (strcmp(name, "Never") == 0) return ty_never;
-            if (strcmp(name, "Array") == 0) {
-                if (te->list.n != 1) {
-                    diag_error(te->pos, "`Array` needs exactly one type argument, like `Array<I32>`");
-                    return ty_err;
-                }
-                return ty_array(resolve_type(g, f, env, te->list.v[0]));
-            }
         }
         int used = 0;
         Decl *d = find_decl(g, f, segs, n, &used, te->pos);
@@ -363,7 +370,7 @@ static Inst *get_inst(Gen *g, Decl *d, Type *self, Vec *targs) {
         Node *p = fn->list.v[i];
         if (p->flag3) continue; /* `...` */
         Type *pt = resolve_type(g, d->file, in->env, p->a);
-        if (p->flag2) pt = ty_array(pt); /* params x: T arrives as Array<T> */
+        if (p->flag2) pt = array_type(g, pt); /* params x: T arrives as Array<T> */
         vec_push(&in->ptypes, pt);
     }
     in->ret = fn->a ? resolve_type(g, d->file, in->env, fn->a) : ty_unit;
@@ -1552,10 +1559,6 @@ static void unify(Node *te, Type *actual, Node *fn, Env *env) {
             if (!env_get(env, te->path.v[0])) env_add(env, te->path.v[0], actual);
             return;
         }
-        if (strcmp(te->path.v[te->path.n - 1], "Array") == 0 && actual->k == T_ARRAY && te->list.n == 1) {
-            unify(te->list.v[0], actual->args.v[0], fn, env);
-            return;
-        }
         if (actual->decl && te->list.n == actual->args.n)
             for (int i = 0; i < te->list.n; i++) unify(te->list.v[i], actual->args.v[i], fn, env);
         return;
@@ -1895,11 +1898,14 @@ static Val gen_variant(FnCtx *F, Node *call, Pos pos, Decl *d, Type *et, const c
     return build_variant(F, et, var, &vals);
 }
 
+static Val gen_buf_new(FnCtx *F, Node *call, Type *t);
+
 /* Type.New(args) */
 static Val gen_construct(FnCtx *F, Node *call, Decl *d, Type *t, Type *expect) {
     (void)expect;
     Gen *g = F->g;
     Node *td = d->node;
+    if (t->k == T_BUF) return gen_buf_new(F, call, t);
     if (td->kind == D_ENUM) {
         diag_error(call->pos, "an enum value is built with one of its variants, like `%s.%s(...)`", d->name,
                    td->list.n ? ((Node *)td->list.v[0])->name : "Variant");
@@ -2578,6 +2584,91 @@ static Val gen_try(FnCtx *F, Node *n, Type *expect) {
     return load_place(F, op);
 }
 
+/* =========================================================================
+ * Intrinsics.Buf<T>
+ * ========================================================================= */
+
+/* The size of one T in bytes, computed by LLVM so that it always matches the layout. */
+static char *elem_size(FnCtx *F, Type *et) {
+    char *g1 = tmp(F), *sz = tmp(F);
+    emit(F, "%s = getelementptr %s, ptr null, i32 1", g1, type_ll(et));
+    emit(F, "%s = ptrtoint ptr %s to i64", sz, g1);
+    return sz;
+}
+
+static char *elem_ptr(FnCtx *F, Type *et, const char *base, const char *idx) {
+    char *p = tmp(F);
+    emit(F, "%s = getelementptr inbounds %s, ptr %s, i64 %s", p, type_ll(et), base, idx);
+    return p;
+}
+
+static Val gen_i64_arg(FnCtx *F, Node *a, const char *what) {
+    Val v = gen_expr(F, a, ty_i64);
+    return coerce(F, a->pos, v, ty_i64, what);
+}
+
+/* Buf<T>.New(capacity) */
+static Val gen_buf_new(FnCtx *F, Node *call, Type *t) {
+    if (call->list.n != 1) {
+        diag_error(call->pos, "`Buf.New` takes the capacity");
+        return err_val();
+    }
+    Val cap = gen_i64_arg(F, call->list.v[0], "the capacity of `Buf.New`");
+    if (cap.t == ty_never) return never_val(t);
+    if (is_err(cap.t)) return err_val();
+    Type *et = t->args.v[0];
+    char *bytes = tmp(F), *p = tmp(F);
+    emit(F, "%s = mul i64 %s, %s", bytes, cap.v, elem_size(F, et));
+    rt_decl(F, "zevic_alloc", "declare ptr @zevic_alloc(i64)");
+    emit(F, "%s = call ptr @zevic_alloc(i64 %s)", p, bytes);
+    Val r = {t, p};
+    return r;
+}
+
+static Val gen_buf_method(FnCtx *F, Node *call, Val recv, const char *name) {
+    Type *et = recv.t->args.v[0];
+    int nargs = call->list.n;
+    if (strcmp(name, "Get") == 0 && nargs == 1) {
+        Val i = gen_i64_arg(F, call->list.v[0], "the index of `Buf.Get`");
+        if (i.t == ty_never) return i;
+        if (is_err(i.t)) return err_val();
+        if (et == ty_unit) return unit_val();
+        char *gp = elem_ptr(F, et, recv.v, i.v), *r = tmp(F);
+        emit(F, "%s = load %s, ptr %s", r, type_ll(et), gp);
+        Val v = {et, r};
+        return v;
+    }
+    if (strcmp(name, "Set") == 0 && nargs == 2) {
+        Val i = gen_i64_arg(F, call->list.v[0], "the index of `Buf.Set`");
+        Val v = gen_expr(F, call->list.v[1], et);
+        v = coerce(F, ((Node *)call->list.v[1])->pos, v, et, "the value of `Buf.Set`");
+        if (i.t == ty_never || v.t == ty_never) return never_val(NULL);
+        if (is_err(i.t) || is_err(v.t)) return err_val();
+        if (et != ty_unit) {
+            char *gp = elem_ptr(F, et, recv.v, i.v);
+            store_to(F, et, v, gp);
+        }
+        return unit_val();
+    }
+    if (strcmp(name, "Copy") == 0 && nargs == 4) {
+        Val src = gen_expr(F, call->list.v[0], recv.t);
+        src = coerce(F, ((Node *)call->list.v[0])->pos, src, recv.t, "the source of `Buf.Copy`");
+        Val from = gen_i64_arg(F, call->list.v[1], "an argument of `Buf.Copy`");
+        Val to = gen_i64_arg(F, call->list.v[2], "an argument of `Buf.Copy`");
+        Val n = gen_i64_arg(F, call->list.v[3], "an argument of `Buf.Copy`");
+        if (src.t == ty_never || from.t == ty_never || to.t == ty_never || n.t == ty_never) return never_val(NULL);
+        if (is_err(src.t) || is_err(from.t) || is_err(to.t) || is_err(n.t)) return err_val();
+        char *sp = elem_ptr(F, et, src.v, from.v), *dp = elem_ptr(F, et, recv.v, to.v);
+        char *bytes = tmp(F);
+        emit(F, "%s = mul i64 %s, %s", bytes, n.v, elem_size(F, et));
+        declare(F->g, "llvm.memmove.p0.p0.i64", "declare void @llvm.memmove.p0.p0.i64(ptr, ptr, i64, i1 immarg)");
+        emit(F, "call void @llvm.memmove.p0.p0.i64(ptr %s, ptr %s, i64 %s, i1 false)", dp, sp, bytes);
+        return unit_val();
+    }
+    diag_error(call->pos, "`Buf` has no method `%s` that takes %d argument(s)", name, nargs);
+    return err_val();
+}
+
 /* The pointer part of a string constant `{ ptr @x, i64 n }`. */
 static char *const_ptr(const char *c) {
     return zstrndup(c + 6, (size_t)(strchr(c, ',') - (c + 6)));
@@ -3166,6 +3257,7 @@ static Val gen_method_call(FnCtx *F, Node *call, Node *recv_node, const char *na
     }
     if (is_user_type(p.t)) return gen_user_method(F, call, p, recv_node, name, expect);
     Val recv = load_place(F, p);
+    if (recv.t->k == T_BUF) return gen_buf_method(F, call, recv, name);
     return gen_prim_method(F, call, recv, name, expect);
 }
 
