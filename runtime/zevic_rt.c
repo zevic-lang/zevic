@@ -195,10 +195,20 @@ void zevic_f64_to_str(zevic_str *out, double v) {
         else str_set(out, "Infinity", 8);
         return;
     }
-    int n = 0;
-    for (int prec = 1; prec <= 17; prec++) {
+    int n = 0, prec = 1;
+    for (prec = 1; prec <= 17; prec++) {
         n = snprintf(buf, sizeof buf, "%.*g", prec, v);
         if (strtod(buf, NULL) == v) break;
+    }
+    /* %g switches to exponent notation early (1000 -> 1e+03); keep plain digits for moderate sizes */
+    char *ep = strchr(buf, 'e');
+    if (ep) {
+        int e = atoi(ep + 1);
+        if (e >= -5 && e < 16) {
+            int decimals = prec - 1 - e;
+            if (decimals < 0) decimals = 0;
+            n = snprintf(buf, sizeof buf, "%.*f", decimals, v);
+        }
     }
     if (!strpbrk(buf, ".e")) {
         buf[n++] = '.';
