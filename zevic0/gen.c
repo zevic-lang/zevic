@@ -2715,6 +2715,26 @@ static Node *mk_method_call(Node *recv, const char *method, Pos pos, Node *a1, N
     return c;
 }
 
+/* Call function `fname` of standard library module `module` with values that are already computed.
+ * They are parked in hidden variables so that the ordinary call code can be reused. */
+static Val call_std(FnCtx *F, const char *module, const char *fname, Pos pos, Val *args, int nargs, Type *expect) {
+    Module *m = prog_find_module(F->g->pg, module);
+    Decl *d = m ? module_find(m, fname) : NULL;
+    if (!d) {
+        diag_error(pos, "internal error: `%s.%s` is missing from the standard library", module, fname);
+        return err_val();
+    }
+    Node *call = node_new(N_CALL, pos);
+    call->a = mk_ident(pos, fname);
+    for (int i = 0; i < nargs; i++) {
+        char *name = zsprintf("$c%d", F->ntmp++);
+        Local *l = declare_local(F, name, args[i].t, false, pos);
+        if (args[i].t != ty_unit) store_to(F, args[i].t, args[i], l->ptr);
+        vec_push(&call->list, mk_ident(pos, name));
+    }
+    return gen_call_decl(F, call, d, NULL, NULL, expect, NULL);
+}
+
 /* a[i]  ->  a.Index(i) */
 static Val gen_index_read(FnCtx *F, Node *n, Type *expect) {
     Node *call = mk_method_call(n->a, "Index", n->pos, n->b, NULL);
@@ -3279,7 +3299,6 @@ static Val cast_to_float(FnCtx *F, Val v, Type *to) {
 }
 
 static Val gen_prim_method(FnCtx *F, Node *call, Val recv, const char *name, Type *expect) {
-    (void)expect;
     Type *t = recv.t;
     int nargs = call->list.n;
     if (strcmp(name, "ToString") == 0) {
@@ -3313,10 +3332,8 @@ static Val gen_prim_method(FnCtx *F, Node *call, Val recv, const char *name, Typ
             }
             if (ty_is_int(t)) {
                 if (wrap || int_fits(t, to)) return cast_int(F, recv, to);
-                diag_error(call->pos,
-                           "`%s` may not fit in `%s`, so it returns a `Result` (not available yet); use `%sWrap()` to wrap around",
-                           name, to->name, name);
-                return err_val();
+                /* may not fit: the answer is a Result, computed by Zevic.Convert */
+                return call_std(F, "Zevic.Convert", zsprintf("%sTo%s", t->name, to->name), call->pos, &recv, 1, expect);
             }
             if (wrap) {
                 diag_error(call->pos, "`%s` does not exist for `%s`", name, t->name);
@@ -3324,6 +3341,21 @@ static Val gen_prim_method(FnCtx *F, Node *call, Val recv, const char *name, Typ
             }
             return cast_float_to_int(F, recv, to, call->pos);
         }
+    }
+    /* WrapAdd / WrapSub / WrapMul: arithmetic that wraps around instead of panicking */
+    if (ty_is_int(t) && (strcmp(name, "WrapAdd") == 0 || strcmp(name, "WrapSub") == 0 || strcmp(name, "WrapMul") == 0)) {
+        if (nargs != 1) {
+            diag_error(call->pos, "`%s` takes one argument", name);
+            return err_val();
+        }
+        Val o = gen_expr(F, call->list.v[0], t);
+        o = coerce(F, ((Node *)call->list.v[0])->pos, o, t, "the argument");
+        if (o.t == ty_never || is_err(o.t)) return o.t == ty_never ? o : err_val();
+        const char *op = name[4] == 'A' ? "add" : name[4] == 'S' ? "sub" : "mul";
+        char *r = tmp(F);
+        emit(F, "%s = %s %s %s, %s", r, op, type_ll(t), recv.v, o.v);
+        Val res = {t, r};
+        return res;
     }
     if (ty_is_int(t) && (strcmp(name, "Min") == 0 || strcmp(name, "Max") == 0)) {
         if (nargs != 1) {
@@ -3376,6 +3408,11 @@ static Val gen_prim_method(FnCtx *F, Node *call, Val recv, const char *name, Typ
         return res;
     }
     if (t == ty_string) {
+        if (name[0] == 'T' && name[1] == 'o' && !nargs) {
+            Type *to = ty_prim_by_name(name + 2);
+            if (to && ty_is_numeric(to))
+                return call_std(F, "Zevic.Convert", zsprintf("StringTo%s", to->name), call->pos, &recv, 1, expect);
+        }
         if (strcmp(name, "Len") == 0 && !nargs) {
             char *p, *n;
             str_parts(F, recv, &p, &n);
