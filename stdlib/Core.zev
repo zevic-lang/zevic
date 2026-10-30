@@ -1,5 +1,6 @@
 module Zevic.Core
 
+import Zevic.Convert
 import Zevic.Intrinsics
 
 // Core types of the prelude: Option, Result, Error, ErrorKind and Array.
