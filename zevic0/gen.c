@@ -603,6 +603,10 @@ static void pop_scope(FnCtx *F) {
  * ========================================================================= */
 
 static Val gen_expr(FnCtx *F, Node *n, Type *expect);
+static Val gen_index_read(FnCtx *F, Node *n, Type *expect);
+static Val gen_array_lit(FnCtx *F, Node *n, Type *expect);
+static void gen_index_assign(FnCtx *F, Node *n);
+static void gen_for_iter(FnCtx *F, Node *n);
 
 static Type *type_from_suffix(const char *s) {
     return ty_prim_by_name(s);
@@ -1180,6 +1184,8 @@ static Val gen_expr(FnCtx *F, Node *n, Type *expect) {
     case N_UNIT: return unit_val();
     case N_IDENT: return gen_ident(F, n, expect);
     case N_TUPLE: return gen_tuple(F, n, expect);
+    case N_INDEX: return gen_index_read(F, n, expect);
+    case N_ARRAY: return gen_array_lit(F, n, expect);
     case N_UNARY: return gen_unary(F, n, expect);
     case N_BINARY: return gen_binary(F, n, expect);
     case N_IF: return gen_if(F, n, expect);
@@ -1335,6 +1341,10 @@ static char *gen_lvalue(FnCtx *F, Node *n, Type **t) {
 }
 
 static void gen_assign(FnCtx *F, Node *n) {
+    if (n->a->kind == N_INDEX) {
+        gen_index_assign(F, n);
+        return;
+    }
     Type *t = NULL;
     char *ptr = gen_lvalue(F, n->a, &t);
     if (!ptr) {
@@ -1475,12 +1485,14 @@ static void gen_for(FnCtx *F, Node *n) {
         gen_for_range(F, n);
         return;
     }
-    diag_error(n->d->pos, "`for` can only loop over a range (like `0..10`) so far");
+    gen_for_iter(F, n);
 }
 
 static void gen_let(FnCtx *F, Node *n) {
-    Type *t = resolve_type(F->g, F->file, F->env, n->b);
+    /* `n->b == NULL` only happens for lets the compiler writes itself: the type comes from the value */
+    Type *t = n->b ? resolve_type(F->g, F->file, F->env, n->b) : NULL;
     Val v = gen_expr(F, n->c, t);
+    if (!t) t = (v.t == ty_never || is_err(v.t)) ? ty_err : v.t;
     v = coerce(F, n->c->pos, v, t, "a variable declaration");
     if (v.t == ty_never) {
         /* the initialiser never completes; still declare the names so later code can be checked */
@@ -2669,6 +2681,203 @@ static Val gen_buf_method(FnCtx *F, Node *call, Val recv, const char *name) {
     return err_val();
 }
 
+/* =========================================================================
+ * Arrays: syntax that turns into calls of the Array class in Zevic.Core
+ * ========================================================================= */
+
+static bool is_array_type(FnCtx *F, Type *t) {
+    if (t->k != T_CLASS || !t->decl) return false;
+    Decl *d = lookup_in_prelude(F->g, "Array");
+    return d && t->decl == d;
+}
+
+static Node *mk_ident(Pos pos, const char *name) {
+    Node *n = node_new(N_IDENT, pos);
+    n->name = zstrdup(name);
+    return n;
+}
+
+static Node *mk_int(Pos pos, uint64_t v) {
+    Node *n = node_new(N_INT, pos);
+    n->ival = v;
+    return n;
+}
+
+/* recv.method(args...) where the call comes from `[]` (flag3 makes the messages talk about indexing) */
+static Node *mk_method_call(Node *recv, const char *method, Pos pos, Node *a1, Node *a2) {
+    Node *m = node_new(N_MEMBER, pos);
+    m->a = recv;
+    m->name = zstrdup(method);
+    Node *c = node_new(N_CALL, pos);
+    c->a = m;
+    if (a1) vec_push(&c->list, a1);
+    if (a2) vec_push(&c->list, a2);
+    return c;
+}
+
+/* a[i]  ->  a.Index(i) */
+static Val gen_index_read(FnCtx *F, Node *n, Type *expect) {
+    Node *call = mk_method_call(n->a, "Index", n->pos, n->b, NULL);
+    call->flag3 = true;
+    return gen_expr(F, call, expect);
+}
+
+/* An expression that can be evaluated twice without changing the result. */
+static bool is_pure_expr(Node *n) {
+    switch (n->kind) {
+    case N_IDENT: case N_INT: case N_THIS: case N_BOOL: case N_CHAR: case N_BYTE: return true;
+    case N_MEMBER: return is_pure_expr(n->a);
+    case N_UNARY: return is_pure_expr(n->a);
+    case N_BINARY: return is_pure_expr(n->a) && is_pure_expr(n->b);
+    case N_INDEX: return is_pure_expr(n->a) && is_pure_expr(n->b);
+    default: return false;
+    }
+}
+
+/* a[i] = v  ->  a.SetIndex(i, v);   a[i] += v  ->  a.SetIndex(i, a[i] + v) */
+static void gen_index_assign(FnCtx *F, Node *n) {
+    Node *target = n->a;
+    Node *value = n->b;
+    if (n->op != TK_ASSIGN) {
+        if (!is_pure_expr(target->a) || !is_pure_expr(target->b)) {
+            diag_error(n->pos, "`%s` on an element needs a simple array and index (put them in variables first)", tok_name(n->op));
+            return;
+        }
+        Node *bin = node_new(N_BINARY, n->pos);
+        bin->op = base_op(n->op);
+        bin->a = target;
+        bin->b = n->b;
+        value = bin;
+    }
+    Node *call = mk_method_call(target->a, "SetIndex", n->pos, target->b, value);
+    call->flag3 = true;
+    gen_expr(F, call, NULL);
+}
+
+/* [a, b, c]: fill a new buffer and wrap it in an Array object. */
+static Val gen_array_lit(FnCtx *F, Node *n, Type *expect) {
+    Gen *g = F->g;
+    int cnt = n->list.n;
+    Type *at = NULL, *et = NULL;
+    Val first = {0};
+    bool have_first = false;
+    if (expect && is_array_type(F, expect)) {
+        at = expect;
+        et = expect->args.v[0];
+    } else {
+        if (cnt == 0) {
+            diag_error(n->pos, "an empty array `[]` needs a type from its context (write `let a: Array<I32> = []`)");
+            return err_val();
+        }
+        first = gen_expr(F, n->list.v[0], NULL);
+        if (first.t == ty_never) return first;
+        if (is_err(first.t)) {
+            for (int i = 1; i < cnt; i++) gen_expr(F, n->list.v[i], NULL);
+            return err_val();
+        }
+        have_first = true;
+        et = first.t;
+        at = array_type(g, et);
+        if (is_err(at)) return err_val();
+    }
+    rt_decl(F, "zevic_alloc", "declare ptr @zevic_alloc(i64)");
+    char *bytes = tmp(F), *buf = tmp(F);
+    emit(F, "%s = mul i64 %d, %s", bytes, cnt, elem_size(F, et));
+    emit(F, "%s = call ptr @zevic_alloc(i64 %s)", buf, bytes);
+    bool failed = false;
+    for (int i = 0; i < cnt; i++) {
+        Node *en = n->list.v[i];
+        Val v = (i == 0 && have_first) ? first : gen_expr(F, en, et);
+        v = coerce(F, en->pos, v, et, "an array element");
+        if (v.t == ty_never) return never_val(at);
+        if (is_err(v.t)) {
+            failed = true;
+            continue;
+        }
+        if (et != ty_unit) store_to(F, et, v, elem_ptr(F, et, buf, zsprintf("%d", i)));
+    }
+    if (failed) return err_val();
+    Type *vt = obj_tuple(at);
+    char *obj = tmp(F);
+    emit(F, "%s = call ptr @zevic_alloc(i64 %lld)", obj, (long long)ty_size(vt));
+    int bi = -1, li = -1, ci = -1;
+    if (!find_field(at, "buf", &bi) || !find_field(at, "len", &li) || !find_field(at, "cap", &ci)) {
+        diag_error(n->pos, "internal error: Array in Core.zev must have the fields `buf`, `len` and `cap`");
+        return err_val();
+    }
+    char *gb = tmp(F), *gl = tmp(F), *gc = tmp(F);
+    emit(F, "%s = getelementptr inbounds %s, ptr %s, i32 0, i32 %d", gb, type_ll(vt), obj, bi);
+    emit(F, "store ptr %s, ptr %s", buf, gb);
+    emit(F, "%s = getelementptr inbounds %s, ptr %s, i32 0, i32 %d", gl, type_ll(vt), obj, li);
+    emit(F, "store i64 %d, ptr %s", cnt, gl);
+    emit(F, "%s = getelementptr inbounds %s, ptr %s, i32 0, i32 %d", gc, type_ll(vt), obj, ci);
+    emit(F, "store i64 %d, ptr %s", cnt, gc);
+    Val r = {at, obj};
+    return r;
+}
+
+/* for (x in arr) / for (i, x in arr):
+ *   let $it = arr;  mut $i = 0
+ *   while ($i < $it.Len()) { let x = $it.Index($i); let i = $i; $i += 1; body }
+ * The counter moves before the body, so `continue` needs no special care. */
+static void gen_for_iter(FnCtx *F, Node *n) {
+    Pos pos = n->pos;
+    push_scope(F);
+    Val it = gen_expr(F, n->d, NULL);
+    if (it.t == ty_never || is_err(it.t)) {
+        pop_scope(F);
+        return;
+    }
+    if (!is_array_type(F, it.t)) {
+        diag_error(n->d->pos, "cannot loop over a value of type `%s` (`for` works on ranges like `0..10` and on arrays)",
+                   it.t->name);
+        pop_scope(F);
+        return;
+    }
+    Local *itl = declare_local(F, "$it", it.t, false, pos);
+    store_to(F, it.t, it, itl->ptr);
+    Local *il = declare_local(F, "$i", ty_i64, true, pos);
+    store_to(F, ty_i64, (Val){ty_i64, "0"}, il->ptr);
+
+    Node *cond = node_new(N_BINARY, pos);
+    cond->op = TK_LT;
+    cond->a = mk_ident(pos, "$i");
+    cond->b = mk_method_call(mk_ident(pos, "$it"), "Len", pos, NULL, NULL);
+
+    Node *get = mk_method_call(mk_ident(pos, "$it"), "Index", pos, mk_ident(pos, "$i"), NULL);
+    Node *let_elem = node_new(N_LET, pos);
+    let_elem->a = n->a;
+    let_elem->c = get;
+    Node *let_idx = NULL;
+    if (n->c) {
+        let_idx = node_new(N_LET, pos);
+        let_idx->a = n->c;
+        let_idx->c = mk_ident(pos, "$i");
+    }
+    Node *inc = node_new(N_ASSIGN, pos);
+    inc->op = TK_PLUSEQ;
+    inc->a = mk_ident(pos, "$i");
+    inc->b = mk_int(pos, 1);
+
+    char *head = newlabel(F, "for.cond"), *body = newlabel(F, "for.body"), *end = newlabel(F, "for.end");
+    goto_block(F, head);
+    Val c = gen_expr(F, cond, ty_bool);
+    if (c.t != ty_never && !is_err(c.t)) condbr(F, c.v, body, end);
+    start_block(F, body);
+    push_scope(F);
+    gen_let(F, let_elem);
+    if (let_idx) gen_let(F, let_idx);
+    gen_assign(F, inc);
+    Loop lp = {end, head, F->scope};
+    vec_push(&F->loops, &lp);
+    gen_block(F, n->b, ty_unit);
+    F->loops.n--;
+    pop_scope(F);
+    if (!F->term) br(F, head);
+    start_block(F, end);
+    pop_scope(F);
+}
+
 /* The pointer part of a string constant `{ ptr @x, i64 n }`. */
 static char *const_ptr(const char *c) {
     return zstrndup(c + 6, (size_t)(strchr(c, ',') - (c + 6)));
@@ -2811,6 +3020,8 @@ static Val gen_call_decl(FnCtx *F, Node *call, Decl *d, Type *self, Vec *explici
     for (int i = 0; i < nparams; i++) {
         Val *v = vals.v[i];
         char *what = zsprintf("argument %d of `%s`", i + 1, fn->name);
+        if (call->flag3) /* written as `a[i]` or `a[i] = v` */
+            what = strcmp(fn->name, "SetIndex") == 0 && i == 1 ? "an assignment" : "an index";
         *v = coerce(F, ((Node *)call->list.v[i])->pos, *v, in->ptypes.v[i], what);
         if (is_err(v->t)) return err_val();
     }
@@ -3214,6 +3425,11 @@ static Val gen_prim_method(FnCtx *F, Node *call, Val recv, const char *name, Typ
 static Val gen_user_method(FnCtx *F, Node *call, Place p, Node *recv_node, const char *name, Type *expect) {
     Type *t = p.t;
     Node *fn = find_member_fn(t, name);
+    if (!fn && call->flag3) {
+        diag_error(call->pos, "a value of type `%s` cannot be indexed with `[]`", t->name);
+        for (int i = 0; i < call->list.n; i++) gen_expr(F, call->list.v[i], NULL);
+        return err_val();
+    }
     if (!fn) {
         if (find_field(t, name, NULL))
             diag_error(call->pos, "`%s` is a field of `%s`, not a method", name, t->name);
@@ -3229,6 +3445,11 @@ static Val gen_user_method(FnCtx *F, Node *call, Place p, Node *recv_node, const
     if (!check_vis(F, t, name, call->pos, "method")) return err_val();
     if (fn->is_static) {
         diag_error(call->pos, "`%s` is a static function; call it as `%s.%s(...)`", name, t->decl->name, name);
+        return err_val();
+    }
+    if (fn->is_mut_fn && !p.mut && call->flag3) {
+        diag_error(call->pos, "cannot assign to an element of `%s` because it is not `mut`", root_name(recv_node));
+        diag_note("declare it with `mut %s: %s = ...` to allow changes", root_name(recv_node), t->name);
         return err_val();
     }
     if (fn->is_mut_fn && !p.mut) {
@@ -3258,6 +3479,11 @@ static Val gen_method_call(FnCtx *F, Node *call, Node *recv_node, const char *na
     if (is_user_type(p.t)) return gen_user_method(F, call, p, recv_node, name, expect);
     Val recv = load_place(F, p);
     if (recv.t->k == T_BUF) return gen_buf_method(F, call, recv, name);
+    if (call->flag3) {
+        diag_error(call->pos, "a value of type `%s` cannot be indexed with `[]`", recv.t->name);
+        for (int i = 0; i < call->list.n; i++) gen_expr(F, call->list.v[i], NULL);
+        return err_val();
+    }
     return gen_prim_method(F, call, recv, name, expect);
 }
 
