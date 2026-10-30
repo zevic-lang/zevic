@@ -1039,6 +1039,7 @@ static Val gen_block(FnCtx *F, Node *blk, Type *expect);
 static Val gen_call(FnCtx *F, Node *n, Type *expect);
 static Val gen_member(FnCtx *F, Node *n, Type *expect);
 static Val gen_match(FnCtx *F, Node *n, Type *expect);
+static Val gen_try(FnCtx *F, Node *n, Type *expect);
 static Val load_place(FnCtx *F, Place p);
 static void gen_stmt(FnCtx *F, Node *s);
 
@@ -1179,6 +1180,7 @@ static Val gen_expr(FnCtx *F, Node *n, Type *expect) {
     case N_CALL: return gen_call(F, n, expect);
     case N_MEMBER: return gen_member(F, n, expect);
     case N_MATCH: return gen_match(F, n, expect);
+    case N_TRY: return gen_try(F, n, expect);
     case N_THIS: {
         Place p = gen_place(F, n);
         if (is_err(p.t)) return err_val();
@@ -2511,6 +2513,69 @@ static Val gen_match(FnCtx *F, Node *n, Type *expect) {
     emit(F, "%s = phi %s %s", r, type_ll(rt), sb_str(&sb));
     Val res = {rt, r};
     return res;
+}
+
+/* =========================================================================
+ * The `?` operator
+ * ========================================================================= */
+
+static bool is_result_type(Type *t) {
+    return t->k == T_ENUM && t->decl && strcmp(t->decl->name, "Result") == 0 && t->decl->mod->is_std &&
+           strcmp(t->decl->mod->name, "Zevic.Core") == 0;
+}
+
+static bool is_error_type(Type *t) {
+    return t->k == T_CLASS && t->decl && strcmp(t->decl->name, "Error") == 0 && t->decl->mod->is_std &&
+           strcmp(t->decl->mod->name, "Zevic.Core") == 0;
+}
+
+static Val gen_try(FnCtx *F, Node *n, Type *expect) {
+    Val v = gen_expr(F, n->a, NULL);
+    if (v.t == ty_never) return never_val(expect);
+    if (is_err(v.t)) return err_val();
+    if (!is_result_type(v.t)) {
+        if (v.t->k == T_ENUM && v.t->decl && strcmp(v.t->decl->name, "Option") == 0)
+            diag_error(n->pos, "`?` works on a `Result`, not an `Option` (turn it into a `Result` with `OkOr(error)` first)");
+        else
+            diag_error(n->pos, "`?` can only be used on a `Result`, found `%s`", v.t->name);
+        return err_val();
+    }
+    if (!is_error_type(v.t->args.v[1])) {
+        diag_error(n->pos, "`?` needs the error type to be `Error`, found `Result<%s, %s>`", ((Type *)v.t->args.v[0])->name,
+                   ((Type *)v.t->args.v[1])->name);
+        return err_val();
+    }
+    if (!is_result_type(F->ret) || F->ret->args.v[1] != v.t->args.v[1]) {
+        diag_error(n->pos, "`?` can only be used in a function that returns `Result<_, Error>` (this one returns `%s`)",
+                   F->ret->name);
+        return err_val();
+    }
+    Type *T = v.t->args.v[0];
+    Variant *ok = find_variant(v.t, "Ok"), *er = find_variant(v.t, "Err");
+    Place sp = spill(F, v);
+    char *tg = tmp(F), *isok = tmp(F);
+    emit(F, "%s = load i32, ptr %s", tg, tag_ptr(F, v.t, sp.ptr));
+    emit(F, "%s = icmp eq i32 %s, %d", isok, tg, ok->tag);
+    char *ok_l = newlabel(F, "try.ok"), *err_l = newlabel(F, "try.err");
+    condbr(F, isok, ok_l, err_l);
+    /* Err: return it from this function (running the defers of every open scope) */
+    start_block(F, err_l);
+    {
+        Place ep = field_place(F, payload_ptr(F, v.t, sp.ptr), er->payload, 0, v.t->args.v[1], false);
+        Val ev = load_place(F, ep);
+        Vec vals = {0};
+        Val *pv = zalloc(sizeof *pv);
+        *pv = ev;
+        vec_push(&vals, pv);
+        Val rv = build_variant(F, F->ret, find_variant(F->ret, "Err"), &vals);
+        for (Scope *s = F->scope; s; s = s->up) run_defers_in(F, s);
+        emit(F, "ret %s %s", type_ll(F->ret), rv.v);
+        F->term = true;
+    }
+    start_block(F, ok_l);
+    if (T == ty_unit) return unit_val();
+    Place op = field_place(F, payload_ptr(F, v.t, sp.ptr), ok->payload, 0, T, false);
+    return load_place(F, op);
 }
 
 /* The pointer part of a string constant `{ ptr @x, i64 n }`. */
