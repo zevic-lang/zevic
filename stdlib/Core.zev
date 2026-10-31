@@ -274,6 +274,21 @@ class Array<T> {
         r
     }
 
+    // Element by element: `a == b` calls this.
+    fn Equals(other: Array<T>) -> Bool {
+        if (this.len != other.len) {
+            return false
+        }
+        mut i: I64 = 0
+        while (i < this.len) {
+            if (this.buf.Get(i) != other.buf.Get(i)) {
+                return false
+            }
+            i += 1
+        }
+        true
+    }
+
     fn Concat(other: Array<T>) -> Array<T> {
         mut r: Array<T> = Array.New()
         r.appendRange(this, 0, this.len)
