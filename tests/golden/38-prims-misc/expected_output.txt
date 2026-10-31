@@ -1,0 +1,8 @@
+7 seven
+true 3
+6 5 true true
+err cannot read "héllo" as a number: found a character that is not a digit
+ok 42
+42  3.14 str z ff
+true 3 true 2
+3 4 5 0

@@ -1,0 +1,36 @@
+module Main
+
+import Zevic.Console
+
+struct Point {
+    X: I32
+    Y: I32
+    fn Init(x: I32, y: I32) { this.X = x; this.Y = y }
+    fn Sum() -> I32 { this.X + this.Y }
+}
+
+fn Pair() -> (I32, String) {
+    (7, "seven")
+}
+
+fn Main() {
+    let (n, name): (I32, String) = Pair()
+    Console.Println("${n} ${name}")
+    let p: Point = Point.New(1, 2)
+    let q: Point = Point.New(1, 2)
+    Console.Println("${p == q} ${p.Sum()}")
+    let s: String = "héllo"
+    Console.Println("${s.Len()} ${s.CharCount()} ${s == "héllo"} ${s < "z"}")
+    match (s.ToI32()) {
+        Ok(v) => Console.Println("ok ${v}"),
+        Err(e) => Console.Println("err ${e.Message()}"),
+    }
+    match ("42".ToI32()) {
+        Ok(v) => Console.Println("ok ${v}"),
+        Err(e) => Console.Println("err ${e.Message()}"),
+    }
+    Console.Printf("%d %5.2f %s %c %x\n", 42, 3.14159, "str", 'z', 255)
+    let big: I64 = 5_000_000_000
+    Console.Println("${big.ToI32().IsErr()} ${(3).ToI64()} ${(300).ToU8().IsErr()} ${(2.9).ToI32()}")
+    Console.Println("${10.Min(3)} ${(-4).Abs()} ${7.Clamp(1, 5)} ${255_U8.WrapAdd(1)}")
+}

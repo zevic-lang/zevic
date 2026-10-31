@@ -1,0 +1,10 @@
+module Main
+
+import Zevic.Console
+
+fn Main() {
+    let lo: F64 = 2.5
+    Console.Println("${(1.5).Clamp(lo, 9.0)} ${(20).Clamp(1, 10)} ${(-3).Clamp(0, 10)} ${(7.5).Min(2.0)} ${(7.5).Max(9.0)}")
+    let a: I32 = 9
+    Console.Println("${a.Clamp(5, 1)}")
+}
