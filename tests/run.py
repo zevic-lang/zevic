@@ -2,7 +2,7 @@
 """Golden test runner for zevic.
 
 Each directory under tests/golden holds:
-  input.zev              the program (more .zev files are passed too)
+  input.zev              the program (more .zev and .c files are passed too)
   expected_output.txt    exact stdout of the program        (run tests)
   expected_exit_code     exit code of the program, default 0 (run tests)
   expected_error.txt     lines that must appear in the compiler's stderr (compile-error tests;
@@ -36,6 +36,7 @@ def run_test(d):
     if inp in sources:
         sources.remove(inp)
         sources.insert(0, inp)
+    sources += sorted(glob.glob(os.path.join(d, "*.c")))  # C files are linked in
     with tempfile.TemporaryDirectory() as tmp:
         exe = os.path.join(tmp, "prog" + (".exe" if os.name == "nt" else ""))
         env = dict(os.environ)
