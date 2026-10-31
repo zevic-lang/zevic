@@ -172,14 +172,51 @@ char *driver_find_clang(const char *cli_cc) {
     return NULL;
 }
 
+static bool is_cpp_file(const char *f) {
+    size_t n = strlen(f);
+    return (n > 4 && strcmp(f + n - 4, ".cpp") == 0) || (n > 3 && strcmp(f + n - 3, ".cc") == 0) ||
+           (n > 4 && strcmp(f + n - 4, ".cxx") == 0);
+}
+
+/* clang++ next to clang: "clang" -> "clang++", "clang.exe" -> "clang++.exe", "clang-18" -> "clang++-18". */
+static char *sibling_cxx(const char *clang) {
+    const char *exe = "";
+    size_t n = strlen(clang);
+    if (n > 4 && strcmp(clang + n - 4, ".exe") == 0) {
+        exe = ".exe";
+        n -= 4;
+    }
+    const char *dash = NULL; /* a version suffix such as -18 */
+    for (size_t i = n; i > 0 && clang[i - 1] != '/' && clang[i - 1] != '\\'; i--)
+        if (clang[i - 1] == '-') {
+            dash = clang + i - 1;
+            break;
+        }
+    size_t stem = dash ? (size_t)(dash - clang) : n;
+    return zsprintf("%.*s++%.*s%s", (int)stem, clang, (int)(n - stem), clang + stem, exe);
+}
+
 int driver_build(const char *clang, const char *home, const char *ll_path, const char *out_path, BuildOpts *o) {
     SB cmd = {0};
-    sb_puts(&cmd, quote(clang));
+    bool has_cpp = false;
+    for (int i = 0; i < o->inputs.n; i++)
+        if (is_cpp_file(o->inputs.v[i])) has_cpp = true;
+    /* C++ code needs the C++ driver, so the standard library gets linked */
+    const char *driver = has_cpp ? (o->cxx ? o->cxx : sibling_cxx(clang)) : clang;
+    sb_puts(&cmd, quote(driver));
     sb_printf(&cmd, " %s -w -Wno-override-module", o->opt ? o->opt : "-O1");
     if (o->debug) sb_puts(&cmd, " -g");
     sb_printf(&cmd, " %s", quote(ll_path));
-    sb_printf(&cmd, " %s", quote(zsprintf("%s/runtime/zevic_rt.c", home)));
-    for (int i = 0; i < o->inputs.n; i++) sb_printf(&cmd, " %s", quote(o->inputs.v[i]));
+    /* the runtime is C even when the driver is clang++ */
+    sb_printf(&cmd, " -x c %s -x none", quote(zsprintf("%s/runtime/zevic_rt.c", home)));
+    for (int i = 0; i < o->inputs.n; i++) {
+        const char *f = o->inputs.v[i];
+        size_t fl = strlen(f);
+        bool is_c = fl > 2 && strcmp(f + fl - 2, ".c") == 0;
+        /* clang++ would read a .c file as C++ */
+        if (is_c && has_cpp) sb_printf(&cmd, " -x c %s -x none", quote(f));
+        else sb_printf(&cmd, " %s", quote(f));
+    }
     for (int i = 0; i < o->incdirs.n; i++) sb_printf(&cmd, " -I%s", quote(o->incdirs.v[i]));
     for (int i = 0; i < o->defines.n; i++) sb_printf(&cmd, " -D%s", quote(o->defines.v[i]));
     for (int i = 0; i < o->libdirs.n; i++) sb_printf(&cmd, " -L%s", quote(o->libdirs.v[i]));
