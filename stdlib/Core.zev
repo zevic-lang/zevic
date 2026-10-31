@@ -354,3 +354,254 @@ class Array<T> : Iterable<T> {
         r
     }
 }
+
+// ---- Map and Set ----
+// An insertion-ordered hash table. `keys`, `vals` and `alive` hold the entries in the order they were added;
+// `idx` is an open-addressing table of entry numbers (-1 empty, -2 deleted). Removing marks an entry dead,
+// and the entries are compacted the next time the table is rebuilt.
+
+class Map<K: Hashable, V> : Iterable<(K, V)> {
+    keys: Array<K> = []
+    vals: Array<V> = []
+    alive: Array<Bool> = []
+    idx: Array<I64> = []
+    count: I64 = 0
+    version: I64 = 0
+
+    fn Len() -> I64 { this.count }
+
+    fn IsEmpty() -> Bool { this.count == 0 }
+
+    // The position in `idx` that holds key `k`, or -1.
+    fn slotOf(k: K) -> I64 {
+        let size: I64 = this.idx.Len()
+        if (size == 0) {
+            return -1
+        }
+        let mask: I64 = size - 1
+        mut pos: I64 = k.Hash().ToI64Wrap() & mask
+        loop {
+            let e: I64 = this.idx[pos]
+            if (e == -1) {
+                return -1
+            }
+            if (e >= 0) {
+                let key: K = this.keys[e]
+                if (key.Equals(k)) {
+                    return pos
+                }
+            }
+            pos = (pos + 1) & mask
+        }
+    }
+
+    // Record that entry `e` (with key `k`) lives in `idx`.
+    mut fn place(k: K, e: I64) {
+        let mask: I64 = this.idx.Len() - 1
+        mut pos: I64 = k.Hash().ToI64Wrap() & mask
+        while (this.idx[pos] >= 0) {
+            pos = (pos + 1) & mask
+        }
+        this.idx[pos] = e
+    }
+
+    // Drop dead entries and build an index with at least `slots` positions.
+    mut fn rebuild(slots: I64) {
+        mut nk: Array<K> = []
+        mut nv: Array<V> = []
+        mut na: Array<Bool> = []
+        mut i: I64 = 0
+        while (i < this.keys.Len()) {
+            if (this.alive[i]) {
+                nk.Push(this.keys[i])
+                nv.Push(this.vals[i])
+                na.Push(true)
+            }
+            i += 1
+        }
+        mut size: I64 = 8
+        while (size < slots) {
+            size = size * 2
+        }
+        mut table: Array<I64> = []
+        i = 0
+        while (i < size) {
+            table.Push(-1)
+            i += 1
+        }
+        this.keys = nk
+        this.vals = nv
+        this.alive = na
+        this.idx = table
+        i = 0
+        while (i < nk.Len()) {
+            this.place(nk[i], i)
+            i += 1
+        }
+    }
+
+    fn Get(k: K) -> Option<V> {
+        let s: I64 = this.slotOf(k)
+        if (s < 0) {
+            return None
+        }
+        let e: I64 = this.idx[s]
+        Some(this.vals[e])
+    }
+
+    fn Contains(k: K) -> Bool {
+        this.slotOf(k) >= 0
+    }
+
+    fn Index(k: K) -> V {
+        let s: I64 = this.slotOf(k)
+        if (s < 0) {
+            Panic("key not found in Map")
+        }
+        let e: I64 = this.idx[s]
+        this.vals[e]
+    }
+
+    mut fn Set(k: K, v: V) {
+        let s: I64 = this.slotOf(k)
+        if (s >= 0) {
+            let e: I64 = this.idx[s]
+            this.vals[e] = v
+            return
+        }
+        this.version += 1
+        if ((this.keys.Len() + 1) * 2 > this.idx.Len()) {
+            this.rebuild((this.count + 1) * 2)
+        }
+        let e: I64 = this.keys.Len()
+        this.keys.Push(k)
+        this.vals.Push(v)
+        this.alive.Push(true)
+        this.place(k, e)
+        this.count += 1
+    }
+
+    mut fn SetIndex(k: K, v: V) {
+        this.Set(k, v)
+    }
+
+    mut fn Remove(k: K) -> Option<V> {
+        let s: I64 = this.slotOf(k)
+        if (s < 0) {
+            return None
+        }
+        let e: I64 = this.idx[s]
+        this.idx[s] = -2
+        this.alive[e] = false
+        this.count -= 1
+        this.version += 1
+        Some(this.vals[e])
+    }
+
+    mut fn Clear() {
+        this.keys = []
+        this.vals = []
+        this.alive = []
+        this.idx = []
+        this.count = 0
+        this.version += 1
+    }
+
+    fn Keys() -> Array<K> {
+        mut out: Array<K> = []
+        mut i: I64 = 0
+        while (i < this.keys.Len()) {
+            if (this.alive[i]) {
+                out.Push(this.keys[i])
+            }
+            i += 1
+        }
+        out
+    }
+
+    fn Values() -> Array<V> {
+        mut out: Array<V> = []
+        mut i: I64 = 0
+        while (i < this.vals.Len()) {
+            if (this.alive[i]) {
+                out.Push(this.vals[i])
+            }
+            i += 1
+        }
+        out
+    }
+
+    fn Iter() -> Iterator<(K, V)> { MapIter<K, V>.New(this) }
+}
+
+class MapIter<K: Hashable, V> : Iterator<(K, V)> {
+    m: Map<K, V>
+    i: I64 = 0
+    ver: I64 = 0
+
+    fn Init(m: Map<K, V>) {
+        this.m = m
+        this.ver = m.version
+    }
+
+    mut fn Next() -> Option<(K, V)> {
+        if (this.m.version != this.ver) {
+            Panic("the Map was changed while looping over it")
+        }
+        while (this.i < this.m.keys.Len()) {
+            let e: I64 = this.i
+            this.i += 1
+            if (this.m.alive[e]) {
+                let k: K = this.m.keys[e]
+                let v: V = this.m.vals[e]
+                return Some((k, v))
+            }
+        }
+        None
+    }
+}
+
+class Set<T: Hashable> : Iterable<T> {
+    m: Map<T, Bool> = Map.New()
+
+    fn Len() -> I64 { this.m.Len() }
+
+    fn IsEmpty() -> Bool { this.m.IsEmpty() }
+
+    fn Contains(x: T) -> Bool { this.m.Contains(x) }
+
+    mut fn Add(x: T) -> Bool {
+        if (this.m.Contains(x)) {
+            return false
+        }
+        this.m.Set(x, true)
+        true
+    }
+
+    mut fn Remove(x: T) -> Bool {
+        match (this.m.Remove(x)) {
+            Some(_) => true,
+            None => false,
+        }
+    }
+
+    mut fn Clear() { this.m.Clear() }
+
+    fn Iter() -> Iterator<T> { SetIter<T>.New(this.m.Keys()) }
+}
+
+class SetIter<T: Hashable> : Iterator<T> {
+    items: Array<T>
+    i: I64 = 0
+
+    fn Init(items: Array<T>) { this.items = items }
+
+    mut fn Next() -> Option<T> {
+        if (this.i >= this.items.Len()) {
+            return None
+        }
+        let v: T = this.items[this.i]
+        this.i += 1
+        Some(v)
+    }
+}
