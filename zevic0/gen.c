@@ -360,7 +360,8 @@ static void check_c_signature(Inst *in, Node *fn) {
         if (!is_c_value_type(pt)) {
             diag_error(p->pos, "parameter `%s` of the C function `%s` has type `%s`; C functions take only C types and pointers",
                        p->name, fn->name, pt->name);
-            if (pt == ty_string) diag_note("convert a String with `.ToC()`");
+            if (pt->k == T_STRUCT && pt->decl && pt->decl->abi) diag_note("structs are passed by pointer: write `*%s` and pass `&value`", pt->name);
+            else if (pt == ty_string) diag_note("convert a String with `.ToC()`");
             else if (ty_is_numeric(pt)) diag_note("convert it with a method such as `.ToCInt()`");
         }
     }
@@ -662,7 +663,7 @@ static Type *type_from_suffix(const char *s) {
     return ty_prim_by_name(s);
 }
 
-static Val gen_int_lit(FnCtx *F, Node *n, Type *expect, bool neg) {
+static Val gen_int_lit_raw(FnCtx *F, Node *n, Type *expect, bool neg) {
     Type *t;
     if (n->suffix) t = type_from_suffix(n->suffix);
     else if (expect && ty_is_int(expect)) t = expect;
@@ -705,7 +706,7 @@ static char *double_hex(double d) {
     return zsprintf("0x%016llX", (unsigned long long)x.u);
 }
 
-static Val gen_float_lit(FnCtx *F, Node *n, Type *expect, bool neg) {
+static Val gen_float_lit_raw(FnCtx *F, Node *n, Type *expect, bool neg) {
     Type *t;
     (void)F;
     if (n->suffix) t = type_from_suffix(n->suffix);
@@ -718,6 +719,29 @@ static Val gen_float_lit(FnCtx *F, Node *n, Type *expect, bool neg) {
     if (t == ty_f32) d = (double)(float)d; /* f32 constants are written as doubles that are exactly representable */
     Val r = {t, double_hex(d)};
     return r;
+}
+
+static Type *c_native(Type *t);
+
+/* An unsuffixed literal where a C number is expected becomes that C type. */
+static Val gen_int_lit(FnCtx *F, Node *n, Type *expect, bool neg) {
+    Type *nat = (!n->suffix && expect) ? c_native(expect) : NULL;
+    if (nat && ty_is_int(nat)) {
+        Val v = gen_int_lit_raw(F, n, nat, neg);
+        if (!is_err(v.t)) v.t = expect;
+        return v;
+    }
+    return gen_int_lit_raw(F, n, expect, neg);
+}
+
+static Val gen_float_lit(FnCtx *F, Node *n, Type *expect, bool neg) {
+    Type *nat = (!n->suffix && expect) ? c_native(expect) : NULL;
+    if (nat && ty_is_float(nat)) {
+        Val v = gen_float_lit_raw(F, n, nat, neg);
+        if (!is_err(v.t)) v.t = expect;
+        return v;
+    }
+    return gen_float_lit_raw(F, n, expect, neg);
 }
 
 /* ---- runtime helpers ---- */
@@ -2023,6 +2047,46 @@ static Val gen_variant(FnCtx *F, Node *call, Pos pos, Decl *d, Type *et, const c
 
 static Val gen_buf_new(FnCtx *F, Node *call, Type *t);
 
+/* A field of an `extern struct` is a C type, a pointer, or another extern struct. */
+static bool is_extern_struct(Type *t) {
+    return t->k == T_STRUCT && t->decl && t->decl->abi;
+}
+
+/* Point.New(x, y) for an `extern struct`: every field, in order. */
+static Val gen_extern_struct_new(FnCtx *F, Node *call, Decl *d, Type *t) {
+    ensure_members(F->g, t);
+    bool ok = true;
+    for (int i = 0; i < t->fields.n; i++) {
+        Field *f = t->fields.v[i];
+        if (is_err(f->t) || is_c_value_type(f->t) || is_extern_struct(f->t)) continue;
+        diag_error(d->node->pos, "field `%s` of the extern struct `%s` has type `%s`; its fields must be C types, pointers or other extern structs",
+                   f->name, d->name, f->t->name);
+        ok = false;
+    }
+    if (!ok) return err_val();
+    if (call->list.n != t->fields.n) {
+        diag_error(call->pos, "`%s.New` takes %d argument(s) (one per field), but %d were given", d->name, (int)t->fields.n,
+                   call->list.n);
+        return err_val();
+    }
+    char *slot = new_slot(F, t);
+    emit(F, "store %s zeroinitializer, ptr %s", type_ll(t), slot);
+    for (int i = 0; i < t->fields.n; i++) {
+        Field *f = t->fields.v[i];
+        Val v = gen_expr(F, call->list.v[i], f->t);
+        v = coerce(F, ((Node *)call->list.v[i])->pos, v, f->t, zsprintf("field `%s` of `%s`", f->name, d->name));
+        if (v.t == ty_never) return never_val(NULL);
+        if (is_err(v.t)) return err_val();
+        char *gep = tmp(F);
+        emit(F, "%s = getelementptr inbounds %s, ptr %s, i32 0, i32 %d", gep, type_ll(t), slot, i);
+        store_to(F, f->t, v, gep);
+    }
+    char *r = tmp(F);
+    emit(F, "%s = load %s, ptr %s", r, type_ll(t), slot);
+    Val res = {t, r};
+    return res;
+}
+
 /* Type.New(args) */
 static Val gen_construct(FnCtx *F, Node *call, Decl *d, Type *t, Type *expect) {
     (void)expect;
@@ -2034,6 +2098,7 @@ static Val gen_construct(FnCtx *F, Node *call, Decl *d, Type *t, Type *expect) {
                    td->list.n ? ((Node *)td->list.v[0])->name : "Variant");
         return err_val();
     }
+    if (d->abi && t->k == T_STRUCT) return gen_extern_struct_new(F, call, d, t);
     ensure_members(g, t);
     bool is_class = t->k == T_CLASS;
     char *obj;
