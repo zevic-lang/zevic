@@ -508,6 +508,30 @@ static Node *parse_postfix(Parser *p) {
             e = ix;
             break;
         }
+        case TK_LBRACE: {
+            /* Shape.Named { Name: "x", Size: 3 }: a capitalised path followed by `{ name :` */
+            const char *last = e->kind == N_IDENT || e->kind == N_MEMBER ? e->name : NULL;
+            if (!last || !is_upper(last) || peek_at(p, 1)->k != TK_IDENT || peek_at(p, 2)->k != TK_COLON) return e;
+            next(p);
+            Node *lit = node_new(N_STRUCTLIT, e->pos);
+            lit->a = e;
+            skip_nl(p);
+            while (kind(p) != TK_RBRACE) {
+                Token *ft = expect(p, TK_IDENT, "a field name");
+                Node *f = node_new(N_FIELD, ft->pos);
+                f->name = ft->text;
+                expect(p, TK_COLON, "`:` after the field name");
+                f->b = parse_expr(p);
+                vec_push(&lit->list, f);
+                skip_nl(p);
+                if (!accept(p, TK_COMMA)) break;
+                skip_nl(p);
+            }
+            skip_nl(p);
+            expect(p, TK_RBRACE, "`}` (fields are separated by commas)");
+            e = lit;
+            break;
+        }
         case TK_QUESTION: {
             next(p);
             Node *t = node_new(N_TRY, pos);

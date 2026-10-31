@@ -39,6 +39,7 @@ typedef enum {
     N_MAPLIT,  /* list = N_PAIR */
     N_PAIR,    /* a, b */
     N_TUPLE,   /* list */
+    N_STRUCTLIT, /* a = path (Shape.Named), list = N_FIELD (name, b = value): Shape.Named { Name: "x" } */
 
     /* ---- statements ---- */
     N_LET,      /* flag = mut; a = pattern, b = type, c = initializer */
