@@ -1,0 +1,8 @@
+module Main
+
+export "C" fn Bad(s: String) -> I32 {
+    1
+}
+
+fn Main() {
+}

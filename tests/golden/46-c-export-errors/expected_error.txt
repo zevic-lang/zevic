@@ -1,0 +1,1 @@
+parameter `s` of the C function `Bad` has type `String`

@@ -1,0 +1,21 @@
+module Main
+
+import Zevic.Console
+
+extern "C" {
+    fn call_twice(x: CInt) -> CInt
+    fn greet_from_c() -> CVoid
+}
+
+export "C" fn zv_double(x: CInt) -> CInt {
+    (x.ToI32() * 2).ToCInt()
+}
+
+export "C" fn zv_hello(name: CString) -> CVoid {
+    Console.Println("hello, ${String.FromC(name)}")
+}
+
+fn Main() {
+    Console.Println("${call_twice(21.ToCInt()).ToI32()}")
+    greet_from_c()
+}
