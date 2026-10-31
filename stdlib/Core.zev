@@ -31,7 +31,7 @@ interface Iterable<T> {
 
     fn ToArray() -> Array<T> {
         mut out: Array<T> = []
-        let it: Iterator<T> = this.Iter()
+        mut it: Iterator<T> = this.Iter()
         loop {
             match (it.Next()) {
                 Some(v) => out.Push(v),
@@ -187,7 +187,24 @@ class Error {
 //   for (x in a)    ->  a loop over Len() and Index(i)
 //   [1, 2, 3]       ->  builds the object directly, so the fields `buf`, `len` and `cap` below
 //                       must keep their names and order.
-class Array<T> {
+// The iterator of an Array: Array implements Iterable<T> through it.
+class ArrayIter<T> : Iterator<T> {
+    arr: Array<T>
+    i: I64 = 0
+
+    fn Init(arr: Array<T>) { this.arr = arr }
+
+    mut fn Next() -> Option<T> {
+        if (this.i >= this.arr.Len()) {
+            return None
+        }
+        let v: T = this.arr.Index(this.i)
+        this.i += 1
+        Some(v)
+    }
+}
+
+class Array<T> : Iterable<T> {
     buf: Intrinsics.Buf<T> = Intrinsics.Buf.New(0)
     len: I64 = 0
     cap: I64 = 0
@@ -195,6 +212,8 @@ class Array<T> {
     fn Len() -> I64 { this.len }
 
     fn IsEmpty() -> Bool { this.len == 0 }
+
+    fn Iter() -> Iterator<T> { ArrayIter<T>.New(this) }
 
     // The address of the first element, for C. Valid only until the array grows.
     fn Ptr() -> *T { this.buf.Ptr() }
