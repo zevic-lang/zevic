@@ -25,6 +25,7 @@ typedef struct Inst {
     Type *ret;
     bool emitted;
     bool is_extern;
+    bool is_export; /* `export "C"`: the symbol is the plain name and the signature is C's */
     bool has_this; /* a method: the first parameter is `ptr %this` */
 } Inst;
 
@@ -376,7 +377,10 @@ static Inst *get_inst(Gen *g, Decl *d, Type *self, Vec *targs) {
     Node *fn = d->node;
     SB key = {0};
     bool is_extern = d->abi != NULL;
-    if (is_extern) {
+    bool is_export = fn->is_export && !self;
+    if (is_export) {
+        sb_puts(&key, fn->name);
+    } else if (is_extern) {
         sb_puts(&key, fn->name2 ? fn->name2 : fn->name);
     } else if (self) {
         sb_printf(&key, "zevic_%s_%s", mangle_part(self->name), fn->name);
@@ -390,8 +394,14 @@ static Inst *get_inst(Gen *g, Decl *d, Type *self, Vec *targs) {
     }
     char *k = sb_str(&key);
     Inst *in = dict_get(&g->insts, k);
+    if (in && is_export && in->decl != d) {
+        diag_error(fn->pos, "the C name `%s` is exported twice", fn->name);
+        diag_note("the other one is in module `%s`", in->decl->mod->name);
+        return in;
+    }
     if (in) return in;
     in = zalloc(sizeof *in);
+    in->is_export = is_export;
     in->decl = d;
     in->self = self;
     in->name = k;
@@ -406,7 +416,10 @@ static Inst *get_inst(Gen *g, Decl *d, Type *self, Vec *targs) {
         vec_push(&in->ptypes, pt);
     }
     in->ret = fn->a ? resolve_type(g, d->file, in->env, fn->a) : ty_unit;
-    if (is_extern && strcmp(d->abi, "C") == 0) check_c_signature(in, fn);
+    if ((is_extern && strcmp(d->abi, "C") == 0) || is_export) check_c_signature(in, fn);
+    if (is_export && fn->list2.n) diag_error(fn->pos, "an exported function cannot have type parameters");
+    if (is_export && strcmp(fn->name, "Main") == 0 && d->mod && strcmp(d->mod->name, "Main") == 0)
+        diag_error(fn->pos, "`Main` cannot be exported");
     dict_put(&g->insts, k, in);
     if (!is_extern) vec_push(&g->worklist, in);
     return in;
@@ -4168,7 +4181,7 @@ static void emit_function(Gen *g, Inst *in) {
         Node *pn = fn->list.v[i];
         Type *pt = in->ptypes.v[i];
         if (params.len) sb_puts(&params, ", ");
-        sb_printf(&params, "%s %%p%d", type_ll(pt), i);
+        sb_printf(&params, "%s%s %%p%d", type_ll(pt), in->is_export ? c_ext_attr(pt) : "", i);
         Local *l = declare_local(&F, pn->name, pt, pn->flag, pn->pos);
         char *pv = zsprintf("%%p%d", i);
         Val v = {pt, pv};
@@ -4193,6 +4206,10 @@ static void emit_function(Gen *g, Inst *in) {
         F.term = true;
     }
     const char *rl = (in->ret == ty_unit || in->ret == ty_never) ? "void" : type_ll(in->ret);
+    if (in->is_export && rl[0] != 'v') {
+        const char *ra = c_ext_attr(in->ret);
+        if (ra[0]) rl = zsprintf("%s %s", ra + 1, rl);
+    }
     sb_printf(&g->funcs, "define %s @\"%s\"(%s) {\nentry:\n%s%s%s}\n\n", rl, in->name, sb_str(&params),
               sb_str(&F.allocas), sb_str(&F.code), sb_str(&F.cold));
 }
