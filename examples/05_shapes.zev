@@ -1,0 +1,45 @@
+module Main
+
+import Zevic.Console
+
+interface Shape {
+    fn Area() -> F64
+    fn Name() -> String
+    fn Describe() -> String {
+        "${this.Name()} with area ${this.Area()}"
+    }
+}
+
+class Circle : Shape {
+    r: F64
+    fn Init(r: F64) { this.r = r }
+    fn Area() -> F64 { 3.0 * this.r * this.r }
+    fn Name() -> String { "circle" }
+}
+
+struct Square : Shape {
+    side: F64
+    fn Init(side: F64) { this.side = side }
+    fn Area() -> F64 { this.side * this.side }
+    fn Name() -> String { "square" }
+    fn Describe() -> String { "a square of side ${this.side}" }
+}
+
+fn Total(shapes: Array<Shape>) -> F64 {
+    mut sum: F64 = 0.0
+    for (s in shapes) {
+        sum += s.Area()
+    }
+    sum
+}
+
+fn Main() {
+    let c: Shape = Circle.New(2.0)
+    let sq: Shape = Square.New(3.0)
+    Console.Println(c.Describe())
+    Console.Println(sq.Describe())
+    let all: Array<Shape> = [c, sq, Circle.New(1.0)]
+    Console.Println("total = ${Total(all)}")
+    let direct: Circle = Circle.New(1.0)
+    Console.Println(direct.Describe())
+}
