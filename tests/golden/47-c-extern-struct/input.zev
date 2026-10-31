@@ -1,0 +1,18 @@
+module Main
+
+import Zevic.Console
+
+extern "C" {
+    struct Point { X: CInt, Y: CInt }
+    fn Move(p: *Point, dx: CInt) -> CVoid
+    fn Sum(p: *Point) -> CInt
+}
+
+fn Main() {
+    mut p: Point = Point.New(1, 2)
+    Move(&p, 10.ToCInt())
+    let lit: CInt = 5
+    let f: CDouble = 2.5
+    Console.Println("literals: ${lit.ToI32()} ${f.ToF64()} ${lit < 7.ToCInt()}")
+    Console.Println("${p.X.ToI32()} ${p.Y.ToI32()} sum=${Sum(&p).ToI32()}")
+}
