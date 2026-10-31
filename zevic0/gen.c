@@ -3570,6 +3570,44 @@ static Val gen_prim_method(FnCtx *F, Node *call, Val recv, const char *name, Typ
         Val res = {t, r};
         return res;
     }
+    /* Min / Max / Clamp on decimal numbers (integers are handled above) */
+    if (ty_is_float(t) && (strcmp(name, "Min") == 0 || strcmp(name, "Max") == 0) && nargs == 1) {
+        Val o = gen_expr(F, call->list.v[0], t);
+        o = coerce(F, ((Node *)call->list.v[0])->pos, o, t, "the argument");
+        if (o.t == ty_never || is_err(o.t)) return o.t == ty_never ? o : err_val();
+        char *c = tmp(F), *r = tmp(F);
+        emit(F, "%s = fcmp %s %s %s, %s", c, strcmp(name, "Min") == 0 ? "olt" : "ogt", type_ll(t), recv.v, o.v);
+        emit(F, "%s = select i1 %s, %s %s, %s %s", r, c, type_ll(t), recv.v, type_ll(t), o.v);
+        Val res = {t, r};
+        return res;
+    }
+    if (ty_is_numeric(t) && strcmp(name, "Clamp") == 0) {
+        if (nargs != 2) {
+            diag_error(call->pos, "`Clamp` takes two arguments: the lowest and the highest value");
+            return err_val();
+        }
+        Val lo = gen_expr(F, call->list.v[0], t);
+        lo = coerce(F, ((Node *)call->list.v[0])->pos, lo, t, "the lowest value of `Clamp`");
+        Val hi = gen_expr(F, call->list.v[1], t);
+        hi = coerce(F, ((Node *)call->list.v[1])->pos, hi, t, "the highest value of `Clamp`");
+        if (lo.t == ty_never || hi.t == ty_never) return never_val(t);
+        if (is_err(lo.t) || is_err(hi.t)) return err_val();
+        bool fl = ty_is_float(t), sgn = ty_is_signed(t);
+        const char *lt = fl ? "fcmp olt" : sgn ? "icmp slt" : "icmp ult";
+        const char *gt = fl ? "fcmp ogt" : sgn ? "icmp sgt" : "icmp ugt";
+        char *bad = tmp(F);
+        emit(F, "%s = %s %s %s, %s", bad, gt, type_ll(t), lo.v, hi.v);
+        char *ok = newlabel(F, "ok");
+        condbr(F, bad, cold_panic(F, "Clamp: the lowest value is greater than the highest", call->pos), ok);
+        start_block(F, ok);
+        char *c1 = tmp(F), *m1 = tmp(F), *c2 = tmp(F), *m2 = tmp(F);
+        emit(F, "%s = %s %s %s, %s", c1, lt, type_ll(t), recv.v, lo.v);
+        emit(F, "%s = select i1 %s, %s %s, %s %s", m1, c1, type_ll(t), lo.v, type_ll(t), recv.v);
+        emit(F, "%s = %s %s %s, %s", c2, gt, type_ll(t), m1, hi.v);
+        emit(F, "%s = select i1 %s, %s %s, %s %s", m2, c2, type_ll(t), hi.v, type_ll(t), m1);
+        Val res = {t, m2};
+        return res;
+    }
     if (ty_is_int(t) && strcmp(name, "Abs") == 0 && !nargs) {
         if (!ty_is_signed(t)) return recv;
         char *neg = tmp(F), *r = tmp(F);
