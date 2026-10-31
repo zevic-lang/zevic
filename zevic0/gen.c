@@ -502,6 +502,7 @@ typedef struct Scope {
 typedef struct {
     char *brk, *cont;
     Scope *scope;
+    bool brk_used; /* some `break` jumps to `brk` */
 } Loop;
 
 typedef struct FnCtx {
@@ -1409,6 +1410,7 @@ static Val gen_expr(FnCtx *F, Node *n, Type *expect) {
         }
         Loop *lp = F->loops.v[F->loops.n - 1];
         for (Scope *s = F->scope; s && s != lp->scope; s = s->up) run_defers_in(F, s);
+        if (n->kind == N_BREAK) lp->brk_used = true;
         br(F, n->kind == N_BREAK ? lp->brk : lp->cont);
         return never_val(expect);
     }
@@ -1587,7 +1589,7 @@ static void gen_while(FnCtx *F, Node *n) {
     c = coerce(F, n->a->pos, c, ty_bool, "a `while` condition");
     if (c.t != ty_never) condbr(F, c.v, body, end);
     start_block(F, body);
-    Loop lp = {end, head, F->scope};
+    Loop lp = {end, head, F->scope, false};
     vec_push(&F->loops, &lp);
     gen_block(F, n->b, ty_unit);
     F->loops.n--;
@@ -1598,12 +1600,17 @@ static void gen_while(FnCtx *F, Node *n) {
 static void gen_loop(FnCtx *F, Node *n) {
     char *body = newlabel(F, "loop.body"), *end = newlabel(F, "loop.end");
     goto_block(F, body);
-    Loop lp = {end, body, F->scope};
+    Loop lp = {end, body, F->scope, false};
     vec_push(&F->loops, &lp);
     gen_block(F, n->b, ty_unit);
     F->loops.n--;
     if (!F->term) br(F, body);
     start_block(F, end);
+    if (!lp.brk_used) {
+        /* a `loop` with no `break` never finishes, so what follows it is unreachable */
+        emit(F, "unreachable");
+        F->term = true;
+    }
 }
 
 static void gen_for_range(FnCtx *F, Node *n) {
@@ -3562,7 +3569,7 @@ static void gen_for_iterable(FnCtx *F, Node *n, Val src) {
         inc->b = mk_int(pos, 1);
         gen_assign(F, inc);
     }
-    Loop lp = {end, head, F->scope};
+    Loop lp = {end, head, F->scope, false};
     vec_push(&F->loops, &lp);
     gen_block(F, n->b, ty_unit);
     F->loops.n--;
@@ -3624,7 +3631,7 @@ static void gen_for_iter(FnCtx *F, Node *n) {
     gen_let(F, let_elem);
     if (let_idx) gen_let(F, let_idx);
     gen_assign(F, inc);
-    Loop lp = {end, head, F->scope};
+    Loop lp = {end, head, F->scope, false};
     vec_push(&F->loops, &lp);
     gen_block(F, n->b, ty_unit);
     F->loops.n--;
