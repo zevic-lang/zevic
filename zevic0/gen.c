@@ -4122,6 +4122,41 @@ static Val gen_string_from_c(FnCtx *F, Node *call, bool lossy) {
     return res;
 }
 
+/* NewString(s): a copy of `s` in malloc'd memory that C may keep (and must free). */
+static Val gen_new_string(FnCtx *F, Node *call) {
+    if (call->list.n != 1) {
+        diag_error(call->pos, "`NewString` takes one argument (a `String`)");
+        return err_val();
+    }
+    Val s = gen_expr(F, call->list.v[0], ty_string);
+    s = coerce(F, ((Node *)call->list.v[0])->pos, s, ty_string, "the argument of `NewString`");
+    if (s.t == ty_never || is_err(s.t)) return s.t == ty_never ? s : err_val();
+    declare(F->g, "zevic_new_cstring", "declare ptr @zevic_new_cstring(ptr, i64)");
+    char *p, *n;
+    str_parts(F, s, &p, &n);
+    char *r = tmp(F);
+    emit(F, "%s = call ptr @zevic_new_cstring(ptr %s, i64 %s)", r, p, n);
+    Val res = {ty_c_by_name("CString"), r};
+    return res;
+}
+
+/* Free(p): C's free, for memory from C or from NewString. */
+static Val gen_free(FnCtx *F, Node *call) {
+    if (call->list.n != 1) {
+        diag_error(call->pos, "`Free` takes one argument (a pointer or a `CString`)");
+        return err_val();
+    }
+    Val p = gen_expr(F, call->list.v[0], NULL);
+    if (p.t == ty_never || is_err(p.t)) return p.t == ty_never ? p : err_val();
+    if (p.t->k != T_PTR && p.t != ty_c_by_name("CString")) {
+        diag_error(((Node *)call->list.v[0])->pos, "`Free` needs a pointer or a `CString`, found `%s`", p.t->name);
+        return err_val();
+    }
+    declare(F->g, "free", "declare void @free(ptr)");
+    emit(F, "call void @free(ptr %s)", p.v);
+    return unit_val();
+}
+
 static Val gen_call(FnCtx *F, Node *n, Type *expect) {
     Node *callee = n->a;
     Vec segs = {0}, nodes = {0};
@@ -4192,6 +4227,8 @@ static Val gen_call(FnCtx *F, Node *n, Type *expect) {
             if (!d && segs.n == 1) {
                 Decl *owner = prelude_variant_owner(F, head);
                 if (owner) return gen_variant(F, n, n->pos, owner, static_type(F, owner, NULL, expect), head, expect);
+                if (strcmp(head, "NewString") == 0) return gen_new_string(F, n);
+                if (strcmp(head, "Free") == 0) return gen_free(F, n);
                 if (strcmp(head, "Panic") == 0) return gen_panic_builtin(F, n);
                 if (strcmp(head, "Assert") == 0) return gen_assert_builtin(F, n);
             }
