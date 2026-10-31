@@ -1650,7 +1650,7 @@ static void gen_for_range(FnCtx *F, Node *n) {
         diag_error(n->a->pos, "a range loop variable must be a name or `_`");
     }
     if (n->c) diag_error(n->c->pos, "a range has no index; use a single loop variable");
-    Loop lp = {end, cont, F->scope->up};
+    Loop lp = {end, cont, F->scope->up, false};
     vec_push(&F->loops, &lp);
     gen_block(F, n->b, ty_unit);
     F->loops.n--;
