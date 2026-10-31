@@ -240,7 +240,7 @@ void ty_layout(Type *t) {
     case T_STRING: t->size = 16; t->align = 8; t->ll = "{ ptr, i64 }"; break;
     case T_UNIT: case T_NEVER: t->size = 0; t->align = 1; t->ll = "{}"; break;
     case T_CLASS: case T_PTR: case T_BUF: t->size = t->align = 8; t->ll = "ptr"; break;
-    case T_FN: t->size = 16; t->align = 8; t->ll = "{ ptr, ptr }"; break;
+    case T_FN: case T_IFACE: t->size = 16; t->align = 8; t->ll = "{ ptr, ptr }"; break;
     case T_TUPLE: {
         SB sb = {0};
         sb_puts(&sb, "{ ");

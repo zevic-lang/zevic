@@ -6,6 +6,8 @@
 
 typedef struct Module Module;
 
+struct Type;
+
 typedef struct Decl {
     Node *node;     /* D_FN, D_STRUCT, D_CLASS, D_ENUM, D_INTERFACE or D_CONST */
     Module *mod;
@@ -13,6 +15,7 @@ typedef struct Decl {
     char *name;
     char *abi;      /* for functions declared in an extern block: "C" or "zevic" */
     bool is_pub;
+    struct Type *iface; /* a default method taken from this interface type (with its type arguments) */
 } Decl;
 
 struct Module {

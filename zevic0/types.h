@@ -12,6 +12,7 @@ typedef enum {
     T_STRUCT, T_CLASS, T_ENUM, /* decl + args = type arguments */
     T_PTR,    /* args[0] = pointee (C interop) */
     T_BUF,    /* Zevic.Intrinsics.Buf<T>: a fixed-size block of T (args[0]); only the standard library uses it */
+    T_IFACE,  /* an interface value: { object, method table } */
     T_CTYPE,  /* C types: name says which */
     T_PARAM   /* an unbound type parameter (only inside generic declarations) */
 } TKind;
@@ -48,6 +49,8 @@ typedef struct Type {
     int64_t size, align;
     char *ll;
     int payload_words; /* enum: size of the payload in 8-byte words */
+    Vec supers;        /* interfaces this type implements (interface: the ones it extends) */
+    bool supers_done;
 } Type;
 
 extern Type *ty_i8, *ty_i16, *ty_i32, *ty_i64, *ty_u8, *ty_u16, *ty_u32, *ty_u64;
