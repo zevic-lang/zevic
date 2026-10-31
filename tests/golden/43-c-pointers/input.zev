@@ -1,0 +1,29 @@
+module Main
+
+import Zevic.Console
+
+extern "C" {
+    fn memcpy(dst: *CVoid, src: *CVoid, n: CSizeT) -> *CVoid
+    fn memset(dst: *CVoid, c: CInt, n: CSizeT) -> *CVoid
+    fn strchr(s: CString, c: CInt) -> CString
+    fn strtol(s: CString, end: *CString, base: CInt) -> CLong
+}
+
+fn Main() {
+    let hay: String = "key=value"
+    let hit: CString = strchr(hay.ToC(), 61.ToCInt())
+    if (hit != Null) {
+        Console.Println("found: ${String.FromC(hit)}")
+    }
+    let miss: CString = strchr(hay.ToC(), 122.ToCInt())
+    Console.Println("miss is null: ${miss == Null}")
+
+    mut rest: CString = Null
+    let n: CLong = strtol("123abc".ToC(), &rest, 10.ToCInt())
+    Console.Println("n = ${n.ToI64()}, rest = ${String.FromC(rest)}")
+
+    mut a: Array<I32> = [1, 2, 3, 4]
+    let b: Array<I32> = [9, 9, 9, 9]
+    memcpy(a.Ptr(), b.Ptr(), 8.ToCSizeT())
+    Console.Println("${a[0]} ${a[1]} ${a[2]} ${a[3]}")
+}
