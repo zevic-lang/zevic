@@ -7,7 +7,9 @@
 #include "parser.h"
 #include "util.h"
 
-#define ZEVIC_VERSION "0.0.1"
+#ifndef ZEVIC_VERSION
+#define ZEVIC_VERSION "dev" /* the Makefile passes the contents of VERSION */
+#endif
 
 static void usage(void) {
     fputs("usage: zevic <file.zev>... [native files] [-o output]\n"
