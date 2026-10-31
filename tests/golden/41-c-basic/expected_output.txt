@@ -1,0 +1,8 @@
+hello from C
+puts returned 13
+abs = 5
+strlen = 6
+labs = 9000000000
+sqrt = 1.5
+wrapped = 705032704
+does not fit
