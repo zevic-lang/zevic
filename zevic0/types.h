@@ -62,6 +62,8 @@ Type *ty_fn(Vec params, Type *ret);
 Type *ty_ptr(Type *pointee);
 Type *ty_param(const char *name);
 Type *ty_ctype(const char *name, int64_t size, bool is_signed);
+Type *ty_c_by_name(const char *name); /* CInt, CString, CVoid, ... or NULL */
+bool ty_is_ctype(Type *t);
 Type *ty_named(TKind k, struct Decl *decl, const char *qualified, Vec args);
 
 bool ty_is_int(Type *t);

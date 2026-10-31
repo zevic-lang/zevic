@@ -49,6 +49,61 @@ Type *ty_prim_by_name(const char *n) {
     return NULL;
 }
 
+/* C types. Widths follow the C compiler of the platform the program is built on. */
+Type *ty_c_by_name(const char *n) {
+#ifdef _WIN32
+    const int long_bytes = 4;
+#else
+    const int long_bytes = 8;
+#endif
+    static const struct {
+        const char *name;
+        int bytes; /* 0: depends on the platform (long) */
+        int kind;  /* 0 unsigned int, 1 signed int, 2 float, 3 bool, 4 string, 5 void */
+    } tab[] = {
+        {"CChar", 1, 1}, {"CSChar", 1, 1}, {"CUChar", 1, 0}, {"CShort", 2, 1}, {"CUShort", 2, 0},
+        {"CInt", 4, 1}, {"CUInt", 4, 0}, {"CLong", 0, 1}, {"CULong", 0, 0},
+        {"CLongLong", 8, 1}, {"CULongLong", 8, 0},
+        {"CSizeT", 8, 0}, {"CSSizeT", 8, 1}, {"CPtrDiff", 8, 1}, {"CIntPtr", 8, 1}, {"CUIntPtr", 8, 0},
+        {"CFloat", 4, 2}, {"CDouble", 8, 2}, {"CBool", 1, 3}, {"CString", 8, 4}, {"CVoid", 0, 5},
+        {NULL, 0, 0}};
+    for (int i = 0; tab[i].name; i++) {
+        if (strcmp(tab[i].name, n) != 0) continue;
+        int bytes = tab[i].bytes ? tab[i].bytes : long_bytes;
+        Type *t = dict_get(&g_types, n);
+        if (t) return t;
+        t = zalloc(sizeof *t);
+        t->k = T_CTYPE;
+        t->name = zstrdup(n);
+        t->laid_out = true;
+        switch (tab[i].kind) {
+        case 0: case 1:
+            t->size = t->align = bytes;
+            t->payload_words = tab[i].kind;
+            t->ll = zsprintf("i%d", bytes * 8);
+            break;
+        case 2:
+            t->size = t->align = bytes;
+            t->ll = bytes == 4 ? "float" : "double";
+            break;
+        case 3:
+            t->size = t->align = 1;
+            t->ll = "i8";
+            break;
+        case 4:
+            t->size = t->align = 8;
+            t->ll = "ptr";
+            break;
+        default:
+            t->size = t->align = 0;
+            t->ll = "void";
+        }
+        dict_put(&g_types, n, t);
+        return t;
+    }
+    return NULL;
+}
+
 Type *ty_tuple(Vec elems) {
     SB sb = {0};
     sb_putc(&sb, '(');
@@ -129,6 +184,7 @@ Type *ty_named(TKind k, struct Decl *decl, const char *qualified, Vec args) {
 bool ty_is_int(Type *t) { return t->k >= T_I8 && t->k <= T_U64; }
 bool ty_is_signed(Type *t) { return t->k >= T_I8 && t->k <= T_I64; }
 bool ty_is_float(Type *t) { return t->k == T_F32 || t->k == T_F64; }
+bool ty_is_ctype(Type *t) { return t->k == T_CTYPE; }
 bool ty_is_numeric(Type *t) { return ty_is_int(t) || ty_is_float(t); }
 
 int ty_bits(Type *t) {
