@@ -1,0 +1,17 @@
+module Main
+
+import Zevic.Console
+
+extern "C" {
+    fn printf(fmt: CString, ...) -> CInt
+    fn snprintf(buf: *CVoid, n: CSizeT, fmt: CString, ...) -> CInt
+    fn fflush(f: *CVoid) -> CInt
+}
+
+fn Main() {
+    printf("%d %s %.2f\n".ToC(), 42.ToCInt(), "x".ToC(), 3.14159.ToCDouble())
+    printf("no extras\n".ToC())
+    let c: CChar = 65.ToCChar()
+    let f: CFloat = 1.5.ToCFloat()
+    printf("%c %.1f\n".ToC(), c, f)
+}
