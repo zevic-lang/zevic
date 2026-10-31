@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.1.0
+
+Stage 4: classes, interfaces and C.
+
+- C interop: `extern "C" { fn ... }`, C types (`CInt`, `CLong`, `CSizeT`, `CDouble`, `CString`, `CVoid`, `*T`), conversions (`x.ToCInt()`, `c.ToI32()`, `ToCIntWrap()`, `"..".ToC()`, `String.FromC`, `String.FromCLossy`), `NewString`, `Free`, `&x`, `Null`, `Array.Ptr()`, variadic C functions, `extern struct`
+- `export "C"` functions, `--emit-header` writes a C header for them
+- link C and C++ files (`.c`, `.cpp`, `.o`, `.a`), `-I` `-D` `-L` `-l`, `--cc`, `--cxx`
+- `interface`: required methods, default methods, extending interfaces, interface values (a class is referenced, a `struct` or `enum` is copied to the heap) and dynamic calls
+- generic constraints (`<T: Comparable + Hashable>`)
+- standard `Equatable`, `Hashable`, `Comparable`, `Iterator`, `Iterable`; the built-in types satisfy the first three
+- `for (x in v)` over anything with `Iter()`; `Array` is `Iterable`
+- `Map<K, V>` (insertion ordered) and `Set<T>`, written in Zevic
+- an unsuffixed number literal becomes the C type that is expected (`let n: CInt = 5`)
+- a `loop` without `break` has type `Never`
+
 ## 0.0.3
 
 Stage 3: data.

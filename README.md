@@ -44,7 +44,9 @@ make test       # tests/ のゴールデンテストを実行
 
 ```sh
 zevic hello.zev -o hello                # ビルド
-zevic hello.zev native/a.c -o hello     # C のファイルも一緒に
+zevic hello.zev native/a.c -o hello     # C のファイルも一緒に(.c .cpp .o .a)
+zevic app.zev -Iinc -DDEBUG -L. -lfoo   # -I -D -L -l はそのままコンパイラ/リンカへ
+zevic app.zev --emit-header zevic.h     # export "C" した関数の C ヘッダも書き出す
 zevic hello.zev --emit-ll -o hello.ll   # LLVM IR だけ出す
 zevic --version
 ```
@@ -57,7 +59,14 @@ zevic --version
 `main` への push でビルドが成功するたびに、Linux / macOS / Windows の実行ファイルを
 `.github/workflows/ci.yml` が GitHub Releases に公開します。
 
+## 例
+
+- [`examples/`](examples/) — Hello、FizzBuzz、階乗、電卓、`interface`、C との連携(`examples/06_c_interop/`)
+
 ## 状態
+
+v0.1.0: 型、`struct`/`class`/`enum`、`interface`、ジェネリクス(制約つき)、`Array`/`Map`/`Set`、C との連携まで動きます。
+クロージャ、`defer`、GC、`zevpm`、`Fs`/`Env` などのライブラリはこれからです(計画は [`docs/plan.md`](docs/plan.md))。
 
 仕様書は草案です。実装の進み具合は [`CHANGELOG.md`](CHANGELOG.md) を参照してください。
 
