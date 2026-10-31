@@ -175,6 +175,7 @@ static void declare(Gen *g, const char *name, const char *line) {
 
 static Type *resolve_type(Gen *g, SourceFile *f, Env *env, Node *te);
 static bool is_err(Type *t) { return t == ty_err; }
+static const char *root_name(Node *n);
 
 static char *qualified_name(Decl *d) {
     if (strcmp(d->mod->name, "Zevic.Core") == 0) return d->name;
@@ -547,6 +548,11 @@ static Val coerce(FnCtx *F, Pos pos, Val v, Type *want, const char *what) {
     (void)F;
     if (v.t == want || is_err(v.t) || is_err(want)) return v;
     if (v.t == ty_never) return never_val(want);
+    /* like C, any pointer converts to `*CVoid` */
+    if (v.t->k == T_PTR && want->k == T_PTR && want->args.n && want->args.v[0] == ty_c_by_name("CVoid")) {
+        Val r = {want, v.v};
+        return r;
+    }
     type_error(pos, want, v.t, what);
     return err_val();
 }
@@ -916,6 +922,25 @@ static Val gen_compare(FnCtx *F, TokKind op, Val a, Val b, Pos pos) {
         emit(F, "%s = icmp %s %s %s, %s", r, p, type_ll(t), a.v, b.v);
         return res;
     }
+    if (t->k == T_CTYPE && strcmp(t->name, "CVoid") != 0) {
+        bool is_f = strcmp(t->ll, "float") == 0 || strcmp(t->ll, "double") == 0;
+        bool is_p = strcmp(t->ll, "ptr") == 0;
+        if (is_f) {
+            const char *p = op == TK_EQEQ ? "oeq" : op == TK_NEQ ? "une" : op == TK_LT ? "olt" : op == TK_LE ? "ole" : op == TK_GT ? "ogt" : "oge";
+            emit(F, "%s = fcmp %s %s %s, %s", r, p, t->ll, a.v, b.v);
+            return res;
+        }
+        if (is_p && op != TK_EQEQ && op != TK_NEQ) {
+            diag_error(pos, "`CString` values can only be compared with `==` and `!=`");
+            return err_val();
+        }
+        bool sgn = t->payload_words == 1;
+        const char *p = op == TK_EQEQ ? "eq" : op == TK_NEQ ? "ne"
+                      : op == TK_LT ? (sgn ? "slt" : "ult") : op == TK_LE ? (sgn ? "sle" : "ule")
+                      : op == TK_GT ? (sgn ? "sgt" : "ugt") : (sgn ? "sge" : "uge");
+        emit(F, "%s = icmp %s %s %s, %s", r, p, t->ll, a.v, b.v);
+        return res;
+    }
     if (ty_is_float(t)) {
         const char *p = op == TK_EQEQ ? "oeq" : op == TK_NEQ ? "une" : op == TK_LT ? "olt" : op == TK_LE ? "ole" : op == TK_GT ? "ogt" : "oge";
         emit(F, "%s = fcmp %s %s %s, %s", r, p, type_ll(t), a.v, b.v);
@@ -1051,6 +1076,24 @@ static Val gen_unary(FnCtx *F, Node *n, Type *expect) {
         if (x->kind == N_INT) return gen_int_lit(F, x, expect, true);
         if (x->kind == N_FLOAT) return gen_float_lit(F, x, expect, true);
     }
+    if (n->op == TK_AMP) {
+        /* &x: the address of a `mut` variable, to hand to a C function */
+        Node *x = n->a;
+        if (x->kind != N_IDENT && x->kind != N_MEMBER) {
+            diag_error(n->pos, "`&` can only be applied to a variable or a field");
+            return err_val();
+        }
+        Place p = gen_place(F, x);
+        if (p.t == ty_never) return never_val(expect);
+        if (is_err(p.t)) return err_val();
+        if (!p.mut) {
+            diag_error(n->pos, "cannot take the address of `%s` because it is not `mut`", root_name(x));
+            diag_note("declare it with `mut %s: %s = ...`", root_name(x), p.t->name);
+            return err_val();
+        }
+        Val r = {ty_ptr(p.t), p.ptr};
+        return r;
+    }
     Val v = gen_expr(F, n->a, n->op == TK_BANG ? ty_bool : expect);
     if (v.t == ty_never || is_err(v.t)) return v;
     Type *t = v.t;
@@ -1111,6 +1154,14 @@ static Val gen_ident(FnCtx *F, Node *n, Type *expect) {
     int used = 0;
     Decl *d = find_decl(F->g, F->file, seg, 1, &used, n->pos);
     if (used < 0) return err_val();
+    if (!d && strcmp(n->name, "Null") == 0) {
+        if (expect && (expect->k == T_PTR || (expect->k == T_CTYPE && strcmp(expect->ll, "ptr") == 0))) {
+            Val v = {expect, "null"};
+            return v;
+        }
+        diag_error(n->pos, "`Null` is a pointer value; use it where a pointer type (`*T` or `CString`) is expected");
+        return err_val();
+    }
     if (d && d->node->kind == D_CONST) {
         Type *t = resolve_type(F->g, d->file, make_env(d, NULL, NULL), d->node->a);
         Val v = gen_expr(F, d->node->b, t);
@@ -1350,7 +1401,6 @@ static TokKind base_op(TokKind k) {
     }
 }
 
-static const char *root_name(Node *n);
 
 /* The address of an assignable place; sets *t to its type. NULL after an error. */
 static char *gen_lvalue(FnCtx *F, Node *n, Type **t) {
@@ -2724,6 +2774,10 @@ static Val gen_buf_method(FnCtx *F, Node *call, Val recv, const char *name) {
         declare(F->g, "llvm.memmove.p0.p0.i64", "declare void @llvm.memmove.p0.p0.i64(ptr, ptr, i64, i1 immarg)");
         emit(F, "call void @llvm.memmove.p0.p0.i64(ptr %s, ptr %s, i64 %s, i1 false)", dp, sp, bytes);
         return unit_val();
+    }
+    if (strcmp(name, "Ptr") == 0 && nargs == 0) {
+        Val v = {ty_ptr(et), recv.v};
+        return v;
     }
     diag_error(call->pos, "`Buf` has no method `%s` that takes %d argument(s)", name, nargs);
     return err_val();
