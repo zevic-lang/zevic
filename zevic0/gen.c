@@ -220,6 +220,7 @@ static char *qualified_name(Decl *d) {
 
 static void ensure_members(Gen *g, Type *t);
 static void check_conformance(Gen *g, Type *t);
+static void check_bounds(Gen *g, SourceFile *f, Node *owner, Vec *targs, Env *base, const char *what, Pos pos);
 
 static Type *instantiate(Gen *g, Decl *d, Vec targs, Pos pos) {
     Node *n = d->node;
@@ -230,6 +231,7 @@ static Type *instantiate(Gen *g, Decl *d, Vec targs, Pos pos) {
             diag_error(pos, "type `%s` needs %d type argument(s), found %d", d->name, n->list2.n, targs.n);
         return ty_err;
     }
+    if (targs.n) check_bounds(g, d->file, n, &targs, NULL, d->name, pos);
     TKind k = n->kind == D_STRUCT ? T_STRUCT : n->kind == D_CLASS ? T_CLASS : n->kind == D_INTERFACE ? T_IFACE : T_ENUM;
     if (d->mod->is_std && strcmp(d->mod->name, "Zevic.Intrinsics") == 0 && strcmp(d->name, "Buf") == 0) k = T_BUF;
     Type *t = ty_named(k, d, qualified_name(d), targs);
@@ -1987,6 +1989,60 @@ static void check_conformance(Gen *g, Type *t) {
                 diag_error(impl->pos, "`%s.%s` does not match the declaration in `%s`: it should be `%sfn %s%s`", t->name, impl->name, m->owner->name,
                            m->fn->is_mut_fn ? "mut " : "", m->fn->name, sig_string(g, &mp, mret));
         }
+    }
+}
+
+
+/* The built-in types satisfy Equatable, Comparable and Hashable without declaring them. */
+static bool builtin_satisfies(Type *t, const char *iface) {
+    bool num = ty_is_int(t) || t == ty_char || t == ty_bool;
+    if (strcmp(iface, "Equatable") == 0) return num || ty_is_float(t) || t == ty_string;
+    if (strcmp(iface, "Comparable") == 0) return (ty_is_int(t) || t == ty_char || ty_is_float(t) || t == ty_string);
+    if (strcmp(iface, "Hashable") == 0) return num || t == ty_string;
+    return false;
+}
+
+static bool is_builtin_value(Type *t) {
+    return ty_is_numeric(t) || t == ty_char || t == ty_bool || t == ty_string;
+}
+
+static bool satisfies(Gen *g, Type *t, Type *bound) {
+    if (is_err(t) || t->k == T_PARAM || is_err(bound)) return true;
+    if (is_builtin_value(t) && bound->decl && bound->decl->mod->is_std) return builtin_satisfies(t, bound->decl->name);
+    return type_implements(g, t, bound);
+}
+
+/* Check the `<T: Bound + Bound>` constraints of a generic declaration against the type arguments. */
+static void check_bounds(Gen *g, SourceFile *f, Node *owner, Vec *targs, Env *base, const char *what, Pos pos) {
+    for (int i = 0; i < owner->list2.n && i < targs->n; i++) {
+        Node *tp = owner->list2.v[i];
+        if (!tp->list.n) continue;
+        Type *arg = targs->v[i];
+        if (is_err(arg) || arg->k == T_PARAM) continue;
+        Env *env = env_new();
+        if (base) {
+            env->self = base->self;
+            for (int k = 0; k < base->names.n; k++) env_add(env, base->names.v[k], base->types.v[k]);
+        }
+        for (int k = 0; k < owner->list2.n && k < targs->n; k++) env_add(env, ((Node *)owner->list2.v[k])->name, targs->v[k]);
+        Type *saved_self = env->self;
+        env->self = arg; /* `Self` in a bound is the constrained type */
+        bool saved = g_allow_selfy_iface;
+        g_allow_selfy_iface = true;
+        for (int b = 0; b < tp->list.n; b++) {
+            Type *bound = resolve_type(g, f, env, tp->list.v[b]);
+            if (is_err(bound)) continue;
+            if (bound->k != T_IFACE) {
+                diag_error(((Node *)tp->list.v[b])->pos, "`%s` is not an interface, so it cannot be a constraint", bound->name);
+                continue;
+            }
+            if (!satisfies(g, arg, bound)) {
+                diag_error(pos, "`%s` does not satisfy the constraint `%s: %s` of `%s`", arg->name, tp->name, bound->name, what);
+                diag_note("`%s` would have to implement `%s`", arg->name, bound->name);
+            }
+        }
+        g_allow_selfy_iface = saved;
+        env->self = saved_self;
     }
 }
 
@@ -3803,6 +3859,7 @@ static Val gen_call_decl(FnCtx *F, Node *call, Decl *d, Type *self, Vec *explici
         }
         vec_push(&targs, t);
     }
+    if (ntp) check_bounds(g, d->file, fn, &targs, env, fn->name, call->pos);
     Inst *in = get_inst(g, d, self, &targs);
     for (int i = 0; i < nparams; i++) {
         Val *v = vals.v[i];
@@ -4153,12 +4210,77 @@ static bool gen_c_conversion(FnCtx *F, Node *call, Val recv, const char *name, T
     return true;
 }
 
+/* x.Equals(y), x.Compare(y), x.Hash() on the built-in types. */
+static bool gen_builtin_iface_method(FnCtx *F, Node *call, Val recv, const char *name, Val *out) {
+    Type *t = recv.t;
+    int nargs = call->list.n;
+    if (strcmp(name, "Hash") == 0) {
+        if (nargs || !builtin_satisfies(t, "Hashable")) return false;
+        char *x;
+        if (t == ty_string) {
+            char *p, *n;
+            str_parts(F, recv, &p, &n);
+            declare(F->g, "zevic_str_hash", "declare i64 @zevic_str_hash(ptr, i64)");
+            x = tmp(F);
+            emit(F, "%s = call i64 @zevic_str_hash(ptr %s, i64 %s)", x, p, n);
+        } else {
+            Val w = recv;
+            if (t == ty_bool) {
+                char *z = tmp(F);
+                emit(F, "%s = zext i1 %s to i64", z, recv.v);
+                x = z;
+            } else if (t == ty_char) {
+                char *z = tmp(F);
+                emit(F, "%s = zext i32 %s to i64", z, recv.v);
+                x = z;
+            } else if (ty_bits(t) == 64) {
+                x = w.v;
+            } else {
+                char *z = tmp(F);
+                emit(F, "%s = %s %s %s to i64", z, ty_is_signed(t) ? "sext" : "zext", type_ll(t), recv.v);
+                x = z;
+            }
+            declare(F->g, "zevic_hash_u64", "declare i64 @zevic_hash_u64(i64)");
+            char *h = tmp(F);
+            emit(F, "%s = call i64 @zevic_hash_u64(i64 %s)", h, x);
+            x = h;
+        }
+        Val r = {ty_u64, x};
+        *out = r;
+        return true;
+    }
+    if (nargs != 1) return false;
+    Val o = gen_expr(F, call->list.v[0], t);
+    o = coerce(F, ((Node *)call->list.v[0])->pos, o, t, "the argument");
+    if (o.t == ty_never || is_err(o.t)) {
+        *out = o.t == ty_never ? o : err_val();
+        return true;
+    }
+    if (strcmp(name, "Equals") == 0) {
+        *out = gen_compare(F, TK_EQEQ, recv, o, call->pos);
+        return true;
+    }
+    if (!builtin_satisfies(t, "Comparable")) return false;
+    Val lt = gen_compare(F, TK_LT, recv, o, call->pos);
+    Val gt = gen_compare(F, TK_GT, recv, o, call->pos);
+    char *a = tmp(F), *b = tmp(F);
+    emit(F, "%s = select i1 %s, i32 1, i32 0", a, gt.v);
+    emit(F, "%s = select i1 %s, i32 -1, i32 %s", b, lt.v, a);
+    Val r = {ty_i32, b};
+    *out = r;
+    return true;
+}
+
 static Val gen_prim_method(FnCtx *F, Node *call, Val recv, const char *name, Type *expect) {
     Type *t = recv.t;
     int nargs = call->list.n;
     {
         Val cv;
         if (gen_c_conversion(F, call, recv, name, expect, &cv)) return cv;
+    }
+    if (is_builtin_value(t) && (strcmp(name, "Equals") == 0 || strcmp(name, "Compare") == 0 || strcmp(name, "Hash") == 0)) {
+        Val r;
+        if (gen_builtin_iface_method(F, call, recv, name, &r)) return r;
     }
     if (t == ty_string && strcmp(name, "ToC") == 0) {
         if (nargs) {
