@@ -3207,26 +3207,32 @@ static const char *c_ext_attr(Type *t) {
 static Val emit_c_call(FnCtx *F, Inst *in, Vec *args) {
     SB a = {0}, ptypes = {0};
     Type *ret = in->ret;
+    bool variadic = false;
+    for (int i = 0; i < in->decl->node->list.n; i++)
+        if (((Node *)in->decl->node->list.v[i])->flag3) variadic = true;
     for (int i = 0; i < args->n; i++) {
         Val *v = args->v[i];
-        if (i) {
-            sb_puts(&a, ", ");
-            sb_puts(&ptypes, ", ");
-        }
+        if (i) sb_puts(&a, ", ");
         const char *attr = c_ext_attr(v->t);
         sb_printf(&a, "%s%s %s", type_ll(v->t), attr, v->v);
-        sb_printf(&ptypes, "%s%s", type_ll(v->t), attr);
+        if (i < in->ptypes.n) {
+            if (i) sb_puts(&ptypes, ", ");
+            sb_printf(&ptypes, "%s%s", type_ll(v->t), attr);
+        }
     }
+    if (variadic) sb_puts(&ptypes, ptypes.len ? ", ..." : "...");
     bool is_void = ret == ty_unit || ret == ty_never;
     const char *rl = is_void ? "void" : type_ll(ret);
     const char *rattr = is_void ? "" : c_ext_attr(ret);
     declare(F->g, in->name, zsprintf("declare%s %s @%s(%s)", rattr, rl, in->name, sb_str(&ptypes)));
+    /* a variadic callee is called through its full function type */
+    const char *fty = variadic ? zsprintf(" %s (%s)", rl, sb_str(&ptypes)) : zsprintf(" %s", rl);
     if (is_void) {
-        emit(F, "call void @%s(%s)", in->name, sb_str(&a));
+        emit(F, "call%s @%s(%s)", fty, in->name, sb_str(&a));
         return unit_val();
     }
     char *t = tmp(F);
-    emit(F, "%s = call%s %s @%s(%s)", t, rattr, rl, in->name, sb_str(&a));
+    emit(F, "%s = call%s%s @%s(%s)", t, rattr, fty, in->name, sb_str(&a));
     Val r = {ret, t};
     return r;
 }
@@ -3325,8 +3331,10 @@ static Val gen_call_decl(FnCtx *F, Node *call, Decl *d, Type *self, Vec *explici
     int nparams = 0;
     for (int i = 0; i < fn->list.n; i++)
         if (!((Node *)fn->list.v[i])->flag3) nparams++;
-    if (call->list.n != nparams) {
-        diag_error(call->pos, "`%s` takes %d argument(s), but %d were given", fn->name, nparams, call->list.n);
+    bool variadic = nparams < fn->list.n;
+    if (variadic ? call->list.n < nparams : call->list.n != nparams) {
+        diag_error(call->pos, "`%s` takes %s%d argument(s), but %d were given", fn->name, variadic ? "at least " : "", nparams,
+                   call->list.n);
         return err_val();
     }
     Vec vals = {0};
@@ -3365,6 +3373,34 @@ static Val gen_call_decl(FnCtx *F, Node *call, Decl *d, Type *self, Vec *explici
             what = strcmp(fn->name, "SetIndex") == 0 && i == 1 ? "an assignment" : "an index";
         *v = coerce(F, ((Node *)call->list.v[i])->pos, *v, in->ptypes.v[i], what);
         if (is_err(v->t)) return err_val();
+    }
+    for (int i = nparams; i < call->list.n; i++) {
+        /* the `...` part: C types and pointers, promoted the way C does */
+        Node *an = call->list.v[i];
+        Val *v = zalloc(sizeof *v);
+        *v = gen_expr(F, an, NULL);
+        if (v->t == ty_never) return never_val(expect);
+        if (is_err(v->t)) return err_val();
+        if (!is_c_value_type(v->t)) {
+            diag_error(an->pos, "argument %d of `%s` has type `%s`; the `...` part of a C function takes only C types and pointers",
+                       i + 1, fn->name, v->t->name);
+            if (ty_is_numeric(v->t)) diag_note("convert it with a method such as `.ToCInt()` or `.ToCDouble()`");
+            else if (v->t == ty_string) diag_note("convert a String with `.ToC()`");
+            return err_val();
+        }
+        if (v->t->k == T_CTYPE && strcmp(v->t->ll, "float") == 0) {
+            char *r = tmp(F);
+            emit(F, "%s = fpext float %s to double", r, v->v);
+            v->v = r;
+            v->t = ty_c_by_name("CDouble");
+        } else if (v->t->k == T_CTYPE && v->t->ll[0] == 'i' && v->t->size < 4) {
+            char *r = tmp(F);
+            bool sgn = v->t->payload_words == 1 && strcmp(v->t->name, "CBool") != 0;
+            emit(F, "%s = %s %s %s to i32", r, sgn ? "sext" : "zext", v->t->ll, v->v);
+            v->v = r;
+            v->t = ty_c_by_name(sgn ? "CInt" : "CUInt");
+        }
+        vec_push(&vals, v);
     }
     if (recv) {
         /* the receiver goes first */
