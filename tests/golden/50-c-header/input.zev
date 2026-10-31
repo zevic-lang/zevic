@@ -1,0 +1,20 @@
+module Main
+
+import Zevic.Console
+
+extern "C" {
+    struct Point { X: CInt, Y: CInt }
+    fn use_header() -> CInt
+}
+
+export "C" fn zv_len(p: *Point, name: CString, scale: CDouble) -> CSizeT {
+    String.FromC(name).Len().ToCSizeT().Unwrap()
+}
+
+export "C" fn zv_reset() -> CVoid {
+    Console.Println("reset called from C")
+}
+
+fn Main() {
+    Console.Println("use_header = ${use_header().ToI32()}")
+}

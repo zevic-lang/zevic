@@ -1,0 +1,1 @@
+--emit-header {tmp}/x.h -I{tmp}
