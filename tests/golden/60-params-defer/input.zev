@@ -1,0 +1,35 @@
+module Main
+
+import Zevic.Console
+
+fn Sum(params nums: Array<I32>) -> I32 {
+    mut t: I32 = 0
+    for (n in nums) { t += n }
+    t
+}
+
+fn Work(fail: Bool) -> Result<I32, Error> {
+    defer Console.Println("cleanup 1")
+    defer { Console.Println("cleanup 2") }
+    if (fail) {
+        return Err(Error.New(ErrorKind.Other, "failed"))
+    }
+    Ok(7)
+}
+
+fn Main() {
+    Console.Println("${Sum(1, 2, 3)} ${Sum()}")
+    for (i in 0..2) {
+        defer Console.Println("loop end ${i}")
+        if (i == 0) { continue }
+        Console.Println("body ${i}")
+    }
+    match (Work(false)) {
+        Ok(v) => Console.Println("ok ${v}"),
+        Err(e) => Console.Println("err"),
+    }
+    match (Work(true)) {
+        Ok(v) => Console.Println("ok ${v}"),
+        Err(e) => Console.Println("err"),
+    }
+}

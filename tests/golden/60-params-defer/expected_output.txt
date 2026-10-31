@@ -1,0 +1,10 @@
+6 0
+loop end 0
+body 1
+loop end 1
+cleanup 2
+cleanup 1
+ok 7
+cleanup 2
+cleanup 1
+err
