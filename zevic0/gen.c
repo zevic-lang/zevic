@@ -462,7 +462,6 @@ static Inst *get_inst(Gen *g, Decl *d, Type *self, Vec *targs) {
         Node *p = fn->list.v[i];
         if (p->flag3) continue; /* `...` */
         Type *pt = resolve_type(g, d->file, in->env, p->a);
-        if (p->flag2) pt = array_type(g, pt); /* params x: T arrives as Array<T> */
         vec_push(&in->ptypes, pt);
     }
     in->ret = fn->a ? resolve_type(g, d->file, in->env, fn->a) : ty_unit;
@@ -3908,6 +3907,29 @@ static Val gen_call_decl(FnCtx *F, Node *call, Decl *d, Type *self, Vec *explici
         }
         for (int i = 0; i < ntp; i++)
             env_add(env, ((Node *)fn->list2.v[i])->name, resolve_type(g, F->file, F->env, explicit->v[i]));
+    }
+    /* `params xs: Array<T>`: the values at the end of the call are collected into an array */
+    for (int i = 0; i < fn->list.n; i++) {
+        Node *pm = fn->list.v[i];
+        if (pm->flag2 && i != fn->list.n - 1) {
+            diag_error(pm->pos, "only the last parameter can be `params`");
+            return err_val();
+        }
+    }
+    if (fn->list.n && ((Node *)fn->list.v[fn->list.n - 1])->flag2) {
+        int fixed = fn->list.n - 1;
+        if (call->list.n < fixed) {
+            diag_error(call->pos, "`%s` takes at least %d argument(s), but %d were given", fn->name, fixed, call->list.n);
+            return err_val();
+        }
+        Node *packed = zalloc(sizeof *packed);
+        *packed = *call;
+        memset(&packed->list, 0, sizeof packed->list);
+        for (int i = 0; i < fixed; i++) vec_push(&packed->list, call->list.v[i]);
+        Node *arr = node_new(N_ARRAY, call->pos);
+        for (int i = fixed; i < call->list.n; i++) vec_push(&arr->list, call->list.v[i]);
+        vec_push(&packed->list, arr);
+        call = packed;
     }
     int nparams = 0;
     for (int i = 0; i < fn->list.n; i++)
