@@ -14,6 +14,7 @@ static void usage(void) {
           "\n"
           "  -o <file>          output file\n"
           "  --emit-ll          write the LLVM IR and stop\n"
+          "  --emit-header <f>  also write a C header for the `export \"C\"` functions\n"
           "  -O0 -O1 -O2        optimisation level (default -O1)\n"
           "  -g                 debug information\n"
           "  -l<name> -L<dir> -I<dir> -D<k=v>   options passed to clang\n"
@@ -98,6 +99,7 @@ int main(int argc, char **argv) {
     Vec zev_files = {0};
     const char *out = NULL;
     bool emit_ll = false;
+    const char *header_path = NULL;
 
     for (int i = 1; i < argc; i++) {
         const char *a = argv[i];
@@ -115,6 +117,8 @@ int main(int argc, char **argv) {
             return 0;
         } else if (strcmp(a, "-o") == 0 && i + 1 < argc) {
             out = argv[++i];
+        } else if (strcmp(a, "--emit-header") == 0 && i + 1 < argc) {
+            header_path = argv[++i];
         } else if (strcmp(a, "--emit-ll") == 0) {
             emit_ll = true;
         } else if (strcmp(a, "--keep-ll") == 0) {
@@ -183,6 +187,17 @@ int main(int argc, char **argv) {
     }
 
     char *base = base_no_ext(zev_files.v[0]);
+    if (header_path) {
+        SB h = {0};
+        gen_header(g, "ZEVIC_EXPORTS_H", &h);
+        FILE *hf = fopen(header_path, "wb");
+        if (!hf) {
+            fprintf(stderr, "error: cannot write `%s`\n", header_path);
+            return 2;
+        }
+        fwrite(h.p, 1, h.len, hf);
+        fclose(hf);
+    }
     if (emit_ll) {
         const char *path = out ? out : zsprintf("%s.ll", base);
         FILE *f = fopen(path, "wb");
