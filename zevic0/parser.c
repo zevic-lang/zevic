@@ -550,7 +550,7 @@ static Node *parse_postfix(Parser *p) {
 
 static Node *parse_unary(Parser *p) {
     Token *t = peek(p);
-    if (t->k == TK_MINUS || t->k == TK_BANG || t->k == TK_TILDE) {
+    if (t->k == TK_MINUS || t->k == TK_BANG || t->k == TK_TILDE || t->k == TK_AMP) {
         if (++p->depth > 200) perr(p, t->pos, "expression is nested too deeply");
         next(p);
         Node *n = node_new(N_UNARY, t->pos);
