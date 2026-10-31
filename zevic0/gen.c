@@ -3921,6 +3921,39 @@ static Val gen_method_call(FnCtx *F, Node *call, Node *recv_node, const char *na
     return gen_prim_method(F, call, recv, name, expect);
 }
 
+/* String.FromC(c) / String.FromCLossy(c): copy a C string into a String. */
+static Val gen_string_from_c(FnCtx *F, Node *call, bool lossy) {
+    const char *fname = lossy ? "FromCLossy" : "FromC";
+    if (call->list.n != 1) {
+        diag_error(call->pos, "`String.%s` takes one argument (a `CString`)", fname);
+        return err_val();
+    }
+    Type *cs = ty_c_by_name("CString");
+    Val c = gen_expr(F, call->list.v[0], cs);
+    if (c.t == ty_never || is_err(c.t)) return c.t == ty_never ? c : err_val();
+    c = coerce(F, ((Node *)call->list.v[0])->pos, c, cs, "the argument");
+    if (is_err(c.t)) return err_val();
+    declare(F->g, "zevic_str_from_c", "declare i32 @zevic_str_from_c(ptr, ptr, i32)");
+    char *slot = new_slot(F, ty_string);
+    char *ok = tmp(F);
+    emit(F, "%s = call i32 @zevic_str_from_c(ptr %s, ptr %s, i32 %d)", ok, slot, c.v, lossy ? 1 : 0);
+    if (!lossy) {
+        char *bad = tmp(F);
+        char *lb = newlabel(F, "fromc.bad"), *lg = newlabel(F, "fromc.ok");
+        emit(F, "%s = icmp eq i32 %s, 0", bad, ok);
+        emit(F, "br i1 %s, label %%%s, label %%%s", bad, lb, lg);
+        start_block(F, lb);
+        const char *m = "String.FromC: the C string is not valid UTF-8 (use String.FromCLossy)";
+        Val msg = str_val(str_const(F->g, m, (int)strlen(m)));
+        emit_panic_call(F, msg, call->pos);
+        start_block(F, lg);
+    }
+    char *r = tmp(F);
+    emit(F, "%s = load { ptr, i64 }, ptr %s", r, slot);
+    Val res = {ty_string, r};
+    return res;
+}
+
 static Val gen_call(FnCtx *F, Node *n, Type *expect) {
     Node *callee = n->a;
     Vec segs = {0}, nodes = {0};
@@ -3985,6 +4018,9 @@ static Val gen_call(FnCtx *F, Node *n, Type *expect) {
                 diag_error(callee->pos, "function `%s` has no member `%s`", d->name, segs.v[used]);
                 return err_val();
             }
+            if (!d && segs.n == 2 && strcmp(head, "String") == 0 &&
+                (strcmp(segs.v[1], "FromC") == 0 || strcmp(segs.v[1], "FromCLossy") == 0))
+                return gen_string_from_c(F, n, strcmp(segs.v[1], "FromCLossy") == 0);
             if (!d && segs.n == 1) {
                 Decl *owner = prelude_variant_owner(F, head);
                 if (owner) return gen_variant(F, n, n->pos, owner, static_type(F, owner, NULL, expect), head, expect);
