@@ -1,0 +1,41 @@
+module Main
+
+import Zevic.Console
+
+class Countdown : Iterable<I32> {
+    from: I32
+    fn Init(from: I32) { this.from = from }
+    fn Iter() -> Iterator<I32> { CountdownIter.New(this.from) }
+}
+
+class CountdownIter : Iterator<I32> {
+    n: I32
+    fn Init(n: I32) { this.n = n }
+    mut fn Next() -> Option<I32> {
+        if (this.n <= 0) { return None }
+        let v: I32 = this.n
+        this.n -= 1
+        Some(v)
+    }
+}
+
+fn Main() {
+    for (x in Countdown.New(3)) {
+        Console.Println("tick ${x}")
+    }
+    let items: Array<I32> = Countdown.New(4).ToArray()
+    Console.Println("len = ${items.Len()}, first = ${items[0]}")
+    let a: Array<String> = ["x", "y"]
+    let it: Iterator<String> = a.Iter()
+    mut it2: Iterator<String> = it
+    match (it2.Next()) {
+        Some(s) => Console.Println("got ${s}"),
+        None => Console.Println("empty"),
+    }
+    let b: Array<String> = a.ToArray()
+    Console.Println("${b.Len()}")
+    let src: Iterable<I32> = Countdown.New(2)
+    for (v, i in src) {
+        Console.Println("${i}: ${v}")
+    }
+}

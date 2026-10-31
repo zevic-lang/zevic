@@ -1,0 +1,8 @@
+tick 3
+tick 2
+tick 1
+len = 4, first = 4
+got x
+2
+2: 0
+1: 1
