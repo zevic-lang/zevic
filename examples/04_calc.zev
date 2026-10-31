@@ -1,0 +1,152 @@
+module Main
+
+import Zevic.Console
+
+// A small calculator: text -> tokens -> value, with enums, match, arrays and Result.
+
+enum Token {
+    Num(I64),
+    Plus,
+    Minus,
+    Star,
+    Slash,
+    Open,
+    Close,
+}
+
+fn Tokenize(text: String) -> Result<Array<Token>, Error> {
+    mut tokens: Array<Token> = []
+    mut i: I64 = 0
+    while (i < text.Len()) {
+        let c: U8 = text.ByteAt(i)
+        if (c == b' ') {
+            i += 1
+        } else if (c >= b'0' && c <= b'9') {
+            mut n: I64 = 0
+            while (i < text.Len() && text.ByteAt(i) >= b'0' && text.ByteAt(i) <= b'9') {
+                n = n * 10 + (text.ByteAt(i) - b'0').ToI64()
+                i += 1
+            }
+            tokens.Push(Token.Num(n))
+        } else {
+            let t: Token = match (c) {
+                b'+' => Token.Plus,
+                b'-' => Token.Minus,
+                b'*' => Token.Star,
+                b'/' => Token.Slash,
+                b'(' => Token.Open,
+                b')' => Token.Close,
+                _ => return Err(Error.New(ErrorKind.Parse, "unexpected character at ${i}")),
+            }
+            tokens.Push(t)
+            i += 1
+        }
+    }
+    Ok(tokens)
+}
+
+class Parser {
+    tokens: Array<Token>
+    pos: I64 = 0
+
+    fn Init(tokens: Array<Token>) {
+        this.tokens = tokens
+    }
+
+    fn peek() -> Option<Token> {
+        this.tokens.Get(this.pos)
+    }
+
+    mut fn advance() {
+        this.pos += 1
+    }
+
+    // expr = term { (+|-) term }
+    mut fn Expr() -> Result<I64, Error> {
+        mut left: I64 = this.Term()?
+        loop {
+            match (this.peek()) {
+                Some(Token.Plus) => {
+                    this.advance()
+                    left += this.Term()?
+                },
+                Some(Token.Minus) => {
+                    this.advance()
+                    left -= this.Term()?
+                },
+                _ => break,
+            }
+        }
+        Ok(left)
+    }
+
+    // term = factor { (*|/) factor }
+    mut fn Term() -> Result<I64, Error> {
+        mut left: I64 = this.Factor()?
+        loop {
+            match (this.peek()) {
+                Some(Token.Star) => {
+                    this.advance()
+                    left *= this.Factor()?
+                },
+                Some(Token.Slash) => {
+                    this.advance()
+                    let d: I64 = this.Factor()?
+                    if (d == 0) {
+                        return Err(Error.New(ErrorKind.Invalid, "division by zero"))
+                    }
+                    left /= d
+                },
+                _ => break,
+            }
+        }
+        Ok(left)
+    }
+
+    // factor = number | ( expr ) | - factor
+    mut fn Factor() -> Result<I64, Error> {
+        match (this.peek()) {
+            Some(Token.Num(n)) => {
+                this.advance()
+                Ok(n)
+            },
+            Some(Token.Minus) => {
+                this.advance()
+                let v: I64 = this.Factor()?
+                Ok(0 - v)
+            },
+            Some(Token.Open) => {
+                this.advance()
+                let v: I64 = this.Expr()?
+                match (this.peek()) {
+                    Some(Token.Close) => {
+                        this.advance()
+                        Ok(v)
+                    },
+                    _ => Err(Error.New(ErrorKind.Parse, "expected `)`")),
+                }
+            },
+            _ => Err(Error.New(ErrorKind.Parse, "expected a number")),
+        }
+    }
+}
+
+fn Eval(text: String) -> Result<I64, Error> {
+    let tokens: Array<Token> = Tokenize(text).Context("reading \"${text}\"")?
+    mut p: Parser = Parser.New(tokens)
+    let v: I64 = p.Expr()?
+    if (p.pos != tokens.Len()) {
+        return Err(Error.New(ErrorKind.Parse, "unexpected input after the expression"))
+    }
+    Ok(v)
+}
+
+fn Main() {
+    let inputs: Array<String> = ["1 + 2 * 3", "(1 + 2) * 3", "100 / (5 - 5)", "2 * (3 + 4) - -1", "7 +", "12 $ 3"]
+    for (text in inputs) {
+        match (Eval(text)) {
+            Ok(v) => Console.Println("${text} = ${v}"),
+            Err(e) => Console.Println("${text} -> error: ${e.Message()}"),
+        }
+    }
+}
