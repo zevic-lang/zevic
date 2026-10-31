@@ -3134,6 +3134,11 @@ static bool is_result_type(Type *t) {
            strcmp(t->decl->mod->name, "Zevic.Core") == 0;
 }
 
+static bool is_option_type(Type *t) {
+    return t->k == T_ENUM && t->decl && strcmp(t->decl->name, "Option") == 0 && t->decl->mod->is_std &&
+           strcmp(t->decl->mod->name, "Zevic.Core") == 0;
+}
+
 static bool is_error_type(Type *t) {
     return t->k == T_CLASS && t->decl && strcmp(t->decl->name, "Error") == 0 && t->decl->mod->is_std &&
            strcmp(t->decl->mod->name, "Zevic.Core") == 0;
@@ -3496,6 +3501,77 @@ static Val gen_array_lit(FnCtx *F, Node *n, Type *expect) {
  *   let $it = arr;  mut $i = 0
  *   while ($i < $it.Len()) { let x = $it.Index($i); let i = $i; $i += 1; body }
  * The counter moves before the body, so `continue` needs no special care. */
+/* Does the type have an `Iter()` method (its own, a default one, or one of an interface value)? */
+static bool has_iter_method(Gen *g, Type *t) {
+    if (t->k == T_IFACE) {
+        Vec all = {0};
+        collect_iface_methods(g, t, &all, 0);
+        for (int i = 0; i < all.n; i++)
+            if (strcmp(((IMethod *)all.v[i])->fn->name, "Iter") == 0) return true;
+        return false;
+    }
+    if (!is_user_type(t)) return false;
+    if (find_member_fn(t, "Iter")) return true;
+    IMethod dm;
+    return find_default(g, t, "Iter", &dm, NULL);
+}
+
+/* for (x in v) over anything with Iter(): it = v.Iter(); loop { o = it.Next(); if None, stop; x = o.Unwrap(); body } */
+static void gen_for_iterable(FnCtx *F, Node *n, Val src) {
+    Pos pos = n->pos;
+    Local *sl = declare_local(F, "$src", src.t, false, pos);
+    store_to(F, src.t, src, sl->ptr);
+    Val iter = gen_expr(F, mk_method_call(mk_ident(pos, "$src"), "Iter", pos, NULL, NULL), NULL);
+    if (iter.t == ty_never || is_err(iter.t)) {
+        pop_scope(F);
+        return;
+    }
+    Local *itl = declare_local(F, "$iter", iter.t, true, pos); /* `Next` is a `mut fn` */
+    store_to(F, iter.t, iter, itl->ptr);
+    Local *il = NULL;
+    if (n->c) {
+        il = declare_local(F, "$i", ty_i64, true, pos);
+        store_to(F, ty_i64, (Val){ty_i64, "0"}, il->ptr);
+    }
+    char *head = newlabel(F, "for.cond"), *body = newlabel(F, "for.body"), *end = newlabel(F, "for.end");
+    goto_block(F, head);
+    Val o = gen_expr(F, mk_method_call(mk_ident(pos, "$iter"), "Next", pos, NULL, NULL), NULL);
+    if (o.t == ty_never || is_err(o.t) || !is_option_type(o.t)) {
+        if (!is_err(o.t) && o.t != ty_never) diag_error(pos, "`Next()` must return an `Option`, found `%s`", o.t->name);
+        pop_scope(F);
+        return;
+    }
+    Local *ol = declare_local(F, "$o", o.t, false, pos);
+    store_to(F, o.t, o, ol->ptr);
+    Val some = gen_expr(F, mk_method_call(mk_ident(pos, "$o"), "IsSome", pos, NULL, NULL), ty_bool);
+    condbr(F, some.v, body, end);
+    start_block(F, body);
+    push_scope(F);
+    Node *let_elem = node_new(N_LET, pos);
+    let_elem->a = n->a;
+    let_elem->c = mk_method_call(mk_ident(pos, "$o"), "Unwrap", pos, NULL, NULL);
+    gen_let(F, let_elem);
+    if (n->c) {
+        Node *let_idx = node_new(N_LET, pos);
+        let_idx->a = n->c;
+        let_idx->c = mk_ident(pos, "$i");
+        gen_let(F, let_idx);
+        Node *inc = node_new(N_ASSIGN, pos);
+        inc->op = TK_PLUSEQ;
+        inc->a = mk_ident(pos, "$i");
+        inc->b = mk_int(pos, 1);
+        gen_assign(F, inc);
+    }
+    Loop lp = {end, head, F->scope};
+    vec_push(&F->loops, &lp);
+    gen_block(F, n->b, ty_unit);
+    F->loops.n--;
+    pop_scope(F);
+    if (!F->term) br(F, head);
+    start_block(F, end);
+    pop_scope(F);
+}
+
 static void gen_for_iter(FnCtx *F, Node *n) {
     Pos pos = n->pos;
     push_scope(F);
@@ -3505,7 +3581,11 @@ static void gen_for_iter(FnCtx *F, Node *n) {
         return;
     }
     if (!is_array_type(F, it.t)) {
-        diag_error(n->d->pos, "cannot loop over a value of type `%s` (`for` works on ranges like `0..10` and on arrays)",
+        if (has_iter_method(F->g, it.t)) {
+            gen_for_iterable(F, n, it);
+            return;
+        }
+        diag_error(n->d->pos, "cannot loop over a value of type `%s` (`for` works on ranges like `0..10`, on arrays and on anything that is `Iterable`)",
                    it.t->name);
         pop_scope(F);
         return;
