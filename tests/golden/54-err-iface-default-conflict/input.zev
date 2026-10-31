@@ -1,0 +1,10 @@
+module Main
+
+interface A { fn Hi() -> String { "a" } }
+interface B { fn Hi() -> String { "b" } }
+
+class C : A, B {
+}
+
+fn Main() {
+}

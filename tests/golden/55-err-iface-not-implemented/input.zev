@@ -1,0 +1,11 @@
+module Main
+
+interface Shape { fn Area() -> F64 }
+
+class NotShape {
+    fn Area() -> F64 { 1.0 }
+}
+
+fn Main() {
+    let s: Shape = NotShape.New()
+}

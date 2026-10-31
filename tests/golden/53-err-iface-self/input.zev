@@ -1,0 +1,9 @@
+module Main
+
+interface Eq2 {
+    fn Same(other: Self) -> Bool
+}
+
+fn Main() {
+    let x: Eq2 = 1
+}

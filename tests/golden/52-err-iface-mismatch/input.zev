@@ -1,0 +1,13 @@
+module Main
+
+interface Shape {
+    fn Area() -> F64
+    fn Name() -> String
+}
+
+class Bad : Shape {
+    fn Area() -> I32 { 1 }
+}
+
+fn Main() {
+}

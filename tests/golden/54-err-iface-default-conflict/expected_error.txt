@@ -1,0 +1,1 @@
+gets a default `Hi` from both
