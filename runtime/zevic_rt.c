@@ -298,3 +298,67 @@ void zevic_sb_finish(zevic_str *out, void *h) {
     out->p = b->p;
     out->n = b->n;
 }
+
+/* ---- C strings ---- */
+
+/* Length of the valid UTF-8 sequence at p (0 if invalid). */
+static int utf8_seq(const unsigned char *p, int64_t left) {
+    unsigned c = p[0];
+    if (c < 0x80) return 1;
+    if (c >= 0xC2 && c <= 0xDF) return left >= 2 && (p[1] & 0xC0) == 0x80 ? 2 : 0;
+    if (c >= 0xE0 && c <= 0xEF) {
+        if (left < 3 || (p[1] & 0xC0) != 0x80 || (p[2] & 0xC0) != 0x80) return 0;
+        if (c == 0xE0 && p[1] < 0xA0) return 0;
+        if (c == 0xED && p[1] >= 0xA0) return 0;
+        return 3;
+    }
+    if (c >= 0xF0 && c <= 0xF4) {
+        if (left < 4 || (p[1] & 0xC0) != 0x80 || (p[2] & 0xC0) != 0x80 || (p[3] & 0xC0) != 0x80) return 0;
+        if (c == 0xF0 && p[1] < 0x90) return 0;
+        if (c == 0xF4 && p[1] >= 0x90) return 0;
+        return 4;
+    }
+    return 0;
+}
+
+/* Copy a NUL-terminated C string into a new String.
+ * lossy = 0: returns 0 (and leaves *out empty) when the bytes are not UTF-8.
+ * lossy = 1: bad bytes become U+FFFD; always returns 1. A NULL pointer gives "". */
+int32_t zevic_str_from_c(zevic_str *out, const char *c, int32_t lossy) {
+    if (!c) {
+        str_set(out, "", 0);
+        return 1;
+    }
+    int64_t n = (int64_t)strlen(c);
+    const unsigned char *u = (const unsigned char *)c;
+    if (!lossy) {
+        for (int64_t i = 0; i < n;) {
+            int k = utf8_seq(u + i, n - i);
+            if (!k) {
+                str_set(out, "", 0);
+                return 0;
+            }
+            i += k;
+        }
+        str_set(out, c, n);
+        return 1;
+    }
+    char *p = zevic_alloc_atomic(n * 3 + 1);
+    int64_t m = 0;
+    for (int64_t i = 0; i < n;) {
+        int k = utf8_seq(u + i, n - i);
+        if (k) {
+            memcpy(p + m, u + i, (size_t)k);
+            m += k;
+            i += k;
+        } else {
+            memcpy(p + m, "\xEF\xBF\xBD", 3);
+            m += 3;
+            i++;
+        }
+    }
+    p[m] = 0;
+    out->p = p;
+    out->n = m;
+    return 1;
+}
