@@ -374,3 +374,23 @@ char *zevic_new_cstring(const char *p, int64_t n) {
     c[n] = 0;
     return c;
 }
+
+/* ---- hashing (Hashable for the built-in types) ---- */
+
+uint64_t zevic_hash_u64(uint64_t x) {
+    x ^= x >> 33;
+    x *= 0xff51afd7ed558ccdULL;
+    x ^= x >> 33;
+    x *= 0xc4ceb9fe1a85ec53ULL;
+    x ^= x >> 33;
+    return x;
+}
+
+uint64_t zevic_str_hash(const char *p, int64_t n) {
+    uint64_t h = 0xcbf29ce484222325ULL; /* FNV-1a */
+    for (int64_t i = 0; i < n; i++) {
+        h ^= (unsigned char)p[i];
+        h *= 0x100000001b3ULL;
+    }
+    return h;
+}
