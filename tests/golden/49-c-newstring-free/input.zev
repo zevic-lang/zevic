@@ -1,0 +1,17 @@
+module Main
+
+import Zevic.Console
+
+extern "C" {
+    fn strdup(s: CString) -> CString
+    fn strlen(s: CString) -> CSizeT
+}
+
+fn Main() {
+    let kept: CString = NewString("kept by C")
+    Console.Println("len = ${strlen(kept).ToU64()}")
+    let copy: CString = strdup(kept)
+    Free(kept)
+    Console.Println(String.FromC(copy))
+    Free(copy)
+}
