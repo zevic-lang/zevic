@@ -1,0 +1,14 @@
+module Main
+
+enum Shape {
+    Circle(F64),
+    Named { Name: String, Size: I32 },
+}
+
+fn Main() {
+    let a: Shape = Shape.Named("x", 3)
+    let b: Shape = Shape.Named { Name: "x" }
+    let c: Shape = Shape.Named { Name: "x", Size: 3, Extra: 1 }
+    let d: Shape = Shape.Named { Name: "x", Size: "big" }
+    let e: Shape = Shape.Circle { R: 1.0 }
+}

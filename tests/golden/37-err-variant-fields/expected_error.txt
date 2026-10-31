@@ -1,0 +1,5 @@
+variant `Shape.Named` has named fields: write `Shape.Named { Name: ... }`
+variant `Shape.Named` needs the field `Size`
+variant `Shape.Named` has no field `Extra`
+type mismatch in field `Size` of `Shape.Named`: expected `I32`, found `String`
+variant `Shape.Circle` has no named fields; write `Shape.Circle(...)`

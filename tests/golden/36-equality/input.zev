@@ -1,0 +1,64 @@
+module Main
+
+import Zevic.Console
+
+struct Point {
+    X: I32
+    Y: I32
+    fn Init(x: I32, y: I32) { this.X = x; this.Y = y }
+}
+
+enum Shape {
+    Circle(F64),
+    Rect(F64, F64),
+    Named { Name: String, Size: I32 },
+    Empty,
+}
+
+class Box {
+    V: I32
+    fn Init(v: I32) { this.V = v }
+}
+
+class Money {
+    Cents: I64
+    fn Init(c: I64) { this.Cents = c }
+    fn Equals(other: Money) -> Bool { this.Cents == other.Cents }
+}
+
+fn Main() {
+    let p: Point = Point.New(1, 2)
+    let q: Point = Point.New(1, 2)
+    let r: Point = Point.New(1, 3)
+    Console.Println("${p == q} ${p == r} ${p != r}")
+    let a: Shape = Shape.Circle(1.5)
+    let b: Shape = Shape.Circle(1.5)
+    let c: Shape = Shape.Circle(2.0)
+    let d: Shape = Shape.Rect(1.0, 2.0)
+    let e: Shape = Shape.Empty
+    let n1: Shape = Shape.Named { Name: "x", Size: 3 }
+    let n2: Shape = Shape.Named { Name: "x", Size: 3 }
+    let n3: Shape = Shape.Named { Name: "x", Size: 4 }
+    Console.Println("${a == b} ${a == c} ${a == d} ${e == Shape.Empty} ${e != a}")
+    Console.Println("${n1 == n2} ${n1 == n3}")
+    let t1: (I32, String) = (1, "a")
+    let t2: (I32, String) = (1, "a")
+    Console.Println("${t1 == t2} ${t1 != (2, "a")}")
+    let o1: Option<I32> = Some(5)
+    let o2: Option<I32> = Some(5)
+    let o3: Option<I32> = None
+    Console.Println("${o1 == o2} ${o1 == o3} ${o3 == None}")
+    let b1: Box = Box.New(1)
+    let b2: Box = Box.New(1)
+    Console.Println("${b1 == b1} ${b1 == b2}")
+    let m1: Money = Money.New(100)
+    let m2: Money = Money.New(100)
+    Console.Println("${m1 == m2} ${m1 != m2}")
+    let xs: Array<I32> = [1, 2, 3]
+    let ys: Array<I32> = [1, 2, 3]
+    let zs: Array<I32> = [1, 2]
+    Console.Println("${xs == ys} ${xs == zs}")
+    let g1: Array<Array<String>> = [["a"], ["b", "c"]]
+    let g2: Array<Array<String>> = [["a"], ["b", "c"]]
+    Console.Println("${g1 == g2}")
+}
