@@ -362,3 +362,15 @@ int32_t zevic_str_from_c(zevic_str *out, const char *c, int32_t lossy) {
     out->n = m;
     return 1;
 }
+
+/* A copy of the bytes in malloc'd memory, NUL-terminated, for C to keep and free. */
+char *zevic_new_cstring(const char *p, int64_t n) {
+    char *c = malloc((size_t)n + 1);
+    if (!c) {
+        fputs("panic: out of memory\n", stderr);
+        exit(101);
+    }
+    if (n > 0) memcpy(c, p, (size_t)n);
+    c[n] = 0;
+    return c;
+}
