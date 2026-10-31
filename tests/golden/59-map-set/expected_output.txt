@@ -1,0 +1,12 @@
+len = 3
+b = 3
+a = 2
+c = 1
+z = 26
+has a: true, has q: false
+removed a (2)
+keys = 3, values = 3
+big = 500, 999 -> 998001, has 10: false
+true false true len=2
+set item 3
+set item 4

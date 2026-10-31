@@ -1,0 +1,45 @@
+module Main
+
+import Zevic.Console
+
+fn Main() {
+    mut counts: Map<String, I64> = Map.New()
+    let words: Array<String> = ["b", "a", "b", "c", "a", "b"]
+    for (w in words) {
+        match (counts.Get(w)) {
+            Some(n) => counts.Set(w, n + 1),
+            None => counts.Set(w, 1),
+        }
+    }
+    Console.Println("len = ${counts.Len()}")
+    for ((k, v) in counts) {
+        Console.Println("${k} = ${v}")
+    }
+    counts["z"] = 26
+    Console.Println("z = ${counts["z"]}")
+    Console.Println("has a: ${counts.Contains("a")}, has q: ${counts.Contains("q")}")
+    match (counts.Remove("a")) {
+        Some(v) => Console.Println("removed a (${v})"),
+        None => Console.Println("no a"),
+    }
+    Console.Println("keys = ${counts.Keys().Len()}, values = ${counts.Values().Len()}")
+
+    mut big: Map<I32, I32> = Map.New()
+    mut i: I32 = 0
+    while (i < 1000) {
+        big.Set(i, i * i)
+        i += 1
+    }
+    i = 0
+    while (i < 1000) {
+        if (i % 2 == 0) { big.Remove(i) }
+        i += 1
+    }
+    Console.Println("big = ${big.Len()}, 999 -> ${big[999]}, has 10: ${big.Contains(10)}")
+
+    mut seen: Set<I32> = Set.New()
+    Console.Println("${seen.Add(3)} ${seen.Add(3)} ${seen.Add(4)} len=${seen.Len()}")
+    for (x in seen) {
+        Console.Println("set item ${x}")
+    }
+}
