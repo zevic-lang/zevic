@@ -160,6 +160,9 @@ class Array<T> {
 
     fn IsEmpty() -> Bool { this.len == 0 }
 
+    // The address of the first element, for C. Valid only until the array grows.
+    fn Ptr() -> *T { this.buf.Ptr() }
+
     fn Index(i: I64) -> T {
         if (i < 0 || i >= this.len) {
             Panic("index ${i} is out of range (length ${this.len})")
