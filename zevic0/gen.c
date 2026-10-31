@@ -37,6 +37,9 @@ struct Gen {
     Dict declared;
     Dict insts;
     Vec worklist;
+    Dict defaults;  /* Decl* of default methods, per implementing type */
+    int nvt;        /* method table counter */
+    Dict vtables;   /* "Type|Interface" -> global name */
     Vec exports; /* Inst*: the `export "C"` functions */
     int nstr;
     Dict strconst;
@@ -176,6 +179,37 @@ static void declare(Gen *g, const char *name, const char *line) {
  * ========================================================================= */
 
 static Type *resolve_type(Gen *g, SourceFile *f, Env *env, Node *te);
+static bool g_allow_selfy_iface; /* set while resolving the interfaces a type implements or extends, and constraints */
+
+static bool syntax_mentions_self(Node *te) {
+    if (!te) return false;
+    switch (te->kind) {
+    case N_TYPE_NAME:
+        if (te->path.n == 1 && strcmp(((char **)te->path.v)[0], "Self") == 0) return true;
+        for (int i = 0; i < te->list.n; i++)
+            if (syntax_mentions_self(te->list.v[i])) return true;
+        return false;
+    case N_TYPE_TUPLE: case N_TYPE_FN:
+        for (int i = 0; i < te->list.n; i++)
+            if (syntax_mentions_self(te->list.v[i])) return true;
+        return syntax_mentions_self(te->a);
+    case N_TYPE_PTR: return syntax_mentions_self(te->a);
+    default: return false;
+    }
+}
+
+/* Does an interface mention `Self` in a method signature? Such an interface only works as a constraint. */
+static bool iface_uses_self(Node *decl) {
+    for (int i = 0; i < decl->list.n; i++) {
+        Node *m = decl->list.v[i];
+        if (m->kind != D_FN) continue;
+        for (int k = 0; k < m->list.n; k++)
+            if (syntax_mentions_self(((Node *)m->list.v[k])->a)) return true;
+        if (syntax_mentions_self(m->a)) return true;
+    }
+    return false;
+}
+
 static bool is_err(Type *t) { return t == ty_err; }
 static const char *root_name(Node *n);
 
@@ -185,6 +219,7 @@ static char *qualified_name(Decl *d) {
 }
 
 static void ensure_members(Gen *g, Type *t);
+static void check_conformance(Gen *g, Type *t);
 
 static Type *instantiate(Gen *g, Decl *d, Vec targs, Pos pos) {
     Node *n = d->node;
@@ -195,7 +230,7 @@ static Type *instantiate(Gen *g, Decl *d, Vec targs, Pos pos) {
             diag_error(pos, "type `%s` needs %d type argument(s), found %d", d->name, n->list2.n, targs.n);
         return ty_err;
     }
-    TKind k = n->kind == D_STRUCT ? T_STRUCT : n->kind == D_CLASS ? T_CLASS : T_ENUM;
+    TKind k = n->kind == D_STRUCT ? T_STRUCT : n->kind == D_CLASS ? T_CLASS : n->kind == D_INTERFACE ? T_IFACE : T_ENUM;
     if (d->mod->is_std && strcmp(d->mod->name, "Zevic.Intrinsics") == 0 && strcmp(d->name, "Buf") == 0) k = T_BUF;
     Type *t = ty_named(k, d, qualified_name(d), targs);
     ensure_members(g, t);
@@ -267,6 +302,7 @@ static void ensure_members(Gen *g, Type *t) {
             vec_push(&t->variants, v);
         }
     }
+    if (n->list3.n && n->kind != D_INTERFACE) check_conformance(g, t);
 }
 
 static Type *resolve_type(Gen *g, SourceFile *f, Env *env, Node *te) {
@@ -313,8 +349,12 @@ static Type *resolve_type(Gen *g, SourceFile *f, Env *env, Node *te) {
             diag_error(te->pos, "unknown type `%s`", path_join(&te->path, "."));
             return ty_err;
         }
-        if (d->node->kind != D_STRUCT && d->node->kind != D_CLASS && d->node->kind != D_ENUM) {
+        if (d->node->kind != D_STRUCT && d->node->kind != D_CLASS && d->node->kind != D_ENUM && d->node->kind != D_INTERFACE) {
             diag_error(te->pos, "`%s` is not a type", d->name);
+            return ty_err;
+        }
+        if (d->node->kind == D_INTERFACE && !g_allow_selfy_iface && iface_uses_self(d->node)) {
+            diag_error(te->pos, "`%s` uses `Self`, so it can only be used as a constraint (`<T: %s>`), not as the type of a value", d->name, d->name);
             return ty_err;
         }
         Vec targs = {0};
@@ -339,6 +379,12 @@ static Env *make_env(Decl *d, Type *self, Vec *fn_targs) {
         if (td)
             for (int i = 0; i < td->list2.n && i < self->args.n; i++)
                 env_add(e, ((Node *)td->list2.v[i])->name, self->args.v[i]);
+    }
+    if (d->iface && d->iface->decl) {
+        /* a default method of an interface: the interface's type parameters are in scope */
+        Node *itd = d->iface->decl->node;
+        for (int i = 0; i < itd->list2.n && i < d->iface->args.n; i++)
+            env_add(e, ((Node *)itd->list2.v[i])->name, d->iface->args.v[i]);
     }
     Node *fn = d->node;
     for (int i = 0; i < fn->list2.n; i++)
@@ -559,11 +605,15 @@ static void type_error(Pos pos, Type *want, Type *got, const char *what) {
                got->name);
 }
 
+static bool is_user_type(Type *t);
+static Val to_iface(FnCtx *F, Pos pos, Val v, Type *it, const char *what);
+
 /* Check that `v` has type `want`; a value of type Never fits everywhere. */
 static Val coerce(FnCtx *F, Pos pos, Val v, Type *want, const char *what) {
     (void)F;
     if (v.t == want || is_err(v.t) || is_err(want)) return v;
     if (v.t == ty_never) return never_val(want);
+    if (want->k == T_IFACE && is_user_type(v.t)) return to_iface(F, pos, v, want, what);
     /* like C, any pointer converts to `*CVoid` */
     if (v.t->k == T_PTR && want->k == T_PTR && want->args.n && want->args.v[0] == ty_c_by_name("CVoid")) {
         Val r = {want, v.v};
@@ -1738,6 +1788,7 @@ static bool is_user_type(Type *t) {
     return t->k == T_STRUCT || t->k == T_CLASS || t->k == T_ENUM;
 }
 
+
 static bool name_is_pub(const char *n) {
     return n[0] >= 'A' && n[0] <= 'Z';
 }
@@ -1762,6 +1813,313 @@ static Node *find_member_fn(Type *t, const char *name) {
         if (m->kind == D_FN && strcmp(m->name, name) == 0) return m;
     }
     return NULL;
+}
+
+
+/* =========================================================================
+ * Interfaces
+ * ========================================================================= */
+
+typedef struct {
+    Node *fn;    /* the method as declared in the interface */
+    Type *owner; /* the interface type (with type arguments) that declares it */
+} IMethod;
+
+static Env *iface_env(Type *it, Type *self) {
+    Env *env = env_new();
+    env->self = self;
+    Node *n = it->decl->node;
+    for (int i = 0; i < n->list2.n && i < it->args.n; i++) env_add(env, ((Node *)n->list2.v[i])->name, it->args.v[i]);
+    return env;
+}
+
+/* The interfaces a type implements (for an interface: the ones it extends). */
+static Vec *type_supers(Gen *g, Type *t) {
+    if (t->supers_done) return &t->supers;
+    t->supers_done = true;
+    if (!t->decl) return &t->supers;
+    Node *n = t->decl->node;
+    Env *env = env_new();
+    env->self = t;
+    for (int i = 0; i < n->list2.n && i < t->args.n; i++) env_add(env, ((Node *)n->list2.v[i])->name, t->args.v[i]);
+    bool saved = g_allow_selfy_iface;
+    g_allow_selfy_iface = true;
+    for (int i = 0; i < n->list3.n; i++) {
+        Node *te = n->list3.v[i];
+        Type *s = resolve_type(g, t->decl->file, env, te);
+        if (is_err(s)) continue;
+        if (s->k != T_IFACE) {
+            diag_error(te->pos, "`%s` is not an interface, so `%s` cannot implement it", s->name, t->name);
+            continue;
+        }
+        vec_push(&t->supers, s);
+    }
+    g_allow_selfy_iface = saved;
+    return &t->supers;
+}
+
+static bool type_implements_d(Gen *g, Type *t, Type *it, int depth) {
+    if (t == it) return true;
+    if (!t->decl || depth > 20) return false;
+    Vec *s = type_supers(g, t);
+    for (int i = 0; i < s->n; i++)
+        if (type_implements_d(g, s->v[i], it, depth + 1)) return true;
+    return false;
+}
+
+static bool type_implements(Gen *g, Type *t, Type *it) {
+    return type_implements_d(g, t, it, 0);
+}
+
+/* Every instance method of an interface and the ones it extends, parents first. */
+static void collect_iface_methods(Gen *g, Type *it, Vec *out, int depth) {
+    if (depth > 20 || !it->decl) return;
+    Vec *sup = type_supers(g, it);
+    for (int i = 0; i < sup->n; i++) collect_iface_methods(g, sup->v[i], out, depth + 1);
+    Node *n = it->decl->node;
+    for (int i = 0; i < n->list.n; i++) {
+        Node *m = n->list.v[i];
+        if (m->kind != D_FN || m->is_static) continue;
+        bool dup = false;
+        for (int k = 0; k < out->n; k++)
+            if (strcmp(((IMethod *)out->v[k])->fn->name, m->name) == 0) dup = true;
+        if (dup) continue;
+        IMethod *im = zalloc(sizeof *im);
+        im->fn = m;
+        im->owner = it;
+        vec_push(out, im);
+    }
+}
+
+/* A default method (one with a body) that `t` gets from its interfaces. `*conflict` is set when two interfaces
+ * both supply a default with this name. */
+static bool find_default(Gen *g, Type *t, const char *name, IMethod *out, bool *conflict) {
+    if (!t->decl) return false;
+    Vec all = {0};
+    Vec *sup = type_supers(g, t);
+    for (int i = 0; i < sup->n; i++) collect_iface_methods(g, sup->v[i], &all, 0);
+    bool found = false;
+    for (int i = 0; i < all.n; i++) {
+        IMethod *m = all.v[i];
+        if (strcmp(m->fn->name, name) != 0 || !m->fn->b) continue;
+        if (found && out->fn != m->fn) {
+            if (conflict) *conflict = true;
+            continue;
+        }
+        *out = *m;
+        found = true;
+    }
+    return found;
+}
+
+static Decl *default_decl(Gen *g, Type *t, IMethod *m) {
+    char *key = zsprintf("%s|%s|%p", t->name, m->fn->name, (void *)m->fn);
+    Decl *d = dict_get(&g->defaults, key);
+    if (d) return d;
+    d = zalloc(sizeof *d);
+    d->node = m->fn;
+    d->mod = m->owner->decl->mod;
+    d->file = m->owner->decl->file;
+    d->name = m->fn->name;
+    d->is_pub = name_is_pub(m->fn->name);
+    d->iface = m->owner;
+    dict_put(&g->defaults, key, d);
+    return d;
+}
+
+static char *sig_string(Gen *g, Vec *ptypes, Type *ret) {
+    (void)g;
+    SB sb = {0};
+    sb_puts(&sb, "(");
+    for (int i = 0; i < ptypes->n; i++) sb_printf(&sb, "%s%s", i ? ", " : "", ((Type *)ptypes->v[i])->name);
+    sb_printf(&sb, ") -> %s", ret->name);
+    return sb_str(&sb);
+}
+
+static void fn_sig(Gen *g, SourceFile *f, Env *env, Node *fn, Vec *ptypes, Type **ret) {
+    for (int i = 0; i < fn->list.n; i++) {
+        Node *p = fn->list.v[i];
+        if (p->flag3) continue;
+        vec_push(ptypes, resolve_type(g, f, env, p->a));
+    }
+    *ret = fn->a ? resolve_type(g, f, env, fn->a) : ty_unit;
+}
+
+/* Does `t` provide everything its interfaces ask for? */
+static void check_conformance(Gen *g, Type *t) {
+    Node *tn = t->decl->node;
+    Vec *sup = type_supers(g, t);
+    Vec seen_defaults = {0};
+    for (int si = 0; si < sup->n; si++) {
+        Type *s = sup->v[si];
+        Vec all = {0};
+        collect_iface_methods(g, s, &all, 0);
+        for (int i = 0; i < all.n; i++) {
+            IMethod *m = all.v[i];
+            Node *impl = find_member_fn(t, m->fn->name);
+            if (!impl) {
+                if (m->fn->b) {
+                    bool dup = false;
+                    for (int k = 0; k < seen_defaults.n; k++) {
+                        IMethod *o = seen_defaults.v[k];
+                        if (strcmp(o->fn->name, m->fn->name) == 0 && o->fn != m->fn) {
+                            diag_error(tn->pos, "`%s` gets a default `%s` from both `%s` and `%s`; write its own `%s` to choose", t->name,
+                                       m->fn->name, o->owner->name, m->owner->name, m->fn->name);
+                        }
+                        if (o->fn == m->fn) dup = true;
+                    }
+                    if (!dup) vec_push(&seen_defaults, m);
+                } else {
+                    diag_error(tn->pos, "`%s` does not implement `%s`, which `%s` requires", t->name, m->fn->name, s->name);
+                }
+                continue;
+            }
+            if (impl->list2.n || m->fn->list2.n) continue; /* generic methods are not compared */
+            Vec ip = {0}, mp = {0};
+            Type *iret, *mret;
+            Decl *md = method_decl(t, impl);
+            fn_sig(g, md->file, make_env(md, t, NULL), impl, &ip, &iret);
+            fn_sig(g, m->owner->decl->file, iface_env(m->owner, t), m->fn, &mp, &mret);
+            bool ok = ip.n == mp.n && iret == mret && impl->is_mut_fn == m->fn->is_mut_fn && impl->is_static == m->fn->is_static;
+            for (int k = 0; ok && k < ip.n; k++)
+                if (ip.v[k] != mp.v[k] && !is_err(ip.v[k]) && !is_err(mp.v[k])) ok = false;
+            if (!ok && !is_err(iret) && !is_err(mret))
+                diag_error(impl->pos, "`%s.%s` does not match the declaration in `%s`: it should be `%sfn %s%s`", t->name, impl->name, m->owner->name,
+                           m->fn->is_mut_fn ? "mut " : "", m->fn->name, sig_string(g, &mp, mret));
+        }
+    }
+}
+
+/* The method table of `t` for interface `it`: one entry per method, in `collect_iface_methods` order. */
+static char *vtable_for(Gen *g, Type *t, Type *it) {
+    char *key = zsprintf("%s|%s", t->name, it->name);
+    char *old = dict_get(&g->vtables, key);
+    if (old) return old;
+    char *name = zsprintf("@.vt.%d", g->nvt++);
+    dict_put(&g->vtables, key, name);
+    Vec all = {0};
+    collect_iface_methods(g, it, &all, 0);
+    SB e = {0};
+    for (int i = 0; i < all.n; i++) {
+        IMethod *m = all.v[i];
+        if (i) sb_puts(&e, ", ");
+        if (m->fn->list2.n) {
+            sb_puts(&e, "ptr null"); /* a generic method has no table slot */
+            continue;
+        }
+        Node *impl = find_member_fn(t, m->fn->name);
+        Decl *d = NULL;
+        if (impl) {
+            d = method_decl(t, impl);
+        } else {
+            IMethod dm;
+            if (find_default(g, t, m->fn->name, &dm, NULL)) d = default_decl(g, t, &dm);
+        }
+        if (!d) {
+            sb_puts(&e, "ptr null");
+            continue;
+        }
+        Inst *in = get_inst(g, d, t, NULL);
+        sb_printf(&e, "ptr @\"%s\"", in->name);
+    }
+    sb_printf(&g->globals, "%s = private unnamed_addr constant [%d x ptr] [%s]\n", name, all.n, sb_str(&e));
+    return name;
+}
+
+/* A value of a type that implements `it`, as an interface value { object, method table }. */
+static Val to_iface(FnCtx *F, Pos pos, Val v, Type *it, const char *what) {
+    Gen *g = F->g;
+    if (!type_implements(g, v.t, it)) {
+        type_error(pos, it, v.t, what);
+        diag_note("`%s` does not implement `%s`", v.t->name, it->name);
+        return err_val();
+    }
+    char *obj;
+    if (v.t->k == T_CLASS) {
+        obj = v.v;
+    } else {
+        /* a struct or enum goes to the heap, so the interface value can point at it */
+        rt_decl(F, "zevic_alloc", "declare ptr @zevic_alloc(i64)");
+        obj = tmp(F);
+        emit(F, "%s = call ptr @zevic_alloc(i64 %lld)", obj, (long long)ty_size(v.t));
+        store_to(F, v.t, v, obj);
+    }
+    char *vt = vtable_for(g, v.t, it);
+    char *a = tmp(F), *b = tmp(F);
+    emit(F, "%s = insertvalue { ptr, ptr } undef, ptr %s, 0", a, obj);
+    emit(F, "%s = insertvalue { ptr, ptr } %s, ptr %s, 1", b, a, vt);
+    Val r = {it, b};
+    return r;
+}
+
+/* iface.Method(args): look the function up in the method table. */
+static Val gen_iface_method(FnCtx *F, Node *call, Place p, Node *recv_node, const char *name, Type *expect) {
+    Gen *g = F->g;
+    Type *it = p.t;
+    Vec all = {0};
+    collect_iface_methods(g, it, &all, 0);
+    int idx = -1;
+    for (int i = 0; i < all.n; i++)
+        if (strcmp(((IMethod *)all.v[i])->fn->name, name) == 0) idx = i;
+    if (idx < 0) {
+        diag_error(call->pos, "interface `%s` has no method `%s`", it->name, name);
+        for (int i = 0; i < call->list.n; i++) gen_expr(F, call->list.v[i], NULL);
+        return err_val();
+    }
+    IMethod *m = all.v[idx];
+    Node *fn = m->fn;
+    if (fn->list2.n) {
+        diag_error(call->pos, "`%s` is generic, so it cannot be called on an interface value of type `%s`", name, it->name);
+        return err_val();
+    }
+    if (fn->is_mut_fn && !p.mut) {
+        diag_error(call->pos, "cannot call `mut fn %s` because `%s` is not `mut`", name, root_name(recv_node));
+        return err_val();
+    }
+    int nparams = 0;
+    for (int i = 0; i < fn->list.n; i++)
+        if (!((Node *)fn->list.v[i])->flag3) nparams++;
+    if (call->list.n != nparams) {
+        diag_error(call->pos, "`%s` takes %d argument(s), but %d were given", name, nparams, call->list.n);
+        return err_val();
+    }
+    Env *env = iface_env(m->owner, NULL);
+    SB args = {0};
+    bool never = false;
+    for (int i = 0; i < nparams; i++) {
+        Node *pn = fn->list.v[i];
+        Type *pt = resolve_type(g, m->owner->decl->file, env, pn->a);
+        Val v = gen_expr(F, call->list.v[i], pt);
+        if (v.t == ty_never) {
+            never = true;
+            continue;
+        }
+        v = coerce(F, ((Node *)call->list.v[i])->pos, v, pt, zsprintf("argument %d of `%s`", i + 1, name));
+        if (is_err(v.t)) return err_val();
+        sb_printf(&args, ", %s %s", type_ll(pt), v.v);
+    }
+    if (never) return never_val(expect);
+    Type *ret = fn->a ? resolve_type(g, m->owner->decl->file, env, fn->a) : ty_unit;
+    if (is_err(ret)) return err_val();
+    Val recv = load_place(F, p);
+    char *obj = tmp(F), *vt = tmp(F), *slot = tmp(F), *fp = tmp(F);
+    emit(F, "%s = extractvalue { ptr, ptr } %s, 0", obj, recv.v);
+    emit(F, "%s = extractvalue { ptr, ptr } %s, 1", vt, recv.v);
+    emit(F, "%s = getelementptr inbounds ptr, ptr %s, i64 %d", slot, vt, idx);
+    emit(F, "%s = load ptr, ptr %s", fp, slot);
+    if (ret == ty_unit || ret == ty_never) {
+        emit(F, "call void %s(ptr %s%s)", fp, obj, sb_str(&args));
+        if (ret == ty_never) {
+            emit(F, "unreachable");
+            F->term = true;
+            return never_val(NULL);
+        }
+        return unit_val();
+    }
+    char *r = tmp(F);
+    emit(F, "%s = call %s %s(ptr %s%s)", r, type_ll(ret), fp, obj, sb_str(&args));
+    Val res = {ret, r};
+    return res;
 }
 
 static Node *find_static_field(Type *t, const char *name) {
@@ -4012,6 +4370,15 @@ static Val gen_prim_method(FnCtx *F, Node *call, Val recv, const char *name, Typ
 static Val gen_user_method(FnCtx *F, Node *call, Place p, Node *recv_node, const char *name, Type *expect) {
     Type *t = p.t;
     Node *fn = find_member_fn(t, name);
+    Decl *dflt = NULL;
+    if (!fn) {
+        IMethod dm;
+        bool conflict = false;
+        if (find_default(F->g, t, name, &dm, &conflict)) {
+            fn = dm.fn;
+            dflt = default_decl(F->g, t, &dm);
+        }
+    }
     if (!fn && call->flag3) {
         diag_error(call->pos, "a value of type `%s` cannot be indexed with `[]`", t->name);
         for (int i = 0; i < call->list.n; i++) gen_expr(F, call->list.v[i], NULL);
@@ -4052,7 +4419,7 @@ static Val gen_user_method(FnCtx *F, Node *call, Place p, Node *recv_node, const
         emit(F, "%s = load ptr, ptr %s", o, p.ptr);
         recv.v = o;
     }
-    Decl *md = method_decl(t, fn);
+    Decl *md = dflt ? dflt : method_decl(t, fn);
     return gen_call_decl(F, call, md, t, &call->a->list2, expect, &recv);
 }
 
@@ -4080,6 +4447,7 @@ static Val gen_method_call(FnCtx *F, Node *call, Node *recv_node, const char *na
         for (int i = 0; i < call->list.n; i++) gen_expr(F, call->list.v[i], NULL);
         return err_val();
     }
+    if (p.t->k == T_IFACE) return gen_iface_method(F, call, p, recv_node, name, expect);
     if (is_user_type(p.t)) return gen_user_method(F, call, p, recv_node, name, expect);
     Val recv = load_place(F, p);
     if (recv.t->k == T_BUF) return gen_buf_method(F, call, recv, name);
