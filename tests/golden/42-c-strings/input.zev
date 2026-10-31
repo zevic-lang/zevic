@@ -1,0 +1,14 @@
+module Main
+
+import Zevic.Console
+
+extern "C" {
+    fn getenv(name: CString) -> CString
+}
+
+fn Main() {
+    let home: String = String.FromC("héllo wörld".ToC())
+    Console.Println(home)
+    let missing: String = String.FromCLossy(getenv("ZEVIC_SURELY_NOT_SET".ToC()))
+    Console.Println("missing = [${missing}]")
+}
