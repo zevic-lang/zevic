@@ -1,0 +1,13 @@
+module Main
+
+class Plain {
+    fn Init() {}
+}
+
+fn Largest<T: Comparable>(a: T, b: T) -> T {
+    if (a.Compare(b) >= 0) { a } else { b }
+}
+
+fn Main() {
+    let x: Plain = Largest(Plain.New(), Plain.New())
+}

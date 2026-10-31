@@ -1,0 +1,26 @@
+module Main
+
+import Zevic.Console
+
+fn Max<T: Comparable>(a: T, b: T) -> T {
+    if (a.Compare(b) >= 0) { a } else { b }
+}
+
+fn Eq<T: Equatable>(a: T, b: T) -> Bool {
+    a.Equals(b)
+}
+
+class Version : Comparable {
+    n: I32
+    fn Init(n: I32) { this.n = n }
+    fn Equals(other: Version) -> Bool { this.n == other.n }
+    fn Compare(other: Version) -> I32 { this.n - other.n }
+}
+
+fn Main() {
+    Console.Println("${Max(3, 9)} ${Max("pear", "apple")} ${Max(2.5, 1.5)}")
+    Console.Println("${Eq(4, 4)} ${Eq("a", "b")}")
+    let v: Version = Max(Version.New(2), Version.New(7))
+    Console.Println("${v.n}")
+    Console.Println("${"abc".Hash() == "abc".Hash()} ${1.Hash() == 2.Hash()}")
+}
