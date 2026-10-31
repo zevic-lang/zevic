@@ -6,6 +6,42 @@ import Zevic.Intrinsics
 // Core types of the prelude: Option, Result, Error, ErrorKind and Array.
 // They are ordinary Zevic code: `Option` and `Result` are enums, `Error` and `Array` are classes.
 
+// ---- standard interfaces ----
+// `Equatable`, `Hashable` and `Comparable` use `Self`, so they work as constraints (`<K: Hashable>`).
+// The built-in types satisfy them without writing anything.
+
+interface Equatable {
+    fn Equals(other: Self) -> Bool
+}
+
+interface Hashable : Equatable {
+    fn Hash() -> U64
+}
+
+interface Comparable : Equatable {
+    fn Compare(other: Self) -> I32
+}
+
+interface Iterator<T> {
+    mut fn Next() -> Option<T>
+}
+
+interface Iterable<T> {
+    fn Iter() -> Iterator<T>
+
+    fn ToArray() -> Array<T> {
+        mut out: Array<T> = []
+        let it: Iterator<T> = this.Iter()
+        loop {
+            match (it.Next()) {
+                Some(v) => out.Push(v),
+                None => break,
+            }
+        }
+        out
+    }
+}
+
 enum Option<T> {
     Some(T),
     None,
