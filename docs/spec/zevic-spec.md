@@ -667,6 +667,7 @@ let s: Shape = Shape.Circle(2.0)
 ```
 
 - バリアントは3種類: データなし(`Empty`)、位置引数(`Circle(F64)`)、名前付き(`Named { ... }`)
+- 名前付きバリアントの値は、パターンと同じ形で作る: `Shape.Named { Name: "x", Size: 3.0 }`(全フィールドが必要で、順序は自由。式は宣言の順に評価する)。位置引数のバリアントを`{ }`で、名前付きのバリアントを`( )`で作るとエラー(2026-10-31に追記)
 - 値型。`==`と`Hashable`は、中身が持てるときに自動で付く
 - バリアントは`Shape.Circle`のように型名で修飾する。`Some` `None` `Ok` `Err`だけは、修飾なしで書ける
 - メソッドと`interface`の実装を書ける。継承はなし
@@ -1774,6 +1775,7 @@ structDecl  = 'struct' Ident [ tparams ] [ ':' typelist ] '{' { field | fnDecl }
 field       = [ 'static' ] Ident ':' type [ '=' expr ]
 enumDecl    = 'enum' Ident [ tparams ] [ ':' typelist ] '{' variant { ',' variant } [ ',' ] { fnDecl } '}'
 variant     = Ident [ '(' typelist ')' | '{' field { ',' field } '}' ]
+variantLit  = path '{' Ident ':' expr { ',' Ident ':' expr } [ ',' ] '}'      (名前付きバリアントの値。path は Shape.Named のように大文字始まりで終わる)
 ifaceDecl   = 'interface' Ident [ tparams ] [ ':' typelist ] '{' { fnSig | fnDecl } '}'
 
 externBlock = 'extern' '"C"' '{' { cfn | cstruct } '}'
