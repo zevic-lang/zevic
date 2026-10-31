@@ -1,0 +1,13 @@
+module Main
+
+import Zevic.Console
+
+extern "C" {
+    fn k_value() -> CInt
+    fn cpp_sum(n: CInt) -> CInt
+    fn cos(x: CDouble) -> CDouble
+}
+
+fn Main() {
+    Console.Println("k=${k_value().ToI32()} sum=${cpp_sum(10.ToCInt()).ToI32()} cos=${cos(0.0.ToCDouble()).ToF64()}")
+}

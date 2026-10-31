@@ -1,0 +1,1 @@
+-I{dir}/inc -DK_BASE=40 -lm
