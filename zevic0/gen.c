@@ -605,6 +605,7 @@ static void pop_scope(FnCtx *F) {
 static Val gen_expr(FnCtx *F, Node *n, Type *expect);
 static Val gen_index_read(FnCtx *F, Node *n, Type *expect);
 static Val gen_array_lit(FnCtx *F, Node *n, Type *expect);
+static Val gen_struct_lit(FnCtx *F, Node *n, Type *expect);
 static void gen_index_assign(FnCtx *F, Node *n);
 static void gen_for_iter(FnCtx *F, Node *n);
 
@@ -871,6 +872,8 @@ static Val gen_float_arith(FnCtx *F, TokKind op, Val a, Val b) {
     return res;
 }
 
+static Val gen_eq(FnCtx *F, Val a, Val b, Pos pos);
+
 static Val gen_compare(FnCtx *F, TokKind op, Val a, Val b, Pos pos) {
     Type *t = a.t;
     char *r = tmp(F);
@@ -909,7 +912,19 @@ static Val gen_compare(FnCtx *F, TokKind op, Val a, Val b, Pos pos) {
         Val v = {ty_bool, op == TK_EQEQ ? "true" : "false"};
         return v;
     }
-    diag_error(pos, "`%s` cannot compare values of type `%s` yet", tok_name(op), t->name);
+    if ((op == TK_EQEQ || op == TK_NEQ) &&
+        (t->k == T_STRUCT || t->k == T_ENUM || t->k == T_TUPLE || t->k == T_CLASS || t->k == T_PTR)) {
+        Val e = gen_eq(F, a, b, pos);
+        if (is_err(e.t) || op == TK_EQEQ) return e;
+        char *n = tmp(F);
+        emit(F, "%s = xor i1 %s, true", n, e.v);
+        Val res2 = {ty_bool, n};
+        return res2;
+    }
+    if (op == TK_EQEQ || op == TK_NEQ)
+        diag_error(pos, "values of type `%s` cannot be compared with `%s`", t->name, tok_name(op));
+    else
+        diag_error(pos, "values of type `%s` cannot be ordered with `%s`", t->name, tok_name(op));
     return err_val();
 }
 
@@ -1186,6 +1201,7 @@ static Val gen_expr(FnCtx *F, Node *n, Type *expect) {
     case N_TUPLE: return gen_tuple(F, n, expect);
     case N_INDEX: return gen_index_read(F, n, expect);
     case N_ARRAY: return gen_array_lit(F, n, expect);
+    case N_STRUCTLIT: return gen_struct_lit(F, n, expect);
     case N_UNARY: return gen_unary(F, n, expect);
     case N_BINARY: return gen_binary(F, n, expect);
     case N_IF: return gen_if(F, n, expect);
@@ -1863,15 +1879,16 @@ static Val gen_variant(FnCtx *F, Node *call, Pos pos, Decl *d, Type *et, const c
             diag_error(pos, "variant `%s.%s` takes %d value(s), but %d were given", d->name, vname, nf, nargs);
         return err_val();
     }
-    if (vn->flag) {
-        diag_error(pos, "variant `%s.%s` has named fields; it cannot be built like this yet", d->name, vname);
+    if (vn->flag && !(call && call->flag2)) {
+        diag_error(pos, "variant `%s.%s` has named fields: write `%s.%s { %s: ... }`", d->name, vname, d->name, vname,
+                   vn->list2.n ? ((Node *)vn->list2.v[0])->name : "Field");
         return err_val();
     }
     Vec vals = {0};
     if (!et) {
         Env *env = env_new();
         for (int i = 0; i < nargs; i++) {
-            Node *fte = vn->list.v[i];
+            Node *fte = vn->flag ? ((Node *)vn->list2.v[i])->a : vn->list.v[i];
             Type *pexp = syntax_uses_unbound(fte, d->node, env) ? NULL : resolve_type(F->g, d->file, env, fte);
             Val *v = zalloc(sizeof *v);
             *v = gen_expr(F, call->list.v[i], pexp);
@@ -1903,7 +1920,8 @@ static Val gen_variant(FnCtx *F, Node *call, Pos pos, Decl *d, Type *et, const c
     Variant *var = find_variant(et, vname);
     for (int i = 0; i < nargs; i++) {
         Val *v = vals.v[i];
-        char *what = zsprintf("argument %d of `%s.%s`", i + 1, d->name, vname);
+        char *what = call->flag2 ? zsprintf("field `%s` of `%s.%s`", ((Field *)var->fields.v[i])->name, d->name, vname)
+                                 : zsprintf("argument %d of `%s.%s`", i + 1, d->name, vname);
         *v = coerce(F, ((Node *)call->list.v[i])->pos, *v, ((Field *)var->fields.v[i])->t, what);
         if (is_err(v->t)) return err_val();
     }
@@ -2681,6 +2699,66 @@ static Val gen_buf_method(FnCtx *F, Node *call, Val recv, const char *name) {
     return err_val();
 }
 
+/* Shape.Named { Name: "x", Size: 3 }: check the field names, order the values as declared, build the variant. */
+static Val gen_struct_lit(FnCtx *F, Node *n, Type *expect) {
+    Vec segs = {0}, nodes = {0};
+    if (!flatten_path(n->a, &segs, &nodes) || segs.n < 2) {
+        diag_error(n->pos, "`{ name: value }` can only follow an enum variant like `Shape.Named`");
+        return err_val();
+    }
+    int used = 0;
+    Decl *d = find_decl(F->g, F->file, (char **)segs.v, segs.n, &used, n->a->pos);
+    if (used < 0) return err_val();
+    Node *vn = NULL;
+    if (d && d->node->kind == D_ENUM && used == segs.n - 1) vn = find_variant_node(d->node, segs.v[used]);
+    if (!vn) {
+        diag_error(n->pos, "`%s` is not an enum variant, so it cannot be built with `{ name: value }`", path_join(&segs, "."));
+        return err_val();
+    }
+    const char *vname = vn->name;
+    if (!vn->flag) {
+        diag_error(n->pos, "variant `%s.%s` has no named fields; write `%s.%s(...)`", d->name, vname, d->name, vname);
+        return err_val();
+    }
+    Node *call = node_new(N_CALL, n->pos);
+    call->flag2 = true;
+    call->a = n->a;
+    bool ok = true;
+    for (int i = 0; i < vn->list2.n; i++) {
+        Node *decl_f = vn->list2.v[i];
+        Node *given = NULL;
+        for (int k = 0; k < n->list.n; k++) {
+            Node *g = n->list.v[k];
+            if (strcmp(g->name, decl_f->name) == 0) {
+                if (given) {
+                    diag_error(g->pos, "field `%s` is given twice", g->name);
+                    ok = false;
+                }
+                given = given ? given : g;
+            }
+        }
+        if (!given) {
+            diag_error(n->pos, "variant `%s.%s` needs the field `%s`", d->name, vname, decl_f->name);
+            ok = false;
+            continue;
+        }
+        vec_push(&call->list, given->b);
+    }
+    for (int k = 0; k < n->list.n; k++) {
+        Node *g = n->list.v[k];
+        bool known = false;
+        for (int i = 0; i < vn->list2.n; i++)
+            if (strcmp(((Node *)vn->list2.v[i])->name, g->name) == 0) known = true;
+        if (!known) {
+            diag_error(g->pos, "variant `%s.%s` has no field `%s`", d->name, vname, g->name);
+            ok = false;
+        }
+    }
+    if (!ok) return err_val();
+    Type *t = static_type(F, d, nodes.v[used - 1], expect);
+    return gen_variant(F, call, n->pos, d, t, vname, expect);
+}
+
 /* =========================================================================
  * Arrays: syntax that turns into calls of the Array class in Zevic.Core
  * ========================================================================= */
@@ -2896,6 +2974,125 @@ static void gen_for_iter(FnCtx *F, Node *n) {
     if (!F->term) br(F, head);
     start_block(F, end);
     pop_scope(F);
+}
+
+/* =========================================================================
+ * Equality of structs, tuples, enums and classes
+ * ========================================================================= */
+
+/* Call method `fn` of type `t` with an already computed receiver and arguments. */
+static Val call_method_vals(FnCtx *F, Type *t, Node *fn, Val recv_obj, Val *args, int nargs, Pos pos, Type *expect) {
+    Node *call = node_new(N_CALL, pos);
+    call->a = mk_ident(pos, fn->name);
+    for (int i = 0; i < nargs; i++) {
+        char *name = zsprintf("$c%d", F->ntmp++);
+        Local *l = declare_local(F, name, args[i].t, false, pos);
+        if (args[i].t != ty_unit) store_to(F, args[i].t, args[i], l->ptr);
+        vec_push(&call->list, mk_ident(pos, name));
+    }
+    Val recv = {ty_ptr(ty_u8), recv_obj.v};
+    return gen_call_decl(F, call, method_decl(t, fn), t, NULL, expect, &recv);
+}
+
+/* Compare the parts of two LLVM aggregates (a struct's fields or a tuple's elements). */
+static Val gen_eq_parts(FnCtx *F, Vec *types, Val a, Val b, Pos pos) {
+    char *acc = "true";
+    for (int i = 0; i < types->n; i++) {
+        Type *ft = types->v[i];
+        Val x = {ft, tmp(F)}, y = {ft, tmp(F)};
+        emit(F, "%s = extractvalue %s %s, %d", x.v, type_ll(a.t), a.v, i);
+        emit(F, "%s = extractvalue %s %s, %d", y.v, type_ll(b.t), b.v, i);
+        Val e = gen_eq(F, x, y, pos);
+        if (is_err(e.t)) return e;
+        if (i == 0) {
+            acc = e.v;
+        } else {
+            char *r = tmp(F);
+            emit(F, "%s = and i1 %s, %s", r, acc, e.v);
+            acc = r;
+        }
+    }
+    Val res = {ty_bool, acc};
+    return res;
+}
+
+static Val gen_eq_enum(FnCtx *F, Val a, Val b, Pos pos) {
+    Type *t = a.t;
+    ty_layout(t);
+    Place pa = spill(F, a), pb = spill(F, b);
+    char *ta = tmp(F), *tb = tmp(F), *tagok = tmp(F);
+    emit(F, "%s = load i32, ptr %s", ta, tag_ptr(F, t, pa.ptr));
+    emit(F, "%s = load i32, ptr %s", tb, tag_ptr(F, t, pb.ptr));
+    emit(F, "%s = icmp eq i32 %s, %s", tagok, ta, tb);
+    bool any_payload = false;
+    for (int i = 0; i < t->variants.n; i++)
+        if (((Variant *)t->variants.v[i])->payload) any_payload = true;
+    if (!any_payload) {
+        Val res = {ty_bool, tagok};
+        return res;
+    }
+    char *res = new_slot(F, ty_bool);
+    emit(F, "store i1 false, ptr %s", res);
+    char *cmp = newlabel(F, "eq.cmp"), *same = newlabel(F, "eq.same"), *done = newlabel(F, "eq.done");
+    condbr(F, tagok, cmp, done);
+    start_block(F, cmp);
+    Vec labels = {0};
+    SB sw = {0};
+    for (int i = 0; i < t->variants.n; i++) {
+        Variant *v = t->variants.v[i];
+        char *l = v->payload ? newlabel(F, "eq.variant") : NULL;
+        vec_push(&labels, l);
+        if (l) sb_printf(&sw, " i32 %d, label %%%s", v->tag, l);
+    }
+    emit(F, "switch i32 %s, label %%%s [%s ]", ta, same, sb_str(&sw));
+    F->term = true;
+    for (int i = 0; i < t->variants.n; i++) {
+        Variant *v = t->variants.v[i];
+        if (!labels.v[i]) continue;
+        start_block(F, labels.v[i]);
+        Val x = {v->payload, tmp(F)}, y = {v->payload, tmp(F)};
+        emit(F, "%s = load %s, ptr %s", x.v, type_ll(v->payload), payload_ptr(F, t, pa.ptr));
+        emit(F, "%s = load %s, ptr %s", y.v, type_ll(v->payload), payload_ptr(F, t, pb.ptr));
+        Val e = gen_eq_parts(F, &v->payload->args, x, y, pos);
+        if (is_err(e.t)) return e;
+        emit(F, "store i1 %s, ptr %s", e.v, res);
+        br(F, done);
+    }
+    start_block(F, same);
+    emit(F, "store i1 true, ptr %s", res);
+    br(F, done);
+    start_block(F, done);
+    char *r = tmp(F);
+    emit(F, "%s = load i1, ptr %s", r, res);
+    Val out = {ty_bool, r};
+    return out;
+}
+
+/* a == b for any type that has a value-style equality. */
+static Val gen_eq(FnCtx *F, Val a, Val b, Pos pos) {
+    Type *t = a.t;
+    if (is_err(t) || is_err(b.t)) return err_val();
+    if (t->k == T_STRUCT) return gen_eq_parts(F, &obj_tuple(t)->args, a, b, pos);
+    if (t->k == T_TUPLE) return gen_eq_parts(F, &t->args, a, b, pos);
+    if (t->k == T_ENUM) return gen_eq_enum(F, a, b, pos);
+    if (t->k == T_CLASS) {
+        Node *eq = find_member_fn(t, "Equals");
+        if (eq && !eq->is_static) {
+            Val args[1] = {b};
+            return call_method_vals(F, t, eq, a, args, 1, pos, ty_bool);
+        }
+        char *r = tmp(F);
+        emit(F, "%s = icmp eq ptr %s, %s", r, a.v, b.v);
+        Val res = {ty_bool, r};
+        return res;
+    }
+    if (t->k == T_PTR) {
+        char *r = tmp(F);
+        emit(F, "%s = icmp eq ptr %s, %s", r, a.v, b.v);
+        Val res = {ty_bool, r};
+        return res;
+    }
+    return gen_compare(F, TK_EQEQ, a, b, pos);
 }
 
 /* The pointer part of a string constant `{ ptr @x, i64 n }`. */
