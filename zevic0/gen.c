@@ -174,6 +174,7 @@ static void declare(Gen *g, const char *name, const char *line) {
  * ========================================================================= */
 
 static Type *resolve_type(Gen *g, SourceFile *f, Env *env, Node *te);
+static bool is_err(Type *t) { return t == ty_err; }
 
 static char *qualified_name(Decl *d) {
     if (strcmp(d->mod->name, "Zevic.Core") == 0) return d->name;
@@ -299,6 +300,8 @@ static Type *resolve_type(Gen *g, SourceFile *f, Env *env, Node *te) {
                 return p;
             }
             if (strcmp(name, "Never") == 0) return ty_never;
+            Type *ct = ty_c_by_name(name);
+            if (ct) return ct;
         }
         int used = 0;
         Decl *d = find_decl(g, f, segs, n, &used, te->pos);
@@ -340,6 +343,34 @@ static Env *make_env(Decl *d, Type *self, Vec *fn_targs) {
     return e;
 }
 
+/* Arguments and results of `extern "C"` functions are C types or pointers. */
+static bool is_c_value_type(Type *t) {
+    return t->k == T_PTR || (t->k == T_CTYPE && strcmp(t->name, "CVoid") != 0);
+}
+
+static void check_c_signature(Inst *in, Node *fn) {
+    int pi = 0;
+    for (int i = 0; i < fn->list.n; i++) {
+        Node *p = fn->list.v[i];
+        if (p->flag3) continue;
+        Type *pt = in->ptypes.v[pi++];
+        if (is_err(pt)) continue;
+        if (!is_c_value_type(pt)) {
+            diag_error(p->pos, "parameter `%s` of the C function `%s` has type `%s`; C functions take only C types and pointers",
+                       p->name, fn->name, pt->name);
+            if (pt == ty_string) diag_note("convert a String with `.ToC()`");
+            else if (ty_is_numeric(pt)) diag_note("convert it with a method such as `.ToCInt()`");
+        }
+    }
+    if (is_err(in->ret)) return;
+    if (in->ret->k == T_CTYPE && strcmp(in->ret->name, "CVoid") == 0) {
+        in->ret = ty_unit;
+    } else if (in->ret != ty_unit && !is_c_value_type(in->ret)) {
+        diag_error(fn->pos, "the C function `%s` returns `%s`; C functions return only C types, pointers and `CVoid`", fn->name,
+                   in->ret->name);
+    }
+}
+
 static Inst *get_inst(Gen *g, Decl *d, Type *self, Vec *targs) {
     Node *fn = d->node;
     SB key = {0};
@@ -374,6 +405,7 @@ static Inst *get_inst(Gen *g, Decl *d, Type *self, Vec *targs) {
         vec_push(&in->ptypes, pt);
     }
     in->ret = fn->a ? resolve_type(g, d->file, in->env, fn->a) : ty_unit;
+    if (is_extern && strcmp(d->abi, "C") == 0) check_c_signature(in, fn);
     dict_put(&g->insts, k, in);
     if (!is_extern) vec_push(&g->worklist, in);
     return in;
@@ -434,8 +466,6 @@ typedef struct {
 
 static Place gen_place(FnCtx *F, Node *n);
 static bool is_static_path(FnCtx *F, Node *n);
-
-static bool is_err(Type *t) { return t == ty_err; }
 
 static Val unit_val(void) {
     Val v = {ty_unit, "zeroinitializer"};
@@ -3111,6 +3141,44 @@ static void emit_panic_call(FnCtx *F, Val msg, Pos pos) {
     F->term = true;
 }
 
+/* Attribute that makes a narrow C integer cross the call boundary the way a C compiler would. */
+static const char *c_ext_attr(Type *t) {
+    if (t->k != T_CTYPE || t->ll[0] != 'i') return "";
+    if (t->size >= 4) return "";
+    if (strcmp(t->name, "CBool") == 0) return " zeroext";
+    return t->payload_words == 1 ? " signext" : " zeroext";
+}
+
+/* A call to an `extern "C"` function. */
+static Val emit_c_call(FnCtx *F, Inst *in, Vec *args) {
+    SB a = {0}, ptypes = {0};
+    Type *ret = in->ret;
+    for (int i = 0; i < args->n; i++) {
+        Val *v = args->v[i];
+        if (i) {
+            sb_puts(&a, ", ");
+            sb_puts(&ptypes, ", ");
+        }
+        const char *attr = c_ext_attr(v->t);
+        sb_printf(&a, "%s%s %s", type_ll(v->t), attr, v->v);
+        sb_printf(&ptypes, "%s%s", type_ll(v->t), attr);
+    }
+    bool is_void = ret == ty_unit || ret == ty_never;
+    const char *rl = is_void ? "void" : type_ll(ret);
+    const char *rattr = is_void ? "" : c_ext_attr(ret);
+    declare(F->g, in->name, zsprintf("declare%s %s @%s(%s)", rattr, rl, in->name, sb_str(&ptypes)));
+    if (is_void) {
+        emit(F, "call void @%s(%s)", in->name, sb_str(&a));
+        return unit_val();
+    }
+    char *t = tmp(F);
+    emit(F, "%s = call%s %s @%s(%s)", t, rattr, rl, in->name, sb_str(&a));
+    Val r = {ret, t};
+    return r;
+}
+
+static Val emit_c_call(FnCtx *F, Inst *in, Vec *args);
+
 /* Emit a direct call to a function instance. */
 static Val emit_call(FnCtx *F, Inst *in, Vec *args) {
     Gen *g = F->g;
@@ -3118,6 +3186,8 @@ static Val emit_call(FnCtx *F, Inst *in, Vec *args) {
     Type *ret = in->ret;
     char *slot = NULL;
     bool zevic_abi = in->is_extern && in->decl->abi && strcmp(in->decl->abi, "zevic") == 0;
+    bool c_abi = in->is_extern && in->decl->abi && strcmp(in->decl->abi, "C") == 0;
+    if (c_abi) return emit_c_call(F, in, args);
     if (in->is_extern && !zevic_abi) {
         diag_error(in->decl->node->pos, "`extern \"%s\"` functions are not supported yet", in->decl->abi);
         return err_val();
@@ -3495,9 +3565,84 @@ static Val cast_to_float(FnCtx *F, Val v, Type *to) {
     return res;
 }
 
+/* The Zevic type that has the same representation as a C number type (NULL if `t` is not one). */
+static Type *c_native(Type *t) {
+    if (t->k != T_CTYPE) return NULL;
+    if (strcmp(t->ll, "float") == 0) return ty_f32;
+    if (strcmp(t->ll, "double") == 0) return ty_f64;
+    if (t->ll[0] != 'i' || t == ty_c_by_name("CBool")) return NULL;
+    bool sgn = t->payload_words == 1;
+    switch ((int)t->size) {
+    case 1: return sgn ? ty_i8 : ty_u8;
+    case 2: return sgn ? ty_i16 : ty_u16;
+    case 4: return sgn ? ty_i32 : ty_u32;
+    default: return sgn ? ty_i64 : ty_u64;
+    }
+}
+
+/* Result<A, E> with the same payload shape, relabelled as Result<B, E>. */
+static Type *retag_result(Gen *g, Type *res, Type *ok) {
+    Vec targs = {0};
+    vec_push(&targs, ok);
+    vec_push(&targs, res->args.v[1]);
+    return instantiate(g, res->decl, targs, (Pos){0});
+}
+
+static Val gen_prim_method(FnCtx *F, Node *call, Val recv, const char *name, Type *expect);
+
+/* x.ToCInt(), c.ToI32(), c.ToCLong() ...: conversions between Zevic numbers and C numbers.
+ * Both sides are mapped to their Zevic equivalents, converted there, and the result relabelled. */
+static bool gen_c_conversion(FnCtx *F, Node *call, Val recv, const char *name, Type *expect, Val *out) {
+    if (name[0] != 'T' || name[1] != 'o') return false;
+    Type *src = c_native(recv.t);
+    if (!src && !ty_is_numeric(recv.t)) return false;
+    char *base = zstrdup(name + 2);
+    bool wrap = false;
+    size_t bl = strlen(base);
+    if (bl > 4 && strcmp(base + bl - 4, "Wrap") == 0) {
+        wrap = true;
+        base[bl - 4] = 0;
+    }
+    Type *to_c = ty_c_by_name(base);
+    Type *to_native = to_c ? c_native(to_c) : NULL;
+    if (!src && !to_native) return false; /* plain Zevic conversion */
+    if (to_c && !to_native) return false;
+    Type *to = to_native ? to_native : ty_prim_by_name(base);
+    if (!to || !ty_is_numeric(to)) return false;
+    Val r = recv;
+    if (src) r.t = src;
+    const char *tn = to->name;
+    Val res = gen_prim_method(F, call, r, zsprintf("To%s%s", tn, wrap ? "Wrap" : ""), expect);
+    if (is_err(res.t) || res.t == ty_never) {
+        *out = res;
+        return true;
+    }
+    if (to_c) {
+        if (is_result_type(res.t)) res.t = retag_result(F->g, res.t, to_c);
+        else res.t = to_c;
+    }
+    *out = res;
+    return true;
+}
+
 static Val gen_prim_method(FnCtx *F, Node *call, Val recv, const char *name, Type *expect) {
     Type *t = recv.t;
     int nargs = call->list.n;
+    {
+        Val cv;
+        if (gen_c_conversion(F, call, recv, name, expect, &cv)) return cv;
+    }
+    if (t == ty_string && strcmp(name, "ToC") == 0) {
+        if (nargs) {
+            diag_error(call->pos, "`ToC` takes no arguments");
+            return err_val();
+        }
+        /* a String is always NUL-terminated, so its data pointer is a valid C string */
+        char *p, *n;
+        str_parts(F, recv, &p, &n);
+        Val r = {ty_c_by_name("CString"), p};
+        return r;
+    }
     if (strcmp(name, "ToString") == 0) {
         if (nargs) {
             diag_error(call->pos, "`ToString` takes no arguments");
@@ -3741,7 +3886,24 @@ static Val gen_user_method(FnCtx *F, Node *call, Place p, Node *recv_node, const
     return gen_call_decl(F, call, md, t, &call->a->list2, expect, &recv);
 }
 
+/* `42.ToCInt()`: an unsuffixed literal receiver takes the C type's own width, so the conversion cannot fail. */
+static Type *literal_c_target(Node *recv, const char *name) {
+    Node *lit = recv;
+    if (lit->kind == N_UNARY && lit->a && lit->a->kind == N_INT) lit = lit->a;
+    if (lit->kind != N_INT && lit->kind != N_FLOAT) return NULL;
+    if (lit->suffix) return NULL;
+    if (name[0] != 'T' || name[1] != 'o') return NULL;
+    Type *c = ty_c_by_name(name + 2);
+    return c ? c_native(c) : NULL;
+}
+
 static Val gen_method_call(FnCtx *F, Node *call, Node *recv_node, const char *name, Type *expect) {
+    Type *lit_t = literal_c_target(recv_node, name);
+    if (lit_t) {
+        Val v = gen_expr(F, recv_node, lit_t);
+        if (v.t == ty_never || is_err(v.t)) return v;
+        return gen_prim_method(F, call, v, name, expect);
+    }
     Place p = gen_place(F, recv_node);
     if (p.t == ty_never) return never_val(expect);
     if (is_err(p.t)) {
