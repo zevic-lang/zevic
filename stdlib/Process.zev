@@ -1,0 +1,45 @@
+module Zevic.Process
+
+// Starting other programs. The program is run through the system shell, but every argument is quoted,
+// so characters such as spaces, quotes and `$` reach the program unchanged.
+
+extern "zevic" {
+    fn zevic_proc_begin()
+    fn zevic_proc_arg(s: String)
+    fn zevic_proc_run() -> String
+    fn zevic_proc_failed() -> I32
+    fn zevic_proc_code() -> I32
+    fn zevic_proc_stderr() -> String
+}
+
+// What a finished program left behind.
+struct Output {
+    Code: I32
+    Stdout: String
+    Stderr: String
+
+    fn Init(code: I32, stdout: String, stderr: String) {
+        this.Code = code
+        this.Stdout = stdout
+        this.Stderr = stderr
+    }
+
+    fn Success() -> Bool { this.Code == 0 }
+}
+
+// Runs `cmd` with `args`, waits for it and collects its exit code and output.
+// The program's own failure (a non-zero exit code) is not an error here: look at `Code`. Only a failure to
+// start the shell itself gives an `Err`. A program that does not exist is reported by the shell as code 127.
+// Standard input is shared with this program.
+fn Run(cmd: String, args: Array<String>) -> Result<Output, Error> {
+    zevic_proc_begin()
+    zevic_proc_arg(cmd)
+    for (a in args) {
+        zevic_proc_arg(a)
+    }
+    let out: String = zevic_proc_run()
+    if (zevic_proc_failed() != 0) {
+        return Err(Error.New(ErrorKind.Io, "cannot start \"${cmd}\""))
+    }
+    Ok(Output.New(zevic_proc_code(), out, zevic_proc_stderr()))
+}
