@@ -21,6 +21,16 @@
 #include <windows.h>
 #else
 #include <time.h>
+#include <dirent.h>
+#include <unistd.h>
+#endif
+#include <sys/stat.h>
+#ifdef _WIN32
+#include <direct.h>
+#ifndef S_IFMT
+#define S_IFMT _S_IFMT
+#define S_IFDIR _S_IFDIR
+#endif
 #endif
 
 static int g_argc;
@@ -660,4 +670,256 @@ void zevic_sleep_ns(int64_t ns) {
     struct timespec ts = {(time_t)(ns / 1000000000LL), (long)(ns % 1000000000LL)};
     while (nanosleep(&ts, &ts) != 0) {}
 #endif
+}
+
+/* ---- files ----
+ * A failing call leaves the reason in g_fs_errno; zevic_fs_errkind() and zevic_fs_errmsg() describe it. */
+
+static int g_fs_errno;
+
+/* Did the last file call fail? */
+int32_t zevic_fs_failed(void) {
+    return g_fs_errno != 0;
+}
+
+int32_t zevic_fs_errkind(void) {
+    if (g_fs_errno == ENOENT) return 0; /* NotFound */
+    if (g_fs_errno == EACCES || g_fs_errno == EPERM) return 1; /* Permission */
+    return 2; /* Io */
+}
+
+void zevic_fs_errmsg(zevic_str *out) {
+    const char *m = strerror(g_fs_errno);
+    str_set(out, m, (int64_t)strlen(m));
+}
+
+static FILE *fs_fopen(const char *path, const char *mode) {
+#ifdef _WIN32
+    /* paths are UTF-8 */
+    wchar_t wp[4096], wm[8];
+    if (MultiByteToWideChar(CP_UTF8, 0, path, -1, wp, 4096) == 0) { errno = EINVAL; return NULL; }
+    MultiByteToWideChar(CP_UTF8, 0, mode, -1, wm, 8);
+    return _wfopen(wp, wm);
+#else
+    return fopen(path, mode);
+#endif
+}
+
+void zevic_fs_read_all(zevic_str *out, const char *p, int64_t n) {
+    char *path = nul_copy(p, n);
+    g_fs_errno = 0;
+    FILE *f = fs_fopen(path, "rb");
+    free(path);
+    if (!f) {
+        g_fs_errno = errno;
+        str_set(out, "", 0);
+        return;
+    }
+    int64_t cap = 4096, len = 0;
+    char *buf = malloc((size_t)cap);
+    if (!buf) exit(101);
+    size_t r;
+    while ((r = fread(buf + len, 1, (size_t)(cap - len), f)) > 0) {
+        len += (int64_t)r;
+        if (len == cap) {
+            cap *= 2;
+            buf = realloc(buf, (size_t)cap);
+            if (!buf) exit(101);
+        }
+    }
+    if (ferror(f)) g_fs_errno = errno ? errno : EIO;
+    fclose(f);
+    str_set(out, buf, len);
+    free(buf);
+}
+
+/* append = 0: replace the file; 1: add to its end. Returns 1 on success, 0 on failure. */
+int32_t zevic_fs_write_all(const char *p, int64_t n, const char *d, int64_t dn, int32_t append) {
+    char *path = nul_copy(p, n);
+    g_fs_errno = 0;
+    FILE *f = fs_fopen(path, append ? "ab" : "wb");
+    free(path);
+    if (!f) {
+        g_fs_errno = errno;
+        return 0;
+    }
+    int ok = dn == 0 || fwrite(d, 1, (size_t)dn, f) == (size_t)dn;
+    if (!ok) g_fs_errno = errno ? errno : EIO;
+    if (fclose(f) != 0 && ok) {
+        g_fs_errno = errno ? errno : EIO;
+        ok = 0;
+    }
+    return ok;
+}
+
+/* 0: does not exist, 1: a file, 2: a directory */
+int32_t zevic_fs_kind(const char *p, int64_t n) {
+    char *path = nul_copy(p, n);
+    struct stat st;
+    int rc = stat(path, &st);
+    free(path);
+    if (rc != 0) return 0;
+    return (st.st_mode & S_IFMT) == S_IFDIR ? 2 : 1;
+}
+
+int32_t zevic_fs_remove(const char *p, int64_t n) {
+    char *path = nul_copy(p, n);
+    g_fs_errno = 0;
+    int rc = remove(path);
+    free(path);
+    if (rc != 0) {
+        g_fs_errno = errno;
+        return 0;
+    }
+    return 1;
+}
+
+int32_t zevic_fs_mkdir(const char *p, int64_t n) {
+    char *path = nul_copy(p, n);
+    g_fs_errno = 0;
+#ifdef _WIN32
+    int rc = _mkdir(path);
+#else
+    int rc = mkdir(path, 0777);
+#endif
+    free(path);
+    if (rc != 0) {
+        g_fs_errno = errno;
+        return 0;
+    }
+    return 1;
+}
+
+/* The names in a directory (not "." and ".."), one per line. */
+void zevic_fs_list(zevic_str *out, const char *p, int64_t n) {
+    char *path = nul_copy(p, n);
+    g_fs_errno = 0;
+    int64_t cap = 256, len = 0;
+    char *buf = malloc((size_t)cap);
+    if (!buf) exit(101);
+#ifdef _WIN32
+    char *pat = malloc((size_t)n + 3);
+    memcpy(pat, path, (size_t)n);
+    memcpy(pat + n, "\\*", 3);
+    WIN32_FIND_DATAA fd;
+    HANDLE h = FindFirstFileA(pat, &fd);
+    free(pat);
+    if (h == INVALID_HANDLE_VALUE) {
+        g_fs_errno = ENOENT;
+    } else {
+        do {
+            const char *name = fd.cFileName;
+            if (!strcmp(name, ".") || !strcmp(name, "..")) continue;
+            int64_t l = (int64_t)strlen(name);
+            while (len + l + 2 > cap) { cap *= 2; buf = realloc(buf, (size_t)cap); if (!buf) exit(101); }
+            memcpy(buf + len, name, (size_t)l);
+            len += l;
+            buf[len++] = '\n';
+        } while (FindNextFileA(h, &fd));
+        FindClose(h);
+    }
+#else
+    DIR *d = opendir(path);
+    if (!d) {
+        g_fs_errno = errno;
+    } else {
+        struct dirent *e;
+        while ((e = readdir(d)) != NULL) {
+            const char *name = e->d_name;
+            if (!strcmp(name, ".") || !strcmp(name, "..")) continue;
+            int64_t l = (int64_t)strlen(name);
+            while (len + l + 2 > cap) {
+                cap *= 2;
+                buf = realloc(buf, (size_t)cap);
+                if (!buf) exit(101);
+            }
+            memcpy(buf + len, name, (size_t)l);
+            len += l;
+            buf[len++] = '\n';
+        }
+        closedir(d);
+    }
+#endif
+    free(path);
+    str_set(out, buf, len);
+    free(buf);
+}
+
+/* ---- open files: mode 0 read, 1 write (replace), 2 append ---- */
+
+void *zevic_fs_open(const char *p, int64_t n, int32_t mode) {
+    char *path = nul_copy(p, n);
+    g_fs_errno = 0;
+    FILE *f = fs_fopen(path, mode == 0 ? "rb" : mode == 1 ? "wb" : "ab");
+    free(path);
+    if (!f) g_fs_errno = errno;
+    return f;
+}
+
+int32_t zevic_fs_close(void *h) {
+    g_fs_errno = 0;
+    if (fclose((FILE *)h) != 0) {
+        g_fs_errno = errno ? errno : EIO;
+        return 0;
+    }
+    return 1;
+}
+
+int32_t zevic_fs_file_write(void *h, const char *d, int64_t dn) {
+    g_fs_errno = 0;
+    if (dn > 0 && fwrite(d, 1, (size_t)dn, (FILE *)h) != (size_t)dn) {
+        g_fs_errno = errno ? errno : EIO;
+        return 0;
+    }
+    return 1;
+}
+
+static int32_t g_file_line_ok;
+
+int32_t zevic_fs_file_line_ok(void) {
+    return g_file_line_ok;
+}
+
+/* One line (without \n or \r\n) from an open file; zevic_fs_file_line_ok() tells whether there was one. */
+void zevic_fs_file_read_line(zevic_str *out, void *h) {
+    FILE *f = h;
+    g_file_line_ok = 0;
+    int64_t cap = 128, n = 0;
+    char *buf = malloc((size_t)cap);
+    if (!buf) exit(101);
+    int c, got = 0;
+    while ((c = fgetc(f)) != EOF) {
+        got = 1;
+        if (c == '\n') break;
+        if (n + 1 >= cap) {
+            cap *= 2;
+            buf = realloc(buf, (size_t)cap);
+            if (!buf) exit(101);
+        }
+        buf[n++] = (char)c;
+    }
+    if (got) {
+        if (n > 0 && buf[n - 1] == '\r') n--;
+        g_file_line_ok = 1;
+    }
+    str_set(out, buf, n);
+    free(buf);
+}
+
+void zevic_fs_file_read_all(zevic_str *out, void *h) {
+    FILE *f = h;
+    int64_t cap = 4096, len = 0;
+    char *buf = malloc((size_t)cap);
+    if (!buf) exit(101);
+    size_t r;
+    while ((r = fread(buf + len, 1, (size_t)(cap - len), f)) > 0) {
+        len += (int64_t)r;
+        if (len == cap) {
+            cap *= 2;
+            buf = realloc(buf, (size_t)cap);
+            if (!buf) exit(101);
+        }
+    }
+    str_set(out, buf, len);
+    free(buf);
 }
