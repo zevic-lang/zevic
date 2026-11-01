@@ -1,0 +1,54 @@
+module Main
+
+import Zevic.Console
+import Zevic.Fs
+
+fn Run() -> Result<Unit, Error> {
+    let dir: String = "zevic-fs-test-dir"
+    if (!Fs.Exists(dir)) { Fs.CreateDir(dir)? }
+    let path: String = "${dir}/a.txt"
+    Fs.WriteAll(path, "first\nsecond\n")?
+    Fs.Append(path, "third\n")?
+    Console.Println(Fs.ReadAll(path)?)
+    Console.Println("exists ${Fs.Exists(path)} file ${Fs.IsFile(path)} dir ${Fs.IsDir(dir)}")
+
+    mut f: Fs.File = Fs.Open(path, Fs.Mode.Read)?
+    defer f.Close()
+    mut n: I32 = 0
+    loop {
+        match (f.ReadLine()) {
+            Some(l) => {
+                n += 1
+                Console.Println("${n}: ${l}")
+            },
+            None => break,
+        }
+    }
+
+    mut w: Fs.File = Fs.Open("${dir}/b.txt", Fs.Mode.Write)?
+    w.WriteLine("written")?
+    w.Close()?
+    let names: Array<String> = Fs.List(dir)?
+    Console.Println("entries: ${names.Len()} ${names[0]} ${names[1]}")
+
+    Fs.Remove(path)?
+    Fs.Remove("${dir}/b.txt")?
+    Fs.Remove(dir)?
+    Console.Println("cleaned: ${!Fs.Exists(dir)}")
+    Ok(())
+}
+
+fn Main() {
+    match (Run()) {
+        Ok(_) => {},
+        Err(e) => Console.Println("failed: ${e.ToString()}"),
+    }
+    match (Fs.ReadAll("zevic-fs-missing.txt")) {
+        Ok(_) => Console.Println("?"),
+        Err(e) => Console.Println("${e.Kind().ToString()}"),
+    }
+    match (Fs.List("zevic-fs-missing-dir")) {
+        Ok(_) => Console.Println("?"),
+        Err(e) => Console.Println("${e.Kind().ToString()}"),
+    }
+}

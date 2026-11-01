@@ -1,0 +1,12 @@
+first
+second
+third
+
+exists true file true dir true
+1: first
+2: second
+3: third
+entries: 2 a.txt b.txt
+cleaned: true
+NotFound
+NotFound
