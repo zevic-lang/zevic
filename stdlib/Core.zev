@@ -40,6 +40,121 @@ interface Iterable<T> {
         }
         out
     }
+
+    fn Each(f: fn(T) -> Unit) {
+        mut it: Iterator<T> = this.Iter()
+        loop {
+            match (it.Next()) {
+                Some(v) => f(v),
+                None => break,
+            }
+        }
+    }
+
+    fn EachIndexed(f: fn(I64, T) -> Unit) {
+        mut it: Iterator<T> = this.Iter()
+        mut i: I64 = 0
+        loop {
+            match (it.Next()) {
+                Some(v) => {
+                    f(i, v)
+                    i += 1
+                },
+                None => break,
+            }
+        }
+    }
+
+    fn Map<U>(f: fn(T) -> U) -> Array<U> {
+        mut out: Array<U> = []
+        mut it: Iterator<T> = this.Iter()
+        loop {
+            match (it.Next()) {
+                Some(v) => out.Push(f(v)),
+                None => break,
+            }
+        }
+        out
+    }
+
+    fn Filter(f: fn(T) -> Bool) -> Array<T> {
+        mut out: Array<T> = []
+        mut it: Iterator<T> = this.Iter()
+        loop {
+            match (it.Next()) {
+                Some(v) => {
+                    if (f(v)) { out.Push(v) }
+                },
+                None => break,
+            }
+        }
+        out
+    }
+
+    fn Reduce<U>(init: U, f: fn(U, T) -> U) -> U {
+        mut acc: U = init
+        mut it: Iterator<T> = this.Iter()
+        loop {
+            match (it.Next()) {
+                Some(v) => { acc = f(acc, v) },
+                None => break,
+            }
+        }
+        acc
+    }
+
+    fn Find(f: fn(T) -> Bool) -> Option<T> {
+        mut it: Iterator<T> = this.Iter()
+        loop {
+            match (it.Next()) {
+                Some(v) => {
+                    if (f(v)) { return Some(v) }
+                },
+                None => break,
+            }
+        }
+        None
+    }
+
+    fn Any(f: fn(T) -> Bool) -> Bool {
+        mut it: Iterator<T> = this.Iter()
+        loop {
+            match (it.Next()) {
+                Some(v) => {
+                    if (f(v)) { return true }
+                },
+                None => break,
+            }
+        }
+        false
+    }
+
+    fn All(f: fn(T) -> Bool) -> Bool {
+        mut it: Iterator<T> = this.Iter()
+        loop {
+            match (it.Next()) {
+                Some(v) => {
+                    if (!f(v)) { return false }
+                },
+                None => break,
+            }
+        }
+        true
+    }
+
+    fn Count(f: fn(T) -> Bool) -> I64 {
+        mut n: I64 = 0
+        mut it: Iterator<T> = this.Iter()
+        loop {
+            match (it.Next()) {
+                Some(v) => {
+                    if (f(v)) { n += 1 }
+                },
+                None => break,
+            }
+        }
+        n
+    }
 }
 
 enum Option<T> {
