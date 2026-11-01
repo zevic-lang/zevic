@@ -54,6 +54,11 @@ zevic --version
 標準ライブラリ(`stdlib/`)とランタイム(`runtime/`)は、実行ファイルの隣の `share/zevic/` か、
 環境変数 `ZEVIC_HOME` が指す場所から探します。リポジトリ直下で実行するときは追加の設定は不要です。
 
+## ランタイムとGC
+
+ランタイムと Boehm GC(`runtime/third_party/bgc`)は C で書かれています。最初のビルドで一度だけコンパイルし、
+`~/.cache/zevic`(Windows は `%LOCALAPPDATA%\zevic\cache`、`ZEVIC_CACHE` で変更可)に置いて使い回します。
+
 ## リリース
 
 `main` への push でビルドが成功するたびに、Linux / macOS / Windows の実行ファイルを
