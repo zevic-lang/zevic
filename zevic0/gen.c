@@ -37,6 +37,8 @@ struct Gen {
     Dict declared;
     Dict insts;
     Vec worklist;
+    Dict thunks;    /* thunk symbol -> the function it forwards to */
+    int nlambda;
     Dict defaults;  /* Decl* of default methods, per implementing type */
     int nvt;        /* method table counter */
     Dict vtables;   /* "Type|Interface" -> global name */
@@ -520,6 +522,7 @@ typedef struct FnCtx {
     char *this_slot; /* address of the `this` value (a slot holding the pointer, for classes) */
     Type *this_t;
     bool this_mut;   /* may `this` be changed? (mut fn and Init) */
+    Dict heap;       /* names of variables that a lambda may capture: they live in heap cells */
 } FnCtx;
 
 /* Where a value lives, and whether it may be changed through this path. */
@@ -662,6 +665,39 @@ static Local *find_local(FnCtx *F, const char *name) {
     return NULL;
 }
 
+/* Every identifier used inside `n`; `*uses_this` is set when `this` appears. */
+static void collect_idents(Node *n, Dict *out, bool *uses_this) {
+    if (!n) return;
+    if (n->kind == N_IDENT && n->name) dict_put(out, n->name, (void *)1);
+    if (n->kind == N_THIS && uses_this) *uses_this = true;
+    collect_idents(n->a, out, uses_this);
+    collect_idents(n->b, out, uses_this);
+    collect_idents(n->c, out, uses_this);
+    collect_idents(n->d, out, uses_this);
+    for (int i = 0; i < n->list.n; i++) collect_idents(n->list.v[i], out, uses_this);
+    for (int i = 0; i < n->list2.n; i++) collect_idents(n->list2.v[i], out, uses_this);
+    for (int i = 0; i < n->list3.n; i++) collect_idents(n->list3.v[i], out, uses_this);
+}
+
+/* The names a lambda below `n` may capture. A variable with such a name is allocated on the heap when it is declared. */
+static void collect_lambda_names(Node *n, Dict *heap) {
+    if (!n) return;
+    if (n->kind == N_LAMBDA) {
+        bool t = false;
+        collect_idents(n, heap, &t);
+        return;
+    }
+    collect_lambda_names(n->a, heap);
+    collect_lambda_names(n->b, heap);
+    collect_lambda_names(n->c, heap);
+    collect_lambda_names(n->d, heap);
+    for (int i = 0; i < n->list.n; i++) collect_lambda_names(n->list.v[i], heap);
+    for (int i = 0; i < n->list2.n; i++) collect_lambda_names(n->list2.v[i], heap);
+    for (int i = 0; i < n->list3.n; i++) collect_lambda_names(n->list3.v[i], heap);
+}
+
+static void rt_decl(FnCtx *F, const char *name, const char *line);
+
 static Local *declare_local(FnCtx *F, const char *name, Type *t, bool mut, Pos pos) {
     for (int i = 0; i < F->scope->locals.n; i++) {
         Local *o = F->scope->locals.v[i];
@@ -676,7 +712,26 @@ static Local *declare_local(FnCtx *F, const char *name, Type *t, bool mut, Pos p
     l->t = t;
     l->mut = mut;
     l->pos = pos;
-    l->ptr = new_slot(F, t);
+    if (F->heap.cap && dict_has(&F->heap, name) && ty_size(t) > 0) {
+        /* a lambda may capture this variable: give it a cell on the heap that outlives the call */
+        rt_decl(F, "zevic_alloc", "declare ptr @zevic_alloc(i64)");
+        l->ptr = tmp(F);
+        emit(F, "%s = call ptr @zevic_alloc(i64 %lld)", l->ptr, (long long)ty_size(t));
+    } else {
+        l->ptr = new_slot(F, t);
+    }
+    vec_push(&F->scope->locals, l);
+    return l;
+}
+
+/* Bind a name to an existing cell (a captured variable inside a lambda). */
+static Local *bind_local_ptr(FnCtx *F, const char *name, Type *t, bool mut, char *ptr, Pos pos) {
+    Local *l = zalloc(sizeof *l);
+    l->name = zstrdup(name);
+    l->t = t;
+    l->mut = mut;
+    l->pos = pos;
+    l->ptr = ptr;
     vec_push(&F->scope->locals, l);
     return l;
 }
@@ -1237,6 +1292,10 @@ static Decl *prelude_variant_owner(FnCtx *F, const char *name);
 static Val gen_variant(FnCtx *F, Node *call, Pos pos, Decl *d, Type *et, const char *vname, Type *expect);
 static Type *static_type(FnCtx *F, Decl *d, Node *tnode, Type *expect);
 
+static Val fn_value_of(FnCtx *F, Decl *d, Pos pos);
+static Val gen_lambda(FnCtx *F, Node *n, Type *expect);
+static Val gen_call_value(FnCtx *F, Node *call, Val f, Type *expect);
+
 static Val gen_ident(FnCtx *F, Node *n, Type *expect) {
     Local *l = find_local(F, n->name);
     if (l) return load_local(F, l);
@@ -1258,6 +1317,7 @@ static Val gen_ident(FnCtx *F, Node *n, Type *expect) {
         Val v = gen_expr(F, d->node->b, t);
         return coerce(F, d->node->b->pos, v, t, "a constant");
     }
+    if (d && d->node->kind == D_FN && used == 1) return fn_value_of(F, d, n->pos);
     if (!d) {
         Decl *owner = prelude_variant_owner(F, n->name);
         if (owner) return gen_variant(F, NULL, n->pos, owner, static_type(F, owner, NULL, expect), n->name, expect);
@@ -1375,6 +1435,7 @@ static Val gen_expr(FnCtx *F, Node *n, Type *expect) {
     case N_ARRAY: return gen_array_lit(F, n, expect);
     case N_STRUCTLIT: return gen_struct_lit(F, n, expect);
     case N_UNARY: return gen_unary(F, n, expect);
+    case N_LAMBDA: return gen_lambda(F, n, expect);
     case N_BINARY: return gen_binary(F, n, expect);
     case N_IF: return gen_if(F, n, expect);
     case N_BLOCK: return gen_block(F, n, expect);
@@ -1389,7 +1450,16 @@ static Val gen_expr(FnCtx *F, Node *n, Type *expect) {
     }
     case N_RETURN: {
         Val v = unit_val();
-        if (n->a) {
+        if (!F->ret) {
+            /* a lambda whose result type is not known yet takes the type of its first `return` */
+            if (n->a) {
+                v = gen_expr(F, n->a, NULL);
+                if (v.t == ty_never || is_err(v.t)) return v;
+                F->ret = v.t;
+            } else {
+                F->ret = ty_unit;
+            }
+        } else if (n->a) {
             v = gen_expr(F, n->a, F->ret);
             v = coerce(F, n->a->pos, v, F->ret, "a `return` value");
             if (v.t == ty_never) return v;
@@ -1637,7 +1707,11 @@ static void gen_for_range(FnCtx *F, Node *n) {
     condbr(F, c, body, end);
     start_block(F, body);
     /* the loop variable is an immutable alias of the counter */
-    if (n->a->kind == P_BIND) {
+    if (n->a->kind == P_BIND && F->heap.cap && dict_has(&F->heap, n->a->name)) {
+        /* a lambda may capture it: every iteration gets its own cell */
+        Local *l = declare_local(F, n->a->name, t, false, n->a->pos);
+        store_to(F, t, (Val){t, cur}, l->ptr);
+    } else if (n->a->kind == P_BIND) {
         Local *l = zalloc(sizeof *l);
         l->name = n->a->name;
         l->t = t;
@@ -2051,6 +2125,7 @@ static void check_bounds(Gen *g, SourceFile *f, Node *owner, Vec *targs, Env *ba
         env->self = saved_self;
     }
 }
+
 
 /* The method table of `t` for interface `it`: one entry per method, in `collect_iface_methods` order. */
 static char *vtable_for(Gen *g, Type *t, Type *it) {
@@ -2652,10 +2727,7 @@ static Val gen_static_member(FnCtx *F, Node *n, Type *expect) {
         diag_error(n->pos, "type `%s` has no member `%s`", d->name, member);
         return err_val();
     }
-    if (dn->kind == D_FN) {
-        diag_error(n->pos, "`%s` is a function; call it with `()` (function values are not supported yet)", d->name);
-        return err_val();
-    }
+    if (dn->kind == D_FN && used == segs.n) return fn_value_of(F, d, n->pos);
     diag_error(n->pos, "`%s` cannot be used as a value here", path_join(&segs, "."));
     return err_val();
 }
@@ -3164,6 +3236,10 @@ static Val gen_try(FnCtx *F, Node *n, Type *expect) {
     if (!is_error_type(v.t->args.v[1])) {
         diag_error(n->pos, "`?` needs the error type to be `Error`, found `Result<%s, %s>`", ((Type *)v.t->args.v[0])->name,
                    ((Type *)v.t->args.v[1])->name);
+        return err_val();
+    }
+    if (!F->ret) {
+        diag_error(n->pos, "`?` needs to know the result type of the function; write the lambda's expected type (`let f: fn(...) -> Result<...> = ...`)");
         return err_val();
     }
     if (!is_result_type(F->ret) || F->ret->args.v[1] != v.t->args.v[1]) {
@@ -4616,7 +4692,16 @@ static Val gen_user_method(FnCtx *F, Node *call, Place p, Node *recv_node, const
         return err_val();
     }
     if (!fn) {
-        if (find_field(t, name, NULL))
+        Field *ff = find_field(t, name, NULL);
+        if (ff && ff->t->k == T_FN) {
+            Node *fm = node_new(N_MEMBER, call->pos);
+            fm->a = recv_node;
+            fm->name = (char *)name;
+            Val fv = gen_expr(F, fm, NULL);
+            if (fv.t == ty_never || is_err(fv.t)) return fv.t == ty_never ? fv : err_val();
+            return gen_call_value(F, call, fv, expect);
+        }
+        if (ff)
             diag_error(call->pos, "`%s` is a field of `%s`, not a method", name, t->name);
         else
             diag_error(call->pos, "type `%s` has no method `%s`", t->name, name);
@@ -4758,8 +4843,239 @@ static Val gen_free(FnCtx *F, Node *call) {
     return unit_val();
 }
 
+
+/* =========================================================================
+ * Function values and lambdas
+ * ========================================================================= */
+
+static Type *fn_type_of(Vec *ptypes, Type *ret) {
+    Vec ps = {0};
+    for (int i = 0; i < ptypes->n; i++) vec_push(&ps, ptypes->v[i]);
+    return ty_fn(ps, ret);
+}
+
+/* A named function as a value: { thunk, null }. The thunk takes the (unused) environment first. */
+static Val fn_value_of(FnCtx *F, Decl *d, Pos pos) {
+    Gen *g = F->g;
+    Node *fn = d->node;
+    if (fn->list2.n) {
+        diag_error(pos, "the generic function `%s` cannot be used as a value (call it, or wrap it in a lambda)", d->name);
+        return err_val();
+    }
+    if (d->abi) {
+        diag_error(pos, "the %s function `%s` cannot be used as a value here (wrap it in a Zevic function)", d->abi, d->name);
+        return err_val();
+    }
+    Inst *in = get_inst(g, d, NULL, NULL);
+    for (int i = 0; i < in->ptypes.n; i++)
+        if (is_err(in->ptypes.v[i])) return err_val();
+    if (is_err(in->ret)) return err_val();
+    Type *ft = fn_type_of(&in->ptypes, in->ret);
+    char *thunk = zsprintf("thunk.%s", in->name);
+    if (!dict_has(&g->thunks, thunk)) {
+        dict_put(&g->thunks, thunk, in->name);
+        SB ps = {0}, as = {0};
+        for (int i = 0; i < in->ptypes.n; i++) {
+            sb_printf(&ps, ", %s %%p%d", type_ll(in->ptypes.v[i]), i);
+            sb_printf(&as, "%s%s %%p%d", i ? ", " : "", type_ll(in->ptypes.v[i]), i);
+        }
+        bool is_void = in->ret == ty_unit || in->ret == ty_never;
+        const char *rl = is_void ? "void" : type_ll(in->ret);
+        sb_printf(&g->funcs, "define %s @\"%s\"(ptr %%env%s) {\nentry:\n", rl, thunk, sb_str(&ps));
+        if (in->ret == ty_never) sb_printf(&g->funcs, "  call void @\"%s\"(%s)\n  unreachable\n}\n\n", in->name, sb_str(&as));
+        else if (is_void) sb_printf(&g->funcs, "  call void @\"%s\"(%s)\n  ret void\n}\n\n", in->name, sb_str(&as));
+        else sb_printf(&g->funcs, "  %%r = call %s @\"%s\"(%s)\n  ret %s %%r\n}\n\n", rl, in->name, sb_str(&as), rl);
+    }
+    Val v = {ft, zsprintf("{ ptr @\"%s\", ptr null }", thunk)};
+    return v;
+}
+
+/* f(args) where `f` is a value of a function type. */
+static Val gen_call_value(FnCtx *F, Node *call, Val f, Type *expect) {
+    Type *ft = f.t;
+    if (call->list.n != ft->args.n) {
+        diag_error(call->pos, "this function value takes %d argument(s), but %d were given", ft->args.n, call->list.n);
+        for (int i = 0; i < call->list.n; i++) gen_expr(F, call->list.v[i], NULL);
+        return err_val();
+    }
+    SB args = {0};
+    bool never = false;
+    for (int i = 0; i < ft->args.n; i++) {
+        Type *pt = ft->args.v[i];
+        Val v = gen_expr(F, call->list.v[i], pt);
+        if (v.t == ty_never) {
+            never = true;
+            continue;
+        }
+        v = coerce(F, ((Node *)call->list.v[i])->pos, v, pt, zsprintf("argument %d of a function value", i + 1));
+        if (is_err(v.t)) return err_val();
+        sb_printf(&args, ", %s %s", type_ll(pt), v.v);
+    }
+    if (never) return never_val(expect);
+    char *fp = tmp(F), *env = tmp(F);
+    emit(F, "%s = extractvalue { ptr, ptr } %s, 0", fp, f.v);
+    emit(F, "%s = extractvalue { ptr, ptr } %s, 1", env, f.v);
+    Type *ret = ft->ret;
+    if (ret == ty_unit || ret == ty_never) {
+        emit(F, "call void %s(ptr %s%s)", fp, env, sb_str(&args));
+        if (ret == ty_never) {
+            emit(F, "unreachable");
+            F->term = true;
+            return never_val(expect);
+        }
+        return unit_val();
+    }
+    char *r = tmp(F);
+    emit(F, "%s = call %s %s(ptr %s%s)", r, type_ll(ret), fp, env, sb_str(&args));
+    Val res = {ret, r};
+    return res;
+}
+
+/* (x: I32) => body: a function plus an environment holding the variables it captures. */
+static Val gen_lambda(FnCtx *F, Node *n, Type *expect) {
+    Gen *g = F->g;
+    Pos pos = n->pos;
+    Type *want = (expect && expect->k == T_FN) ? expect : NULL;
+    if (want && want->args.n != n->list.n) {
+        diag_error(pos, "this lambda takes %d parameter(s), but a function with %d is expected", n->list.n, want->args.n);
+        return err_val();
+    }
+    Vec ptypes = {0};
+    for (int i = 0; i < n->list.n; i++) {
+        Node *pm = n->list.v[i];
+        Type *pt = NULL;
+        if (pm->a) pt = resolve_type(g, F->file, F->env, pm->a);
+        else if (want) pt = want->args.v[i];
+        else {
+            diag_error(pm->pos, "the type of the lambda parameter `%s` cannot be inferred here; write `%s: Type`", pm->name, pm->name);
+            return err_val();
+        }
+        if (is_err(pt)) return err_val();
+        if (want && pt != want->args.v[i]) {
+            diag_error(pm->pos, "parameter `%s` has type `%s`, but `%s` is expected here", pm->name, pt->name, ((Type *)want->args.v[i])->name);
+            return err_val();
+        }
+        vec_push(&ptypes, pt);
+    }
+    /* what the body uses from the enclosing function */
+    Dict used = {0};
+    bool uses_this = false;
+    collect_idents(n->b, &used, &uses_this);
+    Vec cap_names = {0};
+    Vec cap_locals = {0};
+    for (size_t k = 0; k < used.cap; k++) {
+        if (!used.keys[k]) continue;
+        bool is_param = false;
+        for (int i = 0; i < n->list.n; i++)
+            if (strcmp(((Node *)n->list.v[i])->name, used.keys[k]) == 0) is_param = true;
+        if (is_param) continue;
+        Local *l = find_local(F, used.keys[k]);
+        if (!l) continue;
+        vec_push(&cap_names, (void *)l->name);
+        vec_push(&cap_locals, l);
+    }
+    if (uses_this && !F->has_this) uses_this = false;
+    int nslots = cap_locals.n + (uses_this ? 1 : 0);
+
+    /* the lambda's own function */
+    FnCtx L = {0};
+    L.g = g;
+    L.file = F->file;
+    L.env = F->env;
+    L.cur = "entry";
+    L.ret = want ? want->ret : NULL;
+    collect_lambda_names(n->b, &L.heap);
+    push_scope(&L);
+    int slot = 0;
+    if (uses_this) {
+        char *gp = tmp(&L), *tp = tmp(&L);
+        emit(&L, "%s = getelementptr inbounds ptr, ptr %%env, i64 %d", gp, slot++);
+        emit(&L, "%s = load ptr, ptr %s", tp, gp);
+        L.has_this = true;
+        L.this_t = F->this_t;
+        L.this_mut = F->this_mut;
+        if (F->this_t->k == T_CLASS) {
+            L.this_slot = new_slot(&L, F->this_t);
+            emit(&L, "store ptr %s, ptr %s", tp, L.this_slot);
+        } else {
+            L.this_slot = tp;
+        }
+    }
+    for (int i = 0; i < cap_locals.n; i++) {
+        Local *cl = cap_locals.v[i];
+        char *gp = tmp(&L), *cp = tmp(&L);
+        emit(&L, "%s = getelementptr inbounds ptr, ptr %%env, i64 %d", gp, slot++);
+        emit(&L, "%s = load ptr, ptr %s", cp, gp);
+        bind_local_ptr(&L, cl->name, cl->t, cl->mut, cp, cl->pos);
+    }
+    SB params = {0};
+    sb_puts(&params, "ptr %env");
+    for (int i = 0; i < n->list.n; i++) {
+        Node *pm = n->list.v[i];
+        Type *pt = ptypes.v[i];
+        sb_printf(&params, ", %s %%p%d", type_ll(pt), i);
+        Local *pl = declare_local(&L, pm->name, pt, false, pm->pos);
+        Val pv = {pt, zsprintf("%%p%d", i)};
+        if (pt != ty_unit) store_to(&L, pt, pv, pl->ptr);
+    }
+    Val v = n->b->kind == N_BLOCK ? gen_block(&L, n->b, L.ret) : gen_expr(&L, n->b, L.ret);
+    Type *ret = L.ret;
+    if (!ret) ret = (v.t == ty_never || is_err(v.t)) ? ty_unit : v.t;
+    if (!L.term) {
+        if (ret == ty_unit) {
+            emit(&L, "ret void");
+        } else if (ret == ty_never) {
+            emit(&L, "unreachable");
+        } else {
+            v = coerce(&L, n->b->pos, v, ret, "the result of the lambda");
+            if (is_err(v.t)) emit(&L, "unreachable");
+            else emit(&L, "ret %s %s", type_ll(ret), v.v);
+        }
+        L.term = true;
+    }
+    char *lname = zsprintf("lambda.%d", g->nlambda++);
+    const char *rl = (ret == ty_unit || ret == ty_never) ? "void" : type_ll(ret);
+    sb_printf(&g->funcs, "define %s @\"%s\"(%s) {\nentry:\n%s%s%s}\n\n", rl, lname, sb_str(&params), sb_str(&L.allocas),
+              sb_str(&L.code), sb_str(&L.cold));
+
+    /* the environment: the cells of the captured variables (and `this`) */
+    char *env = "null";
+    if (nslots) {
+        rt_decl(F, "zevic_alloc", "declare ptr @zevic_alloc(i64)");
+        env = tmp(F);
+        emit(F, "%s = call ptr @zevic_alloc(i64 %d)", env, nslots * 8);
+        int si = 0;
+        if (uses_this) {
+            char *tv = F->this_slot;
+            if (F->this_t->k == T_CLASS) {
+                tv = tmp(F);
+                emit(F, "%s = load ptr, ptr %s", tv, F->this_slot);
+            }
+            char *gp = tmp(F);
+            emit(F, "%s = getelementptr inbounds ptr, ptr %s, i64 %d", gp, env, si++);
+            emit(F, "store ptr %s, ptr %s", tv, gp);
+        }
+        for (int i = 0; i < cap_locals.n; i++) {
+            Local *cl = cap_locals.v[i];
+            char *gp = tmp(F);
+            emit(F, "%s = getelementptr inbounds ptr, ptr %s, i64 %d", gp, env, si++);
+            emit(F, "store ptr %s, ptr %s", cl->ptr, gp);
+        }
+    }
+    Type *ft = fn_type_of(&ptypes, ret);
+    char *a = tmp(F), *b = tmp(F);
+    emit(F, "%s = insertvalue { ptr, ptr } undef, ptr @\"%s\", 0", a, lname);
+    emit(F, "%s = insertvalue { ptr, ptr } %s, ptr %s, 1", b, a, env);
+    Val res = {ft, b};
+    return res;
+}
+
 static Val gen_call(FnCtx *F, Node *n, Type *expect) {
     Node *callee = n->a;
+    if (callee->kind == N_IDENT) {
+        Local *fl = find_local(F, callee->name);
+        if (fl && fl->t->k == T_FN) return gen_call_value(F, n, load_local(F, fl), expect);
+    }
     Vec segs = {0}, nodes = {0};
     if (flatten_path(callee, &segs, &nodes)) {
         char *head = segs.v[0];
@@ -4846,6 +5162,13 @@ static Val gen_call(FnCtx *F, Node *n, Type *expect) {
         }
     }
     if (callee->kind == N_MEMBER) return gen_method_call(F, n, callee->a, callee->name, expect);
+    if (callee->kind == N_CALL || callee->kind == N_INDEX || callee->kind == N_LAMBDA) {
+        Val f = gen_expr(F, callee, NULL);
+        if (f.t == ty_never || is_err(f.t)) return f.t == ty_never ? f : err_val();
+        if (f.t->k == T_FN) return gen_call_value(F, n, f, expect);
+        diag_error(callee->pos, "a value of type `%s` cannot be called", f.t->name);
+        return err_val();
+    }
     diag_error(callee->pos, "this expression cannot be called");
     return err_val();
 }
@@ -4865,6 +5188,7 @@ static void emit_function(Gen *g, Inst *in) {
     F.env = in->env;
     F.ret = in->ret;
     F.cur = "entry";
+    collect_lambda_names(fn->b, &F.heap);
     push_scope(&F);
     SB params = {0};
     if (in->has_this) {
