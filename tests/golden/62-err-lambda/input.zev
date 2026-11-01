@@ -1,0 +1,5 @@
+module Main
+
+fn Main() {
+    let f: fn(I32) -> I32 = (x) => x + 1
+}

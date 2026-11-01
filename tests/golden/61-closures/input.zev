@@ -1,0 +1,54 @@
+module Main
+
+import Zevic.Console
+
+fn Show(x: I32) -> Unit { Console.Println("${x}") }
+
+fn Apply(f: fn(I32) -> I32, x: I32) -> I32 { f(x) }
+
+fn MakeAdder(n: I32) -> fn(I32) -> I32 {
+    (x: I32) => x + n
+}
+
+fn MakeCounter() -> fn() -> I32 {
+    mut c: I32 = 0
+    () => {
+        c += 1
+        c
+    }
+}
+
+class Greeter {
+    name: String
+    fn Init(name: String) { this.name = name }
+    fn Hello() -> fn() -> String {
+        () => "hello, ${this.name}"
+    }
+}
+
+fn Main() {
+    let f: fn(I32) -> Unit = Show
+    f(5)
+    let inc: fn(I32) -> I32 = (x: I32) => x + 1
+    Console.Println("${inc(1)} ${Apply(inc, 10)} ${Apply((x: I32) => x * 3, 4)}")
+    let add5: fn(I32) -> I32 = MakeAdder(5)
+    Console.Println("${add5(1)}")
+    let next: fn() -> I32 = MakeCounter()
+    let other: fn() -> I32 = MakeCounter()
+    Console.Println("${next()} ${next()} ${other()} ${next()}")
+    mut total: I32 = 0
+    let bump: fn(I32) -> Unit = (d: I32) => { total += d }
+    bump(3)
+    bump(4)
+    Console.Println("total = ${total}")
+    let g: Greeter = Greeter.New("zevic")
+    let h: fn() -> String = g.Hello()
+    Console.Println(h())
+    mut fs: Array<fn() -> I32> = []
+    for (i in 0..3) {
+        fs.Push(() => i.ToI32Wrap() * 10)
+    }
+    for (fx in fs) {
+        Console.Println("${fx()}")
+    }
+}

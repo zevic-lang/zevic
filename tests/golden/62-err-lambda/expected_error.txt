@@ -1,0 +1,1 @@
+the type of the lambda parameter `x` must be written
