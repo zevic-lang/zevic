@@ -1,0 +1,8 @@
+1 36 len=6
+evens: 3 first=2
+sum = 21
+n3
+found 4
+any>5 true all>0 true count odd 3
+total = 91
+keys ab

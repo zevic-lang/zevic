@@ -1,0 +1,32 @@
+module Main
+
+import Zevic.Console
+
+fn Main() {
+    let a: Array<I32> = [1, 2, 3, 4, 5, 6]
+    let sq: Array<I32> = a.Map((x: I32) => x * x)
+    Console.Println("${sq[0]} ${sq[5]} len=${sq.Len()}")
+    let ev: Array<I32> = a.Filter((x: I32) => x % 2 == 0)
+    Console.Println("evens: ${ev.Len()} first=${ev[0]}")
+    let sum: I32 = a.Reduce(0, (acc: I32, x: I32) => acc + x)
+    Console.Println("sum = ${sum}")
+    let names: Array<String> = a.Map((x: I32) => "n${x}")
+    Console.Println(names[2])
+    match (a.Find((x: I32) => x > 3)) {
+        Some(v) => Console.Println("found ${v}"),
+        None => Console.Println("none"),
+    }
+    Console.Println("any>5 ${a.Any((x: I32) => x > 5)} all>0 ${a.All((x: I32) => x > 0)} count odd ${a.Count((x: I32) => x % 2 == 1)}")
+    mut total: I32 = 0
+    a.Each((x: I32) => { total += x })
+    a.EachIndexed((i: I64, x: I32) => { total += x * i.ToI32Wrap() })
+    Console.Println("total = ${total}")
+    mut m: Map<String, I32> = Map.New()
+    m.Set("a", 1)
+    m.Set("b", 2)
+    let keys: Array<String> = m.Map((e: (String, I32)) => {
+        let (k, v): (String, I32) = e
+        k
+    })
+    Console.Println("keys ${keys[0]}${keys[1]}")
+}
