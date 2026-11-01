@@ -452,3 +452,58 @@ void zevic_handle_release(uint64_t id) {
     }
     g_handle_free[g_handle_nfree++] = id;
 }
+
+/* ---- environment ---- */
+
+static char *nul_copy(const char *p, int64_t n) {
+    char *b = malloc((size_t)n + 1);
+    if (!b) exit(101);
+    memcpy(b, p, (size_t)n);
+    b[n] = 0;
+    return b;
+}
+
+int32_t zevic_env_has(const char *name, int64_t nn) {
+    char *k = nul_copy(name, nn);
+    int has = getenv(k) != NULL;
+    free(k);
+    return has;
+}
+
+void zevic_env_get(zevic_str *out, const char *name, int64_t nn) {
+    char *k = nul_copy(name, nn);
+    const char *v = getenv(k);
+    free(k);
+    if (!v) v = "";
+    str_set(out, v, (int64_t)strlen(v));
+}
+
+int32_t zevic_env_set(const char *name, int64_t nn, const char *val, int64_t vn) {
+    char *k = nul_copy(name, nn), *v = nul_copy(val, vn);
+#ifdef _WIN32
+    int rc = _putenv_s(k, v);
+#else
+    int rc = setenv(k, v, 1);
+#endif
+    free(k);
+    free(v);
+    return rc == 0;
+}
+
+int32_t zevic_argc(void) {
+    return g_argc;
+}
+
+void zevic_arg(zevic_str *out, int32_t i) {
+    if (i < 0 || i >= g_argc) {
+        str_set(out, "", 0);
+        return;
+    }
+    str_set(out, g_argv[i], (int64_t)strlen(g_argv[i]));
+}
+
+void zevic_exit(int32_t code) {
+    fflush(stdout);
+    fflush(stderr);
+    exit(code);
+}
