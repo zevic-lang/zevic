@@ -1,0 +1,5 @@
+running 2 tests
+  ok    Add adds two numbers
+  ok    Add overflows
+
+2 passed, 0 failed

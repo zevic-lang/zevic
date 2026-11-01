@@ -1,0 +1,12 @@
+running 6 tests
+  ok    Add adds two numbers
+  ok    Add overflows
+  FAIL  wrong sum
+        input.zev:21: expected 3, got 2
+  FAIL  plain panic
+        Core.zev:338: panic: index 5 is out of range (length 1)
+  ok    options and results
+  FAIL  panics expected but not
+        input.zev:40: expected a panic, but the function returned
+
+3 passed, 3 failed
