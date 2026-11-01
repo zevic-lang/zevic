@@ -13,6 +13,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <math.h>
+#include <setjmp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -71,7 +72,27 @@ void *zevic_alloc_atomic(int64_t size) {
 
 /* ---- panic ---- */
 
+/* While the test runner is working, a panic or a failed assertion jumps back to it instead of ending the program. */
+static jmp_buf *g_jmp;
+static int g_jmp_kind; /* 1: a panic, 2: a failed assertion */
+static char g_fail[2048];
+static const char *g_at_file = "?";
+static int g_at_line;
+
+/* The file name without its directory (what the test report shows). */
+static const char *base_name(const char *path) {
+    const char *b = path;
+    for (const char *c = path; *c; c++)
+        if (*c == '/' || *c == '\\') b = c + 1;
+    return b;
+}
+
 void zevic_panic(const char *msg, int64_t len, const char *file, int32_t line) {
+    if (g_jmp) {
+        snprintf(g_fail, sizeof g_fail, "%s:%d: panic: %.*s", base_name(file), (int)line, (int)len, msg);
+        g_jmp_kind = 1;
+        longjmp(*g_jmp, 1);
+    }
     fflush(stdout);
     fprintf(stderr, "panic: %.*s\n  at %s:%d\n", (int)len, msg, file, (int)line);
     fflush(stderr);
@@ -1075,4 +1096,103 @@ int32_t zevic_proc_code(void) {
 
 void zevic_proc_stderr(zevic_str *out) {
     str_set(out, g_proc_err ? g_proc_err : "", g_proc_err ? g_proc_errlen : 0);
+}
+
+/* ---- tests ---- */
+
+typedef struct {
+    const char *name;
+    int64_t len;
+    void (*fn)(void);
+} test_case;
+
+static test_case *g_tests;
+static int g_ntests, g_captests;
+
+void zevic_test_add(const char *name, int64_t len, void (*fn)(void)) {
+    if (g_ntests == g_captests) {
+        g_captests = g_captests ? g_captests * 2 : 16;
+        g_tests = realloc(g_tests, sizeof(test_case) * (size_t)g_captests);
+        if (!g_tests) exit(101);
+    }
+    g_tests[g_ntests].name = name;
+    g_tests[g_ntests].len = len;
+    g_tests[g_ntests].fn = fn;
+    g_ntests++;
+}
+
+/* Called by the compiler before every call into the module `Zevic.Test`: the line of the caller. */
+void zevic_test_at(const char *file, int32_t line) {
+    g_at_file = file;
+    g_at_line = (int)line;
+}
+
+/* A failed assertion: ends the running test. Outside the test runner it ends the program like a panic. */
+void zevic_test_fail(const char *msg, int64_t len) {
+    if (g_jmp) {
+        snprintf(g_fail, sizeof g_fail, "%s:%d: %.*s", base_name(g_at_file), g_at_line, (int)len, msg);
+        g_jmp_kind = 2;
+        longjmp(*g_jmp, 1);
+    }
+    zevic_panic(msg, len, g_at_file, (int32_t)g_at_line);
+}
+
+/* Runs f and reports whether it panicked (1) or returned (0). A failed assertion inside f is not a panic:
+ * it goes on to the test runner. `f` is a closure: the code pointer and its environment. */
+int32_t zevic_catch(void (*fn)(void *), void *env) {
+    jmp_buf here;
+    jmp_buf *outer = g_jmp;
+    const char *file = g_at_file;
+    int line = g_at_line;
+    g_jmp = &here;
+    if (setjmp(here) == 0) {
+        fn(env);
+        g_jmp = outer;
+        g_at_file = file;
+        g_at_line = line;
+        return 0;
+    }
+    g_jmp = outer;
+    g_at_file = file;
+    g_at_line = line;
+    if (g_jmp_kind == 2 && outer) longjmp(*outer, 1);
+    return 1;
+}
+
+/* Runs the registered tests (the first program argument selects those whose name contains it).
+ * The exit code is 1 when a test failed. */
+int32_t zevic_test_main(void) {
+    const char *filter = g_argc > 1 ? g_argv[1] : NULL;
+    int total = 0;
+    for (int i = 0; i < g_ntests; i++)
+        if (!filter || strstr(g_tests[i].name, filter)) total++;
+    printf("running %d test%s\n", total, total == 1 ? "" : "s");
+    fflush(stdout);
+    int passed = 0, failed = 0;
+    for (int i = 0; i < g_ntests; i++) {
+        test_case *t = &g_tests[i];
+        if (filter && !strstr(t->name, filter)) continue;
+        jmp_buf here;
+        g_jmp = &here;
+        g_jmp_kind = 0;
+        int ok = 1;
+        if (setjmp(here) == 0) {
+            t->fn();
+        } else {
+            ok = 0;
+        }
+        g_jmp = NULL;
+        fflush(stdout);
+        if (ok) {
+            printf("  ok    %s\n", t->name);
+            passed++;
+        } else {
+            printf("  FAIL  %s\n        %s\n", t->name, g_fail);
+            failed++;
+        }
+        fflush(stdout);
+    }
+    printf("\n%d passed, %d failed\n", passed, failed);
+    fflush(stdout);
+    return failed ? 1 : 0;
 }
