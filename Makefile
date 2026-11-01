@@ -3,11 +3,13 @@ CFLAGS  ?= -std=c11 -O1 -g -Wall -Wextra -Wno-unused-parameter -Wno-unused-funct
 SRC     := $(wildcard zevic0/*.c)
 OBJ     := $(patsubst zevic0/%.c,build/obj/%.o,$(SRC))
 BIN     := build/zevic
+PM      := build/zevpm
+PMSRC   := $(wildcard zevpm/*.c) zevic0/util.c
 VERSION := $(shell cat VERSION)
 
 .PHONY: all test clean install
 
-all: $(BIN)
+all: $(BIN) $(PM)
 
 build/obj/%.o: zevic0/%.c $(wildcard zevic0/*.h) VERSION
 	@mkdir -p build/obj
@@ -16,7 +18,11 @@ build/obj/%.o: zevic0/%.c $(wildcard zevic0/*.h) VERSION
 $(BIN): $(OBJ)
 	$(CC) $(CFLAGS) $(OBJ) -o $@
 
-test: $(BIN)
+$(PM): $(PMSRC) $(wildcard zevpm/*.h) zevic0/util.h VERSION
+	@mkdir -p build
+	$(CC) $(CFLAGS) -DZEVPM_VERSION='"$(VERSION)"' $(PMSRC) -o $@
+
+test: $(BIN) $(PM)
 	python3 tests/run.py
 
 clean:
