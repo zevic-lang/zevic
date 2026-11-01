@@ -1,0 +1,170 @@
+module Zevic.Fs
+
+import Zevic.Text
+
+// Files and directories. Everything that can fail returns a `Result`; paths are UTF-8.
+// A missing file gives `ErrorKind.NotFound`, a refused access `ErrorKind.Permission`, anything else `ErrorKind.Io`.
+
+extern "zevic" {
+    fn zevic_fs_failed() -> I32
+    fn zevic_fs_errkind() -> I32
+    fn zevic_fs_errmsg() -> String
+    fn zevic_fs_read_all(path: String) -> String
+    fn zevic_fs_write_all(path: String, data: String, append: I32) -> I32
+    fn zevic_fs_kind(path: String) -> I32
+    fn zevic_fs_remove(path: String) -> I32
+    fn zevic_fs_mkdir(path: String) -> I32
+    fn zevic_fs_list(path: String) -> String
+    fn zevic_fs_open(path: String, mode: I32) -> *CVoid
+    fn zevic_fs_close(h: *CVoid) -> I32
+    fn zevic_fs_file_write(h: *CVoid, data: String) -> I32
+    fn zevic_fs_file_read_line(h: *CVoid) -> String
+    fn zevic_fs_file_line_ok() -> I32
+    fn zevic_fs_file_read_all(h: *CVoid) -> String
+}
+
+// The error for the failure that just happened.
+fn failure(what: String, path: String) -> Error {
+    let k: I32 = zevic_fs_errkind()
+    let kind: ErrorKind = if (k == 0) { ErrorKind.NotFound } else if (k == 1) { ErrorKind.Permission } else { ErrorKind.Io }
+    Error.New(kind, "cannot ${what} \"${path}\": ${zevic_fs_errmsg()}")
+}
+
+// The whole file as text.
+fn ReadAll(path: String) -> Result<String, Error> {
+    let text: String = zevic_fs_read_all(path)
+    if (zevic_fs_failed() != 0) {
+        return Err(failure("read", path))
+    }
+    Ok(text)
+}
+
+// Replaces the file (or creates it) with this text.
+fn WriteAll(path: String, data: String) -> Result<Unit, Error> {
+    if (zevic_fs_write_all(path, data, 0) == 0) {
+        return Err(failure("write", path))
+    }
+    Ok(())
+}
+
+// Adds the text to the end of the file (or creates it).
+fn Append(path: String, data: String) -> Result<Unit, Error> {
+    if (zevic_fs_write_all(path, data, 1) == 0) {
+        return Err(failure("append to", path))
+    }
+    Ok(())
+}
+
+fn Exists(path: String) -> Bool { zevic_fs_kind(path) != 0 }
+fn IsFile(path: String) -> Bool { zevic_fs_kind(path) == 1 }
+fn IsDir(path: String) -> Bool { zevic_fs_kind(path) == 2 }
+
+// Removes a file or an empty directory.
+fn Remove(path: String) -> Result<Unit, Error> {
+    if (zevic_fs_remove(path) == 0) {
+        return Err(failure("remove", path))
+    }
+    Ok(())
+}
+
+fn CreateDir(path: String) -> Result<Unit, Error> {
+    if (zevic_fs_mkdir(path) == 0) {
+        return Err(failure("create the directory", path))
+    }
+    Ok(())
+}
+
+// The names of the entries of a directory, sorted.
+fn List(path: String) -> Result<Array<String>, Error> {
+    let text: String = zevic_fs_list(path)
+    if (zevic_fs_failed() != 0) {
+        return Err(failure("list", path))
+    }
+    mut names: Array<String> = Text.Lines(text)
+    // insertion sort: directories are small
+    mut i: I64 = 1
+    while (i < names.Len()) {
+        let x: String = names[i]
+        mut j: I64 = i - 1
+        while (j >= 0 && names[j] > x) {
+            names[j + 1] = names[j]
+            j -= 1
+        }
+        names[j + 1] = x
+        i += 1
+    }
+    Ok(names)
+}
+
+enum Mode {
+    Read,
+    Write,
+    Append,
+}
+
+// An open file. Close it with `defer file.Close()`.
+class File {
+    handle: *CVoid = Null
+    path: String = ""
+    open: Bool = false
+
+    fn Init(handle: *CVoid, path: String) {
+        this.handle = handle
+        this.path = path
+        this.open = true
+    }
+
+    fn Path() -> String { this.path }
+
+    // The next line without its line ending; None at the end of the file.
+    mut fn ReadLine() -> Option<String> {
+        if (!this.open) { return None }
+        let line: String = zevic_fs_file_read_line(this.handle)
+        if (zevic_fs_file_line_ok() == 0) { None } else { Some(line) }
+    }
+
+    // Everything that is left of the file.
+    mut fn ReadAll() -> Result<String, Error> {
+        if (!this.open) {
+            return Err(Error.New(ErrorKind.Invalid, "the file \"${this.path}\" is closed"))
+        }
+        Ok(zevic_fs_file_read_all(this.handle))
+    }
+
+    mut fn Write(data: String) -> Result<Unit, Error> {
+        if (!this.open) {
+            return Err(Error.New(ErrorKind.Invalid, "the file \"${this.path}\" is closed"))
+        }
+        if (zevic_fs_file_write(this.handle, data) == 0) {
+            return Err(failure("write to", this.path))
+        }
+        Ok(())
+    }
+
+    mut fn WriteLine(data: String) -> Result<Unit, Error> {
+        this.Write(data + "\n")
+    }
+
+    // Closing a file that is already closed does nothing.
+    mut fn Close() -> Result<Unit, Error> {
+        if (!this.open) { return Ok(()) }
+        this.open = false
+        if (zevic_fs_close(this.handle) == 0) {
+            return Err(failure("close", this.path))
+        }
+        Ok(())
+    }
+}
+
+fn Open(path: String, mode: Mode) -> Result<File, Error> {
+    let m: I32 = match (mode) {
+        Mode.Read => 0,
+        Mode.Write => 1,
+        Mode.Append => 2,
+    }
+    let h: *CVoid = zevic_fs_open(path, m)
+    if (h == Null) {
+        return Err(failure("open", path))
+    }
+    Ok(File.New(h, path))
+}
