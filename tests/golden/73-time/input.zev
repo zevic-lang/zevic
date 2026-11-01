@@ -1,0 +1,16 @@
+module Main
+
+import Zevic.Console
+import Zevic.Time
+
+fn Main() {
+    let d: Time.Duration = Time.Duration.FromMillis(1500)
+    Console.Println("${d.Millis()} ms = ${d.Seconds()} s = ${d.Micros()} us")
+    let sum: Time.Duration = d.Add(Time.Duration.FromSeconds(2))
+    Console.Println("sum ${sum.Millis()} diff ${sum.Sub(d).Millis()}")
+    let start: Time.Instant = Time.Now()
+    Time.Sleep(Time.Duration.FromMillis(30))
+    let spent: Time.Duration = start.Elapsed()
+    Console.Println("slept enough: ${spent.Millis() >= 30}")
+    Console.Println("sane wall clock: ${Time.UnixSeconds() > 1700000000}")
+}

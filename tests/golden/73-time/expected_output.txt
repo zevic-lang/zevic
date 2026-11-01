@@ -1,0 +1,4 @@
+1500 ms = 1.5 s = 1500000 us
+sum 3500 diff 2000
+slept enough: true
+sane wall clock: true
