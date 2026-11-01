@@ -15,6 +15,7 @@ static void usage(void) {
     fputs("usage: zevic <file.zev>... [native files] [-o output]\n"
           "\n"
           "  -o <file>          output file\n"
+          "  --test             build the test runner (every `test` block) instead of the program\n"
           "  --emit-ll          write the LLVM IR and stop\n"
           "  --emit-header <f>  also write a C header for the `export \"C\"` functions\n"
           "  -O0 -O1 -O2        optimisation level (default -O1)\n"
@@ -101,6 +102,7 @@ int main(int argc, char **argv) {
     Vec zev_files = {0};
     const char *out = NULL;
     bool emit_ll = false;
+    bool test_mode = false;
     const char *header_path = NULL;
 
     for (int i = 1; i < argc; i++) {
@@ -121,6 +123,8 @@ int main(int argc, char **argv) {
             out = argv[++i];
         } else if (strcmp(a, "--emit-header") == 0 && i + 1 < argc) {
             header_path = argv[++i];
+        } else if (strcmp(a, "--test") == 0) {
+            test_mode = true;
         } else if (strcmp(a, "--emit-ll") == 0) {
             emit_ll = true;
         } else if (strcmp(a, "--keep-ll") == 0) {
@@ -155,6 +159,13 @@ int main(int argc, char **argv) {
             return 1;
         }
     }
+    if (!test_mode) {
+        /* `_test.zev` files only belong to the test build */
+        size_t keep = 0;
+        for (int i = 0; i < zev_files.n; i++)
+            if (!ends_with(zev_files.v[i], "_test.zev")) zev_files.v[keep++] = zev_files.v[i];
+        zev_files.n = (int)keep;
+    }
     if (zev_files.n == 0) {
         usage();
         return 1;
@@ -182,6 +193,7 @@ int main(int argc, char **argv) {
 
     SB ll = {0};
     Gen *g = gen_new(pg);
+    if (test_mode) gen_set_test_mode(g);
     bool ok = zv_error_count == 0 && gen_program(g, &ll);
     if (!ok || zv_error_count) {
         fprintf(stderr, "%d error%s found\n", zv_error_count, zv_error_count == 1 ? "" : "s");
