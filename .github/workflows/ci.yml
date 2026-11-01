@@ -57,11 +57,16 @@ jobs:
       - name: Build zevic
         run: |
           mkdir -p build
-          clang -std=c11 -O2 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function zevic0/*.c -o "build/zevic${{ matrix.exe }}"
+          VERSION="$(cat VERSION)"
+          clang -std=c11 -O2 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -DZEVIC_VERSION="\"$VERSION\"" zevic0/*.c -o "build/zevic${{ matrix.exe }}"
+          clang -std=c11 -O2 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -DZEVPM_VERSION="\"$VERSION\"" zevpm/*.c zevic0/util.c -o "build/zevpm${{ matrix.exe }}"
           "build/zevic${{ matrix.exe }}" --version
+          "build/zevpm${{ matrix.exe }}" --version
 
       - name: Test
-        run: python tests/run.py
+        run: |
+          python tests/run.py
+          python tests/zevpm_test.py
 
       - name: Package
         id: pkg
@@ -69,7 +74,7 @@ jobs:
           VERSION="$(cat VERSION)"
           NAME="zevic-${VERSION}-${{ matrix.name }}"
           mkdir -p "dist/$NAME/bin"
-          cp "build/zevic${{ matrix.exe }}" "dist/$NAME/bin/"
+          cp "build/zevic${{ matrix.exe }}" "build/zevpm${{ matrix.exe }}" "dist/$NAME/bin/"
           cp -r stdlib runtime examples "dist/$NAME/"
           cp LICENSE README.md CHANGELOG.md VERSION "dist/$NAME/"
           cd dist
@@ -88,6 +93,10 @@ jobs:
           cd zevic-*
           ./bin/zevic${{ matrix.exe }} examples/01_hello.zev -o hello${{ matrix.exe }}
           ./hello${{ matrix.exe }}
+          ./bin/zevpm${{ matrix.exe }} new smoke
+          cd smoke
+          ../bin/zevpm${{ matrix.exe }} run
+          ../bin/zevpm${{ matrix.exe }} test
 
       - uses: actions/upload-artifact@v4
         with:
