@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.0
+
+Stage 5: closures and memory.
+
+- lambdas and closures: `(x: I32) => x + n`, `fn(I32) -> I32` types, named functions as values; captured variables are shared (a counter made by `MakeCounter()` keeps its own state); the type of a lambda parameter must be written
+- `defer`, and `params` (a parameter that collects the trailing arguments into an array)
+- `Iterable` gets `Each`, `EachIndexed`, `Map`, `Filter`, `Reduce`, `Find`, `Any`, `All`, `Count`
+- garbage collection: the runtime allocates through the Boehm collector (vendored in `runtime/third_party/bgc`, bdwgc v8.2.12)
+- the driver compiles the runtime and the collector once into a cache (`~/.cache/zevic`, `%LOCALAPPDATA%\zevic\cache` on Windows, or `ZEVIC_CACHE`); the second build of a program takes a fraction of a second
+- C callbacks: a named function or a lambda that captures nothing can be passed to C as a `fn` type (`qsort`)
+- `Handle<T>`: lets C hold a number for a Zevic object (`Handle.New`, `h.Id()`, `Handle.Get<T>(id)`, `h.Release()`); registered objects are kept alive
+- a number literal that must infer a type parameter waits for the other arguments (`a.Reduce(0, f)`)
+
 ## 0.1.0
 
 Stage 4: classes, interfaces and C.
