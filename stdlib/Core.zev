@@ -720,3 +720,34 @@ class SetIter<T: Hashable> : Iterator<T> {
         Some(v)
     }
 }
+
+// ---- Handle ----
+// Lets C keep a number instead of a Zevic object. While a Handle is registered, the collector keeps the
+// object alive. The number goes to C (`h.Id()`) and comes back as `Handle.Get<T>(id)`; `Release` unregisters it.
+// A number that was released may be handed out again: do not use it after `Release`.
+
+extern "zevic" {
+    fn zevic_handle_new(p: *CVoid) -> CULong
+    fn zevic_handle_get(id: CULong) -> *CVoid
+    fn zevic_handle_release(id: CULong)
+}
+
+class Handle<T> {
+    id: CULong = 0
+
+    fn Init(x: T) {
+        this.id = zevic_handle_new(Intrinsics.ObjPtr(x))
+    }
+
+    fn Id() -> CULong { this.id }
+
+    fn Release() {
+        zevic_handle_release(this.id)
+    }
+
+    // The object behind a number that came back from C; None if the number is not registered.
+    static fn Get(id: CULong) -> Option<T> {
+        let p: *CVoid = zevic_handle_get(id)
+        if (p == Null) { None } else { Some(Intrinsics.PtrObj<T>(p)) }
+    }
+}

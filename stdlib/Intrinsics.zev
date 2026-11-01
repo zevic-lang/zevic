@@ -12,3 +12,12 @@ module Zevic.Intrinsics
 
 struct Buf<T> {
 }
+
+// Class references as raw pointers (for `Handle`):
+//
+//   ObjPtr<T>(x: T) -> *CVoid         // the address of a class object
+//   PtrObj<T>(p: *CVoid) -> T         // the class object at that address; T must be a class
+extern "intrinsic" {
+    fn ObjPtr<T>(x: T) -> *CVoid
+    fn PtrObj<T>(p: *CVoid) -> T
+}
