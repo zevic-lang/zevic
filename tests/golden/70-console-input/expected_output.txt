@@ -1,0 +1,8 @@
+name? hello, Ann
+char λ
+char x
+1: []
+2: [line one]
+3: [stop]
+rest has 15 bytes
+end

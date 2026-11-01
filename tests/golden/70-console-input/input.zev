@@ -1,0 +1,35 @@
+module Main
+
+import Zevic.Console
+
+fn Main() {
+    match (Console.Prompt("name? ")) {
+        Some(n) => Console.Println("hello, ${n}"),
+        None => Console.Println("no input"),
+    }
+    match (Console.Read()) {
+        Some(c) => Console.Println("char ${c}"),
+        None => Console.Println("eof"),
+    }
+    match (Console.Read()) {
+        Some(c) => Console.Println("char ${c}"),
+        None => Console.Println("eof"),
+    }
+    mut n: I32 = 0
+    loop {
+        match (Console.ReadLine()) {
+            Some(l) => {
+                n += 1
+                Console.Println("${n}: [${l}]")
+                if (l == "stop") { break }
+            },
+            None => break,
+        }
+    }
+    let rest: String = Console.ReadAll()
+    Console.Println("rest has ${rest.Len()} bytes")
+    match (Console.ReadLine()) {
+        Some(_) => Console.Println("more?"),
+        None => Console.Println("end"),
+    }
+}
