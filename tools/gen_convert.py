@@ -162,4 +162,13 @@ for to in INTS:
     w("}")
     w("")
 
+# Char <-> U32: a Char is a Unicode scalar value (not a surrogate, at most U+10FFFF)
+w("fn U32ToChar(x: U32) -> Result<Char, Error> {")
+w("    if (x > 1114111 || (x >= 55296 && x <= 57343)) {")
+w('        return Err(Error.New(ErrorKind.OutOfRange, "${x} is not a Unicode scalar value"))')
+w("    }")
+w("    Ok(x.ToCharUnchecked())")
+w("}")
+w("")
+
 print("\n".join(out))

@@ -4554,6 +4554,17 @@ static Val gen_prim_method(FnCtx *F, Node *call, Val recv, const char *name, Typ
         }
         return gen_to_string(F, recv, call->pos);
     }
+    /* Char <-> U32 */
+    if (t == ty_char && strcmp(name, "ToU32") == 0 && !nargs) {
+        Val r = {ty_u32, recv.v};
+        return r;
+    }
+    if (t == ty_u32 && strcmp(name, "ToCharUnchecked") == 0 && !nargs) {
+        Val r = {ty_char, recv.v};
+        return r;
+    }
+    if (t == ty_u32 && strcmp(name, "ToChar") == 0 && !nargs)
+        return call_std(F, "Zevic.Convert", "U32ToChar", call->pos, &recv, 1, expect);
     /* numeric conversions: ToI32, ToU8Wrap, ToF64, ... */
     if (name[0] == 'T' && name[1] == 'o' && (ty_is_numeric(t))) {
         char *base = zstrdup(name + 2);

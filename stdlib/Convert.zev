@@ -422,3 +422,10 @@ fn StringToU32(s: String) -> Result<U32, Error> {
     I64ToU32(v)
 }
 
+fn U32ToChar(x: U32) -> Result<Char, Error> {
+    if (x > 1114111 || (x >= 55296 && x <= 57343)) {
+        return Err(Error.New(ErrorKind.OutOfRange, "${x} is not a Unicode scalar value"))
+    }
+    Ok(x.ToCharUnchecked())
+}
+
