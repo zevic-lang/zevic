@@ -235,7 +235,15 @@ static char *command_line(Vec *argv, const char *dir) {
     }
     for (int i = 0; i < argv->n; i++) {
         if (i) sb_putc(&sb, ' ');
-        sb_puts(&sb, quote(argv->v[i]));
+        char *arg = argv->v[i];
+#ifdef _WIN32
+        if (i == 0) { /* cmd.exe reads `./x.exe` as a switch; the program path needs backslashes */
+            arg = zstrdup(arg);
+            for (char *c = arg; *c; c++)
+                if (*c == '/') *c = '\\';
+        }
+#endif
+        sb_puts(&sb, quote(arg));
     }
     return sb_str(&sb);
 }
