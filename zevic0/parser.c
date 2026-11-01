@@ -256,7 +256,9 @@ static Node *parse_lambda(Parser *p) {
         Token *t = expect(p, TK_IDENT, "a parameter name");
         Node *pm = node_new(N_PARAM, t->pos);
         pm->name = t->text;
-        if (accept(p, TK_COLON)) pm->a = parse_type(p); /* may be inferred from the expected type */
+        if (!accept(p, TK_COLON))
+            perr(p, peek(p)->pos, "the type of the lambda parameter `%s` must be written (`(%s: Type) => ...`)", t->text, t->text);
+        pm->a = parse_type(p);
         vec_push(&n->list, pm);
         if (!accept(p, TK_COMMA)) break;
     }
