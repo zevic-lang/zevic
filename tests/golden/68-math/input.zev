@@ -1,0 +1,10 @@
+module Main
+
+import Zevic.Console
+import Zevic.Math
+
+fn Main() {
+    Console.Println("${Math.Sqrt(16.0)} ${Math.Pow(2.0, 10.0)} ${Math.Floor(2.7)} ${Math.Ceil(2.1)} ${Math.Round(2.5)} ${Math.Trunc(-2.7)}")
+    Console.Println("${Math.Sin(0.0)} ${Math.Cos(0.0)} ${Math.Log10(1000.0)} ${Math.Log2(8.0)} ${Math.Exp(0.0)}")
+    Console.Println("${Math.Hypot(3.0, 4.0)} ${Math.Pi > 3.14} ${Math.E < 2.72} ${Math.IsNaN(Math.Sqrt(-1.0))}")
+}
