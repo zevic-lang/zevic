@@ -20,6 +20,8 @@ char *driver_find_home(const char *argv0);
 char *driver_find_clang(const char *cli_cc);
 /* Compile `ll_path` together with the runtime and extra inputs into `out_path`. Returns clang's exit code. */
 int driver_build(const char *clang, const char *home, const char *ll_path, const char *out_path, BuildOpts *o);
+/* Compile `ll_path`, the extra C/C++ inputs, the runtime and the collector into one static library. */
+int driver_build_lib(const char *clang, const char *home, const char *ll_path, const char *out_path, BuildOpts *o);
 /* Remove a file (best effort). */
 void driver_remove(const char *path);
 

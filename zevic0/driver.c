@@ -3,6 +3,9 @@
 
 #include <ctype.h>
 #include <sys/stat.h>
+#ifdef _WIN32
+#include <direct.h>
+#endif
 
 #ifdef _WIN32
 #include <windows.h>
@@ -339,6 +342,103 @@ int driver_build(const char *clang, const char *home, const char *ll_path, const
     sb_puts(&cmd, " -lm");
 #endif
     return run(sb_str(&cmd));
+}
+
+/* clang's directory + `name`, if such a file exists there ("llvm-ar" next to "clang"). */
+static char *sibling_tool(const char *clang, const char *name) {
+    const char *last = NULL;
+    for (const char *c = clang; *c; c++)
+        if (*c == '/' || *c == '\\') last = c;
+    if (!last) return NULL;
+    char *path = zsprintf("%.*s/%s%s", (int)(last - clang), clang, name,
+#ifdef _WIN32
+                          ".exe"
+#else
+                          ""
+#endif
+    );
+    return file_exists(path) ? path : NULL;
+}
+
+static int compile_object(const char *driver, BuildOpts *o, const char *src, const char *obj, bool force_c) {
+    SB cmd = {0};
+    sb_printf(&cmd, "%s -c -w -Wno-override-module %s", quote(driver), o->opt ? o->opt : "-O1");
+    if (o->debug) sb_puts(&cmd, " -g");
+    if (force_c) sb_puts(&cmd, " -x c");
+    sb_printf(&cmd, " %s", quote(src));
+    for (int i = 0; i < o->incdirs.n; i++) sb_printf(&cmd, " -I%s", quote(o->incdirs.v[i]));
+    for (int i = 0; i < o->defines.n; i++) sb_printf(&cmd, " -D%s", quote(o->defines.v[i]));
+    sb_printf(&cmd, " -o %s", quote(obj));
+    return run(sb_str(&cmd));
+}
+
+int driver_build_lib(const char *clang, const char *home, const char *ll_path, const char *out_path, BuildOpts *o) {
+    Vec objs = {0};
+    char *base = zsprintf("%s.objs", out_path);
+    make_dirs(base);
+    /* the program */
+    char *main_obj = zsprintf("%s/zevic.o", base);
+    if (compile_object(clang, o, ll_path, main_obj, false) != 0) return 1;
+    vec_push(&objs, main_obj);
+    /* the C and C++ files */
+    for (int i = 0; i < o->inputs.n; i++) {
+        const char *f = o->inputs.v[i];
+        size_t fl = strlen(f);
+        if (fl > 2 && (strcmp(f + fl - 2, ".o") == 0)) {
+            vec_push(&objs, (void *)f);
+            continue;
+        }
+        if ((fl > 2 && strcmp(f + fl - 2, ".a") == 0) || (fl > 4 && strcmp(f + fl - 4, ".lib") == 0)) {
+            fprintf(stderr, "error: a library (`%s`) cannot be put into another library; pass it with -l when you link\n", f);
+            return 1;
+        }
+        char *obj = zsprintf("%s/native%d.o", base, i);
+        const char *drv = is_cpp_file(f) ? (o->cxx ? o->cxx : sibling_cxx(clang)) : clang;
+        if (compile_object(drv, o, f, obj, false) != 0) return 1;
+        vec_push(&objs, obj);
+    }
+    /* the runtime and the garbage collector travel with the library, so the C side needs nothing else */
+    char *gc_inc = zsprintf("%s/runtime/third_party/bgc/include", home);
+    char *rt_src = zsprintf("%s/runtime/zevic_rt.c", home);
+    char *gc_src = zsprintf("%s/runtime/third_party/bgc/extra/gc.c", home);
+    char *cflags = zsprintf("-O2 -w -I%s", quote(gc_inc));
+    const char *rt_keys[] = {rt_src, zsprintf("%s/runtime/zevic_rt.h", home), NULL};
+    const char *gc_keys[] = {zsprintf("%s/runtime/third_party/bgc/VENDORED.txt", home), NULL};
+    char *rt_obj = cached_object(clang, "zevic_rt", rt_src, rt_keys, cflags);
+    char *gc_obj = cached_object(clang, "bgc", gc_src, gc_keys, cflags);
+    BuildOpts rt_opts = {0};
+    rt_opts.opt = "-O2";
+    vec_push(&rt_opts.incdirs, gc_inc);
+    if (!rt_obj) {
+        rt_obj = zsprintf("%s/zevic_rt.o", base);
+        if (compile_object(clang, &rt_opts, rt_src, rt_obj, true) != 0) return 1;
+    }
+    if (!gc_obj) {
+        gc_obj = zsprintf("%s/bgc.o", base);
+        if (compile_object(clang, &rt_opts, gc_src, gc_obj, true) != 0) return 1;
+    }
+    vec_push(&objs, rt_obj);
+    vec_push(&objs, gc_obj);
+    /* the archive */
+    char *ar = sibling_tool(clang, "llvm-ar");
+    remove(out_path);
+    SB cmd = {0};
+    sb_printf(&cmd, "%s rcs %s", quote(ar ? ar : "ar"), quote(out_path));
+    for (int i = 0; i < objs.n; i++) sb_printf(&cmd, " %s", quote(objs.v[i]));
+    int rc = run(sb_str(&cmd));
+    if (rc != 0) fprintf(stderr, "error: cannot make the archive (`%s` failed; install binutils or LLVM)\n", ar ? "llvm-ar" : "ar");
+    if (!o->keep_ll) {
+        remove(main_obj);
+        for (int i = 0; i < o->inputs.n; i++) remove(zsprintf("%s/native%d.o", base, i));
+        remove(zsprintf("%s/zevic_rt.o", base));
+        remove(zsprintf("%s/bgc.o", base));
+#ifdef _WIN32
+        _rmdir(base);
+#else
+        rmdir(base);
+#endif
+    }
+    return rc;
 }
 
 void driver_remove(const char *path) {
