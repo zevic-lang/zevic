@@ -1,0 +1,3 @@
+counter = 3
+no such handle
+counter after release = 3

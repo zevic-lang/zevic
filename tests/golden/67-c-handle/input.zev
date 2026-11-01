@@ -1,0 +1,34 @@
+module Main
+
+import Zevic.Console
+
+class Counter {
+    n: I32 = 0
+    mut fn Bump() { this.n += 1 }
+}
+
+extern "C" {
+    fn hd_register(id: CULong) -> CVoid
+    fn hd_fire(times: CInt) -> CVoid
+    fn hd_stored() -> CULong
+}
+
+export "C" fn zv_on_event(id: CULong) -> CVoid {
+    match (Handle.Get<Counter>(id)) {
+        Some(c) => { mut cc: Counter = c
+            cc.Bump()
+        },
+        None => Console.Println("no such handle"),
+    }
+}
+
+fn Main() {
+    let counter: Counter = Counter.New()
+    let h: Handle<Counter> = Handle.New(counter)
+    hd_register(h.Id())
+    hd_fire(3.ToCInt())
+    Console.Println("counter = ${counter.n}")
+    h.Release()
+    hd_fire(1.ToCInt())
+    Console.Println("counter after release = ${counter.n}")
+}
