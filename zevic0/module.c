@@ -28,7 +28,20 @@ static Module *module_get(Program *pg, const char *name, bool is_std) {
 }
 
 static void add_decl(Module *m, SourceFile *sf, Node *n, const char *abi) {
-    if (n->kind == D_TEST) return;
+    if (n->kind == D_TEST) {
+        /* a test becomes a function `test.N` that no name can reach; it is only built by `--test` */
+        Node *fn = node_new(D_FN, n->pos);
+        fn->name = zsprintf("test.%d", m->tests.n);
+        fn->b = n->b;
+        Decl *t = zalloc(sizeof *t);
+        t->node = fn;
+        t->mod = m;
+        t->file = sf;
+        t->name = fn->name;
+        t->test_name = n->name;
+        vec_push(&m->tests, t);
+        return;
+    }
     Decl *d = zalloc(sizeof *d);
     d->node = n;
     d->mod = m;

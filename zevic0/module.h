@@ -16,12 +16,14 @@ typedef struct Decl {
     char *abi;      /* for functions declared in an extern block: "C" or "zevic" */
     bool is_pub;
     struct Type *iface; /* a default method taken from this interface type (with its type arguments) */
+    char *test_name;    /* for the hidden function of a `test "name" { }` block: the name */
 } Decl;
 
 struct Module {
     char *name;
     Vec files; /* SourceFile* */
     Dict decls;
+    Vec tests; /* Decl*: one hidden function per `test` block, in source order */
     Vec deps;  /* Module* */
     bool is_std;
     int visit; /* cycle detection */
