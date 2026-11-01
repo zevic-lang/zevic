@@ -1,0 +1,9 @@
+module Main
+import Zevic.Console
+fn Main() {
+    let s: String = "héllo wörld"
+    Console.Println(s.Slice(0, 6))
+    Console.Println(s.Slice(7, s.Len()))
+    Console.Println("[${s.Slice(3, 3)}]")
+    Console.Println(s.Slice(2, 4))
+}

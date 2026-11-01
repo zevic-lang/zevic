@@ -1,0 +1,12 @@
+[a|b||c] (4)
+[no separator] (1)
+[a|b|c] (3)
+[hi there] [x ] [ x]
+1 two 1
+true false true false
+true false
+at 4
+HéLLO, WORLD abc def
+[one|two|three] (3)
+[] (0)
+ababab

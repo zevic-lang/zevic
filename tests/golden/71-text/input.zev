@@ -1,0 +1,27 @@
+module Main
+
+import Zevic.Console
+import Zevic.Text
+
+fn Show(a: Array<String>) {
+    mut out: String = "[" + Text.Join(a, "|") + "] (${a.Len()})"
+    Console.Println(out)
+}
+
+fn Main() {
+    Show(Text.Split("a,b,,c", ","))
+    Show(Text.Split("no separator", ","))
+    Show(Text.Split("a--b--c", "--"))
+    Console.Println("[${Text.Trim("  \t hi there \r\n")}] [${Text.TrimStart("  x ")}] [${Text.TrimEnd(" x  ")}]")
+    Console.Println(Text.Replace("one two one", "one", "1"))
+    Console.Println("${Text.StartsWith("zevic", "zev")} ${Text.StartsWith("zevic", "vic")} ${Text.EndsWith("zevic", "vic")} ${Text.EndsWith("ic", "zevic")}")
+    Console.Println("${Text.Contains("hello", "ell")} ${Text.Contains("hello", "xyz")}")
+    match (Text.IndexOf("hello world", "o w")) {
+        Some(i) => Console.Println("at ${i}"),
+        None => Console.Println("none"),
+    }
+    Console.Println("${Text.ToUpper("Héllo, World")} ${Text.ToLower("ABC Def")}")
+    Show(Text.Lines("one\ntwo\r\nthree\n"))
+    Show(Text.Lines(""))
+    Console.Println("${Text.Repeat("ab", 3)}")
+}
