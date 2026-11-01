@@ -1,0 +1,52 @@
+module Zevic.Time
+
+// Time: a span (`Duration`), a point on a steady clock (`Instant`), the wall clock and `Sleep`.
+
+extern "zevic" {
+    fn zevic_time_monotonic_ns() -> I64
+    fn zevic_time_unix_ns() -> I64
+    fn zevic_sleep_ns(ns: I64)
+}
+
+// A length of time, kept in nanoseconds.
+struct Duration {
+    nanos: I64
+
+    fn Init(nanos: I64) { this.nanos = nanos }
+
+    static fn FromNanos(n: I64) -> Duration { Duration.New(n) }
+    static fn FromMicros(n: I64) -> Duration { Duration.New(n * 1000) }
+    static fn FromMillis(n: I64) -> Duration { Duration.New(n * 1000000) }
+    static fn FromSeconds(n: I64) -> Duration { Duration.New(n * 1000000000) }
+
+    fn Nanos() -> I64 { this.nanos }
+    fn Micros() -> I64 { this.nanos / 1000 }
+    fn Millis() -> I64 { this.nanos / 1000000 }
+    fn Seconds() -> F64 { this.nanos.ToF64() / 1000000000.0 }
+
+    fn Add(other: Duration) -> Duration { Duration.New(this.nanos + other.nanos) }
+    fn Sub(other: Duration) -> Duration { Duration.New(this.nanos - other.nanos) }
+}
+
+// A point on a steady clock. It only goes forward and is meant for measuring how long something took.
+struct Instant {
+    nanos: I64
+
+    fn Init(nanos: I64) { this.nanos = nanos }
+
+    // The time since this instant.
+    fn Elapsed() -> Duration { Duration.New(zevic_time_monotonic_ns() - this.nanos) }
+
+    // The time from `earlier` to this instant.
+    fn Since(earlier: Instant) -> Duration { Duration.New(this.nanos - earlier.nanos) }
+}
+
+fn Now() -> Instant { Instant.New(zevic_time_monotonic_ns()) }
+
+// The wall clock: milliseconds since 1970-01-01 00:00:00 UTC.
+fn UnixMillis() -> I64 { zevic_time_unix_ns() / 1000000 }
+
+// The wall clock: seconds since 1970-01-01 00:00:00 UTC.
+fn UnixSeconds() -> I64 { zevic_time_unix_ns() / 1000000000 }
+
+fn Sleep(d: Duration) { zevic_sleep_ns(d.nanos) }
