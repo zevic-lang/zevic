@@ -507,3 +507,75 @@ void zevic_exit(int32_t code) {
     fflush(stderr);
     exit(code);
 }
+
+/* ---- input ---- */
+
+/* One line without its line ending (\n or \r\n). Whether a line was read (0 at the end of the input) is
+ * answered by zevic_read_line_ok() straight afterwards, because a String result takes the return slot. */
+static int32_t g_read_ok;
+
+int32_t zevic_read_line_ok(void) {
+    return g_read_ok;
+}
+
+void zevic_read_line(zevic_str *out) {
+    g_read_ok = 0;
+    fflush(stdout);
+    int64_t cap = 128, n = 0;
+    char *buf = malloc((size_t)cap);
+    if (!buf) exit(101);
+    int c, got = 0;
+    while ((c = fgetc(stdin)) != EOF) {
+        got = 1;
+        if (c == '\n') break;
+        if (n + 1 >= cap) {
+            cap *= 2;
+            buf = realloc(buf, (size_t)cap);
+            if (!buf) exit(101);
+        }
+        buf[n++] = (char)c;
+    }
+    if (!got) {
+        free(buf);
+        str_set(out, "", 0);
+        return;
+    }
+    if (n > 0 && buf[n - 1] == '\r') n--;
+    str_set(out, buf, n);
+    free(buf);
+    g_read_ok = 1;
+}
+
+/* One UTF-8 character as a code point, or -1 at the end of the input. */
+int32_t zevic_read_char(void) {
+    fflush(stdout);
+    int c = fgetc(stdin);
+    if (c == EOF) return -1;
+    if (c < 0x80) return c;
+    int extra = c >= 0xF0 ? 3 : c >= 0xE0 ? 2 : c >= 0xC0 ? 1 : 0;
+    uint32_t cp = extra == 3 ? (uint32_t)(c & 0x07) : extra == 2 ? (uint32_t)(c & 0x0F) : extra == 1 ? (uint32_t)(c & 0x1F) : 0xFFFD;
+    for (int i = 0; i < extra; i++) {
+        int d = fgetc(stdin);
+        if (d == EOF || (d & 0xC0) != 0x80) return 0xFFFD;
+        cp = (cp << 6) | (uint32_t)(d & 0x3F);
+    }
+    return (int32_t)cp;
+}
+
+void zevic_read_all(zevic_str *out) {
+    fflush(stdout);
+    int64_t cap = 4096, n = 0;
+    char *buf = malloc((size_t)cap);
+    if (!buf) exit(101);
+    size_t r;
+    while ((r = fread(buf + n, 1, (size_t)(cap - n), stdin)) > 0) {
+        n += (int64_t)r;
+        if (n == cap) {
+            cap *= 2;
+            buf = realloc(buf, (size_t)cap);
+            if (!buf) exit(101);
+        }
+    }
+    str_set(out, buf, n);
+    free(buf);
+}
