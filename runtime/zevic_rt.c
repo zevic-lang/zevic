@@ -404,3 +404,51 @@ uint64_t zevic_str_hash(const char *p, int64_t n) {
     }
     return h;
 }
+
+/* ---- handles: a table that lets C hold a number instead of a Zevic object ----
+ * The table lives in memory the collector scans but never frees, so an object stays alive while it is listed. */
+
+static void **g_handles;
+static uint64_t g_handle_n, g_handle_cap;
+static uint64_t *g_handle_free;
+static uint64_t g_handle_nfree, g_handle_freecap;
+
+uint64_t zevic_handle_new(void *obj) {
+    if (g_handle_nfree > 0) {
+        uint64_t id = g_handle_free[--g_handle_nfree];
+        g_handles[id - 1] = obj;
+        return id;
+    }
+    if (g_handle_n == g_handle_cap) {
+        uint64_t nc = g_handle_cap ? g_handle_cap * 2 : 64;
+        void **nt = GC_MALLOC_UNCOLLECTABLE((size_t)nc * sizeof(void *));
+        if (!nt) {
+            fputs("panic: out of memory\n", stderr);
+            exit(101);
+        }
+        if (g_handles) {
+            memcpy(nt, g_handles, (size_t)g_handle_n * sizeof(void *));
+            GC_FREE(g_handles);
+        }
+        g_handles = nt;
+        g_handle_cap = nc;
+    }
+    g_handles[g_handle_n++] = obj;
+    return g_handle_n;
+}
+
+void *zevic_handle_get(uint64_t id) {
+    if (id == 0 || id > g_handle_n) return NULL;
+    return g_handles[id - 1];
+}
+
+void zevic_handle_release(uint64_t id) {
+    if (id == 0 || id > g_handle_n || !g_handles[id - 1]) return;
+    g_handles[id - 1] = NULL;
+    if (g_handle_nfree == g_handle_freecap) {
+        g_handle_freecap = g_handle_freecap ? g_handle_freecap * 2 : 64;
+        g_handle_free = realloc(g_handle_free, (size_t)g_handle_freecap * sizeof(uint64_t));
+        if (!g_handle_free) exit(101);
+    }
+    g_handle_free[g_handle_nfree++] = id;
+}
