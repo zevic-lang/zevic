@@ -24,6 +24,7 @@ $(PM): $(PMSRC) $(wildcard zevpm/*.h) zevic0/util.h VERSION
 
 test: $(BIN) $(PM)
 	python3 tests/run.py
+	python3 tests/zevpm_test.py
 
 clean:
 	rm -rf build
