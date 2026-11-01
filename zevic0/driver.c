@@ -2,6 +2,7 @@
 #include "driver.h"
 
 #include <ctype.h>
+#include <sys/stat.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -172,6 +173,107 @@ char *driver_find_clang(const char *cli_cc) {
     return NULL;
 }
 
+
+/* ---- the runtime object cache ----
+ * The runtime and the garbage collector are C code. They are compiled once into object files that are kept in a
+ * cache directory (keyed by their contents and the compiler), so a build only has to compile and link the program. */
+
+static uint64_t fnv_add(uint64_t h, const void *p, size_t n) {
+    const unsigned char *b = p;
+    for (size_t i = 0; i < n; i++) {
+        h ^= b[i];
+        h *= 1099511628211ULL;
+    }
+    return h;
+}
+
+static bool make_dirs(const char *path) {
+    char *p = zstrdup(path);
+    for (char *c = p + 1; *c; c++) {
+        if (*c == '/' || *c == '\\') {
+            char save = *c;
+            *c = 0;
+            if (!dir_exists(p)) {
+#ifdef _WIN32
+                CreateDirectoryA(p, NULL);
+#else
+                mkdir(p, 0777);
+#endif
+            }
+            *c = save;
+        }
+    }
+    if (!dir_exists(p)) {
+#ifdef _WIN32
+        CreateDirectoryA(p, NULL);
+#else
+        mkdir(p, 0777);
+#endif
+    }
+    return dir_exists(p);
+}
+
+static char *cache_dir(void) {
+    const char *e = getenv("ZEVIC_CACHE");
+    char *dir = NULL;
+    if (e && *e) {
+        dir = zstrdup(e);
+    } else {
+#ifdef _WIN32
+        const char *base = getenv("LOCALAPPDATA");
+        if (base && *base) dir = zsprintf("%s/zevic/cache", base);
+#else
+        const char *xdg = getenv("XDG_CACHE_HOME");
+        const char *home = getenv("HOME");
+        if (xdg && *xdg) dir = zsprintf("%s/zevic", xdg);
+        else if (home && *home) dir = zsprintf("%s/.cache/zevic", home);
+#endif
+    }
+    if (dir && make_dirs(dir)) return dir;
+    return NULL;
+}
+
+/* The path of a cached object for `src`, compiling it first if needed. NULL when it cannot be cached. */
+static char *cached_object(const char *clang, const char *label, const char *src, const char **key_files, const char *cflags) {
+    char *dir = cache_dir();
+    if (!dir) return NULL;
+    uint64_t h = 1469598103934665603ULL;
+    h = fnv_add(h, clang, strlen(clang));
+    h = fnv_add(h, cflags, strlen(cflags));
+    for (int i = 0; key_files[i]; i++) {
+        size_t len = 0;
+        char *text = read_file(key_files[i], &len);
+        if (!text) return NULL;
+        h = fnv_add(h, text, len);
+    }
+    char *obj = zsprintf("%s/%s-%016llx.o", dir, label, (unsigned long long)h);
+    if (file_exists(obj)) return obj;
+    char *tmp = zsprintf("%s.tmp%ld", obj, (long)
+#ifdef _WIN32
+                         GetCurrentProcessId()
+#else
+                         getpid()
+#endif
+    );
+    SB cmd = {0};
+    sb_printf(&cmd, "%s -c -x c %s %s -o %s", quote(clang), cflags, quote(src), quote(tmp));
+    if (run(sb_str(&cmd)) != 0) {
+        remove(tmp);
+        return NULL;
+    }
+    if (rename(tmp, obj) != 0) {
+#ifdef _WIN32
+        /* another build may have won the race */
+        remove(tmp);
+        if (!file_exists(obj)) return NULL;
+#else
+        remove(tmp);
+        return NULL;
+#endif
+    }
+    return obj;
+}
+
 static bool is_cpp_file(const char *f) {
     size_t n = strlen(f);
     return (n > 4 && strcmp(f + n - 4, ".cpp") == 0) || (n > 3 && strcmp(f + n - 3, ".cc") == 0) ||
@@ -207,8 +309,19 @@ int driver_build(const char *clang, const char *home, const char *ll_path, const
     sb_printf(&cmd, " %s -w -Wno-override-module", o->opt ? o->opt : "-O1");
     if (o->debug) sb_puts(&cmd, " -g");
     sb_printf(&cmd, " %s", quote(ll_path));
-    /* the runtime is C even when the driver is clang++ */
-    sb_printf(&cmd, " -x c %s -x none", quote(zsprintf("%s/runtime/zevic_rt.c", home)));
+    /* the runtime and the garbage collector: cached objects, or the sources when there is no cache */
+    char *gc_inc = zsprintf("%s/runtime/third_party/bgc/include", home);
+    char *rt_src = zsprintf("%s/runtime/zevic_rt.c", home);
+    char *gc_src = zsprintf("%s/runtime/third_party/bgc/extra/gc.c", home);
+    char *cflags = zsprintf("-O2 -w -I%s", quote(gc_inc));
+    const char *rt_keys[] = {rt_src, zsprintf("%s/runtime/zevic_rt.h", home), NULL};
+    const char *gc_keys[] = {zsprintf("%s/runtime/third_party/bgc/VENDORED.txt", home), NULL};
+    char *rt_obj = cached_object(clang, "zevic_rt", rt_src, rt_keys, cflags);
+    char *gc_obj = cached_object(clang, "bgc", gc_src, gc_keys, cflags);
+    if (rt_obj) sb_printf(&cmd, " %s", quote(rt_obj));
+    else sb_printf(&cmd, " -x c %s -x none -I%s", quote(rt_src), quote(gc_inc));
+    if (gc_obj) sb_printf(&cmd, " %s", quote(gc_obj));
+    else sb_printf(&cmd, " -x c %s -x none -I%s", quote(gc_src), quote(gc_inc));
     for (int i = 0; i < o->inputs.n; i++) {
         const char *f = o->inputs.v[i];
         size_t fl = strlen(f);
