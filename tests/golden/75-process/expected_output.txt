@@ -1,0 +1,6 @@
+code 0 out [hello two words it's $HOME a;b
+] success true
+code 7 out [to-out
+] err [to-err
+] success false
+code 127

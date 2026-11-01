@@ -1,0 +1,19 @@
+module Main
+
+import Zevic.Console
+import Zevic.Process
+
+fn Main() {
+    match (Process.Run("echo", ["hello", "two words", "it's", "$HOME", "a;b"])) {
+        Ok(o) => Console.Println("code ${o.Code} out [${o.Stdout}] success ${o.Success()}"),
+        Err(e) => Console.Println(e.ToString()),
+    }
+    match (Process.Run("sh", ["-c", "echo to-out; echo to-err 1>&2; exit 7"])) {
+        Ok(o) => Console.Println("code ${o.Code} out [${o.Stdout}] err [${o.Stderr}] success ${o.Success()}"),
+        Err(e) => Console.Println(e.ToString()),
+    }
+    match (Process.Run("zevic-no-such-program", [])) {
+        Ok(o) => Console.Println("code ${o.Code}"),
+        Err(e) => Console.Println(e.ToString()),
+    }
+}
