@@ -22,6 +22,7 @@
 #else
 #include <time.h>
 #include <dirent.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #endif
 #include <sys/stat.h>
@@ -922,4 +923,156 @@ void zevic_fs_file_read_all(zevic_str *out, void *h) {
     }
     str_set(out, buf, len);
     free(buf);
+}
+
+/* ---- processes ----
+ * A command is built with zevic_proc_begin / zevic_proc_arg, then run through the shell with stdout and stderr
+ * redirected to temporary files. Every argument is quoted, so the shell does not interpret it. */
+
+
+static char *g_proc_cmd;
+static int64_t g_proc_len, g_proc_cap;
+static int32_t g_proc_code;
+static int32_t g_proc_failed;
+static char *g_proc_err;
+static int64_t g_proc_errlen;
+
+static void proc_put(const char *p, int64_t n) {
+    if (g_proc_len + n + 1 > g_proc_cap) {
+        g_proc_cap = g_proc_cap ? g_proc_cap * 2 : 256;
+        while (g_proc_cap < g_proc_len + n + 1) g_proc_cap *= 2;
+        g_proc_cmd = realloc(g_proc_cmd, (size_t)g_proc_cap);
+        if (!g_proc_cmd) exit(101);
+    }
+    memcpy(g_proc_cmd + g_proc_len, p, (size_t)n);
+    g_proc_len += n;
+    g_proc_cmd[g_proc_len] = 0;
+}
+
+void zevic_proc_begin(void) {
+    g_proc_len = 0;
+    proc_put("", 0);
+}
+
+void zevic_proc_arg(const char *p, int64_t n) {
+    if (g_proc_len > 0) proc_put(" ", 1);
+#ifdef _WIN32
+    proc_put("\"", 1);
+    int64_t backslashes = 0;
+    for (int64_t i = 0; i < n; i++) {
+        if (p[i] == '\\') {
+            backslashes++;
+            continue;
+        }
+        if (p[i] == '"') {
+            for (int64_t k = 0; k < backslashes; k++) proc_put("\\", 1);
+            proc_put("\\", 1);
+        }
+        backslashes = 0;
+        proc_put(p + i, 1);
+    }
+    for (int64_t k = 0; k < backslashes; k++) proc_put("\\", 1);
+    proc_put("\"", 1);
+#else
+    proc_put("'", 1);
+    for (int64_t i = 0; i < n; i++) {
+        if (p[i] == '\'') proc_put("'\\''", 4);
+        else proc_put(p + i, 1);
+    }
+    proc_put("'", 1);
+#endif
+}
+
+static char *temp_path(void) {
+#ifdef _WIN32
+    char dir[MAX_PATH], name[MAX_PATH];
+    if (!GetTempPathA(MAX_PATH, dir) || !GetTempFileNameA(dir, "zev", 0, name)) return NULL;
+    return strdup(name);
+#else
+    char tmpl[] = "/tmp/zevic-proc-XXXXXX";
+    int fd = mkstemp(tmpl);
+    if (fd < 0) return NULL;
+    close(fd);
+    return strdup(tmpl);
+#endif
+}
+
+static char *slurp(const char *path, int64_t *len) {
+    FILE *f = fopen(path, "rb");
+    *len = 0;
+    char *buf = malloc(1);
+    if (!buf) exit(101);
+    if (!f) return buf;
+    int64_t cap = 1024;
+    buf = realloc(buf, (size_t)cap);
+    size_t r;
+    while ((r = fread(buf + *len, 1, (size_t)(cap - *len), f)) > 0) {
+        *len += (int64_t)r;
+        if (*len == cap) {
+            cap *= 2;
+            buf = realloc(buf, (size_t)cap);
+            if (!buf) exit(101);
+        }
+    }
+    fclose(f);
+    return buf;
+}
+
+/* Runs the command; its standard output is the result. Afterwards zevic_proc_failed() says whether it could not
+ * be run at all, zevic_proc_code() gives the exit code and zevic_proc_stderr() what it wrote to stderr. */
+void zevic_proc_run(zevic_str *out) {
+    fflush(stdout);
+    fflush(stderr);
+    g_proc_failed = 0;
+    g_proc_code = -1;
+    g_proc_errlen = 0;
+    free(g_proc_err);
+    g_proc_err = NULL;
+    char *fo = temp_path(), *fe = temp_path();
+    if (!fo || !fe) {
+        g_proc_failed = 1;
+        str_set(out, "", 0);
+        return;
+    }
+    int64_t base = g_proc_len;
+    proc_put(" >", 2);
+    proc_put(fo, (int64_t)strlen(fo));
+    proc_put(" 2>", 3);
+    proc_put(fe, (int64_t)strlen(fe));
+#ifdef _WIN32
+    /* cmd.exe strips one pair of outer quotes */
+    char *line = malloc((size_t)g_proc_len + 3);
+    sprintf(line, "\"%s\"", g_proc_cmd);
+    int rc = system(line);
+    free(line);
+    g_proc_code = rc;
+#else
+    int rc = system(g_proc_cmd);
+    if (rc == -1) g_proc_failed = 1;
+    else if (WIFEXITED(rc)) g_proc_code = WEXITSTATUS(rc);
+    else g_proc_code = 128 + (WIFSIGNALED(rc) ? WTERMSIG(rc) : 0);
+#endif
+    g_proc_len = base;
+    g_proc_cmd[base] = 0;
+    int64_t n;
+    char *o = slurp(fo, &n);
+    str_set(out, o, n);
+    free(o);
+    g_proc_err = slurp(fe, &g_proc_errlen);
+    remove(fo);
+    remove(fe);
+    free(fo);
+    free(fe);
+}
+
+int32_t zevic_proc_failed(void) {
+    return g_proc_failed;
+}
+
+int32_t zevic_proc_code(void) {
+    return g_proc_code;
+}
+
+void zevic_proc_stderr(zevic_str *out) {
+    str_set(out, g_proc_err ? g_proc_err : "", g_proc_err ? g_proc_errlen : 0);
 }
