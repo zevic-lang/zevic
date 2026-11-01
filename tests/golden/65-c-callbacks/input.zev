@@ -1,0 +1,39 @@
+module Main
+
+import Zevic.Console
+
+extern "C" {
+    fn qsort(base: *CVoid, n: CSizeT, size: CSizeT, cmp: fn(*CVoid, *CVoid) -> CInt) -> CVoid
+}
+
+extern "C" {
+    fn cb_apply(f: fn(CInt) -> CInt, x: CInt) -> CInt
+    fn cb_each(f: fn(CInt) -> Unit, n: CInt) -> CVoid
+}
+
+fn CompareInts(a: *CVoid, b: *CVoid) -> CInt {
+    CompareImpl(a, b)
+}
+
+extern "C" {
+    fn cb_read(p: *CVoid) -> CInt
+}
+
+fn CompareImpl(a: *CVoid, b: *CVoid) -> CInt {
+    let x: CInt = cb_read(a)
+    let y: CInt = cb_read(b)
+    if (x < y) { (-1).ToCInt() } else if (x > y) { 1.ToCInt() } else { 0.ToCInt() }
+}
+
+fn Triple(x: CInt) -> CInt { (x.ToI32() * 3).ToCInt() }
+
+fn Show(i: CInt) -> Unit { Console.Println("tick ${i.ToI32()}") }
+
+fn Main() {
+    mut a: Array<I32> = [5, 2, 9, 1, 7]
+    qsort(a.Ptr(), 5.ToCSizeT(), 4.ToCSizeT(), CompareInts)
+    Console.Println("${a[0]} ${a[1]} ${a[2]} ${a[3]} ${a[4]}")
+    Console.Println("${cb_apply(Triple, 14.ToCInt()).ToI32()}")
+    Console.Println("${cb_apply((x: CInt) => x, 8.ToCInt()).ToI32()}")
+    cb_each(Show, 3.ToCInt())
+}

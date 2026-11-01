@@ -1,0 +1,1 @@
+only a named function, or a lambda that captures nothing, can be passed to C as a callback

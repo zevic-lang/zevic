@@ -1,0 +1,12 @@
+module Main
+
+extern "C" {
+    fn cb_apply(f: fn(CInt) -> CInt, x: CInt) -> CInt
+}
+
+fn Main() {
+    let k: CInt = 2.ToCInt()
+    cb_apply((x: CInt) => x, k)
+    let n: I32 = 5
+    cb_apply((x: CInt) => (n * 2).ToCInt(), k)
+}
