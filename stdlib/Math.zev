@@ -1,0 +1,47 @@
+module Zevic.Math
+
+// Math on F64. Thin wrappers over the C math library.
+
+extern "C" {
+    fn sqrt(x: CDouble) -> CDouble
+    fn sin(x: CDouble) -> CDouble
+    fn cos(x: CDouble) -> CDouble
+    fn tan(x: CDouble) -> CDouble
+    fn asin(x: CDouble) -> CDouble
+    fn acos(x: CDouble) -> CDouble
+    fn atan(x: CDouble) -> CDouble
+    fn atan2(y: CDouble, x: CDouble) -> CDouble
+    fn pow(x: CDouble, y: CDouble) -> CDouble
+    fn log(x: CDouble) -> CDouble
+    fn log2(x: CDouble) -> CDouble
+    fn log10(x: CDouble) -> CDouble
+    fn exp(x: CDouble) -> CDouble
+    fn floor(x: CDouble) -> CDouble
+    fn ceil(x: CDouble) -> CDouble
+    fn round(x: CDouble) -> CDouble
+    fn trunc(x: CDouble) -> CDouble
+    fn hypot(x: CDouble, y: CDouble) -> CDouble
+}
+
+let Pi: F64 = 3.141592653589793
+let E: F64 = 2.718281828459045
+
+fn Sqrt(x: F64) -> F64 { sqrt(x.ToCDouble()).ToF64() }
+fn Sin(x: F64) -> F64 { sin(x.ToCDouble()).ToF64() }
+fn Cos(x: F64) -> F64 { cos(x.ToCDouble()).ToF64() }
+fn Tan(x: F64) -> F64 { tan(x.ToCDouble()).ToF64() }
+fn Asin(x: F64) -> F64 { asin(x.ToCDouble()).ToF64() }
+fn Acos(x: F64) -> F64 { acos(x.ToCDouble()).ToF64() }
+fn Atan(x: F64) -> F64 { atan(x.ToCDouble()).ToF64() }
+fn Atan2(y: F64, x: F64) -> F64 { atan2(y.ToCDouble(), x.ToCDouble()).ToF64() }
+fn Pow(x: F64, y: F64) -> F64 { pow(x.ToCDouble(), y.ToCDouble()).ToF64() }
+fn Log(x: F64) -> F64 { log(x.ToCDouble()).ToF64() }
+fn Log2(x: F64) -> F64 { log2(x.ToCDouble()).ToF64() }
+fn Log10(x: F64) -> F64 { log10(x.ToCDouble()).ToF64() }
+fn Exp(x: F64) -> F64 { exp(x.ToCDouble()).ToF64() }
+fn Floor(x: F64) -> F64 { floor(x.ToCDouble()).ToF64() }
+fn Ceil(x: F64) -> F64 { ceil(x.ToCDouble()).ToF64() }
+fn Round(x: F64) -> F64 { round(x.ToCDouble()).ToF64() }
+fn Trunc(x: F64) -> F64 { trunc(x.ToCDouble()).ToF64() }
+fn Hypot(x: F64, y: F64) -> F64 { hypot(x.ToCDouble(), y.ToCDouble()).ToF64() }
+fn IsNaN(x: F64) -> Bool { x != x }
