@@ -1,0 +1,15 @@
+module Main
+
+import Zevic.Console
+import Zevic.Test
+
+fn Double(x: I32) -> I32 { x * 2 }
+
+fn Main() {
+    Console.Println("${Double(21)}")
+}
+
+// not built in a normal build, so nothing here is even checked
+test "never built" {
+    Test.Equal(NoSuchFunction(), 1)
+}

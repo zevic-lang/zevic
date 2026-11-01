@@ -1,0 +1,16 @@
+module Main
+
+import Zevic.Console
+
+fn secret(x: I32) -> I32 { x + 100 }
+
+struct Counter {
+    n: I32
+
+    fn Init() { this.n = 0 }
+    mut fn Bump() { this.n = this.n + 1 }
+}
+
+fn Main() {
+    Console.Println("main")
+}

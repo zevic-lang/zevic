@@ -1,0 +1,20 @@
+module Main
+
+import Zevic.Test
+
+test "private function is visible" {
+    Test.Equal(secret(1), 101)
+}
+
+test "struct with a mutating method" {
+    mut c: Counter = Counter.New()
+    c.Bump()
+    c.Bump()
+    Test.Equal(c.n, 2)
+}
+
+test "strings and chars" {
+    Test.Equal("ab" + "c", "abc")
+    Test.NotEqual('a', 'b')
+    Test.Equal(1.5, 1.5)
+}

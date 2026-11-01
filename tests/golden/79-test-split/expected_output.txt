@@ -1,0 +1,6 @@
+running 3 tests
+  ok    private function is visible
+  ok    struct with a mutating method
+  ok    strings and chars
+
+3 passed, 0 failed

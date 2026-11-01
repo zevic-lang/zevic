@@ -1,0 +1,7 @@
+module Main
+
+import Zevic.Test
+
+test "also never built" {
+    Test.Equal(undefinedName, 1)
+}
