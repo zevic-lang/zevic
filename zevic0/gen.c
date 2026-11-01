@@ -4018,15 +4018,26 @@ static Val gen_call_decl(FnCtx *F, Node *call, Decl *d, Type *self, Vec *explici
     }
     Vec vals = {0};
     bool never = false;
-    for (int i = 0; i < nparams; i++) {
-        Node *pn = fn->list.v[i];
-        Type *pexp = NULL;
-        if (!syntax_uses_unbound(pn->a, fn, env)) pexp = resolve_type(g, d->file, env, pn->a);
-        Val *v = zalloc(sizeof *v);
-        *v = gen_expr(F, call->list.v[i], pexp);
-        if (v->t == ty_never) never = true;
-        else if (!pexp) unify(pn->a, v->t, fn, env);
-        vec_push(&vals, v);
+    for (int i = 0; i < nparams; i++) vec_push(&vals, zalloc(sizeof(Val)));
+    /* a bare number literal for a parameter whose type is still unknown (`Reduce(0, f)`) waits until the other
+     * arguments have fixed the type parameters; it has no side effects, so the order does not matter */
+    bool *postponed = zalloc((size_t)(nparams + 1));
+    for (int pass = 0; pass < 2; pass++) {
+        for (int i = 0; i < nparams; i++) {
+            Node *pn = fn->list.v[i];
+            Node *an = call->list.v[i];
+            if (pass == 0 && syntax_uses_unbound(pn->a, fn, env) && is_untyped_lit(an)) {
+                postponed[i] = true;
+                continue;
+            }
+            if (pass == 1 && !postponed[i]) continue;
+            Type *pexp = NULL;
+            if (!syntax_uses_unbound(pn->a, fn, env)) pexp = resolve_type(g, d->file, env, pn->a);
+            Val *v = vals.v[i];
+            *v = gen_expr(F, an, pexp);
+            if (v->t == ty_never) never = true;
+            else if (!pexp) unify(pn->a, v->t, fn, env);
+        }
     }
     if (never) return never_val(expect);
     Vec targs = {0};
