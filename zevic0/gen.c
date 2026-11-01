@@ -5140,6 +5140,40 @@ static Val gen_lambda(FnCtx *F, Node *n, Type *expect) {
     return res;
 }
 
+/* Intrinsics.ObjPtr(x) and Intrinsics.PtrObj<T>(p): a class reference and its address are the same bits. */
+static Val gen_obj_ptr(FnCtx *F, Node *call, Decl *d, Node *last) {
+    bool to_ptr = strcmp(d->name, "ObjPtr") == 0;
+    if (call->list.n != 1) {
+        diag_error(call->pos, "`%s` takes one argument", d->name);
+        return err_val();
+    }
+    Type *voidp = ty_ptr(ty_c_by_name("CVoid"));
+    if (to_ptr) {
+        Val x = gen_expr(F, call->list.v[0], NULL);
+        if (x.t == ty_never || is_err(x.t)) return x.t == ty_never ? x : err_val();
+        if (x.t->k != T_CLASS) {
+            diag_error(call->pos, "`ObjPtr` needs a class value, found `%s`", x.t->name);
+            return err_val();
+        }
+        Val r = {voidp, x.v};
+        return r;
+    }
+    Val p = gen_expr(F, call->list.v[0], voidp);
+    p = coerce(F, ((Node *)call->list.v[0])->pos, p, voidp, "the argument of `PtrObj`");
+    if (p.t == ty_never || is_err(p.t)) return p.t == ty_never ? p : err_val();
+    Type *t = last->list2.n == 1 ? resolve_type(F->g, F->file, F->env, last->list2.v[0]) : NULL;
+    if (!t || is_err(t)) {
+        if (!t) diag_error(call->pos, "`PtrObj` needs its type: `PtrObj<T>(p)`");
+        return err_val();
+    }
+    if (t->k != T_CLASS) {
+        diag_error(call->pos, "`PtrObj` can only produce a class, not `%s`", t->name);
+        return err_val();
+    }
+    Val r = {t, p.v};
+    return r;
+}
+
 static Val gen_call(FnCtx *F, Node *n, Type *expect) {
     Node *callee = n->a;
     if (callee->kind == N_IDENT) {
@@ -5166,6 +5200,16 @@ static Val gen_call(FnCtx *F, Node *n, Type *expect) {
                 const char *member = segs.v[used];
                 Node *tnode = nodes.v[used - 1];
                 Type *t = (strcmp(head, "Self") == 0) ? F->env->self : static_type(F, d, tnode, expect);
+                Node *lastn = nodes.v[nodes.n - 1];
+                if (!t && strcmp(d->name, "Handle") == 0 && d->mod->is_std && strcmp(member, "Get") == 0 && lastn->list2.n == 1) {
+                    /* Handle.Get<T>(id): the type argument written after `Get` is the class's */
+                    Vec targs = {0};
+                    vec_push(&targs, resolve_type(F->g, F->file, F->env, lastn->list2.v[0]));
+                    t = instantiate(F->g, d, targs, n->pos);
+                    Node *gfn = find_member_fn(t, "Get");
+                    if (is_err(t) || !gfn) return err_val();
+                    return gen_call_decl(F, n, method_decl(t, gfn), t, NULL, expect, NULL);
+                }
                 if (d->node->kind == D_ENUM && find_variant_node(d->node, member))
                     return gen_variant(F, n, n->pos, d, t, member, expect);
                 if (strcmp(member, "New") == 0) {
@@ -5199,6 +5243,7 @@ static Val gen_call(FnCtx *F, Node *n, Type *expect) {
                 if (d->abi && strcmp(d->abi, "intrinsic") == 0) {
                     if (strcmp(d->name, "Printf") == 0) return gen_printf(F, n, false);
                     if (strcmp(d->name, "Eprintf") == 0) return gen_printf(F, n, true);
+                    if (strcmp(d->name, "ObjPtr") == 0 || strcmp(d->name, "PtrObj") == 0) return gen_obj_ptr(F, n, d, last);
                     diag_error(n->pos, "unknown intrinsic `%s`", d->name);
                     return err_val();
                 }
