@@ -1,0 +1,132 @@
+module Zevic.Text
+
+// String operations. Strings are UTF-8 and positions are byte positions; a position that splits a
+// character makes `Slice` panic. Case conversion handles ASCII letters only.
+
+extern "zevic" {
+    fn zevic_str_index(s: String, q: String, from: I64) -> I64
+    fn zevic_str_upper(s: String) -> String
+    fn zevic_str_lower(s: String) -> String
+}
+
+// The byte position of the first `sub` in `s`; None if there is none.
+fn IndexOf(s: String, sub: String) -> Option<I64> {
+    let i: I64 = zevic_str_index(s, sub, 0)
+    if (i < 0) { None } else { Some(i) }
+}
+
+// Like IndexOf, but starts looking at byte `from`.
+fn IndexFrom(s: String, sub: String, from: I64) -> Option<I64> {
+    let i: I64 = zevic_str_index(s, sub, from)
+    if (i < 0) { None } else { Some(i) }
+}
+
+fn Contains(s: String, sub: String) -> Bool { zevic_str_index(s, sub, 0) >= 0 }
+
+fn StartsWith(s: String, prefix: String) -> Bool {
+    let n: I64 = prefix.Len()
+    n <= s.Len() && s.Slice(0, n) == prefix
+}
+
+fn EndsWith(s: String, suffix: String) -> Bool {
+    let n: I64 = suffix.Len()
+    let m: I64 = s.Len()
+    n <= m && s.Slice(m - n, m) == suffix
+}
+
+// The pieces between the separators. "a,b,,c" split by "," is ["a", "b", "", "c"].
+fn Split(s: String, sep: String) -> Array<String> {
+    if (sep.IsEmpty()) {
+        Panic("Text.Split: the separator is empty")
+    }
+    mut out: Array<String> = []
+    mut start: I64 = 0
+    loop {
+        let i: I64 = zevic_str_index(s, sep, start)
+        if (i < 0) {
+            out.Push(s.Slice(start, s.Len()))
+            break
+        }
+        out.Push(s.Slice(start, i))
+        start = i + sep.Len()
+    }
+    out
+}
+
+fn Join(parts: Array<String>, sep: String) -> String {
+    mut out: String = ""
+    mut first: Bool = true
+    for (p in parts) {
+        if (!first) { out = out + sep }
+        out = out + p
+        first = false
+    }
+    out
+}
+
+fn isSpace(b: U8) -> Bool {
+    b == b' ' || b == b'\t' || b == b'\n' || b == b'\r'
+}
+
+fn TrimStart(s: String) -> String {
+    mut i: I64 = 0
+    let n: I64 = s.Len()
+    while (i < n && isSpace(s.ByteAt(i))) { i += 1 }
+    s.Slice(i, n)
+}
+
+fn TrimEnd(s: String) -> String {
+    mut j: I64 = s.Len()
+    while (j > 0 && isSpace(s.ByteAt(j - 1))) { j -= 1 }
+    s.Slice(0, j)
+}
+
+// Removes spaces, tabs and line breaks at both ends.
+fn Trim(s: String) -> String { TrimEnd(TrimStart(s)) }
+
+// Replaces every `from` with `to`. An empty `from` changes nothing.
+fn Replace(s: String, from: String, to: String) -> String {
+    if (from.IsEmpty()) { return s }
+    mut out: String = ""
+    mut start: I64 = 0
+    loop {
+        let i: I64 = zevic_str_index(s, from, start)
+        if (i < 0) {
+            out = out + s.Slice(start, s.Len())
+            break
+        }
+        out = out + s.Slice(start, i) + to
+        start = i + from.Len()
+    }
+    out
+}
+
+fn ToUpper(s: String) -> String { zevic_str_upper(s) }
+fn ToLower(s: String) -> String { zevic_str_lower(s) }
+
+// The lines of a text, without their line endings (\n or \r\n). A final line break does not add an empty line.
+fn Lines(s: String) -> Array<String> {
+    if (s.IsEmpty()) {
+        let none: Array<String> = []
+        return none
+    }
+    mut out: Array<String> = Split(s, "\n")
+    if (out[out.Len() - 1].IsEmpty()) { out.Pop() }
+    mut i: I64 = 0
+    while (i < out.Len()) {
+        let l: String = out[i]
+        if (l.Len() > 0 && l.ByteAt(l.Len() - 1) == b'\r') { out[i] = l.Slice(0, l.Len() - 1) }
+        i += 1
+    }
+    out
+}
+
+fn Repeat(s: String, n: I64) -> String {
+    mut out: String = ""
+    mut i: I64 = 0
+    while (i < n) {
+        out = out + s
+        i += 1
+    }
+    out
+}
