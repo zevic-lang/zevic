@@ -12,6 +12,8 @@ Gen *gen_new(Program *pg);
 bool gen_program(Gen *g, SB *out);
 /* Build the test runner (every `test` block) instead of the program's `Main`. */
 void gen_set_test_mode(Gen *g);
+/* Build a library: there is no `Main`, and the exports are the interface. */
+void gen_set_lib_mode(Gen *g);
 /* The C header for the `export \"C\"` functions (call after gen_program succeeded). */
 void gen_header(Gen *g, const char *guard, SB *out);
 
