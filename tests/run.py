@@ -6,6 +6,7 @@ Each directory under tests/golden holds:
   args.txt               extra zevic options, e.g. -DNAME=1 -I{dir}/inc (optional; {tmp} is a scratch directory)
   expected_output.txt    exact stdout of the program        (run tests)
   expected_exit_code     exit code of the program, default 0 (run tests)
+  run_args.txt           command line arguments for the program (optional)
   expected_error.txt     lines that must appear in the compiler's stderr (compile-error tests;
                          the compiler must exit with code 1)
 """
@@ -54,7 +55,8 @@ def run_test(d):
             return name, True, ""
         if c.returncode != 0:
             return name, False, f"compilation failed (exit {c.returncode})\n{c.stderr}"
-        p = subprocess.run([exe], capture_output=True, text=True, encoding="utf-8",
+        run_args = (read(os.path.join(d, "run_args.txt")) or "").split()
+        p = subprocess.run([exe] + run_args, capture_output=True, text=True, encoding="utf-8",
                            input=read(os.path.join(d, "input.txt"), ""))
         want_out = read(os.path.join(d, "expected_output.txt"), "")
         want_code = int((read(os.path.join(d, "expected_exit_code"), "0") or "0").strip())
