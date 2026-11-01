@@ -1,0 +1,2 @@
+total = 22888890
+kept = 4 first = item 0 last = item 1500000

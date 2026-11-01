@@ -1,0 +1,21 @@
+module Main
+
+import Zevic.Console
+
+class Node {
+    next: Option<Node> = None
+    payload: String = ""
+}
+
+fn Main() {
+    mut keep: Array<String> = []
+    mut total: I64 = 0
+    for (i in 0..2000000) {
+        let n: Node = Node.New()
+        let s: String = "item ${i}"
+        total += s.Len()
+        if (i % 500000 == 0) { keep.Push(s) }
+    }
+    Console.Println("total = ${total}")
+    Console.Println("kept = ${keep.Len()} first = ${keep[0]} last = ${keep[3]}")
+}
