@@ -1,0 +1,23 @@
+module Main
+
+import Zevic.Console
+import Zevic.Env
+
+fn Main() {
+    match (Env.Get("ZEVIC_TEST_VAR")) {
+        Some(v) => Console.Println("var = ${v}"),
+        None => Console.Println("var not set"),
+    }
+    match (Env.Set("ZEVIC_TEST_NEW", "hello")) {
+        Ok(_) => {},
+        Err(e) => Console.Println(e.ToString()),
+    }
+    Console.Println("${Env.Get("ZEVIC_TEST_NEW").UnwrapOr("?")}")
+    let args: Array<String> = Env.RawArgs()
+    Console.Println("args = ${args.Len()}")
+    for (a in args) {
+        Console.Println("arg ${a}")
+    }
+    Console.Println("exiting")
+    Env.Exit(3)
+}

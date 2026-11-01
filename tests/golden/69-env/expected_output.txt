@@ -1,0 +1,4 @@
+var not set
+hello
+args = 0
+exiting
