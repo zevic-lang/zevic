@@ -19,6 +19,8 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#else
+#include <time.h>
 #endif
 
 static int g_argc;
@@ -619,4 +621,43 @@ void zevic_str_lower(zevic_str *out, const char *p, int64_t n) {
     b[n] = 0;
     out->p = b;
     out->n = n;
+}
+
+/* ---- time ---- */
+
+int64_t zevic_time_monotonic_ns(void) {
+#ifdef _WIN32
+    LARGE_INTEGER f, c;
+    QueryPerformanceFrequency(&f);
+    QueryPerformanceCounter(&c);
+    return (int64_t)((double)c.QuadPart * 1e9 / (double)f.QuadPart);
+#else
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (int64_t)ts.tv_sec * 1000000000LL + ts.tv_nsec;
+#endif
+}
+
+int64_t zevic_time_unix_ns(void) {
+#ifdef _WIN32
+    FILETIME ft;
+    GetSystemTimeAsFileTime(&ft);
+    uint64_t t = ((uint64_t)ft.dwHighDateTime << 32) | ft.dwLowDateTime; /* 100 ns since 1601 */
+    return (int64_t)((t - 116444736000000000ULL) * 100ULL);
+#else
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    return (int64_t)ts.tv_sec * 1000000000LL + ts.tv_nsec;
+#endif
+}
+
+void zevic_sleep_ns(int64_t ns) {
+    if (ns <= 0) return;
+    fflush(stdout);
+#ifdef _WIN32
+    Sleep((DWORD)((ns + 999999) / 1000000));
+#else
+    struct timespec ts = {(time_t)(ns / 1000000000LL), (long)(ns % 1000000000LL)};
+    while (nanosleep(&ts, &ts) != 0) {}
+#endif
 }
