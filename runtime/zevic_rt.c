@@ -579,3 +579,44 @@ void zevic_read_all(zevic_str *out) {
     str_set(out, buf, n);
     free(buf);
 }
+
+/* ---- text helpers ---- */
+
+/* Is [from, to) inside the string and on character boundaries? */
+int32_t zevic_str_slice_ok(const char *p, int64_t n, int64_t from, int64_t to) {
+    if (from < 0 || to < from || to > n) return 0;
+    if (from < n && ((unsigned char)p[from] & 0xC0) == 0x80) return 0;
+    if (to < n && ((unsigned char)p[to] & 0xC0) == 0x80) return 0;
+    return 1;
+}
+
+void zevic_str_slice(zevic_str *out, const char *p, int64_t n, int64_t from, int64_t to) {
+    (void)n;
+    str_set(out, p + from, to - from);
+}
+
+/* Byte position of the first occurrence of q in p at or after `from`, or -1. */
+int64_t zevic_str_index(const char *p, int64_t n, const char *q, int64_t m, int64_t from) {
+    if (from < 0) from = 0;
+    if (m == 0) return from <= n ? from : -1;
+    for (int64_t i = from; i + m <= n; i++)
+        if (p[i] == q[0] && memcmp(p + i, q, (size_t)m) == 0) return i;
+    return -1;
+}
+
+/* ASCII case conversion: letters outside ASCII are left as they are. */
+void zevic_str_upper(zevic_str *out, const char *p, int64_t n) {
+    char *b = zevic_alloc_atomic(n + 1);
+    for (int64_t i = 0; i < n; i++) b[i] = (p[i] >= 'a' && p[i] <= 'z') ? (char)(p[i] - 32) : p[i];
+    b[n] = 0;
+    out->p = b;
+    out->n = n;
+}
+
+void zevic_str_lower(zevic_str *out, const char *p, int64_t n) {
+    char *b = zevic_alloc_atomic(n + 1);
+    for (int64_t i = 0; i < n; i++) b[i] = (p[i] >= 'A' && p[i] <= 'Z') ? (char)(p[i] + 32) : p[i];
+    b[n] = 0;
+    out->p = b;
+    out->n = n;
+}
