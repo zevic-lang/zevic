@@ -8,6 +8,8 @@
  */
 #include "zevic_rt.h"
 
+#include "gc.h"
+
 #include <ctype.h>
 #include <errno.h>
 #include <math.h>
@@ -23,6 +25,7 @@ static int g_argc;
 static char **g_argv;
 
 void zevic_init(int argc, char **argv) {
+    GC_INIT();
     g_argc = argc;
     g_argv = argv;
 #ifdef _WIN32
@@ -34,7 +37,7 @@ void zevic_init(int argc, char **argv) {
 
 void *zevic_alloc(int64_t size) {
     if (size <= 0) size = 1;
-    void *p = calloc(1, (size_t)size);
+    void *p = GC_MALLOC((size_t)size); /* cleared, scanned for pointers */
     if (!p) {
         fputs("panic: out of memory\n", stderr);
         exit(101);
@@ -42,8 +45,15 @@ void *zevic_alloc(int64_t size) {
     return p;
 }
 
+/* Memory that holds no pointers (string bytes): the collector does not scan it. Not cleared. */
 void *zevic_alloc_atomic(int64_t size) {
-    return zevic_alloc(size);
+    if (size <= 0) size = 1;
+    void *p = GC_MALLOC_ATOMIC((size_t)size);
+    if (!p) {
+        fputs("panic: out of memory\n", stderr);
+        exit(101);
+    }
+    return p;
 }
 
 /* ---- panic ---- */

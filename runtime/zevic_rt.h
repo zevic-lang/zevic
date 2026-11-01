@@ -11,7 +11,7 @@ typedef struct {
     int64_t n;
 } zevic_str;
 
-/* Memory. Stages 1-4: calloc and never free. Stage 5 swaps these for Boehm GC. */
+/* Memory: the Boehm collector (runtime/third_party/bgc). Everything allocated here is collected. */
 void *zevic_alloc(int64_t size);
 void *zevic_alloc_atomic(int64_t size);
 
