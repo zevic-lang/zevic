@@ -1,0 +1,74 @@
+module Zevic.Test
+
+// Assertions for `test "name" { ... }` blocks. A failed assertion ends the test, names the file and line of
+// the call, and the runner goes on with the next test.
+
+extern "zevic" {
+    fn zevic_test_fail(msg: String)
+    fn zevic_catch(f: fn() -> Unit) -> I32
+}
+
+// Fails the test at once.
+fn Fail(msg: String) {
+    zevic_test_fail(msg)
+}
+
+// `actual` and `expected` must be equal. Both values are shown when they are not.
+fn Equal<T: Equatable>(actual: T, expected: T) {
+    if (actual != expected) {
+        zevic_test_fail("expected ${expected}, got ${actual}")
+    }
+}
+
+fn NotEqual<T: Equatable>(a: T, b: T) {
+    if (a == b) {
+        zevic_test_fail("expected two different values, both are ${a}")
+    }
+}
+
+fn True(cond: Bool) {
+    if (!cond) {
+        zevic_test_fail("expected true, got false")
+    }
+}
+
+fn False(cond: Bool) {
+    if (cond) {
+        zevic_test_fail("expected false, got true")
+    }
+}
+
+fn Some<T>(o: Option<T>) {
+    match (o) {
+        Some(_) => {},
+        None => zevic_test_fail("expected Some, got None"),
+    }
+}
+
+fn None<T>(o: Option<T>) {
+    match (o) {
+        Some(_) => zevic_test_fail("expected None, got Some"),
+        None => {},
+    }
+}
+
+fn Ok<T, E>(r: Result<T, E>) {
+    match (r) {
+        Ok(_) => {},
+        Err(_) => zevic_test_fail("expected Ok, got Err"),
+    }
+}
+
+fn Err<T, E>(r: Result<T, E>) {
+    match (r) {
+        Ok(_) => zevic_test_fail("expected Err, got Ok"),
+        Err(_) => {},
+    }
+}
+
+// `f` must panic.
+fn Panics(f: fn() -> Unit) {
+    if (zevic_catch(f) == 0) {
+        zevic_test_fail("expected a panic, but the function returned")
+    }
+}
