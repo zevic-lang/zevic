@@ -16,6 +16,7 @@ static void usage(void) {
           "\n"
           "  -o <file>          output file\n"
           "  --test             build the test runner (every `test` block) instead of the program\n"
+          "  --lib              build a static library (with --emit-header for the C header)\n"
           "  --emit-ll          write the LLVM IR and stop\n"
           "  --emit-header <f>  also write a C header for the `export \"C\"` functions\n"
           "  -O0 -O1 -O2        optimisation level (default -O1)\n"
@@ -97,12 +98,20 @@ static void dump_ast(const char *path) {
     if (!zv_error_count) ast_dump(sf, stdout);
 }
 
+static const char *path_base_of(const char *path) {
+    const char *b = path;
+    for (const char *c = path; *c; c++)
+        if (*c == '/' || *c == '\\') b = c + 1;
+    return b;
+}
+
 int main(int argc, char **argv) {
     BuildOpts opts = {0};
     Vec zev_files = {0};
     const char *out = NULL;
     bool emit_ll = false;
     bool test_mode = false;
+    bool lib_mode = false;
     const char *header_path = NULL;
 
     for (int i = 1; i < argc; i++) {
@@ -123,6 +132,8 @@ int main(int argc, char **argv) {
             out = argv[++i];
         } else if (strcmp(a, "--emit-header") == 0 && i + 1 < argc) {
             header_path = argv[++i];
+        } else if (strcmp(a, "--lib") == 0) {
+            lib_mode = true;
         } else if (strcmp(a, "--test") == 0) {
             test_mode = true;
         } else if (strcmp(a, "--emit-ll") == 0) {
@@ -194,6 +205,7 @@ int main(int argc, char **argv) {
     SB ll = {0};
     Gen *g = gen_new(pg);
     if (test_mode) gen_set_test_mode(g);
+    if (lib_mode) gen_set_lib_mode(g);
     bool ok = zv_error_count == 0 && gen_program(g, &ll);
     if (!ok || zv_error_count) {
         fprintf(stderr, "%d error%s found\n", zv_error_count, zv_error_count == 1 ? "" : "s");
@@ -203,7 +215,10 @@ int main(int argc, char **argv) {
     char *base = base_no_ext(zev_files.v[0]);
     if (header_path) {
         SB h = {0};
-        gen_header(g, "ZEVIC_EXPORTS_H", &h);
+        SB guard = {0};
+        for (const char *c = path_base_of(header_path); *c; c++)
+            sb_putc(&guard, (*c >= 'a' && *c <= 'z') ? (char)(*c - 32) : ((*c >= 'A' && *c <= 'Z') || (*c >= '0' && *c <= '9')) ? *c : '_');
+        gen_header(g, zsprintf("ZEVIC_%s", sb_str(&guard)), &h);
         FILE *hf = fopen(header_path, "wb");
         if (!hf) {
             fprintf(stderr, "error: cannot write `%s`\n", header_path);
@@ -240,7 +255,7 @@ int main(int argc, char **argv) {
     }
     fwrite(ll.p, 1, ll.len, f);
     fclose(f);
-    int rc = driver_build(clang, home, ll_path, exe, &opts);
+    int rc = lib_mode ? driver_build_lib(clang, home, ll_path, exe, &opts) : driver_build(clang, home, ll_path, exe, &opts);
     if (!opts.keep_ll) driver_remove(ll_path);
     if (rc != 0) {
         fprintf(stderr, "error: clang failed (exit code %d) while building `%s`\n", rc, exe);
