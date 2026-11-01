@@ -38,6 +38,7 @@ struct Gen {
     Dict insts;
     Vec worklist;
     Dict thunks;    /* thunk symbol -> the function it forwards to */
+    Dict noenv;     /* "fn:%tN" -> symbol of a lambda that captures nothing (so it can go to C as a callback) */
     int nlambda;
     Dict defaults;  /* Decl* of default methods, per implementing type */
     int nvt;        /* method table counter */
@@ -181,6 +182,7 @@ static void declare(Gen *g, const char *name, const char *line) {
  * ========================================================================= */
 
 static Type *resolve_type(Gen *g, SourceFile *f, Env *env, Node *te);
+static Pos g_call_pos; /* the call being generated, for errors found while emitting it */
 static bool g_allow_selfy_iface; /* set while resolving the interfaces a type implements or extends, and constraints */
 
 static bool syntax_mentions_self(Node *te) {
@@ -398,6 +400,13 @@ static Env *make_env(Decl *d, Type *self, Vec *fn_targs) {
 
 /* Arguments and results of `extern "C"` functions are C types or pointers. */
 static bool is_c_value_type(Type *t) {
+    if (t->k == T_FN) {
+        /* a callback: C types and pointers only */
+        for (int i = 0; i < t->args.n; i++)
+            if (!is_c_value_type(t->args.v[i])) return false;
+        Type *r = t->ret;
+        return r == ty_unit || (r->k == T_CTYPE && strcmp(r->name, "CVoid") == 0) || is_c_value_type(r);
+    }
     return t->k == T_PTR || (t->k == T_CTYPE && strcmp(t->name, "CVoid") != 0);
 }
 
@@ -3859,6 +3868,47 @@ static const char *c_ext_attr(Type *t) {
     return t->payload_words == 1 ? " signext" : " zeroext";
 }
 
+/* A Zevic function value as a C function pointer: a wrapper with the plain C signature that calls the function
+ * with a null environment. Only a named function or a lambda that captures nothing can be passed. */
+static char *c_callback(FnCtx *F, Val *v) {
+    Gen *g = F->g;
+    char *target = NULL;
+    const char *pre = "{ ptr @\"thunk.";
+    if (strncmp(v->v, pre, strlen(pre)) == 0 && strstr(v->v, "\", ptr null }")) {
+        target = zstrndup(v->v + 8, (size_t)(strstr(v->v, "\", ptr null }") - (v->v + 8)));
+    } else {
+        target = dict_get(&g->noenv, zsprintf("%p:%s", (void *)F, v->v));
+    }
+    if (!target) {
+        diag_error(g_call_pos, "only a named function, or a lambda that captures nothing, can be passed to C as a callback");
+        diag_note("wrap the data a callback needs in a `Handle` and pass its number instead");
+        return NULL;
+    }
+    char *wrapper = zsprintf("cb.%s", target);
+    if (!dict_has(&g->thunks, wrapper)) {
+        dict_put(&g->thunks, wrapper, target);
+        Type *ft = v->t;
+        SB ps = {0}, as = {0};
+        for (int i = 0; i < ft->args.n; i++) {
+            Type *pt = ft->args.v[i];
+            sb_printf(&ps, "%s%s%s %%p%d", i ? ", " : "", type_ll(pt), c_ext_attr(pt), i);
+            sb_printf(&as, ", %s %%p%d", type_ll(pt), i);
+        }
+        Type *r = ft->ret;
+        bool is_void = r == ty_unit || r == ty_never || (r->k == T_CTYPE && strcmp(r->name, "CVoid") == 0);
+        const char *rl = is_void ? "void" : type_ll(r);
+        const char *ra = is_void ? "" : c_ext_attr(r);
+        if (is_void) {
+            sb_printf(&g->funcs, "define void @\"%s\"(%s) {\nentry:\n  call void @\"%s\"(ptr null%s)\n  ret void\n}\n\n", wrapper, sb_str(&ps), target,
+                      sb_str(&as));
+        } else {
+            sb_printf(&g->funcs, "define%s %s @\"%s\"(%s) {\nentry:\n  %%r = call %s @\"%s\"(ptr null%s)\n  ret %s %%r\n}\n\n", ra, rl, wrapper,
+                      sb_str(&ps), rl, target, sb_str(&as), rl);
+        }
+    }
+    return zsprintf("@\"%s\"", wrapper);
+}
+
 /* A call to an `extern "C"` function. */
 static Val emit_c_call(FnCtx *F, Inst *in, Vec *args) {
     SB a = {0}, ptypes = {0};
@@ -3870,10 +3920,17 @@ static Val emit_c_call(FnCtx *F, Inst *in, Vec *args) {
         Val *v = args->v[i];
         if (i) sb_puts(&a, ", ");
         const char *attr = c_ext_attr(v->t);
-        sb_printf(&a, "%s%s %s", type_ll(v->t), attr, v->v);
+        const char *ll = type_ll(v->t);
+        char *vv = v->v;
+        if (v->t->k == T_FN) {
+            vv = c_callback(F, v);
+            if (!vv) return err_val();
+            ll = "ptr";
+        }
+        sb_printf(&a, "%s%s %s", ll, attr, vv);
         if (i < in->ptypes.n) {
             if (i) sb_puts(&ptypes, ", ");
-            sb_printf(&ptypes, "%s%s", type_ll(v->t), attr);
+            sb_printf(&ptypes, "%s%s", ll, attr);
         }
     }
     if (variadic) sb_puts(&ptypes, ptypes.len ? ", ..." : "...");
@@ -4093,6 +4150,7 @@ static Val gen_call_decl(FnCtx *F, Node *call, Decl *d, Type *self, Vec *explici
         }
         vec_push(&vals, v);
     }
+    g_call_pos = call->pos;
     if (recv) {
         /* the receiver goes first */
         Vec all = {0};
@@ -5077,6 +5135,7 @@ static Val gen_lambda(FnCtx *F, Node *n, Type *expect) {
     char *a = tmp(F), *b = tmp(F);
     emit(F, "%s = insertvalue { ptr, ptr } undef, ptr @\"%s\", 0", a, lname);
     emit(F, "%s = insertvalue { ptr, ptr } %s, ptr %s, 1", b, a, env);
+    if (strcmp(env, "null") == 0) dict_put(&g->noenv, zsprintf("%p:%s", (void *)F, b), (void *)lname);
     Val res = {ft, b};
     return res;
 }
