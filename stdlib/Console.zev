@@ -7,6 +7,10 @@ extern "zevic" {
     fn zevic_println(s: String)
     fn zevic_eprint(s: String)
     fn zevic_eprintln(s: String)
+    fn zevic_read_line() -> String
+    fn zevic_read_line_ok() -> I32
+    fn zevic_read_char() -> I32
+    fn zevic_read_all() -> String
 }
 
 extern "intrinsic" {
@@ -18,3 +22,26 @@ fn Print(s: String) { zevic_print(s) }
 fn Println(s: String) { zevic_println(s) }
 fn Eprint(s: String) { zevic_eprint(s) }
 fn Eprintln(s: String) { zevic_eprintln(s) }
+
+// Input. A failure to read counts as the end of the input.
+
+// One line, without its line ending; None at the end of the input.
+fn ReadLine() -> Option<String> {
+    let line: String = zevic_read_line()
+    if (zevic_read_line_ok() == 0) { None } else { Some(line) }
+}
+
+// One character (UTF-8); None at the end of the input.
+fn Read() -> Option<Char> {
+    let c: I32 = zevic_read_char()
+    if (c < 0) { None } else { Some(c.ToU32Wrap().ToChar().Unwrap()) }
+}
+
+// Everything that is left of the input.
+fn ReadAll() -> String { zevic_read_all() }
+
+// Shows `msg` and reads a line.
+fn Prompt(msg: String) -> Option<String> {
+    Print(msg)
+    ReadLine()
+}
