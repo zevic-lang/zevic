@@ -4731,6 +4731,31 @@ static Val gen_prim_method(FnCtx *F, Node *call, Val recv, const char *name, Typ
             Val res = {ty_i64, r};
             return res;
         }
+        if (strcmp(name, "Slice") == 0 && nargs == 2) {
+            /* s.Slice(from, to): a copy of the bytes [from, to); both ends must be on character boundaries */
+            Val a = gen_expr(F, call->list.v[0], ty_i64);
+            a = coerce(F, ((Node *)call->list.v[0])->pos, a, ty_i64, "the start of `Slice`");
+            Val b = gen_expr(F, call->list.v[1], ty_i64);
+            b = coerce(F, ((Node *)call->list.v[1])->pos, b, ty_i64, "the end of `Slice`");
+            if (a.t == ty_never || b.t == ty_never) return never_val(NULL);
+            if (is_err(a.t) || is_err(b.t)) return err_val();
+            char *p, *n;
+            str_parts(F, recv, &p, &n);
+            rt_decl(F, "zevic_str_slice_ok", "declare i32 @zevic_str_slice_ok(ptr, i64, i64, i64)");
+            rt_decl(F, "zevic_str_slice", "declare void @zevic_str_slice(ptr, ptr, i64, i64, i64)");
+            char *ok = tmp(F), *bad = tmp(F);
+            emit(F, "%s = call i32 @zevic_str_slice_ok(ptr %s, i64 %s, i64 %s, i64 %s)", ok, p, n, a.v, b.v);
+            emit(F, "%s = icmp eq i32 %s, 0", bad, ok);
+            char *go = newlabel(F, "ok");
+            condbr(F, bad, cold_panic(F, "string slice out of range or not on character boundaries", call->pos), go);
+            start_block(F, go);
+            char *slot = new_slot(F, ty_string);
+            emit(F, "call void @zevic_str_slice(ptr %s, ptr %s, i64 %s, i64 %s, i64 %s)", slot, p, n, a.v, b.v);
+            char *r = tmp(F);
+            emit(F, "%s = load { ptr, i64 }, ptr %s", r, slot);
+            Val res = {ty_string, r};
+            return res;
+        }
         if (strcmp(name, "ByteAt") == 0 && nargs == 1) {
             Val i = gen_expr(F, call->list.v[0], ty_i64);
             i = coerce(F, ((Node *)call->list.v[0])->pos, i, ty_i64, "the argument of `ByteAt`");
