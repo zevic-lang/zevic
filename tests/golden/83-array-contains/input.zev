@@ -1,0 +1,11 @@
+module Main
+
+import Zevic.Console
+
+fn Main() {
+    let xs: Array<I32> = [4, 8, 15, 16]
+    Console.Println("${xs.Contains(15)} ${xs.Contains(23)}")
+    Console.Println("${xs.IndexOf(16).UnwrapOr(-1)} ${xs.IndexOf(1).UnwrapOr(-1)}")
+    let ws: Array<String> = ["a", "b"]
+    Console.Println("${ws.Contains("b")} ${ws.Contains("c")}")
+}
