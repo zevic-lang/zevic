@@ -194,6 +194,13 @@ static bool dfs_cycle(Module *m, Vec *stack) {
 }
 
 void prog_resolve(Program *pg) {
+    /* `fn Main(args: Array<String>)` gets its arguments from Zevic.Env, which the program need not import */
+    Module *mm = prog_find_module(pg, "Main");
+    Decl *md = mm ? module_find(mm, "Main") : NULL;
+    if (md && md->node->kind == D_FN && md->node->list.n == 1 && !prog_find_module(pg, "Zevic.Env")) {
+        bool is_std = false;
+        try_load_module(pg, "Zevic.Env", &is_std);
+    }
     for (int i = 0; i < pg->files.n; i++) resolve_file_imports(pg, pg->files.v[i]);
     for (int i = 0; i < pg->modules.n; i++) {
         Module *m = pg->modules.v[i];
