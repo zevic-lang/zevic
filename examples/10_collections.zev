@@ -1,0 +1,62 @@
+module Main
+
+// Maps, sets, closures and an interface used as a type.
+
+import Zevic.Console
+import Zevic.Text
+
+interface Scorer {
+    fn Score(word: String) -> I64
+}
+
+struct LengthScorer : Scorer {
+    fn Score(word: String) -> I64 { word.Len() }
+}
+
+// How many times the letter `e` appears.
+struct EScorer : Scorer {
+    fn Score(word: String) -> I64 { Text.Split(word, "e").Len() - 1 }
+}
+
+fn Best(words: Array<String>, scorer: Scorer) -> String {
+    mut best: String = ""
+    mut best_score: I64 = -1
+    for (w in words) {
+        let s: I64 = scorer.Score(w)
+        if (s > best_score) {
+            best = w
+            best_score = s
+        }
+    }
+    best
+}
+
+fn Counter() -> fn() -> I64 {
+    mut n: I64 = 0
+    () => {
+        n += 1
+        n
+    }
+}
+
+fn Main() {
+    let words: Array<String> = ["tree", "banana", "sky", "queue"]
+    Console.Println("longest: ${Best(words, LengthScorer.New())}")
+    Console.Println("most e: ${Best(words, EScorer.New())}")
+
+    mut seen: Set<String> = Set.New()
+    mut lengths: Map<I64, I64> = Map.New()
+    for (w in ["a", "bb", "a", "cc", "ddd", "bb"]) {
+        if (seen.Add(w)) {
+            let n: I64 = lengths.Get(w.Len()).UnwrapOr(0)
+            lengths.Set(w.Len(), n + 1)
+        }
+    }
+    Console.Println("${seen.Len()} different words")
+    Console.Println("with 2 letters: ${lengths.Get(2).UnwrapOr(0)}")
+
+    let next: fn() -> I64 = Counter()
+    next()
+    next()
+    Console.Println("counter: ${next()}")
+}
