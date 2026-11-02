@@ -1,0 +1,37 @@
+module Main
+
+import Zevic.Console
+
+struct Item {
+    Name: String
+    N: I32
+
+    fn Init(name: String, n: I32) {
+        this.Name = name
+        this.N = n
+    }
+}
+
+fn Main() {
+    mut xs: Array<I32> = [5, 3, 9, 1, 3, 7, 2, 8, 6, 4, 0]
+    xs.Sort()
+    mut shown: Array<String> = []
+    for (x in xs) {
+        shown.Push("${x}")
+    }
+    Console.Println(shown.Join(","))
+    mut one: Array<I32> = [1]
+    one.Sort()
+    mut none: Array<I32> = []
+    none.Sort()
+    mut ws: Array<String> = ["pear", "apple", "fig", "banana"]
+    ws.Sort()
+    Console.Println(ws.Join(" "))
+    mut items: Array<Item> = [Item.New("a", 2), Item.New("b", 1), Item.New("c", 2), Item.New("d", 1), Item.New("e", 3)]
+    items.SortBy((x: Item, y: Item) => y.N.Compare(x.N))
+    mut names: Array<String> = []
+    for (it in items) {
+        names.Push(it.Name)
+    }
+    Console.Println(names.Join(""))
+}
