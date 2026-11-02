@@ -1,0 +1,27 @@
+module   Main
+import Zevic.Env
+import Zevic.Console
+import Zevic.Text
+struct P { X: I32
+ Y: I32
+ fn Init(x:I32,y:I32) { this.X=x; this.Y=y }
+ fn Len()->I32 { this.X+this.Y }
+}
+fn Add(a:I32,b:I32)->I32{
+let c:I32=a+b*-2;
+        return c
+}
+
+
+// comment about Main
+fn Main(args: Array<String>) {
+  let xs:Array<I32> = [1,2,3]
+  for (i,x in xs) {
+  Console.Println("v ${x}")   // trailing
+  }
+    if (xs.Len()>2&&!xs.IsEmpty()) { Console.Println("big") } else { Console.Println("small") }
+  let r: Array<I32> = xs
+  .Map((x:I32)=>x*2)
+        .Filter((x:I32)=>x>2)
+  let z: Range = 1..=5
+}
