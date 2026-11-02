@@ -1,0 +1,625 @@
+module Zevfmt.Format
+
+// The layout rules of Zevic. The line breaks of the source stay where they are; everything else is decided here:
+// indentation, blanks inside a line, blank lines between declarations, the order of `import`s, `;` at the end of
+// a line, and a comma after the last element of a list that is written one element per line.
+
+import Zevfmt.Scan as Scan
+import Zevic.Text
+
+fn isKeyword(w: String) -> Bool {
+    w == "module" || w == "import" || w == "as" || w == "fn" || w == "let" || w == "mut" || w == "class" ||
+        w == "struct" || w == "enum" || w == "interface" || w == "static" || w == "extern" || w == "export" ||
+        w == "if" || w == "else" || w == "while" || w == "loop" || w == "for" || w == "in" || w == "match" ||
+        w == "return" || w == "break" || w == "continue" || w == "defer"
+}
+
+fn isOpener(t: Scan.Tok) -> Bool { t.IsOp("(") || t.IsOp("[") || t.IsOp("{") }
+
+fn isCloser(t: Scan.Tok) -> Bool { t.IsOp(")") || t.IsOp("]") || t.IsOp("}") }
+
+// Does the token end a value (so that a following `-` or `*` is an operator between two values)?
+fn valueEnd(t: Scan.Tok) -> Bool {
+    if (t.Kind == Scan.KNum || t.Kind == Scan.KStr || t.Kind == Scan.KChar) {
+        return true
+    }
+    if (t.Kind == Scan.KWord) {
+        return !isKeyword(t.Text)
+    }
+    if (t.Kind == Scan.KOp) {
+        return t.Text == ")" || t.Text == "]" || t.Text == "?" || (t.Text == ">" && t.Close > 0) || (t.Text == ">>" && t.Close > 0)
+    }
+    false
+}
+
+fn isBinary(s: String) -> Bool {
+    s == "+" || s == "-" || s == "*" || s == "/" || s == "%" || s == "&" || s == "|" || s == "^" || s == "<<" ||
+        s == ">>" || s == "&&" || s == "||" || s == "==" || s == "!=" || s == "<" || s == ">" || s == "<=" || s == ">=" ||
+        s == "=" || s == "+=" || s == "-=" || s == "*=" || s == "/=" || s == "%=" || s == "&=" || s == "|=" || s == "^=" ||
+        s == "<<=" || s == ">>=" || s == "->" || s == "=>"
+}
+
+// ---- type arguments: which `<` and `>` are brackets and not comparisons ----
+
+fn isTypeToken(t: Scan.Tok) -> Bool {
+    if (t.Kind == Scan.KWord) {
+        return true
+    }
+    t.Kind == Scan.KOp && (t.Text == "," || t.Text == "." || t.Text == "<" || t.Text == ">" || t.Text == ">>" ||
+            t.Text == "(" || t.Text == ")" || t.Text == "*" || t.Text == "->" || t.Text == ":" || t.Text == "+")
+}
+
+fn startsUpper(s: String) -> Bool {
+    !s.IsEmpty() && s.ByteAt(0) >= b'A' && s.ByteAt(0) <= b'Z'
+}
+
+// The `:` in `class A : B` (the one outside any type arguments) is written with a blank before it.
+fn markInherit(toks: Array<Scan.Tok>) {
+    mut i: I64 = 0
+    while (i < toks.Len()) {
+        let t: Scan.Tok = toks[i]
+        let head: Bool = t.IsWord("class") || t.IsWord("struct") || t.IsWord("enum") || t.IsWord("interface")
+        if (head && (i == 0 || t.Nl > 0)) {
+            mut depth: I64 = 0
+            mut j: I64 = i + 1
+            while (j < toks.Len() && toks[j].Nl == 0 && !toks[j].IsOp("{")) {
+                mut u: Scan.Tok = toks[j]
+                if (u.Open) {
+                    depth += 1
+                }
+                depth -= u.Close.ToI64()
+                if (depth == 0 && u.IsOp(":")) {
+                    u.Inh = true
+                    break
+                }
+                j += 1
+            }
+        }
+        i += 1
+    }
+}
+
+fn markGenerics(toks: Array<Scan.Tok>) {
+    mut i: I64 = 1
+    while (i < toks.Len()) {
+        mut t: Scan.Tok = toks[i]
+        let p: Scan.Tok = toks[i - 1]
+        let declared: Bool = i >= 2 && toks[i - 2].IsWord("fn")
+        if (t.IsOp("<") && !t.Sp && t.Nl == 0 && p.Kind == Scan.KWord && !isKeyword(p.Text) && (startsUpper(p.Text) || declared)) {
+            // look for the matching `>` on the same line, with only type pieces in between
+            mut depth: I64 = 1
+            mut j: I64 = i + 1
+            mut found: I64 = -1
+            while (j < toks.Len() && toks[j].Nl == 0 && isTypeToken(toks[j])) {
+                let u: Scan.Tok = toks[j]
+                if (u.IsOp("<")) {
+                    depth += 1
+                } else if (u.IsOp(">")) {
+                    depth -= 1
+                } else if (u.IsOp(">>")) {
+                    depth -= 2
+                }
+                if (depth == 0) {
+                    found = j
+                    break
+                }
+                if (depth < 0) {
+                    break
+                }
+                j += 1
+            }
+            if (found > 0) {
+                t.Open = true
+                // every `>` between here and the end that closes a level
+                mut d: I64 = 1
+                mut k: I64 = i + 1
+                while (k <= found) {
+                    mut u: Scan.Tok = toks[k]
+                    if (u.IsOp("<")) {
+                        d += 1
+                        u.Open = true
+                    } else if (u.IsOp(">")) {
+                        d -= 1
+                        u.Close = 1
+                    } else if (u.IsOp(">>")) {
+                        d -= 2
+                        u.Close = 2
+                    }
+                    k += 1
+                }
+            }
+        }
+        i += 1
+    }
+}
+
+// ---- small clean-ups of the token list ----
+
+// A `;` at the end of a line only repeats the line break.
+fn dropSemicolons(toks: Array<Scan.Tok>) {
+    mut i: I64 = 0
+    while (i < toks.Len()) {
+        if (toks[i].IsOp(";") && (i + 1 >= toks.Len() || toks[i + 1].Nl > 0)) {
+            mut semi: Scan.Tok = toks[i]
+            semi.Skip = true
+            if (i + 1 < toks.Len() && semi.Nl > 0) {
+                // keep the line break that came before the `;`
+                mut next: Scan.Tok = toks[i + 1]
+                next.Nl = next.Nl + semi.Nl
+            }
+        }
+        i += 1
+    }
+}
+
+// The index of the closer of each opener (and of the opener of each closer); -1 elsewhere.
+fn matchBrackets(toks: Array<Scan.Tok>) -> Array<I64> {
+    mut m: Array<I64> = []
+    mut stack: Array<I64> = []
+    for (t in toks) {
+        m.Push(-1)
+    }
+    for (i, t in toks) {
+        if (t.Skip || t.Kind != Scan.KOp) {
+            continue
+        }
+        if (isOpener(t)) {
+            stack.Push(i)
+        } else if (isCloser(t) && !stack.IsEmpty()) {
+            let o: I64 = stack.Pop().Unwrap()
+            m[o] = i
+            m[i] = o
+        }
+    }
+    m
+}
+
+// The last token before `i` that is not a comment (or -1).
+fn prevCode(toks: Array<Scan.Tok>, i: I64) -> I64 {
+    mut j: I64 = i - 1
+    while (j >= 0 && (toks[j].IsComment() || toks[j].Skip)) {
+        j -= 1
+    }
+    j
+}
+
+// A list that is written with one element per line gets a comma after the last element.
+fn addTrailingCommas(toks: Array<Scan.Tok>) -> Array<Scan.Tok> {
+    let m: Array<I64> = matchBrackets(toks)
+    mut after: Map<I64, Bool> = Map.New() // insert a comma after the token with this index
+    for (i, t in toks) {
+        if (t.Skip || !(t.IsOp("(") || t.IsOp("[")) || m[i] < 0) {
+            continue
+        }
+        let close: I64 = m[i]
+        if (i + 1 >= toks.Len() || i + 1 == close || toks[i + 1].Nl == 0 || toks[close].Nl == 0) {
+            continue
+        }
+        // which `(` and `[` are lists: a call or a declaration, an array
+        mut isList: Bool = false
+        if (t.IsOp("[")) {
+            isList = i == 0 || !valueEnd(toks[prevCode(toks, i)])
+        } else if (i > 0) {
+            let p: Scan.Tok = toks[i - 1]
+            isList = (p.Kind == Scan.KWord && !isKeyword(p.Text)) || (p.IsOp(">") && p.Close > 0)
+        }
+        let last: I64 = prevCode(toks, close)
+        if (isList && last > i && !toks[last].IsOp(",")) {
+            after.Set(last, true)
+        }
+    }
+    if (after.Len() == 0) {
+        return toks
+    }
+    mut out: Array<Scan.Tok> = []
+    for (i, t in toks) {
+        out.Push(t)
+        if (after.Contains(i)) {
+            mut c: Scan.Tok = Scan.Tok.New(Scan.KOp, ",")
+            c.Line = t.Line
+            out.Push(c)
+        }
+    }
+    out
+}
+
+// ---- import order ----
+
+fn importKey(toks: Array<Scan.Tok>, from: I64, to: I64) -> String {
+    mut key: String = ""
+    mut i: I64 = from + 1
+    while (i < to && !toks[i].IsWord("as")) {
+        key = key + toks[i].Text
+        i += 1
+    }
+    key
+}
+
+// Consecutive one-line `import`s are sorted by module name.
+fn sortImports(toks: Array<Scan.Tok>) -> Array<Scan.Tok> {
+    mut out: Array<Scan.Tok> = []
+    mut i: I64 = 0
+    while (i < toks.Len()) {
+        if (!(toks[i].IsWord("import") && (i == 0 || toks[i].Nl > 0))) {
+            out.Push(toks[i])
+            i += 1
+            continue
+        }
+        // collect the group: each import on one line, one line after the other, no comments in between
+        mut starts: Array<I64> = []
+        mut ends: Array<I64> = []
+        mut j: I64 = i
+        while (j < toks.Len() && toks[j].IsWord("import") && (j == i || toks[j].Nl == 1)) {
+            mut e: I64 = j + 1
+            while (e < toks.Len() && toks[e].Nl == 0 && !toks[e].IsComment()) {
+                e += 1
+            }
+            if (e < toks.Len() && toks[e].Nl == 0 && toks[e].IsComment()) {
+                break
+            }
+            starts.Push(j)
+            ends.Push(e)
+            j = e
+        }
+        if (starts.Len() < 2) {
+            out.Push(toks[i])
+            i += 1
+            continue
+        }
+        mut order: Array<I64> = []
+        for (k, s in starts) {
+            order.Push(k)
+        }
+        order.SortBy((a: I64, b: I64) => importKey(toks, starts[a], ends[a]).Compare(importKey(toks, starts[b], ends[b])))
+        let firstNl: I64 = toks[starts[0]].Nl
+        for (n, k in order) {
+            mut head: Scan.Tok = toks[starts[k]]
+            head.Nl = if (n == 0) { firstNl } else { 1 }
+            mut x: I64 = starts[k]
+            while (x < ends[k]) {
+                out.Push(toks[x])
+                x += 1
+            }
+        }
+        i = j
+    }
+    out
+}
+
+// ---- blank lines between declarations ----
+
+fn isItemStart(t: Scan.Tok, inTypeBody: Bool) -> Bool {
+    if (t.Kind != Scan.KWord) {
+        return false
+    }
+    if (inTypeBody) {
+        return t.Text == "fn" || t.Text == "mut" || t.Text == "static"
+    }
+    t.Text == "fn" || t.Text == "struct" || t.Text == "class" || t.Text == "enum" || t.Text == "interface" ||
+        t.Text == "extern" || t.Text == "export" || t.Text == "test" || t.Text == "let" || t.Text == "static" ||
+        t.Text == "import" || t.Text == "module"
+}
+
+fn isTypeKeyword(w: String) -> Bool {
+    w == "struct" || w == "class" || w == "enum" || w == "interface" || w == "extern"
+}
+
+// Which token indexes must have a blank line before them.
+fn blankLines(toks: Array<Scan.Tok>) -> Map<I64, Bool> {
+    let m: Array<I64> = matchBrackets(toks)
+    mut force: Map<I64, Bool> = Map.New()
+    // the items: start index (including the comments above), the container (opener index or -1), the keyword index
+    mut starts: Array<I64> = []
+    mut owners: Array<I64> = []
+    mut words: Array<I64> = []
+    mut stack: Array<I64> = []
+    mut typeBody: Array<Bool> = []
+    for (i, t in toks) {
+        if (t.Skip) {
+            continue
+        }
+        let lineStart: Bool = i == 0 || t.Nl > 0
+        let depth: I64 = stack.Len()
+        let inType: Bool = depth > 0 && typeBody[depth - 1]
+        if (lineStart && !t.IsComment() && (depth == 0 || (depth == 1 && inType)) && isItemStart(t, inType)) {
+            // `mut fn` and `static fn` are one item
+            if (!(i > 0 && !toks[i - 1].Skip && toks[i - 1].Nl == 0 && toks[i].Nl == 0 && i > 0 && (toks[i - 1].IsWord("mut") || toks[i - 1].IsWord("static") || toks[i - 1].IsWord("export")))) {
+                mut s: I64 = i
+                while (s > 0 && toks[s - 1].IsComment() && toks[s].Nl == 1) {
+                    s -= 1
+                }
+                starts.Push(s)
+                owners.Push(if (depth == 0) { -1 } else { stack[depth - 1] })
+                words.Push(i)
+            }
+        }
+        if (t.Kind == Scan.KOp && isOpener(t)) {
+            stack.Push(i)
+            // a `{` that belongs to struct, class, enum, interface or extern
+            mut isType: Bool = false
+            if (t.IsOp("{")) {
+                mut j: I64 = i - 1
+                while (j >= 0 && i - j < 40) {
+                    let u: Scan.Tok = toks[j]
+                    if (u.Kind == Scan.KOp && (u.Text == "}" || u.Text == "{" || u.Text == ";")) {
+                        break
+                    }
+                    if (u.Kind == Scan.KWord && isTypeKeyword(u.Text)) {
+                        isType = true
+                        break
+                    }
+                    if (u.Kind == Scan.KWord && (u.Text == "fn" || u.Text == "if" || u.Text == "while" || u.Text == "for" || u.Text == "match" || u.Text == "loop" || u.Text == "else" || u.Text == "test")) {
+                        break
+                    }
+                    j -= 1
+                }
+            }
+            typeBody.Push(isType)
+        } else if (t.Kind == Scan.KOp && isCloser(t) && !stack.IsEmpty()) {
+            stack.Pop()
+            typeBody.Pop()
+        }
+    }
+    // the items of each container, in order
+    mut byOwner: Map<I64, Array<I64>> = Map.New()
+    for (k, s in starts) {
+        match (byOwner.Get(owners[k])) {
+            Some(list) => {
+                mut l: Array<I64> = list
+                l.Push(k)
+            },
+            None => {
+                let l: Array<I64> = [k]
+                byOwner.Set(owners[k], l)
+            },
+        }
+    }
+    // two neighbours in one container: a blank line between them if either spans several lines
+    for (owner, list in byOwner) {
+        for (n, k in list) {
+            if (n == 0) {
+                continue
+            }
+            let s: I64 = starts[k]
+            let a: I64 = words[list[n - 1]]
+            let b: I64 = words[k]
+            let aEnd: I64 = prevCode(toks, s)
+            let bEnd: I64 = if (n + 1 < list.Len()) {
+                prevCode(toks, starts[list[n + 1]])
+            } else if (owner >= 0 && m[owner] > 0) {
+                prevCode(toks, m[owner])
+            } else {
+                prevCode(toks, toks.Len())
+            }
+            let aMulti: Bool = aEnd >= 0 && toks[aEnd].Line > toks[a].Line
+            let bMulti: Bool = bEnd >= 0 && toks[bEnd].Line > toks[b].Line
+            let afterModule: Bool = toks[a].IsWord("module")
+            let afterImports: Bool = toks[a].IsWord("import") && !toks[b].IsWord("import")
+            if (aMulti || bMulti || afterModule || afterImports) {
+                force.Set(s, true)
+            }
+        }
+    }
+    force
+}
+
+// ---- spacing inside a line ----
+
+// Is `c` a prefix operator (`-x`, `*p`, `&x`, `!x`)? `p` is the token before it.
+fn isPrefix(p: Scan.Tok, c: Scan.Tok, first: Bool) -> Bool {
+    if (c.Kind != Scan.KOp) {
+        return false
+    }
+    if (c.Text == "!" || c.Text == "~") {
+        return true
+    }
+    if (c.Text == "-" || c.Text == "+" || c.Text == "*" || c.Text == "&") {
+        return first || !valueEnd(p)
+    }
+    false
+}
+
+// Does a blank go between `p` and `c`? `pPrefix` says that `p` is a prefix operator.
+fn gap(p: Scan.Tok, c: Scan.Tok, pPrefix: Bool, cPrefix: Bool) -> Bool {
+    if (c.IsComment()) {
+        return true
+    }
+    if (c.Kind == Scan.KOp) {
+        let s: String = c.Text
+        if (s == ":" && c.Inh) {
+            return true
+        }
+        if (s == "," || s == ";" || s == ")" || s == "]" || s == "?" || s == "." || s == ".." || s == "..=" || s == ":" || s == "@") {
+            return false
+        }
+        if (s == "...") {
+            return p.IsOp(",")
+        }
+        if (s == "}") {
+            return !p.IsOp("{")
+        }
+        if (s == "(") {
+            if (p.Kind == Scan.KWord) {
+                return isKeyword(p.Text) && p.Text != "fn"
+            }
+            if (p.Kind == Scan.KOp) {
+                if (p.Text == ")" || p.Text == "]" || p.Text == "?" || p.Text == "(" || p.Text == "[" || p.Text == "." || p.Text == "@") {
+                    return false
+                }
+                if ((p.Text == ">" || p.Text == ">>") && p.Close > 0) {
+                    return false
+                }
+                if (p.Text == "<" && p.Open) {
+                    return false
+                }
+                return !pPrefix
+            }
+            return false
+        }
+        if (s == "[") {
+            if (p.Kind == Scan.KWord && isKeyword(p.Text)) {
+                return true
+            }
+            if (valueEnd(p)) {
+                return false
+            }
+            if (p.IsOp("(") || p.IsOp("[") || p.IsOp(".") || (p.IsOp("<") && p.Open)) {
+                return false
+            }
+            return !pPrefix
+        }
+        if (s == "{") {
+            return !(p.IsOp("(") || p.IsOp("[") || p.IsOp("."))
+        }
+        if (s == "<" && c.Open) {
+            return false
+        }
+        if ((s == ">" || s == ">>") && c.Close > 0) {
+            return false
+        }
+        if (cPrefix) {
+            return !(p.IsOp("(") || p.IsOp("[") || p.IsOp(".") || p.IsOp("@") || pPrefix || (p.IsOp("<") && p.Open))
+        }
+        return true
+    }
+    // a word, a number or a literal
+    if (p.Kind == Scan.KOp) {
+        if (p.Text == "(" || p.Text == "[" || p.Text == "." || p.Text == ".." || p.Text == "..=" || p.Text == "@" || pPrefix) {
+            return false
+        }
+        if (p.Text == "<" && p.Open) {
+            return false
+        }
+        return true
+    }
+    true
+}
+
+// ---- the output ----
+
+class Out {
+    Lines: Array<String> = []
+    Cur: String = ""
+    Started: Bool = false
+
+    mut fn Put(s: String) {
+        this.Cur = this.Cur + s
+        this.Started = true
+    }
+
+    mut fn EndLine() {
+        this.Lines.Push(Text.TrimEnd(this.Cur))
+        this.Cur = ""
+        this.Started = false
+    }
+}
+
+fn indentText(level: I64) -> String { Text.Repeat("    ", level) }
+
+// The text of a comment or literal as it goes to the output: trailing blanks of a block comment's lines go.
+fn commentText(t: Scan.Tok) -> String {
+    if (t.Kind != Scan.KBlock) {
+        return t.Text
+    }
+    mut parts: Array<String> = []
+    for (l in Text.Split(t.Text, "\n")) {
+        parts.Push(Text.TrimEnd(l))
+    }
+    Text.Join(parts, "\n")
+}
+
+fn Format(src: String) -> Result<String, Error> {
+    mut toks: Array<Scan.Tok> = Scan.Scan(src)?
+    markGenerics(toks)
+    markInherit(toks)
+    dropSemicolons(toks)
+    toks = sortImports(toks)
+    toks = addTrailingCommas(toks)
+    let force: Map<I64, Bool> = blankLines(toks)
+
+    mut out: Out = Out.New()
+    mut stack: Array<I64> = [] // for each open bracket: the indent of the line it was opened on
+    mut level: I64 = 0 // the indent of the line being written
+    mut prev: Option<Scan.Tok> = None
+    mut prevPrefix: Bool = false
+    mut lineEndsWithOperator: Bool = false
+    mut first: Bool = true
+    for (i, t in toks) {
+        if (t.Skip) {
+            continue
+        }
+        let isClose: Bool = t.Kind == Scan.KOp && isCloser(t)
+        let startsLine: Bool = first || t.Nl > 0
+        if (startsLine && !first) {
+            out.EndLine()
+            // blank lines: at most one; none after an opener or before a closer
+            mut blank: Bool = t.Nl > 1
+            if (force.Contains(i)) {
+                blank = true
+            }
+            match (prev) {
+                Some(p) => {
+                    if (p.Kind == Scan.KOp && isOpener(p)) {
+                        blank = false
+                    }
+                },
+                None => {},
+            }
+            if (isClose) {
+                blank = false
+            }
+            if (blank) {
+                out.EndLine()
+            }
+        }
+        if (startsLine) {
+            // the indent
+            mut base: I64 = 0
+            if (isClose && !stack.IsEmpty()) {
+                base = stack[stack.Len() - 1]
+            } else if (!stack.IsEmpty()) {
+                base = stack[stack.Len() - 1] + 1
+            }
+            let continues: Bool = t.IsOp(".") || t.IsOp("&&") || t.IsOp("||") || lineEndsWithOperator
+            level = base + (if (continues && !isClose) { 1 } else { 0 })
+            out.Put(indentText(level))
+            out.Started = false
+        } else {
+            match (prev) {
+                Some(p) => {
+                    let cPrefix: Bool = isPrefix(p, t, false)
+                    if (gap(p, t, prevPrefix, cPrefix)) {
+                        out.Put(" ")
+                    }
+                },
+                None => {},
+            }
+        }
+        // the token itself
+        let p0: Scan.Tok = match (prev) {
+            Some(p) => p,
+            None => t,
+        }
+        let thisPrefix: Bool = isPrefix(p0, t, first || startsLine && prev.IsNone())
+        out.Put(commentText(t))
+        if (t.Kind == Scan.KOp && isOpener(t)) {
+            stack.Push(level)
+        } else if (isClose && !stack.IsEmpty()) {
+            stack.Pop()
+        }
+        lineEndsWithOperator = t.Kind == Scan.KOp && (isBinary(t.Text) && !(t.Text == ">" && t.Close > 0) && !(t.Text == ">>" && t.Close > 0) && !(t.Text == "<" && t.Open) || t.Text == ".")
+        prevPrefix = thisPrefix
+        prev = Some(t)
+        first = false
+    }
+    out.EndLine()
+    // no blank lines at the end; one line break after the last line
+    mut lines: Array<String> = out.Lines
+    while (lines.Len() > 0 && lines[lines.Len() - 1].IsEmpty()) {
+        lines.Pop()
+    }
+    if (lines.IsEmpty()) {
+        return Ok("")
+    }
+    Ok(Text.Join(lines, "\n") + "\n")
+}
