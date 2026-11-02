@@ -281,34 +281,34 @@ fn Main() {
 
 ### `zevpm`
 
-- [ ] `new` `init` `build` `run` `test` `clean`
-- [ ] `zevic.toml` の読み込み(`[package]` `[deps]` `[native]`)
-- [ ] `build/` への出力、`kind = "lib"` のときの静的ライブラリと `include/<name>.h`
-- [ ] `get` / `remove` / `update`(`git clone --depth 1`、`~/.zevpm` のキャッシュ、`zevic.lock`)
-- [ ] 依存の依存の取得、`native/` の自動ビルド
-- [ ] `zevpm` 自身の実装: 最初は Python か C で書き、セルフホスティング(段階⑦)で Zevic に置き換える
+- [x] `new` `init` `build` `run` `test` `clean`
+- [x] `zevic.toml` の読み込み(`[package]` `[deps]` `[native]`)
+- [x] `build/` への出力、`kind = "lib"` のときの静的ライブラリと `include/<name>.h`
+- [x] `get` / `remove` / `update`(`git clone --depth 1`、`~/.zevpm` のキャッシュ、`zevic.lock`)
+- [x] 依存の依存の取得、`native/` の自動ビルド
+- [x] `zevpm` 自身の実装: 最初は Python か C で書き、セルフホスティング(段階⑦)で Zevic に置き換える
 
 ### テスト機能
 
-- [ ] `test "名前" { ... }` ブロックと `_test.zev`
-- [ ] `Zevic.Test`(`Equal` `NotEqual` `True` `False` `Some` `None` `Ok` `Err` `Panics` `Fail`)
-- [ ] ランナー(`setjmp` / `longjmp` で、テスト内の Panic をそのテストの失敗にする)
-- [ ] 結果の表示、終了コード、名前での絞り込み
+- [x] `test "名前" { ... }` ブロックと `_test.zev`
+- [x] `Zevic.Test`(`Equal` `NotEqual` `True` `False` `Some` `None` `Ok` `Err` `Panics` `Fail`)
+- [x] ランナー(`setjmp` / `longjmp` で、テスト内の Panic をそのテストの失敗にする)
+- [x] 結果の表示、終了コード、名前での絞り込み
 
 ### 標準ライブラリ第2段
 
-- [ ] `Zevic.Fs`: `ReadAll` `WriteAll` `Open` `Exists` `List` `Remove`(すべて `Result`、`errno` → `ErrorKind`)
-- [ ] `Zevic.Text`: `Split` `Join` `Trim` `Replace` `StartsWith` `EndsWith` ほか
-- [ ] `Zevic.Math`: 数学関数、定数
-- [ ] `Zevic.Time`: `Now` `Duration` `Sleep`
-- [ ] `Zevic.Env`: `Get` `Set` `ProgramName` `Exit` `RawArgs`
-- [ ] `Zevic.Process`: 外部コマンドの起動(`Run(cmd, args)` で終了コードと出力を `Result` で返す)。セルフホスティング(段階⑦)で `clang` と `git` を呼ぶために必要なので、第3段から**第2段へ前倒し**した
-- [ ] OS の違い(Windows / POSIX)は同梱の `.c` で吸収
+- [x] `Zevic.Fs`: `ReadAll` `WriteAll` `Open` `Exists` `List` `Remove`(すべて `Result`、`errno` → `ErrorKind`)
+- [x] `Zevic.Text`: `Split` `Join` `Trim` `Replace` `StartsWith` `EndsWith` ほか
+- [x] `Zevic.Math`: 数学関数、定数
+- [x] `Zevic.Time`: `Now` `Duration` `Sleep`
+- [x] `Zevic.Env`: `Get` `Set` `ProgramName` `Exit` `RawArgs`
+- [x] `Zevic.Process`: 外部コマンドの起動(`Run(cmd, args)` で終了コードと出力を `Result` で返す)。セルフホスティング(段階⑦)で `clang` と `git` を呼ぶために必要なので、第3段から**第2段へ前倒し**した
+- [x] OS の違い(Windows / POSIX)は同梱の `.c` で吸収
 
 ### 3つの OS
 
-- [ ] CI を Linux / macOS / Windows の3つで通す
-- [ ] パスの区切り、改行コード、`.exe` の扱い、clang の探索(仕様書の順)
+- [x] CI を Linux / macOS / Windows の3つで通す
+- [x] パスの区切り、改行コード、`.exe` の扱い、clang の探索(仕様書の順)
 
 **完了**: `zevpm new` → `zevpm run` → `zevpm test` が3つの OS で動く。サンプル01〜10がすべて動く。**v0.3.0**。
 
