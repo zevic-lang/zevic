@@ -7,6 +7,7 @@ extern "zevic" {
     fn zevic_proc_begin()
     fn zevic_proc_arg(s: String)
     fn zevic_proc_run() -> String
+    fn zevic_proc_inherit()
     fn zevic_proc_failed() -> I32
     fn zevic_proc_code() -> I32
     fn zevic_proc_stderr() -> String
@@ -42,4 +43,19 @@ fn Run(cmd: String, args: Array<String>) -> Result<Output, Error> {
         return Err(Error.New(ErrorKind.Io, "cannot start \"${cmd}\""))
     }
     Ok(Output.New(zevic_proc_code(), out, zevic_proc_stderr()))
+}
+
+// Runs `cmd` with `args` and waits, sharing this program's standard input, output and error (nothing is
+// collected). Returns the exit code. Only a failure to start the shell gives an `Err`.
+fn Inherit(cmd: String, args: Array<String>) -> Result<I32, Error> {
+    zevic_proc_begin()
+    zevic_proc_arg(cmd)
+    for (a in args) {
+        zevic_proc_arg(a)
+    }
+    zevic_proc_inherit()
+    if (zevic_proc_failed() != 0) {
+        return Err(Error.New(ErrorKind.Io, "cannot start \"${cmd}\""))
+    }
+    Ok(zevic_proc_code())
 }
