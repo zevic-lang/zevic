@@ -1,8 +1,446 @@
 module Main
 
+// zevpm: the package and build manager for Zevic.
+
 import Zevic.Console
+import Zevic.Env
+import Zevic.Fs
+import Zevic.Text
+import Zevpm.Deps as Deps
 import Zevpm.Os as Os
+import Zevpm.Toml as Toml
+import Zevpm.Version as Version
+
+fn usage() -> String {
+    "usage: zevpm <command> [options]\n\n" +
+    "  new <name> [--lib]   make a new package in a new directory\n" +
+    "  init [--lib]         make the current directory a package\n" +
+    "  build [--release]    build the package into build/\n" +
+    "  run [--release] [-- args]\n" +
+    "                       build and run it\n" +
+    "  test [filter]        run the tests (those whose name contains `filter`)\n" +
+    "  fmt                  format the sources (needs zevfmt)\n" +
+    "  clean                remove build/\n" +
+    "  get <repo>           add a dependency: owner/name, github.com/owner/name or a git address,\n" +
+    "                       with @tag, @branch or @commit at the end\n" +
+    "  remove <name>        remove a dependency\n" +
+    "  update [name]        move the dependencies to their newest commits\n" +
+    "  --version, --help\n"
+}
+
+fn fatal(msg: String) -> Error {
+    Error.New(ErrorKind.Invalid, msg)
+}
+
+// An error of the tools (not of the user's input) ends with exit code 2.
+fn tool(msg: String) -> Error {
+    Error.New(ErrorKind.Io, msg)
+}
+
+// ---- finding zevic ----
+
+fn findZevic() -> Result<String, Error> {
+    match (Env.Get("ZEVIC")) {
+        Some(z) => if (!z.IsEmpty()) { return Ok(z) },
+        None => {},
+    }
+    let sibling: String = Os.Join(Os.ExeDir(), "zevic${Os.ExeSuffix()}")
+    if (Fs.IsFile(sibling)) {
+        return Ok(sibling)
+    }
+    if (Os.FindInPath("zevic")) {
+        return Ok("zevic")
+    }
+    Err(tool("cannot find `zevic` (it belongs next to zevpm, or on PATH; or set ZEVIC)"))
+}
+
+fn numbers(s: String) -> Array<I64> {
+    // the first numbers (up to three) in a version such as "zevic 0.3.0" or ">=0.2"
+    mut out: Array<I64> = []
+    mut cur: String = ""
+    mut i: I64 = 0
+    while (i <= s.Len()) {
+        let b: U8 = if (i < s.Len()) { s.ByteAt(i) } else { b' ' }
+        if (b >= b'0' && b <= b'9') {
+            cur = cur + s.Slice(i, i + 1)
+        } else {
+            if (!cur.IsEmpty()) {
+                out.Push(cur.ToI64().UnwrapOr(0))
+                cur = ""
+            }
+        }
+        i += 1
+    }
+    out
+}
+
+// ">=0.2" against the version zevic prints.
+fn checkZevicVersion(zevic: String, m: Toml.Manifest) -> Result<Unit, Error> {
+    if (m.ZevicReq.IsEmpty()) {
+        return Ok(())
+    }
+    let (code, out): (I32, String) = Os.RunCapture([zevic, "--version"])
+    if (code != 0) {
+        return Err(tool("cannot run `${zevic} --version`"))
+    }
+    let have: Array<I64> = numbers(out)
+    if (have.Len() < 2) {
+        return Ok(()) // a development build
+    }
+    if (!Text.StartsWith(m.ZevicReq, ">=")) {
+        return Err(fatal("${m.File}: `zevic = \"${m.ZevicReq}\"` must look like \">=0.2\""))
+    }
+    let want: Array<I64> = numbers(m.ZevicReq)
+    if (want.Len() < 1) {
+        return Err(fatal("${m.File}: `zevic = \"${m.ZevicReq}\"` must look like \">=0.2\""))
+    }
+    mut i: I64 = 0
+    while (i < 3) {
+        let h: I64 = if (i < have.Len()) { have[i] } else { 0 }
+        let w: I64 = if (i < want.Len()) { want[i] } else { 0 }
+        if (h > w) {
+            return Ok(())
+        }
+        if (h < w) {
+            return Err(fatal("${m.Name} needs zevic ${m.ZevicReq}, but this is zevic ${h}.${have[1]}.${if (have.Len() > 2) { have[2] } else { 0 }}"))
+        }
+        i += 1
+    }
+    Ok(())
+}
+
+// ---- building ----
+
+fn addSources(mut zev: Array<String>, mut native: Array<String>, pkgDir: String, withTests: Bool) {
+    zev.Extend(Os.Walk(Os.Join(pkgDir, "src"), [".zev"]))
+    if (withTests) {
+        zev.Extend(Os.Walk(Os.Join(pkgDir, "tests"), [".zev"]))
+    }
+    native.Extend(Os.Walk(Os.Join(pkgDir, "native"), [".c", ".cpp", ".cc"]))
+}
+
+fn addLib(mut libs: Array<String>, name: String) {
+    if (!libs.Contains(name)) {
+        libs.Push(name)
+    }
+}
+
+// Builds the package and returns the path of what was made. `test` builds the test runner instead.
+fn build(m: Toml.Manifest, release: Bool, test: Bool) -> Result<String, Error> {
+    let zevic: String = findZevic()?
+    checkZevicVersion(zevic, m)?
+    let pkgs: Array<Deps.Pkg> = Deps.Resolve(m, None)?
+    mut zev: Array<String> = []
+    mut native: Array<String> = []
+    mut libs: Array<String> = []
+    addSources(zev, native, m.Dir, test)
+    for (l in m.Libs) {
+        addLib(libs, l)
+    }
+    for (p in pkgs) {
+        addSources(zev, native, p.Dir, false)
+        for (l in p.M.Libs) {
+            addLib(libs, l)
+        }
+    }
+    let isLib: Bool = m.Kind == "lib" && !test
+    if (zev.IsEmpty()) {
+        return Err(fatal("there are no .zev files in ${Os.Join(m.Dir, "src")}"))
+    }
+    Os.Mkdirs("build")?
+    mut out: String = ""
+    if (test) {
+        out = "build/${m.Name}-test${Os.ExeSuffix()}"
+    } else if (isLib) {
+        out = if (Os.IsWindows()) { "build/${m.Name}.lib" } else { "build/lib${m.Name}.a" }
+    } else {
+        out = "build/${m.Name}${Os.ExeSuffix()}"
+    }
+    mut a: Array<String> = [zevic]
+    a.Extend(zev)
+    a.Extend(native)
+    if (release) {
+        a.Push("-O2")
+    }
+    for (l in libs) {
+        a.Push("-l${l}")
+    }
+    if (test) {
+        a.Push("--test")
+    }
+    if (isLib) {
+        Os.Mkdirs("build/include")?
+        a.Push("--lib")
+        a.Push("--emit-header")
+        a.Push("build/include/${m.Name}.h")
+    }
+    a.Push("-o")
+    a.Push(out)
+    let rc: I32 = Os.Run(a)
+    if (rc != 0) {
+        Env.Exit(if (rc == 1) { 1 } else { 2 })
+    }
+    Ok(out)
+}
+
+// ---- new and init ----
+
+// `my-app` becomes `MyApp`.
+fn pascalName(dirName: String) -> Result<String, Error> {
+    mut out: String = ""
+    mut up: Bool = true
+    mut i: I64 = 0
+    while (i < dirName.Len()) {
+        let b: U8 = dirName.ByteAt(i)
+        let isLower: Bool = b >= b'a' && b <= b'z'
+        let isUpper: Bool = b >= b'A' && b <= b'Z'
+        let isDigit: Bool = b >= b'0' && b <= b'9'
+        if (isLower || isUpper || isDigit) {
+            out = out + (if (up) { Text.ToUpper(dirName.Slice(i, i + 1)) } else { dirName.Slice(i, i + 1) })
+            up = false
+        } else {
+            up = true // `-` and `_` start a new word
+        }
+        i += 1
+    }
+    if (!Toml.IsPascalCase(out)) {
+        return Err(fatal("cannot make a package name (PascalCase) out of `${dirName}`"))
+    }
+    Ok(out)
+}
+
+fn writeNew(dir: String, name: String, lib: Bool, mustBeNew: Bool) -> Result<Unit, Error> {
+    Os.Mkdirs(Os.Join(dir, "src"))?
+    let toml: String = "[package]\nname = \"${name}\"\nversion = \"0.1.0\"\nkind = \"${if (lib) { "lib" } else { "bin" }}\"\nzevic = \">=0.1\"\n"
+    mut mainFile: String = Os.Join(dir, "src/Main.zev")
+    mut mainText: String = "module Main\n\nimport Zevic.Console\n\nfn Main() {\n    Console.Println(\"Hello from ${name}!\")\n}\n"
+    if (lib) {
+        mainFile = Os.Join(dir, "src/${name}.zev")
+        mainText = "module ${name}\n\nimport Zevic.Test\n\n// Say hello to `who`.\nfn Greet(who: String) -> String {\n    \"Hello, \${who}!\"\n}\n\ntest \"Greet names the person\" {\n    Test.Equal(Greet(\"Zevic\"), \"Hello, Zevic!\")\n}\n"
+    }
+    let paths: Array<String> = [Os.Join(dir, "zevic.toml"), mainFile, Os.Join(dir, ".gitignore")]
+    let texts: Array<String> = [toml, mainText, "build/\n"]
+    for (i, path in paths) {
+        if (Fs.IsFile(path)) {
+            if (mustBeNew) {
+                return Err(fatal("`${path}` already exists"))
+            }
+            Console.Eprintln("note: `${path}` already exists; left as it is")
+            continue
+        }
+        Fs.WriteAll(path, texts[i]).Context("cannot write `${path}`")?
+    }
+    Ok(())
+}
+
+fn cmdNew(args: Array<String>) -> Result<I32, Error> {
+    mut name: String = ""
+    mut lib: Bool = false
+    for (a in args) {
+        if (a == "--lib") {
+            lib = true
+        } else if (Text.StartsWith(a, "-")) {
+            return Err(fatal("unknown option `${a}`"))
+        } else if (name.IsEmpty()) {
+            name = a
+        } else {
+            return Err(fatal("too many arguments"))
+        }
+    }
+    if (name.IsEmpty()) {
+        return Err(fatal("usage: zevpm new <name> [--lib]"))
+    }
+    if (Fs.Exists(name)) {
+        return Err(fatal("`${name}` already exists"))
+    }
+    let pkg: String = pascalName(Os.Base(name))?
+    Os.Mkdirs(name).Context("cannot create the directory `${name}`")?
+    writeNew(name, pkg, lib, true)?
+    Console.Println("Created ${if (lib) { "library" } else { "program" }} package `${pkg}` in ${name}/")
+    Console.Println("  cd ${name} && zevpm ${if (lib) { "test" } else { "run" }}")
+    Ok(0)
+}
+
+fn cmdInit(args: Array<String>) -> Result<I32, Error> {
+    mut lib: Bool = false
+    for (a in args) {
+        if (a == "--lib") {
+            lib = true
+        } else {
+            return Err(fatal("unknown argument `${a}`"))
+        }
+    }
+    if (Fs.IsFile("zevic.toml")) {
+        return Err(fatal("`zevic.toml` already exists here"))
+    }
+    let here: String = Os.Base(Env.CurrentDir())
+    let pkg: String = pascalName(if (here.IsEmpty() || here == "/") { "App" } else { here })?
+    writeNew(".", pkg, lib, false)?
+    Console.Println("Made this directory the ${if (lib) { "library" } else { "program" }} package `${pkg}`")
+    Ok(0)
+}
+
+// ---- the other commands ----
+
+fn loadHere() -> Result<Toml.Manifest, Error> {
+    Toml.Load(".")
+}
+
+fn cmdBuild(args: Array<String>) -> Result<I32, Error> {
+    mut release: Bool = false
+    for (a in args) {
+        if (a == "--release") {
+            release = true
+        } else {
+            return Err(fatal("unknown argument `${a}`"))
+        }
+    }
+    let m: Toml.Manifest = loadHere()?
+    let out: String = build(m, release, false)?
+    Console.Println("Built ${out}")
+    Ok(0)
+}
+
+fn cmdRun(args: Array<String>) -> Result<I32, Error> {
+    mut release: Bool = false
+    mut rest: Array<String> = []
+    mut i: I64 = 0
+    while (i < args.Len()) {
+        if (args[i] == "--release") {
+            release = true
+        } else if (args[i] == "--") {
+            rest = args.Slice(i + 1, args.Len())
+            break
+        } else {
+            return Err(fatal("unknown argument `${args[i]}` (put the program's own arguments after `--`)"))
+        }
+        i += 1
+    }
+    let m: Toml.Manifest = loadHere()?
+    if (m.Kind == "lib") {
+        return Err(fatal("`${m.Name}` is a library; there is nothing to run (try `zevpm test`)"))
+    }
+    let out: String = build(m, release, false)?
+    mut a: Array<String> = [Os.Join(".", out)]
+    a.Extend(rest)
+    let rc: I32 = Os.Run(a)
+    if (rc < 0) {
+        return Err(fatal("cannot start `${out}`"))
+    }
+    Ok(rc)
+}
+
+fn cmdTest(args: Array<String>) -> Result<I32, Error> {
+    mut filter: String = ""
+    for (a in args) {
+        if (Text.StartsWith(a, "-")) {
+            return Err(fatal("unknown option `${a}`"))
+        } else if (filter.IsEmpty()) {
+            filter = a
+        } else {
+            return Err(fatal("too many arguments (one name filter at most)"))
+        }
+    }
+    let m: Toml.Manifest = loadHere()?
+    let out: String = build(m, false, true)?
+    mut a: Array<String> = [Os.Join(".", out)]
+    if (!filter.IsEmpty()) {
+        a.Push(filter)
+    }
+    let rc: I32 = Os.Run(a)
+    if (rc < 0) {
+        return Err(fatal("cannot start `${out}`"))
+    }
+    Ok(rc)
+}
+
+fn cmdClean() -> Result<I32, Error> {
+    loadHere()?
+    Os.RmTree("build").Context("cannot remove build/")?
+    Console.Println("Removed build/")
+    Ok(0)
+}
+
+fn cmdFmt() -> Result<I32, Error> {
+    loadHere()?
+    let fmt: String = Os.Join(Os.ExeDir(), "zevfmt${Os.ExeSuffix()}")
+    if (!Fs.IsFile(fmt)) {
+        return Err(tool("zevfmt is not available yet"))
+    }
+    mut a: Array<String> = [fmt, "-w"]
+    a.Extend(Os.Walk("src", [".zev"]))
+    a.Extend(Os.Walk("tests", [".zev"]))
+    Ok(Os.Run(a))
+}
+
+fn cmdGet(args: Array<String>) -> Result<I32, Error> {
+    if (args.Len() != 1) {
+        return Err(fatal("usage: zevpm get <repo>[@version]"))
+    }
+    let m: Toml.Manifest = loadHere()?
+    let name: String = Deps.Get(m, args[0])?
+    Console.Println("Added dependency `${name}`")
+    let m2: Toml.Manifest = loadHere()?
+    Deps.Resolve(m2, None)?
+    Ok(0)
+}
+
+fn cmdRemove(args: Array<String>) -> Result<I32, Error> {
+    if (args.Len() != 1) {
+        return Err(fatal("usage: zevpm remove <name>"))
+    }
+    let m: Toml.Manifest = loadHere()?
+    if (!Deps.Remove(m, args[0])?) {
+        return Err(fatal("`${args[0]}` is not a dependency of ${m.Name}"))
+    }
+    Console.Println("Removed dependency `${args[0]}`")
+    Ok(0)
+}
+
+fn cmdUpdate(args: Array<String>) -> Result<I32, Error> {
+    if (args.Len() > 1) {
+        return Err(fatal("usage: zevpm update [name]"))
+    }
+    let m: Toml.Manifest = loadHere()?
+    let pkgs: Array<Deps.Pkg> = Deps.Resolve(m, Some(if (args.Len() == 1) { args[0] } else { "" }))?
+    Console.Println("Dependencies are up to date (${pkgs.Len()} package${if (pkgs.Len() == 1) { "" } else { "s" }})")
+    Ok(0)
+}
+
+fn dispatch(cmd: String, rest: Array<String>) -> Result<I32, Error> {
+    if (cmd == "new") { return cmdNew(rest) }
+    if (cmd == "init") { return cmdInit(rest) }
+    if (cmd == "build") { return cmdBuild(rest) }
+    if (cmd == "run") { return cmdRun(rest) }
+    if (cmd == "test") { return cmdTest(rest) }
+    if (cmd == "clean") { return cmdClean() }
+    if (cmd == "fmt") { return cmdFmt() }
+    if (cmd == "get") { return cmdGet(rest) }
+    if (cmd == "remove") { return cmdRemove(rest) }
+    if (cmd == "update") { return cmdUpdate(rest) }
+    Console.Eprint("error: unknown command `${cmd}`\n\n${usage()}")
+    Ok(1)
+}
 
 fn Main(args: Array<String>) {
-    Console.Println("${Os.Base("a/b/c.zev")} ${Os.Dir("a/b/c.zev")} ${Os.Join("x", "y")} ${Os.IsWindows()}")
+    if (args.IsEmpty()) {
+        Console.Eprint(usage())
+        Env.Exit(1)
+    }
+    let cmd: String = args[0]
+    if (cmd == "--version" || cmd == "-V") {
+        Console.Println("zevpm ${Version.Current}")
+        Env.Exit(0)
+    }
+    if (cmd == "--help" || cmd == "-h" || cmd == "help") {
+        Console.Print(usage())
+        Env.Exit(0)
+    }
+    match (dispatch(cmd, args.Slice(1, args.Len()))) {
+        Ok(code) => Env.Exit(code),
+        Err(e) => {
+            Console.Eprintln("error: ${e.Message()}")
+            Env.Exit(if (e.Kind() == ErrorKind.Io) { 2 } else { 1 })
+        },
+    }
 }
