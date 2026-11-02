@@ -438,6 +438,79 @@ class Array<T> : Iterable<T> {
         this.appendRange(other, 0, other.len)
     }
 
+    // For an `Array<String>`: the elements with `sep` between them.
+    fn Join(sep: String) -> String {
+        mut out: String = ""
+        mut i: I64 = 0
+        while (i < this.len) {
+            if (i > 0) {
+                out = out + sep
+            }
+            out = out + this.buf.Get(i)
+            i += 1
+        }
+        out
+    }
+
+    // Sorts the array in place. The sort is stable. `T` must be `Comparable`.
+    mut fn Sort() {
+        this.SortBy((a: T, b: T) => a.Compare(b))
+    }
+
+    // Sorts in place with `cmp`, which gives a negative, zero or positive number like `Compare`.
+    // Equal elements keep their order (a merge sort).
+    mut fn SortBy(cmp: fn(T, T) -> I32) {
+        let n: I64 = this.len
+        if (n < 2) {
+            return
+        }
+        mut from: Intrinsics.Buf<T> = this.buf
+        mut into: Intrinsics.Buf<T> = Intrinsics.Buf.New(n)
+        mut flipped: Bool = false
+        mut width: I64 = 1
+        while (width < n) {
+            mut lo: I64 = 0
+            while (lo < n) {
+                mut mid: I64 = lo + width
+                if (mid > n) { mid = n }
+                mut hi: I64 = lo + 2 * width
+                if (hi > n) { hi = n }
+                mut i: I64 = lo
+                mut j: I64 = mid
+                mut k: I64 = lo
+                while (i < mid && j < hi) {
+                    if (cmp(from.Get(j), from.Get(i)) < 0) {
+                        into.Set(k, from.Get(j))
+                        j += 1
+                    } else {
+                        into.Set(k, from.Get(i))
+                        i += 1
+                    }
+                    k += 1
+                }
+                while (i < mid) {
+                    into.Set(k, from.Get(i))
+                    i += 1
+                    k += 1
+                }
+                while (j < hi) {
+                    into.Set(k, from.Get(j))
+                    j += 1
+                    k += 1
+                }
+                lo += 2 * width
+            }
+            let t: Intrinsics.Buf<T> = from
+            from = into
+            into = t
+            flipped = !flipped
+            width *= 2
+        }
+        if (flipped) {
+            this.buf.Copy(from, 0, 0, n)
+        }
+    }
+
     fn Slice(from: I64, to: I64) -> Array<T> {
         if (from < 0 || to > this.len || from > to) {
             Panic("slice ${from}..${to} is out of range (length ${this.len})")
