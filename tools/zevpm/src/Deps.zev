@@ -1,0 +1,451 @@
+module Zevpm.Deps
+
+// Dependencies: fetching with git, the cache in ~/.zevpm, and zevic.lock.
+
+import Zevic.Console
+import Zevic.Env
+import Zevic.Fs
+import Zevic.Text
+import Zevic.Time
+import Zevpm.Os as Os
+import Zevpm.Toml as Toml
+
+// A dependency that was found: its own manifest, where its files are, and what was chosen (for finding conflicts).
+class Pkg {
+    M: Toml.Manifest
+    Dir: String
+    Id: String
+
+    fn Init(m: Toml.Manifest, dir: String, id: String) {
+        this.M = m
+        this.Dir = dir
+        this.Id = id
+    }
+}
+
+// ---- zevic.lock ----
+
+class LockEntry {
+    Name: String = ""
+    Git: String = ""
+    Ref: String = ""
+    Rev: String = ""
+}
+
+class Lock {
+    File: String
+    Entries: Array<LockEntry> = []
+    Dirty: Bool = false
+
+    fn Init(dir: String) {
+        this.File = Os.Join(dir, "zevic.lock")
+    }
+
+    fn Find(name: String) -> Option<LockEntry> {
+        for (e in this.Entries) {
+            if (e.Name == name) {
+                return Some(e)
+            }
+        }
+        None
+    }
+
+    mut fn Set(name: String, git: String, ref: String, rev: String) {
+        match (this.Find(name)) {
+            Some(e) => {
+                if (e.Git == git && e.Ref == ref && e.Rev == rev) {
+                    return
+                }
+                mut x: LockEntry = e
+                x.Git = git
+                x.Ref = ref
+                x.Rev = rev
+            },
+            None => {
+                mut e: LockEntry = LockEntry.New()
+                e.Name = name
+                e.Git = git
+                e.Ref = ref
+                e.Rev = rev
+                this.Entries.Push(e)
+            },
+        }
+        this.Dirty = true
+    }
+
+    // Drops the entries of packages that nothing uses any more.
+    mut fn Prune(used: Map<String, Pkg>) {
+        mut keep: Array<LockEntry> = []
+        for (e in this.Entries) {
+            if (used.Contains(e.Name)) {
+                keep.Push(e)
+            } else {
+                this.Dirty = true
+            }
+        }
+        this.Entries = keep
+    }
+
+    fn Save() -> Result<Unit, Error> {
+        if (this.Entries.Len() == 0) {
+            if (Fs.Exists(this.File)) {
+                Fs.Remove(this.File)?
+            }
+            return Ok(())
+        }
+        mut sorted: Array<LockEntry> = this.Entries.Slice(0, this.Entries.Len())
+        sorted.SortBy((a: LockEntry, b: LockEntry) => a.Name.Compare(b.Name))
+        mut out: String = "# zevic.lock: the exact commits of the dependencies. Written by zevpm; commit this file.\n"
+        for (e in sorted) {
+            out = out + "\n[[package]]\nname = \"${e.Name}\"\ngit = \"${e.Git}\"\nref = \"${e.Ref}\"\nrev = \"${e.Rev}\"\n"
+        }
+        Fs.WriteAll(this.File, out)
+    }
+}
+
+fn unquote(v: String) -> Option<String> {
+    let t: String = Text.Trim(v)
+    if (t.Len() < 2 || t.ByteAt(0) != b'"' || t.ByteAt(t.Len() - 1) != b'"') {
+        return None
+    }
+    Some(t.Slice(1, t.Len() - 1))
+}
+
+fn LoadLock(dir: String) -> Lock {
+    mut lock: Lock = Lock.New(dir)
+    if (!Fs.Exists(lock.File)) {
+        return lock
+    }
+    let text: String = Fs.ReadAll(lock.File).UnwrapOr("")
+    mut cur: Option<LockEntry> = None
+    for (line in Text.Lines(text)) {
+        if (Text.StartsWith(line, "[[package]]")) {
+            let e: LockEntry = LockEntry.New()
+            lock.Entries.Push(e)
+            cur = Some(e)
+            continue
+        }
+        match (cur) {
+            None => {},
+            Some(entry) => {
+                match (Text.IndexOf(line, "=")) {
+                    None => {},
+                    Some(eq) => {
+                        let key: String = Text.Trim(line.Slice(0, eq))
+                        match (unquote(line.Slice(eq + 1, line.Len()))) {
+                            None => {},
+                            Some(val) => {
+                                mut x: LockEntry = entry
+                                if (key == "name") { x.Name = val }
+                                else if (key == "git") { x.Git = val }
+                                else if (key == "ref") { x.Ref = val }
+                                else if (key == "rev") { x.Rev = val }
+                            },
+                        }
+                    },
+                }
+            },
+        }
+    }
+    lock
+}
+
+// ---- git ----
+
+fn needGit() -> Result<Unit, Error> {
+    if (!Os.FindInPath("git")) {
+        return Err(Error.New(ErrorKind.Io, "git dependencies need `git`, but it was not found on PATH\n  install it (apt install git / brew install git / winget install Git.Git) and try again"))
+    }
+    Ok(())
+}
+
+fn git(args: Array<String>) -> I32 {
+    mut argv: Array<String> = ["git"]
+    argv.Extend(args)
+    Os.Run(argv)
+}
+
+fn cacheRoot() -> Result<String, Error> {
+    match (Env.Get("ZEVPM_HOME")) {
+        Some(h) => if (!h.IsEmpty()) { return Ok(h) },
+        None => {},
+    }
+    match (Os.HomeDir()) {
+        Some(h) => Ok(Os.Join(h, ".zevpm")),
+        None => Err(Error.New(ErrorKind.Io, "cannot find the home directory (set ZEVPM_HOME to choose where to keep downloads)")),
+    }
+}
+
+fn isAlnum(b: U8) -> Bool {
+    (b >= b'a' && b <= b'z') || (b >= b'A' && b <= b'Z') || (b >= b'0' && b <= b'9')
+}
+
+fn sanitize(url: String) -> String {
+    mut out: String = ""
+    mut i: I64 = 0
+    while (i < url.Len()) {
+        let b: U8 = url.ByteAt(i)
+        if (isAlnum(b) || b == b'.' || b == b'-') {
+            out = out + url.Slice(i, i + 1)
+        } else {
+            out = out + "_"
+        }
+        i += 1
+    }
+    out
+}
+
+fn isFullHash(s: String) -> Bool {
+    if (s.Len() != 40) {
+        return false
+    }
+    mut i: I64 = 0
+    while (i < s.Len()) {
+        let b: U8 = s.ByteAt(i)
+        if (!((b >= b'0' && b <= b'9') || (b >= b'a' && b <= b'f') || (b >= b'A' && b <= b'F'))) {
+            return false
+        }
+        i += 1
+    }
+    true
+}
+
+// How the dependency asks for its version, as text.
+fn refOf(d: Toml.Dep) -> String {
+    if (!d.Tag.IsEmpty()) { return "tag ${d.Tag}" }
+    if (!d.Branch.IsEmpty()) { return "branch ${d.Branch}" }
+    if (!d.Rev.IsEmpty()) { return "rev ${d.Rev}" }
+    "default"
+}
+
+fn fetchFail(d: Toml.Dep, what: String) -> Error {
+    mut at: String = ""
+    if (!d.Tag.IsEmpty()) { at = " at tag ${d.Tag}" }
+    else if (!d.Branch.IsEmpty()) { at = " at branch ${d.Branch}" }
+    Error.New(ErrorKind.Io, "cannot ${what} `${d.Git}`${at}\n  check the address and your network connection, then try again")
+}
+
+// Gets the files of a git dependency into the cache. `known` is the commit to use when it is known (from the
+// lock; empty otherwise): else the newest commit of the ref is taken. Returns the directory and the commit.
+fn fetchGit(d: Toml.Dep, known: String) -> Result<(String, String), Error> {
+    needGit()?
+    let root: String = cacheRoot()?
+    let repoDir: String = Os.Join(Os.Join(root, "git"), sanitize(d.Git))
+    mut rev: String = known
+    if (!d.Rev.IsEmpty()) {
+        if (!isFullHash(d.Rev)) {
+            return Err(Error.New(ErrorKind.Invalid, "dependency `${d.Name}`: `rev` must be the full 40-character commit hash"))
+        }
+        rev = d.Rev
+    }
+    if (!rev.IsEmpty()) {
+        let target: String = Os.Join(repoDir, rev)
+        if (Fs.IsDir(target)) {
+            return Ok((target, rev))
+        }
+    }
+    Os.Mkdirs(repoDir)?
+    let tmp: String = Os.Join(repoDir, "tmp-${Time.UnixMillis()}")
+    Os.RmTree(tmp)?
+    if (!rev.IsEmpty()) {
+        // a known commit: ask for exactly that one
+        Os.Mkdirs(tmp)?
+        if (git(["-C", tmp, "init", "-q"]) != 0) {
+            return Err(fetchFail(d, "prepare a download for"))
+        }
+        if (git(["-C", tmp, "fetch", "-q", "--depth", "1", d.Git, rev]) != 0) {
+            Os.RmTree(tmp)?
+            return Err(fetchFail(d, "fetch the commit from"))
+        }
+        if (git(["-C", tmp, "checkout", "-q", "FETCH_HEAD"]) != 0) {
+            Os.RmTree(tmp)?
+            return Err(fetchFail(d, "check out the commit of"))
+        }
+    } else {
+        mut args: Array<String> = ["clone", "-q", "--depth", "1"]
+        if (!d.Tag.IsEmpty()) {
+            args.Push("--branch")
+            args.Push(d.Tag)
+        } else if (!d.Branch.IsEmpty()) {
+            args.Push("--branch")
+            args.Push(d.Branch)
+        }
+        args.Push(d.Git)
+        args.Push(tmp)
+        if (git(args) != 0) {
+            Os.RmTree(tmp)?
+            return Err(fetchFail(d, "clone"))
+        }
+    }
+    let (code, head): (I32, String) = Os.RunCapture(["git", "-C", tmp, "rev-parse", "HEAD"])
+    if (code != 0 || !isFullHash(head)) {
+        Os.RmTree(tmp)?
+        return Err(fetchFail(d, "read the commit of"))
+    }
+    Os.RmTree(Os.Join(tmp, ".git"))?
+    let target: String = Os.Join(repoDir, head)
+    if (Fs.IsDir(target)) {
+        Os.RmTree(tmp)?
+    } else {
+        Fs.Rename(tmp, target).Context("cannot move the download to `${target}`")?
+    }
+    Ok((target, head))
+}
+
+// ---- resolving ----
+
+class Walk {
+    Pkgs: Array<Pkg> = []
+    Seen: Map<String, Pkg> = Map.New()
+    Update: Option<String>
+    Lock: Lock
+
+    fn Init(update: Option<String>, lock: Lock) {
+        this.Update = update
+        this.Lock = lock
+    }
+
+    fn IsUpdateTarget(name: String) -> Bool {
+        match (this.Update) {
+            Some(u) => u.IsEmpty() || u == name,
+            None => false,
+        }
+    }
+}
+
+fn walkDeps(mut w: Walk, owner: Toml.Manifest) -> Result<Unit, Error> {
+    for (d in owner.Deps) {
+        mut dir: String = ""
+        mut id: String = ""
+        if (!d.Path.IsEmpty()) {
+            dir = Os.Join(owner.Dir, d.Path)
+            if (!Fs.IsDir(dir)) {
+                return Err(Error.New(ErrorKind.Invalid, "dependency `${d.Name}` (in ${owner.File}): the directory `${dir}` does not exist"))
+            }
+            id = "path ${dir}"
+        } else {
+            let ref: String = refOf(d)
+            mut want: String = ""
+            match (w.Lock.Find(d.Name)) {
+                Some(le) => {
+                    if (le.Git == d.Git && le.Ref == ref && !le.Rev.IsEmpty() && !w.IsUpdateTarget(d.Name)) {
+                        want = le.Rev
+                    }
+                },
+                None => {},
+            }
+            let (got, rev): (String, String) = fetchGit(d, want)?
+            dir = got
+            w.Lock.Set(d.Name, d.Git, ref, rev)
+            id = "git ${d.Git} @ ${rev}"
+        }
+        match (w.Seen.Get(d.Name)) {
+            Some(old) => {
+                if (old.Id != id) {
+                    return Err(Error.New(ErrorKind.Invalid, "the package `${d.Name}` is needed in two different versions:\n  ${old.Id}\n  ${id}\n  zevpm does not choose between versions: edit zevic.toml so that all agree"))
+                }
+                continue
+            },
+            None => {},
+        }
+        let dm: Toml.Manifest = Toml.Load(dir)?
+        if (dm.Name != d.Name) {
+            return Err(Error.New(ErrorKind.Invalid, "`${owner.File}` lists the dependency as `${d.Name}`, but its package is named `${dm.Name}`"))
+        }
+        let p: Pkg = Pkg.New(dm, dir, id)
+        w.Seen.Set(d.Name, p)
+        w.Pkgs.Push(p)
+        walkDeps(w, dm)?
+    }
+    Ok(())
+}
+
+// Finds every dependency of `root`, and theirs, and fetches what is missing. Commits come from zevic.lock when
+// it has them. `update` is None (keep the lock), Some("") (update all) or Some(name) (update that package).
+// zevic.lock is written when something changed.
+fn Resolve(root: Toml.Manifest, update: Option<String>) -> Result<Array<Pkg>, Error> {
+    mut w: Walk = Walk.New(update, LoadLock(root.Dir))
+    walkDeps(w, root)?
+    w.Lock.Prune(w.Seen)
+    if (w.Lock.Dirty) {
+        w.Lock.Save()?
+    }
+    Ok(w.Pkgs)
+}
+
+// ---- get and remove ---- 
+
+fn looksLikeVersion(s: String) -> Bool {
+    mut t: String = s
+    if (Text.StartsWith(t, "v")) {
+        t = t.Slice(1, t.Len())
+    }
+    !t.IsEmpty() && t.ByteAt(0) >= b'0' && t.ByteAt(0) <= b'9'
+}
+
+fn lastIndexOf(s: String, b: U8) -> I64 {
+    mut i: I64 = s.Len() - 1
+    while (i >= 0) {
+        if (s.ByteAt(i) == b) {
+            return i
+        }
+        i -= 1
+    }
+    -1
+}
+
+// `zevpm get`: fetches the repository, adds it to zevic.toml and zevic.lock, returns the package name.
+fn Get(root: Toml.Manifest, spec: String) -> Result<String, Error> {
+    mut d: Toml.Dep = Toml.Dep.New("Dependency")
+    mut s: String = spec
+    // name@ref: the `@` after the last `/`
+    let slash: I64 = lastIndexOf(s, b'/')
+    let at: I64 = lastIndexOf(s, b'@')
+    if (at >= 0 && at > slash) {
+        let ref: String = s.Slice(at + 1, s.Len())
+        s = s.Slice(0, at)
+        if (ref.IsEmpty()) {
+            return Err(Error.New(ErrorKind.Invalid, "`${spec}`: nothing after `@`"))
+        }
+        if (isFullHash(ref)) { d.Rev = ref }
+        else if (looksLikeVersion(ref)) { d.Tag = ref }
+        else { d.Branch = ref }
+    }
+    if (Text.Contains(s, "://") || Text.StartsWith(s, "git@")) {
+        d.Git = s
+    } else if (Text.StartsWith(s, "github.com/")) {
+        d.Git = "https://${s}"
+    } else if (Text.Split(s, "/").Len() == 2) {
+        d.Git = "https://github.com/${s}"
+    } else {
+        return Err(Error.New(ErrorKind.Invalid, "`${spec}` is not a repository: write owner/name, github.com/owner/name or a full git address"))
+    }
+    mut lock: Lock = LoadLock(root.Dir)
+    let (dir, rev): (String, String) = fetchGit(d, "")?
+    let dm: Toml.Manifest = Toml.Load(dir)?
+    d.Name = dm.Name
+    if (root.FindDep(d.Name).IsSome()) {
+        Console.Eprintln("note: `${d.Name}` was already a dependency; it is replaced")
+    }
+    lock.Set(d.Name, d.Git, refOf(d), rev)
+    Toml.AddDep(root, d)?
+    lock.Save()?
+    Ok(d.Name)
+}
+
+// `zevpm remove`: drops the dependency from zevic.toml and zevic.lock.
+fn Remove(root: Toml.Manifest, name: String) -> Result<Bool, Error> {
+    if (!Toml.RemoveDep(root, name)?) {
+        return Ok(false)
+    }
+    mut lock: Lock = LoadLock(root.Dir)
+    mut keep: Array<LockEntry> = []
+    for (e in lock.Entries) {
+        if (e.Name != name) {
+            keep.Push(e)
+        }
+    }
+    lock.Entries = keep
+    lock.Save()?
+    Ok(true)
+}
