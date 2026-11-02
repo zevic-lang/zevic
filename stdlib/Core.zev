@@ -438,6 +438,26 @@ class Array<T> : Iterable<T> {
         this.appendRange(other, 0, other.len)
     }
 
+    // Is `x` in the array? `T` must be `Equatable`.
+    fn Contains(x: T) -> Bool {
+        match (this.IndexOf(x)) {
+            Some(_) => true,
+            None => false,
+        }
+    }
+
+    // The position of the first element equal to `x`. `T` must be `Equatable`.
+    fn IndexOf(x: T) -> Option<I64> {
+        mut i: I64 = 0
+        while (i < this.len) {
+            if (this.buf.Get(i) == x) {
+                return Some(i)
+            }
+            i += 1
+        }
+        None
+    }
+
     // For an `Array<String>`: the elements with `sep` between them.
     fn Join(sep: String) -> String {
         mut out: String = ""
