@@ -1,0 +1,40 @@
+module Main
+
+// Files and text: write a file, read it back, count its lines, list a directory, clean up.
+
+import Zevic.Console
+import Zevic.Env
+import Zevic.Fs
+import Zevic.Text
+
+fn Run() -> Result<Unit, Error> {
+    let dir: String = "zevic_example_files"
+    if (!Fs.Exists(dir)) {
+        Fs.CreateDir(dir)?
+    }
+    let path: String = "${dir}/notes.txt"
+    Fs.WriteAll(path, "first line\nsecond line\n")?
+    Fs.Append(path, "third line\n")?
+    let text: String = Fs.ReadAll(path)?
+    let lines: Array<String> = Text.Lines(text)
+    Console.Println("${lines.Len()} lines in ${path}")
+    for (i, line in lines) {
+        Console.Println("${i + 1}: ${Text.ToUpper(line)}")
+    }
+    for (name in Fs.List(dir)?) {
+        Console.Println("found ${name}")
+    }
+    Fs.Remove(path)?
+    Fs.Remove(dir)?
+    Ok(())
+}
+
+fn Main() {
+    match (Run()) {
+        Ok(_) => Console.Println("done"),
+        Err(e) => {
+            Console.Eprintln(e.ToString())
+            Env.Exit(1)
+        },
+    }
+}
