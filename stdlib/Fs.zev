@@ -14,6 +14,7 @@ extern "zevic" {
     fn zevic_fs_kind(path: String) -> I32
     fn zevic_fs_remove(path: String) -> I32
     fn zevic_fs_mkdir(path: String) -> I32
+    fn zevic_fs_rename(from: String, to: String) -> I32
     fn zevic_fs_list(path: String) -> String
     fn zevic_fs_open(path: String, mode: I32) -> *CVoid
     fn zevic_fs_close(h: *CVoid) -> I32
@@ -63,6 +64,14 @@ fn IsDir(path: String) -> Bool { zevic_fs_kind(path) == 2 }
 fn Remove(path: String) -> Result<Unit, Error> {
     if (zevic_fs_remove(path) == 0) {
         return Err(failure("remove", path))
+    }
+    Ok(())
+}
+
+// Moves or renames a file or directory. An existing target of the same kind may be replaced (the system decides).
+fn Rename(from: String, to: String) -> Result<Unit, Error> {
+    if (zevic_fs_rename(from, to) == 0) {
+        return Err(failure("rename", from))
     }
     Ok(())
 }
