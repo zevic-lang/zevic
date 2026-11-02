@@ -1,10 +1,148 @@
 module Main
 
+import Zevfmt.Format as Format
 import Zevic.Console
-import Zevfmt.Scan as Scan
+import Zevic.Env
+import Zevic.Fs
+import Zevic.Process
+import Zevic.Text
+
+let Usage: String = "zevfmt - the Zevic source formatter\n" +
+    "\n" +
+    "usage:\n" +
+    "  zevfmt <file>            print the formatted source\n" +
+    "  zevfmt -w <path>...      rewrite the files (directories are searched for .zev files)\n" +
+    "  zevfmt -check <path>...  list the files that are not formatted; exit code 1 if there are any\n"
+
+fn exeSuffix() -> String {
+    if (Text.Contains(Env.ExePath(), "\\")) { ".exe" } else { "" }
+}
+
+fn dirOf(path: String) -> String {
+    mut last: I64 = -1
+    mut i: I64 = 0
+    while (i < path.Len()) {
+        let c: I32 = path.ByteAt(i).ToI32()
+        if (c == 47 || c == 92) {
+            last = i
+        }
+        i += 1
+    }
+    if (last < 0) { "." } else if (last == 0) { "/" } else { path.Slice(0, last) }
+}
+
+// The compiler used to check that a file parses: next to this program, or else the one on the PATH.
+fn zevicPath() -> String {
+    let near: String = dirOf(Env.ExePath()) + "/zevic" + exeSuffix()
+    if (Fs.IsFile(near)) { near } else { "zevic" }
+}
+
+// Returns the syntax error of `src`, or None when it parses. Uses the compiler's own parser through
+// `zevic --dump-ast`, so the formatter accepts exactly the language the compiler accepts.
+fn syntaxError(path: String) -> Option<String> {
+    match (Process.Run(zevicPath(), ["--dump-ast", path])) {
+        Ok(o) => if (o.Code == 0) { None } else { Some(Text.TrimEnd(o.Stderr)) },
+        Err(_) => None,
+    }
+}
+
+fn collect(path: String, out: Array<String>) -> Array<String> {
+    mut res: Array<String> = out
+    if (Fs.IsDir(path)) {
+        let names: Array<String> = match (Fs.List(path)) {
+            Ok(n) => n,
+            Err(_) => [],
+        }
+        for (name in names) {
+            if (!Text.StartsWith(name, ".")) {
+                res = collect(path + "/" + name, res)
+            }
+        }
+    } else if (Text.EndsWith(path, ".zev")) {
+        res.Push(path)
+    }
+    res
+}
+
+// Formats one file. Err carries a message that is ready to print.
+fn formatFile(path: String) -> Result<String, String> {
+    let src: String = match (Fs.ReadAll(path)) {
+        Ok(s) => s,
+        Err(e) => return Err(e.Message()),
+    }
+    match (syntaxError(path)) {
+        Some(msg) => return Err("${path}: not formatted because it does not parse\n${msg}"),
+        None => {},
+    }
+    match (Format.Format(src)) {
+        Ok(s) => Ok(s),
+        Err(e) => Err("${path}: ${e.Message()}"),
+    }
+}
+
+fn fail(msg: String, code: I32) {
+    Console.Eprintln(msg)
+    Env.Exit(code)
+}
 
 fn Main(args: Array<String>) {
-    for (t in Scan.Scan("fn Main() { let x: Array<I32> = [1, 2.5e-3, 0x1F] // c\n}").Unwrap()) {
-        Console.Println("${t.Kind} ${t.Nl} ${t.Text}")
+    if (args.IsEmpty() || args[0] == "-h" || args[0] == "--help") {
+        Console.Print(Usage)
+        return
+    }
+    let mode: String = if (args[0] == "-w" || args[0] == "-check") { args[0] } else { "print" }
+    let rest: Array<String> = if (mode == "print") { args } else { args.Slice(1, args.Len()) }
+    if (rest.IsEmpty()) {
+        fail(Usage, 2)
+    }
+    if (mode == "print") {
+        if (rest.Len() != 1) {
+            fail("zevfmt: give one file, or use -w / -check for several", 2)
+        }
+        match (formatFile(rest[0])) {
+            Ok(s) => Console.Print(s),
+            Err(m) => fail(m, 1),
+        }
+        return
+    }
+    mut files: Array<String> = []
+    for (p in rest) {
+        if (!Fs.Exists(p)) {
+            fail("zevfmt: ${p}: no such file or directory", 2)
+        }
+        files = collect(p, files)
+    }
+    mut dirty: I32 = 0
+    mut broken: I32 = 0
+    for (f in files) {
+        match (formatFile(f)) {
+            Err(m) => {
+                Console.Eprintln(m)
+                broken += 1
+            },
+            Ok(out) => {
+                let old: String = Fs.ReadAll(f).UnwrapOr("")
+                if (out != old) {
+                    dirty += 1
+                    if (mode == "-check") {
+                        Console.Println(f)
+                    } else {
+                        match (Fs.WriteAll(f, out)) {
+                            Ok(_) => Console.Println("formatted ${f}"),
+                            Err(e) => {
+                                Console.Eprintln(e.Message())
+                                broken += 1
+                            },
+                        }
+                    }
+                }
+            },
+        }
+    }
+    if (broken > 0) {
+        Env.Exit(2)
+    }
+    if (mode == "-check" && dirty > 0) {
+        Env.Exit(1)
     }
 }
