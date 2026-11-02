@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+Stage 7, first part: zevpm is written in Zevic.
+
+- `tools/zevpm/` is a Zevic package (the first real program of the language). It passes the same integration tests as the C version (`zevpm/`, now frozen); the release ships the Zevic one
+- `Process.Inherit` (run a program with the shared standard input and output), `Fs.Rename`, `Env.ExePath`, `Env.CurrentDir`, `Array.Contains` and `Array.IndexOf`
+
 ## 0.3.0
 
 Stage 6: tools and the second tier of the standard library.
