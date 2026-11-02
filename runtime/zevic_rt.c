@@ -14,6 +14,9 @@
 #include <errno.h>
 #include <math.h>
 #include <setjmp.h>
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -536,6 +539,43 @@ void zevic_arg(zevic_str *out, int32_t i) {
     str_set(out, g_argv[i], (int64_t)strlen(g_argv[i]));
 }
 
+/* The full path of the running program ("" if the system will not tell). */
+void zevic_exe_path(zevic_str *out) {
+    char buf[4096];
+#ifdef _WIN32
+    DWORD n = GetModuleFileNameA(NULL, buf, sizeof buf);
+    if (n > 0 && n < sizeof buf) {
+        str_set(out, buf, (int64_t)n);
+        return;
+    }
+#elif defined(__APPLE__)
+    uint32_t sz = sizeof buf;
+    if (_NSGetExecutablePath(buf, &sz) == 0) {
+        char *real = realpath(buf, NULL);
+        str_set(out, real ? real : buf, (int64_t)strlen(real ? real : buf));
+        free(real);
+        return;
+    }
+#else
+    ssize_t n = readlink("/proc/self/exe", buf, sizeof buf - 1);
+    if (n > 0) {
+        str_set(out, buf, (int64_t)n);
+        return;
+    }
+#endif
+    str_set(out, "", 0);
+}
+
+void zevic_cwd(zevic_str *out) {
+    char buf[4096];
+#ifdef _WIN32
+    char *r = _getcwd(buf, sizeof buf);
+#else
+    char *r = getcwd(buf, sizeof buf);
+#endif
+    str_set(out, r ? buf : "", r ? (int64_t)strlen(buf) : 0);
+}
+
 void zevic_exit(int32_t code) {
     fflush(stdout);
     fflush(stderr);
@@ -789,6 +829,20 @@ int32_t zevic_fs_remove(const char *p, int64_t n) {
     g_fs_errno = 0;
     int rc = remove(path);
     free(path);
+    if (rc != 0) {
+        g_fs_errno = errno;
+        return 0;
+    }
+    return 1;
+}
+
+int32_t zevic_fs_rename(const char *a, int64_t an, const char *b, int64_t bn) {
+    char *from = nul_copy(a, an);
+    char *to = nul_copy(b, bn);
+    g_fs_errno = 0;
+    int rc = rename(from, to);
+    free(from);
+    free(to);
     if (rc != 0) {
         g_fs_errno = errno;
         return 0;
@@ -1084,6 +1138,27 @@ void zevic_proc_run(zevic_str *out) {
     remove(fe);
     free(fo);
     free(fe);
+}
+
+/* Runs the command with this program's own standard input, output and error. Afterwards zevic_proc_failed()
+ * and zevic_proc_code() tell what happened. */
+void zevic_proc_inherit(void) {
+    fflush(stdout);
+    fflush(stderr);
+    g_proc_failed = 0;
+    g_proc_code = -1;
+#ifdef _WIN32
+    char *line = malloc((size_t)g_proc_len + 3);
+    sprintf(line, "\"%s\"", g_proc_cmd);
+    int rc = system(line);
+    free(line);
+    g_proc_code = rc;
+#else
+    int rc = system(g_proc_cmd);
+    if (rc == -1) g_proc_failed = 1;
+    else if (WIFEXITED(rc)) g_proc_code = WEXITSTATUS(rc);
+    else g_proc_code = 128 + (WIFSIGNALED(rc) ? WTERMSIG(rc) : 0);
+#endif
 }
 
 int32_t zevic_proc_failed(void) {
