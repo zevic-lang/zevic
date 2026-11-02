@@ -1,0 +1,27 @@
+module Main
+
+import Zevic.Console
+import Zevic.Env
+import Zevic.Fs
+import Zevic.Process
+import Zevic.Test
+import Zevic.Text
+
+fn Main() {
+    // Inherit: the child's output goes straight to ours
+    match (Process.Inherit("sh", ["-c", "echo from child; exit 3"])) {
+        Ok(code) => Console.Println("inherit code ${code}"),
+        Err(e) => Console.Println(e.ToString()),
+    }
+    // Rename
+    let dir: String = "zevic_rename_test"
+    Fs.CreateDir(dir).Unwrap()
+    Fs.WriteAll("${dir}/a.txt", "x").Unwrap()
+    Fs.Rename("${dir}/a.txt", "${dir}/b.txt").Unwrap()
+    Console.Println("${Fs.Exists("${dir}/a.txt")} ${Fs.Exists("${dir}/b.txt")}")
+    Test.Err(Fs.Rename("${dir}/missing", "${dir}/c"))
+    Fs.Remove("${dir}/b.txt").Unwrap()
+    Fs.Remove(dir).Unwrap()
+    // exe path and current directory
+    Console.Println("${Text.Contains(Env.ExePath(), "prog")} ${!Env.CurrentDir().IsEmpty()}")
+}

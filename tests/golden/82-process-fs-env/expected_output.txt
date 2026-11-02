@@ -1,0 +1,4 @@
+from child
+inherit code 3
+false true
+true true
