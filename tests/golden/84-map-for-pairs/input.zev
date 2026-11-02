@@ -1,0 +1,19 @@
+module Main
+
+import Zevic.Console
+
+fn Main() {
+    mut m: Map<String, I32> = Map.New()
+    m.Set("a", 1)
+    m.Set("b", 2)
+    mut total: I32 = 0
+    for (k, v in m) {
+        Console.Println("${k}=${v}")
+        total += v
+    }
+    Console.Println("total ${total}")
+    let xs: Array<String> = ["x", "y"]
+    for (i, s in xs) {
+        Console.Println("${i}:${s}")
+    }
+}

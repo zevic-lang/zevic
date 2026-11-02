@@ -3626,8 +3626,11 @@ static void gen_for_iterable(FnCtx *F, Node *n, Val src) {
     }
     Local *itl = declare_local(F, "$iter", iter.t, true, pos); /* `Next` is a `mut fn` */
     store_to(F, iter.t, iter, itl->ptr);
+    /* Map is the one exception: `for (k, v in m)` destructures the (key, value) element */
+    bool map_pairs = n->c && src.t->k == T_CLASS && src.t->decl && strcmp(src.t->decl->name, "Map") == 0 &&
+                     src.t->decl->mod->is_std;
     Local *il = NULL;
-    if (n->c) {
+    if (n->c && !map_pairs) {
         il = declare_local(F, "$i", ty_i64, true, pos);
         store_to(F, ty_i64, (Val){ty_i64, "0"}, il->ptr);
     }
@@ -3646,10 +3649,17 @@ static void gen_for_iterable(FnCtx *F, Node *n, Val src) {
     start_block(F, body);
     push_scope(F);
     Node *let_elem = node_new(N_LET, pos);
-    let_elem->a = n->a;
+    if (map_pairs) {
+        Node *tp = node_new(P_TUPLE, pos);
+        vec_push(&tp->list, n->c);
+        vec_push(&tp->list, n->a);
+        let_elem->a = tp;
+    } else {
+        let_elem->a = n->a;
+    }
     let_elem->c = mk_method_call(mk_ident(pos, "$o"), "Unwrap", pos, NULL, NULL);
     gen_let(F, let_elem);
-    if (n->c) {
+    if (n->c && !map_pairs) {
         Node *let_idx = node_new(N_LET, pos);
         let_idx->a = n->c;
         let_idx->c = mk_ident(pos, "$i");
