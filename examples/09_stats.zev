@@ -1,0 +1,36 @@
+module Main
+
+// Numbers: sort, sum, average and standard deviation of a list.
+
+import Zevic.Console
+import Zevic.Math
+
+fn Sum(xs: Array<F64>) -> F64 {
+    xs.Reduce(0.0, (acc: F64, x: F64) => acc + x)
+}
+
+fn Mean(xs: Array<F64>) -> F64 {
+    Sum(xs) / xs.Len().ToF64()
+}
+
+fn StdDev(xs: Array<F64>) -> F64 {
+    let m: F64 = Mean(xs)
+    let squares: Array<F64> = xs.Map((x: F64) => (x - m) * (x - m))
+    Math.Sqrt(Sum(squares) / xs.Len().ToF64())
+}
+
+fn Median(sorted: Array<F64>) -> F64 {
+    let n: I64 = sorted.Len()
+    if (n % 2 == 1) {
+        sorted[n / 2]
+    } else {
+        (sorted[n / 2 - 1] + sorted[n / 2]) / 2.0
+    }
+}
+
+fn Main() {
+    mut xs: Array<F64> = [2.0, 4.0, 4.0, 4.0, 5.0, 5.0, 7.0, 9.0]
+    xs.Sort()
+    Console.Println("sorted: ${xs.Len()} values, from ${xs[0]} to ${xs[xs.Len() - 1]}")
+    Console.Println("mean ${Mean(xs)}, median ${Median(xs)}, standard deviation ${StdDev(xs)}")
+}
