@@ -5423,12 +5423,25 @@ void gen_set_lib_mode(Gen *g) { g->lib_mode = true; }
 
 bool gen_program(Gen *g, SB *out) {
     Decl *md = (g->test_mode || g->lib_mode) ? NULL : find_main(g);
-    Inst *main_in = NULL;
+    Inst *main_in = NULL, *args_in = NULL;
     if (md) {
         Node *fn = md->node;
         if (fn->list2.n) diag_error(fn->pos, "`Main` cannot have type parameters");
-        else if (fn->list.n != 0) diag_error(fn->pos, "`Main` with command line arguments is not supported yet; use `fn Main()`");
-        else main_in = get_inst(g, md, NULL, NULL);
+        else if (fn->list.n > 1) diag_error(fn->pos, "`Main` takes no parameters or one `args: Array<String>`");
+        else {
+            main_in = get_inst(g, md, NULL, NULL);
+            if (fn->list.n == 1) {
+                Module *env = prog_find_module(g->pg, "Zevic.Env");
+                Decl *ra = env ? module_find(env, "RawArgs") : NULL;
+                if (!ra) {
+                    diag_error(fn->pos, "cannot find `Zevic.Env.RawArgs` for the arguments of `Main`");
+                } else {
+                    args_in = get_inst(g, ra, NULL, NULL);
+                    if (strcmp(((Type *)main_in->ptypes.v[0])->name, args_in->ret->name) != 0)
+                        diag_error(fn->pos, "the parameter of `Main` must be `args: Array<String>`");
+                }
+            }
+        }
         if (main_in && main_in->ret != ty_unit && !is_err(main_in->ret))
             diag_error(fn->pos, "`Main` must not return a value (use `Env.Exit(code)` to set the exit code)");
     }
@@ -5485,9 +5498,13 @@ bool gen_program(Gen *g, SB *out) {
         return true;
     }
     if (g->lib_mode) return true;
-    sb_printf(out, "define i32 @main(i32 %%argc, ptr %%argv) {\n  call void @zevic_init(i32 %%argc, ptr %%argv)\n"
-                   "  call void @\"%s\"()\n  ret i32 0\n}\n",
-              main_in->name);
+    sb_puts(out, "define i32 @main(i32 %argc, ptr %argv) {\n  call void @zevic_init(i32 %argc, ptr %argv)\n");
+    if (args_in)
+        sb_printf(out, "  %%args = call %s @\"%s\"()\n  call void @\"%s\"(%s %%args)\n", type_ll(args_in->ret), args_in->name,
+                  main_in->name, type_ll(args_in->ret));
+    else
+        sb_printf(out, "  call void @\"%s\"()\n", main_in->name);
+    sb_puts(out, "  ret i32 0\n}\n");
     return true;
 }
 
