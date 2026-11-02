@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.0
+
+Stage 6: tools and the second tier of the standard library.
+
+- `zevpm`: `new`, `init`, `build [--release]`, `run [-- args]`, `test [filter]`, `clean`, `get`, `remove`, `update` (`fmt` waits for zevfmt)
+- `zevic.toml` (`[package]`, `[deps]`, `[native]`); dependencies from `git` (tag, branch or commit) or a local `path`; downloads are cached in `~/.zevpm` (`ZEVPM_HOME`), the exact commits go to `zevic.lock`; dependencies of dependencies are fetched too, and two different versions of one package are an error; a dependency's `native/` files are built with the program
+- `kind = "lib"`: `zevic --lib` makes a static library (with the runtime and the collector inside) and `--emit-header` its C header; `zevpm build` puts them in `build/` and `build/include/`
+- tests: `test "name" { }` blocks and `_test.zev` files (ignored in normal builds), `zevic --test`, `Zevic.Test` (`Equal` `NotEqual` `True` `False` `Some` `None` `Ok` `Err` `Panics` `Fail`); a panic inside a test fails only that test; failures show the file and line of the assertion
+- `fn Main(args: Array<String>)`
+- `Array.Sort`, `Array.SortBy` (stable) and `Array<String>.Join`
+- standard library: `Zevic.Math`, `Zevic.Env`, `Zevic.Text`, `Zevic.Time`, `Zevic.Fs`, `Zevic.Process`, and reading from standard input in `Zevic.Console`
+- examples 07 to 10 and `examples/apps/wordcount` (a zevpm package with tests); `tests/zevpm_test.py` and `tests/examples_test.py`
+
 ## 0.2.0
 
 Stage 5: closures and memory.
