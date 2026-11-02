@@ -1,0 +1,19 @@
+module Main
+
+// Running another program and timing it.
+
+import Zevic.Console
+import Zevic.Process
+import Zevic.Time
+
+fn Main() {
+    let start: Time.Instant = Time.Now()
+    match (Process.Run("echo", ["hello from", "a child process"])) {
+        Ok(o) => {
+            Console.Println("exit code ${o.Code}")
+            Console.Println("output: ${o.Stdout}")
+        },
+        Err(e) => Console.Println("could not start: ${e.ToString()}"),
+    }
+    Console.Println("took less than a minute: ${start.Elapsed().Seconds() < 60.0}")
+}
