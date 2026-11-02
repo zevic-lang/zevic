@@ -35,8 +35,8 @@ fn Main() {
 
 
 ```sh
-make            # build/zevic を作る
-make test       # tests/ のゴールデンテストを実行
+make            # build/zevic と build/zevpm を作る
+make test       # ゴールデンテスト、zevpm のテスト、examples を実行
 ./build/zevic examples/01_hello.zev -o hello && ./hello
 ```
 
@@ -54,6 +54,19 @@ zevic --version
 標準ライブラリ(`stdlib/`)とランタイム(`runtime/`)は、実行ファイルの隣の `share/zevic/` か、
 環境変数 `ZEVIC_HOME` が指す場所から探します。リポジトリ直下で実行するときは追加の設定は不要です。
 
+## zevpm(パッケージとビルド)
+
+```sh
+zevpm new myapp          # myapp/ に zevic.toml と src/Main.zev ができる(--lib でライブラリ)
+cd myapp
+zevpm run                # ビルドして実行(引数は zevpm run -- a b)
+zevpm test               # test ブロックと _test.zev を実行(zevpm test 名前 で絞り込み)
+zevpm get owner/name@v1.0.0   # git の依存を足す(zevic.lock に commit を記録、~/.zevpm にキャッシュ)
+zevpm build --release    # build/ に出力(ライブラリは .a と include/<Name>.h)
+```
+
+`zevpm` は `zevic` を呼ぶので、同じディレクトリ(または `PATH`、環境変数 `ZEVIC`)に置いてください。git の依存には `git` が必要です。
+
 ## ランタイムとGC
 
 ランタイムと Boehm GC(`runtime/third_party/bgc`)は C で書かれています。最初のビルドで一度だけコンパイルし、
@@ -66,12 +79,13 @@ zevic --version
 
 ## 例
 
-- [`examples/`](examples/) — Hello、FizzBuzz、階乗、電卓、`interface`、C との連携(`examples/06_c_interop/`)
+- [`examples/`](examples/) — Hello、FizzBuzz、階乗、電卓、`interface`、C との連携(`06_c_interop/`)、ファイル、外部プログラム、統計、コレクション(`07`〜`10`)、`zevpm` パッケージ(`apps/wordcount/`)
 
 ## 状態
 
-v0.1.0: 型、`struct`/`class`/`enum`、`interface`、ジェネリクス(制約つき)、`Array`/`Map`/`Set`、C との連携まで動きます。
-クロージャ、`defer`、GC、`zevpm`、`Fs`/`Env` などのライブラリはこれからです(計画は [`docs/plan.md`](docs/plan.md))。
+v0.3.0: 型、`struct`/`class`/`enum`、`interface`、ジェネリクス、クロージャ、`defer`、GC、C との連携、
+`test` ブロック、`zevpm`、標準ライブラリ(`Fs` `Env` `Text` `Math` `Time` `Process` など)まで動きます。
+`zevfmt` とセルフホスティング(`zevic1`)はこれからです(計画は [`docs/plan.md`](docs/plan.md))。
 
 仕様書は草案です。実装の進み具合は [`CHANGELOG.md`](CHANGELOG.md) を参照してください。
 
