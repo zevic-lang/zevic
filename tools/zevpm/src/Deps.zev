@@ -373,7 +373,7 @@ fn Resolve(root: Toml.Manifest, update: Option<String>) -> Result<Array<Pkg>, Er
     Ok(w.Pkgs)
 }
 
-// ---- get and remove ---- 
+// ---- get and remove ----
 
 fn looksLikeVersion(s: String) -> Bool {
     mut t: String = s

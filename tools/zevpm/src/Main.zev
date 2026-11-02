@@ -13,19 +13,19 @@ import Zevpm.Version as Version
 
 fn usage() -> String {
     "usage: zevpm <command> [options]\n\n" +
-    "  new <name> [--lib]   make a new package in a new directory\n" +
-    "  init [--lib]         make the current directory a package\n" +
-    "  build [--release]    build the package into build/\n" +
-    "  run [--release] [-- args]\n" +
-    "                       build and run it\n" +
-    "  test [filter]        run the tests (those whose name contains `filter`)\n" +
-    "  fmt                  format the sources (needs zevfmt)\n" +
-    "  clean                remove build/\n" +
-    "  get <repo>           add a dependency: owner/name, github.com/owner/name or a git address,\n" +
-    "                       with @tag, @branch or @commit at the end\n" +
-    "  remove <name>        remove a dependency\n" +
-    "  update [name]        move the dependencies to their newest commits\n" +
-    "  --version, --help\n"
+        "  new <name> [--lib]   make a new package in a new directory\n" +
+        "  init [--lib]         make the current directory a package\n" +
+        "  build [--release]    build the package into build/\n" +
+        "  run [--release] [-- args]\n" +
+        "                       build and run it\n" +
+        "  test [filter]        run the tests (those whose name contains `filter`)\n" +
+        "  fmt                  format the sources (needs zevfmt)\n" +
+        "  clean                remove build/\n" +
+        "  get <repo>           add a dependency: owner/name, github.com/owner/name or a git address,\n" +
+        "                       with @tag, @branch or @commit at the end\n" +
+        "  remove <name>        remove a dependency\n" +
+        "  update [name]        move the dependencies to their newest commits\n" +
+        "  --version, --help\n"
 }
 
 fn fatal(msg: String) -> Error {

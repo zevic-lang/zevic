@@ -3,8 +3,8 @@ module Main
 import Zevic.Console
 import Zevic.Env
 import Zevic.Fs
-import Zevic.Text
 import Zevic.Test
+import Zevic.Text
 
 enum Command {
     Count(String),

@@ -428,4 +428,3 @@ fn U32ToChar(x: U32) -> Result<Char, Error> {
     }
     Ok(x.ToCharUnchecked())
 }
-
