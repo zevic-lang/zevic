@@ -10,17 +10,18 @@ let KNum: I32 = 1
 let KStr: I32 = 2
 let KChar: I32 = 3
 let KOp: I32 = 4
-let KLine: I32 = 5  // a // comment
+let KLine: I32 = 5 // a // comment
 let KBlock: I32 = 6 // a /* */ comment
 
 class Tok {
     Kind: I32
     Text: String
-    Nl: I64 = 0        // line breaks before it
-    Sp: Bool = false   // blanks before it, on its line
-    Line: I64 = 0      // its line in the source
+    Nl: I64 = 0 // line breaks before it
+    Sp: Bool = false // blanks before it, on its line
+    Line: I64 = 0 // its line in the source
     Open: Bool = false // a `<` that opens type arguments
-    Close: I32 = 0     // a `>` or `>>` that closes type arguments: how many
+    Close: I32 = 0 // a `>` or `>>` that closes type arguments: how many
+    Inh: Bool = false // the `:` of `class A : B`, which keeps a blank before it
     Skip: Bool = false // left out of the output (a `;` at the end of a line)
 
     fn Init(kind: I32, text: String) {
