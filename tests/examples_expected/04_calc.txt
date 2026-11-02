@@ -1,0 +1,6 @@
+1 + 2 * 3 = 7
+(1 + 2) * 3 = 9
+100 / (5 - 5) -> error: division by zero
+2 * (3 + 4) - -1 = 15
+7 + -> error: expected a number
+12 $ 3 -> error: reading "12 $ 3"

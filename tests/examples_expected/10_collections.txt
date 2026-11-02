@@ -1,0 +1,5 @@
+longest: banana
+most e: tree
+4 different words
+with 2 letters: 2
+counter: 3

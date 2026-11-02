@@ -67,6 +67,7 @@ jobs:
         run: |
           python tests/run.py
           python tests/zevpm_test.py
+          python tests/examples_test.py
 
       - name: Package
         id: pkg

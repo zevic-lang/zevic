@@ -1,0 +1,6 @@
+3 lines in zevic_example_files/notes.txt
+1: FIRST LINE
+2: SECOND LINE
+3: THIRD LINE
+found notes.txt
+done

@@ -1,0 +1,4 @@
+exit code 0
+output: hello from a child process
+
+took less than a minute: true
