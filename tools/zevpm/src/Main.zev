@@ -1,0 +1,8 @@
+module Main
+
+import Zevic.Console
+import Zevpm.Os as Os
+
+fn Main(args: Array<String>) {
+    Console.Println("${Os.Base("a/b/c.zev")} ${Os.Dir("a/b/c.zev")} ${Os.Join("x", "y")} ${Os.IsWindows()}")
+}

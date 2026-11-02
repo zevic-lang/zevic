@@ -1,0 +1,163 @@
+module Zevpm.Os
+
+// Paths, files and programs: the parts of zevpm that depend on the operating system.
+
+import Zevic.Env
+import Zevic.Fs
+import Zevic.Process
+import Zevic.Text
+
+// Is this Windows? (Windows sets the variable OS.)
+fn IsWindows() -> Bool {
+    match (Env.Get("OS")) {
+        Some(v) => v == "Windows_NT",
+        None => false,
+    }
+}
+
+fn ExeSuffix() -> String {
+    if (IsWindows()) { ".exe" } else { "" }
+}
+
+fn isSep(b: U8) -> Bool { b == b'/' || b == b'\\' }
+
+// a/b, without doubling the separator. An empty or "." left side gives just b.
+fn Join(a: String, b: String) -> String {
+    if (a.IsEmpty() || a == ".") {
+        return b
+    }
+    if (isSep(a.ByteAt(a.Len() - 1))) {
+        return "${a}${b}"
+    }
+    "${a}/${b}"
+}
+
+// The last element of a path.
+fn Base(path: String) -> String {
+    mut start: I64 = 0
+    mut i: I64 = 0
+    while (i < path.Len()) {
+        if (isSep(path.ByteAt(i)) && i + 1 < path.Len()) {
+            start = i + 1
+        }
+        i += 1
+    }
+    path.Slice(start, path.Len())
+}
+
+// Everything before the last element ("." when there is none).
+fn Dir(path: String) -> String {
+    mut last: I64 = -1
+    mut i: I64 = 0
+    while (i < path.Len()) {
+        if (isSep(path.ByteAt(i))) {
+            last = i
+        }
+        i += 1
+    }
+    if (last < 0) {
+        return "."
+    }
+    if (last == 0) {
+        return "/"
+    }
+    path.Slice(0, last)
+}
+
+// Makes the directory and the ones above it (mkdir -p).
+fn Mkdirs(path: String) -> Result<Unit, Error> {
+    if (Fs.IsDir(path)) {
+        return Ok(())
+    }
+    let parent: String = Dir(path)
+    if (parent != path && parent != "." && parent != "/" && !Fs.IsDir(parent)) {
+        Mkdirs(parent)?
+    }
+    Fs.CreateDir(path)
+}
+
+// Removes a file or a whole directory tree (rm -rf). A path that does not exist is fine.
+fn RmTree(path: String) -> Result<Unit, Error> {
+    if (!Fs.Exists(path)) {
+        return Ok(())
+    }
+    if (Fs.IsDir(path)) {
+        for (name in Fs.List(path)?) {
+            RmTree(Join(path, name))?
+        }
+    }
+    Fs.Remove(path)
+}
+
+fn hasExt(name: String, exts: Array<String>) -> Bool {
+    for (e in exts) {
+        if (Text.EndsWith(name, e)) {
+            return true
+        }
+    }
+    false
+}
+
+// The files below `dir` (recursively) whose names end in one of `exts`, sorted by directory and name.
+fn Walk(dir: String, exts: Array<String>) -> Array<String> {
+    mut out: Array<String> = []
+    let names: Array<String> = match (Fs.List(dir)) {
+        Ok(n) => n,
+        Err(_) => [],
+    }
+    for (name in names) {
+        let full: String = Join(dir, name)
+        if (Fs.IsDir(full)) {
+            out.Extend(Walk(full, exts))
+        } else if (hasExt(name, exts)) {
+            out.Push(full)
+        }
+    }
+    out
+}
+
+fn HomeDir() -> Option<String> {
+    match (Env.Get("HOME")) {
+        Some(h) => if (h.IsEmpty()) { Env.Get("USERPROFILE") } else { Some(h) },
+        None => Env.Get("USERPROFILE"),
+    }
+}
+
+// The directory of the running program.
+fn ExeDir() -> String { Dir(Env.ExePath()) }
+
+// Is `name` an executable file in one of the directories of PATH?
+fn FindInPath(name: String) -> Bool {
+    let path: String = Env.Get("PATH").UnwrapOr("")
+    let sep: String = if (IsWindows()) { ";" } else { ":" }
+    for (dir in Text.Split(path, sep)) {
+        if (!dir.IsEmpty() && Fs.IsFile(Join(dir, "${name}${ExeSuffix()}"))) {
+            return true
+        }
+    }
+    false
+}
+
+// cmd.exe reads `./x.exe` as a switch: the program path needs backslashes there.
+fn programPath(p: String) -> String {
+    if (IsWindows()) { Text.Replace(p, "/", "\\") } else { p }
+}
+
+// Runs a program (argv[0] and its arguments) with this program's own input and output. Returns the exit code,
+// or -1 when it cannot be started.
+fn Run(argv: Array<String>) -> I32 {
+    let rest: Array<String> = argv.Slice(1, argv.Len())
+    match (Process.Inherit(programPath(argv[0]), rest)) {
+        Ok(code) => code,
+        Err(_) => -1,
+    }
+}
+
+// Runs a program and collects what it prints. The exit code is -1 when it cannot be started.
+fn RunCapture(argv: Array<String>) -> (I32, String) {
+    let rest: Array<String> = argv.Slice(1, argv.Len())
+    match (Process.Run(programPath(argv[0]), rest)) {
+        Ok(o) => (o.Code, Text.TrimEnd(o.Stdout)),
+        Err(_) => (-1, ""),
+    }
+}
