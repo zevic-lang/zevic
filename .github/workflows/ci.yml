@@ -59,7 +59,10 @@ jobs:
           mkdir -p build
           VERSION="$(cat VERSION)"
           clang -std=c11 -O2 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -DZEVIC_VERSION="\"$VERSION\"" zevic0/*.c -o "build/zevic${{ matrix.exe }}"
-          clang -std=c11 -O2 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -DZEVPM_VERSION="\"$VERSION\"" zevpm/*.c zevic0/util.c -o "build/zevpm${{ matrix.exe }}"
+          # zevpm is written in Zevic (tools/zevpm); the C version (zevpm/) is the frozen one for bootstrapping
+          clang -std=c11 -O2 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -DZEVPM_VERSION="\"$VERSION\"" zevpm/*.c zevic0/util.c -o "build/zevpm-c${{ matrix.exe }}"
+          grep -q "\"$VERSION\"" tools/zevpm/src/Version.zev
+          "build/zevic${{ matrix.exe }}" tools/zevpm/src/*.zev -o "build/zevpm${{ matrix.exe }}"
           "build/zevic${{ matrix.exe }}" --version
           "build/zevpm${{ matrix.exe }}" --version
 
@@ -67,6 +70,7 @@ jobs:
         run: |
           python tests/run.py
           python tests/zevpm_test.py
+          ZEVPM="build/zevpm-c${{ matrix.exe }}" python tests/zevpm_test.py
           python tests/examples_test.py
 
       - name: Package
