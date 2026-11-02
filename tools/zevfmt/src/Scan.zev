@@ -1,0 +1,253 @@
+module Zevfmt.Scan
+
+// Cuts a source file into pieces for the formatter. Unlike the compiler's lexer it keeps comments, how many
+// line breaks came before each piece, and the exact text of every literal.
+
+import Zevic.Text
+
+let KWord: I32 = 0
+let KNum: I32 = 1
+let KStr: I32 = 2
+let KChar: I32 = 3
+let KOp: I32 = 4
+let KLine: I32 = 5  // a // comment
+let KBlock: I32 = 6 // a /* */ comment
+
+class Tok {
+    Kind: I32
+    Text: String
+    Nl: I64 = 0        // line breaks before it
+    Sp: Bool = false   // blanks before it, on its line
+    Line: I64 = 0      // its line in the source
+    Open: Bool = false // a `<` that opens type arguments
+    Close: I32 = 0     // a `>` or `>>` that closes type arguments: how many
+    Skip: Bool = false // left out of the output (a `;` at the end of a line)
+
+    fn Init(kind: I32, text: String) {
+        this.Kind = kind
+        this.Text = text
+    }
+
+    fn IsOp(s: String) -> Bool { this.Kind == KOp && this.Text == s }
+    fn IsWord(s: String) -> Bool { this.Kind == KWord && this.Text == s }
+    fn IsComment() -> Bool { this.Kind == KLine || this.Kind == KBlock }
+}
+
+fn isDigit(b: U8) -> Bool { b >= b'0' && b <= b'9' }
+
+fn isIdentStart(b: U8) -> Bool {
+    (b >= b'a' && b <= b'z') || (b >= b'A' && b <= b'Z') || b == b'_' || b >= 128
+}
+
+fn isIdentChar(b: U8) -> Bool { isIdentStart(b) || isDigit(b) }
+
+fn at(s: String, i: I64) -> U8 {
+    if (i < s.Len()) { s.ByteAt(i) } else { 0 }
+}
+
+// `i` is just after the opening quote of a string; returns the index after the closing quote.
+fn skipString(s: String, start: I64) -> I64 {
+    mut i: I64 = start
+    while (i < s.Len()) {
+        let c: U8 = s.ByteAt(i)
+        if (c == b'\\') {
+            i += 2
+        } else if (c == b'"') {
+            return i + 1
+        } else if (c == b'$' && at(s, i + 1) == b'{') {
+            i = skipInterp(s, i + 2) + 1
+        } else {
+            i += 1
+        }
+    }
+    s.Len()
+}
+
+// `i` is just after `${`; returns the index of the matching `}`.
+fn skipInterp(s: String, start: I64) -> I64 {
+    mut depth: I64 = 1
+    mut i: I64 = start
+    while (i < s.Len()) {
+        let c: U8 = s.ByteAt(i)
+        if (c == b'"') {
+            i = skipString(s, i + 1)
+        } else if (c == b'\'') {
+            i = skipChar(s, i + 1)
+        } else if (c == b'{') {
+            depth += 1
+            i += 1
+        } else if (c == b'}') {
+            depth -= 1
+            if (depth == 0) {
+                return i
+            }
+            i += 1
+        } else {
+            i += 1
+        }
+    }
+    s.Len()
+}
+
+// `i` is just after the opening quote of a character; returns the index after the closing quote.
+fn skipChar(s: String, start: I64) -> I64 {
+    mut i: I64 = start
+    if (at(s, i) == b'\\') {
+        i += 2
+    }
+    while (i < s.Len() && s.ByteAt(i) != b'\'' && s.ByteAt(i) != b'\n') {
+        i += 1
+    }
+    if (at(s, i) == b'\'') { i + 1 } else { i }
+}
+
+fn operatorAt(s: String, i: I64) -> String {
+    let three: Array<String> = ["<<=", ">>=", "..=", "..."]
+    let two: Array<String> = ["<<", ">>", "&&", "||", "==", "!=", "<=", ">=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "->", "=>", ".."]
+    if (i + 3 <= s.Len()) {
+        let t: String = s.Slice(i, i + 3)
+        if (three.Contains(t)) {
+            return t
+        }
+    }
+    if (i + 2 <= s.Len()) {
+        let t: String = s.Slice(i, i + 2)
+        if (two.Contains(t)) {
+            return t
+        }
+    }
+    s.Slice(i, i + 1)
+}
+
+// The pieces of a source text, in order.
+fn Scan(s: String) -> Result<Array<Tok>, Error> {
+    mut out: Array<Tok> = []
+    mut i: I64 = 0
+    mut line: I64 = 1
+    mut nl: I64 = 0
+    mut sp: Bool = false
+    if (Text.StartsWith(s, "\u{FEFF}")) {
+        i = 3
+    }
+    while (i < s.Len()) {
+        let c: U8 = s.ByteAt(i)
+        if (c == b'\n') {
+            nl += 1
+            line += 1
+            sp = true
+            i += 1
+            continue
+        }
+        if (c == b' ' || c == b'\t' || c == b'\r') {
+            sp = true
+            i += 1
+            continue
+        }
+        let startLine: I64 = line
+        mut kind: I32 = KOp
+        mut end: I64 = i + 1
+        if (c == b'/' && at(s, i + 1) == b'/') {
+            kind = KLine
+            while (end < s.Len() && s.ByteAt(end) != b'\n') {
+                end += 1
+            }
+        } else if (c == b'/' && at(s, i + 1) == b'*') {
+            kind = KBlock
+            mut depth: I64 = 1
+            end = i + 2
+            while (end < s.Len() && depth > 0) {
+                if (s.ByteAt(end) == b'/' && at(s, end + 1) == b'*') {
+                    depth += 1
+                    end += 2
+                } else if (s.ByteAt(end) == b'*' && at(s, end + 1) == b'/') {
+                    depth -= 1
+                    end += 2
+                } else {
+                    if (s.ByteAt(end) == b'\n') {
+                        line += 1
+                    }
+                    end += 1
+                }
+            }
+            if (depth > 0) {
+                return Err(Error.New(ErrorKind.Invalid, "line ${startLine}: unterminated block comment"))
+            }
+        } else if (c == b'"') {
+            kind = KStr
+            end = skipString(s, i + 1)
+        } else if (c == b'\'') {
+            kind = KChar
+            end = skipChar(s, i + 1)
+        } else if (c == b'`') {
+            kind = KWord
+            end = i + 1
+            while (end < s.Len() && s.ByteAt(end) != b'`') {
+                end += 1
+            }
+            end += 1
+        } else if (isIdentStart(c)) {
+            kind = KWord
+            while (end < s.Len() && isIdentChar(s.ByteAt(end))) {
+                end += 1
+            }
+            let w: String = s.Slice(i, end)
+            if (w == "r" && at(s, end) == b'"') {
+                // a raw string ends at the next quote
+                kind = KStr
+                end += 1
+                while (end < s.Len() && s.ByteAt(end) != b'"') {
+                    if (s.ByteAt(end) == b'\n') {
+                        line += 1
+                    }
+                    end += 1
+                }
+                end += 1
+            } else if (w == "b" && at(s, end) == b'\'') {
+                kind = KChar
+                end = skipChar(s, end + 1)
+            }
+        } else if (isDigit(c)) {
+            kind = KNum
+            while (end < s.Len() && isIdentChar(s.ByteAt(end))) {
+                end += 1
+            }
+            let hex: Bool = c == b'0' && (at(s, i + 1) == b'x' || at(s, i + 1) == b'X')
+            if (at(s, end) == b'.' && isDigit(at(s, end + 1))) {
+                end += 1
+                while (end < s.Len() && isIdentChar(s.ByteAt(end))) {
+                    end += 1
+                }
+            }
+            let last: U8 = s.ByteAt(end - 1)
+            if (!hex && (last == b'e' || last == b'E') && (at(s, end) == b'+' || at(s, end) == b'-') && isDigit(at(s, end + 1))) {
+                end += 1
+                while (end < s.Len() && isIdentChar(s.ByteAt(end))) {
+                    end += 1
+                }
+            }
+        } else {
+            kind = KOp
+            end = i + operatorAt(s, i).Len()
+        }
+        if (end > s.Len()) {
+            end = s.Len()
+        }
+        mut text: String = s.Slice(i, end)
+        if (kind == KStr) {
+            // a string may run over several lines
+            line += (Text.Split(text, "\n").Len() - 1)
+        }
+        if (kind == KLine) {
+            text = Text.TrimEnd(text)
+        }
+        mut t: Tok = Tok.New(kind, text)
+        t.Nl = nl
+        t.Sp = sp
+        t.Line = startLine
+        out.Push(t)
+        nl = 0
+        sp = false
+        i = end
+    }
+    Ok(out)
+}

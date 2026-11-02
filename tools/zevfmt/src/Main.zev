@@ -1,0 +1,10 @@
+module Main
+
+import Zevic.Console
+import Zevfmt.Scan as Scan
+
+fn Main(args: Array<String>) {
+    for (t in Scan.Scan("fn Main() { let x: Array<I32> = [1, 2.5e-3, 0x1F] // c\n}").Unwrap()) {
+        Console.Println("${t.Kind} ${t.Nl} ${t.Text}")
+    }
+}
