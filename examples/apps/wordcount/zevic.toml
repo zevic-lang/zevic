@@ -1,0 +1,5 @@
+[package]
+name = "WordCount"
+version = "0.1.0"
+kind = "bin"
+zevic = ">=0.2"

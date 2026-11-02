@@ -1,0 +1,31 @@
+module Main
+
+import Zevic.Test
+
+test "Load counts words without caring about case" {
+    let c: Counter = Load("sample.txt").Unwrap()
+    Test.Equal(c.Distinct(), 6)
+    let top: Array<Entry> = c.Top(1)
+    Test.Equal(top[0].Word, "the")
+    Test.Equal(top[0].Count, 4)
+}
+
+test "Top is limited and sorted" {
+    let c: Counter = Load("sample.txt").Unwrap()
+    let top: Array<Entry> = c.Top(3)
+    Test.Equal(top.Len(), 3)
+    Test.True(top[0].Count >= top[1].Count)
+    Test.True(top[1].Count >= top[2].Count)
+}
+
+test "Parse needs a file" {
+    Test.Err(Parse(["count"]))
+}
+
+test "Parse reads the limit" {
+    let c: Command = Parse(["top", "a.txt", "5"]).Unwrap()
+    match (c) {
+        Command.Top(_, n) => Test.Equal(n, 5),
+        Command.Count(_) => Test.Fail("expected Top"),
+    }
+}
