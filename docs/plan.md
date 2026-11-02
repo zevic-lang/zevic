@@ -307,8 +307,8 @@ fn Main() {
 
 ### 3つの OS
 
-- [x] CI を Linux / macOS / Windows の3つで通す
-- [x] パスの区切り、改行コード、`.exe` の扱い、clang の探索(仕様書の順)
+- [ ] CI を Linux / macOS / Windows の3つで通す(Linux のみ確認済み)
+- [ ] パスの区切り、改行コード、`.exe` の扱い、clang の探索(仕様書の順)(Windows / macOS は未確認)
 
 **完了**: `zevpm new` → `zevpm run` → `zevpm test` が3つの OS で動く。サンプル01〜10がすべて動く。**v0.3.0**。
 
