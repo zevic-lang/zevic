@@ -1,0 +1,478 @@
+module Zevpm.Toml
+
+// zevic.toml: the small subset of TOML that the manifest uses, and edits that keep the rest of the file.
+
+import Zevic.Fs
+import Zevic.Text
+import Zevpm.Os as Os
+
+// A dependency. The fields that do not apply are empty.
+class Dep {
+    Name: String
+    Git: String = ""
+    Tag: String = ""
+    Branch: String = ""
+    Rev: String = ""
+    Path: String = ""
+
+    fn Init(name: String) {
+        this.Name = name
+    }
+}
+
+class Manifest {
+    Dir: String
+    File: String
+    Name: String = ""
+    Version: String = ""
+    Kind: String = ""
+    ZevicReq: String = ""
+    Deps: Array<Dep> = []
+    Libs: Array<String> = []
+
+    fn Init(dir: String) {
+        this.Dir = dir
+        this.File = Os.Join(dir, "zevic.toml")
+    }
+
+    fn FindDep(name: String) -> Option<Dep> {
+        for (d in this.Deps) {
+            if (d.Name == name) {
+                return Some(d)
+            }
+        }
+        None
+    }
+}
+
+// ---- reading ----
+
+// A position in one line.
+class Cur {
+    File: String
+    Line: I64
+    S: String
+    P: I64 = 0
+
+    fn Init(file: String, line: I64, s: String) {
+        this.File = file
+        this.Line = line
+        this.S = s
+    }
+
+    fn Peek() -> U8 {
+        if (this.P < this.S.Len()) { this.S.ByteAt(this.P) } else { 0 }
+    }
+
+    mut fn Skip() { this.P += 1 }
+
+    mut fn SkipWs() {
+        while (this.Peek() == b' ' || this.Peek() == b'\t') {
+            this.P += 1
+        }
+    }
+
+    fn Fail(msg: String) -> Error {
+        Error.New(ErrorKind.Invalid, "${this.File}:${this.Line}: ${msg}")
+    }
+}
+
+fn isNameByte(b: U8) -> Bool {
+    (b >= b'a' && b <= b'z') || (b >= b'A' && b <= b'Z') || (b >= b'0' && b <= b'9') || b == b'_' || b == b'-'
+}
+
+fn parseString(mut c: Cur) -> Result<String, Error> {
+    c.Skip() // the opening quote
+    mut out: String = ""
+    while (c.Peek() != 0 && c.Peek() != b'"') {
+        if (c.Peek() == b'\\') {
+            c.Skip()
+            let e: U8 = c.Peek()
+            if (e == b'n') { out = out + "\n" }
+            else if (e == b't') { out = out + "\t" }
+            else if (e == b'"') { out = out + "\"" }
+            else if (e == b'\\') { out = out + "\\" }
+            else { return Err(c.Fail("unknown escape in a string")) }
+            c.Skip()
+        } else {
+            out = out + c.S.Slice(c.P, c.P + 1)
+            c.Skip()
+        }
+    }
+    if (c.Peek() != b'"') {
+        return Err(c.Fail("the string is not closed"))
+    }
+    c.Skip()
+    Ok(out)
+}
+
+fn parseKey(mut c: Cur) -> Result<String, Error> {
+    let start: I64 = c.P
+    while (isNameByte(c.Peek())) {
+        c.Skip()
+    }
+    if (c.P == start) {
+        return Err(c.Fail("expected a name"))
+    }
+    Ok(c.S.Slice(start, c.P))
+}
+
+// A value: a string, a list of strings (Kind 1) or a table of strings (Kind 2).
+class Value {
+    Kind: I32
+    S: String = ""
+    Items: Array<String> = []
+    Keys: Array<String> = []
+
+    fn Init(kind: I32) {
+        this.Kind = kind
+    }
+}
+
+fn parseValue(mut c: Cur) -> Result<Value, Error> {
+    c.SkipWs()
+    let b: U8 = c.Peek()
+    if (b == b'"') {
+        mut v: Value = Value.New(0)
+        v.S = parseString(c)?
+        return Ok(v)
+    }
+    if (b == b'[') {
+        mut v: Value = Value.New(1)
+        c.Skip()
+        c.SkipWs()
+        while (c.Peek() != 0 && c.Peek() != b']') {
+            c.SkipWs()
+            if (c.Peek() != b'"') {
+                return Err(c.Fail("a list may only hold strings"))
+            }
+            v.Items.Push(parseString(c)?)
+            c.SkipWs()
+            if (c.Peek() == b',') {
+                c.Skip()
+                c.SkipWs()
+            } else if (c.Peek() != b']') {
+                return Err(c.Fail("expected `,` or `]` in the list"))
+            }
+        }
+        if (c.Peek() != b']') {
+            return Err(c.Fail("the list is not closed (a list must fit on one line)"))
+        }
+        c.Skip()
+        return Ok(v)
+    }
+    if (b == b'{') {
+        mut v: Value = Value.New(2)
+        c.Skip()
+        c.SkipWs()
+        while (c.Peek() != 0 && c.Peek() != b'}') {
+            v.Keys.Push(parseKey(c)?)
+            c.SkipWs()
+            if (c.Peek() != b'=') {
+                return Err(c.Fail("expected `=` after the name"))
+            }
+            c.Skip()
+            c.SkipWs()
+            if (c.Peek() != b'"') {
+                return Err(c.Fail("the values of a table must be strings"))
+            }
+            v.Items.Push(parseString(c)?)
+            c.SkipWs()
+            if (c.Peek() == b',') {
+                c.Skip()
+                c.SkipWs()
+            } else if (c.Peek() != b'}') {
+                return Err(c.Fail("expected `,` or `}` in the table"))
+            }
+        }
+        if (c.Peek() != b'}') {
+            return Err(c.Fail("the table is not closed (it must fit on one line)"))
+        }
+        c.Skip()
+        return Ok(v)
+    }
+    Err(c.Fail("expected a string, a list or a table; only strings are supported as values"))
+}
+
+// The line without a trailing `# comment` (a `#` inside a string stays), and without trailing blanks.
+fn stripComment(line: String) -> String {
+    mut inStr: Bool = false
+    mut i: I64 = 0
+    while (i < line.Len()) {
+        let b: U8 = line.ByteAt(i)
+        if (inStr) {
+            if (b == b'\\') { i += 1 }
+            else if (b == b'"') { inStr = false }
+        } else if (b == b'#') {
+            return Text.TrimEnd(line.Slice(0, i))
+        } else if (b == b'"') {
+            inStr = true
+        }
+        i += 1
+    }
+    Text.TrimEnd(line)
+}
+
+fn IsPascalCase(s: String) -> Bool {
+    if (s.IsEmpty() || !(s.ByteAt(0) >= b'A' && s.ByteAt(0) <= b'Z')) {
+        return false
+    }
+    mut i: I64 = 0
+    while (i < s.Len()) {
+        let b: U8 = s.ByteAt(i)
+        if (!((b >= b'a' && b <= b'z') || (b >= b'A' && b <= b'Z') || (b >= b'0' && b <= b'9'))) {
+            return false
+        }
+        i += 1
+    }
+    true
+}
+
+// 1.2.3
+fn isVersion(s: String) -> Bool {
+    let parts: Array<String> = Text.Split(s, ".")
+    if (parts.Len() != 3) {
+        return false
+    }
+    for (p in parts) {
+        if (p.IsEmpty()) {
+            return false
+        }
+        mut i: I64 = 0
+        while (i < p.Len()) {
+            if (!(p.ByteAt(i) >= b'0' && p.ByteAt(i) <= b'9')) {
+                return false
+            }
+            i += 1
+        }
+    }
+    true
+}
+
+fn makeDep(c: Cur, name: String, v: Value) -> Result<Dep, Error> {
+    if (!IsPascalCase(name)) {
+        return Err(c.Fail("the dependency name `${name}` must be PascalCase"))
+    }
+    if (v.Kind != 2) {
+        return Err(c.Fail("dependency `${name}` must be a table such as { git = \"...\", tag = \"v1.0.0\" }"))
+    }
+    mut d: Dep = Dep.New(name)
+    for (i, k in v.Keys) {
+        let s: String = v.Items[i]
+        if (k == "git") { d.Git = s }
+        else if (k == "tag") { d.Tag = s }
+        else if (k == "branch") { d.Branch = s }
+        else if (k == "rev") { d.Rev = s }
+        else if (k == "path") { d.Path = s }
+        else { return Err(c.Fail("unknown key `${k}` in dependency `${name}` (expected git, tag, branch, rev or path)")) }
+    }
+    mut specs: I32 = 0
+    if (!d.Tag.IsEmpty()) { specs += 1 }
+    if (!d.Branch.IsEmpty()) { specs += 1 }
+    if (!d.Rev.IsEmpty()) { specs += 1 }
+    if (d.Git.IsEmpty() && d.Path.IsEmpty()) {
+        return Err(c.Fail("dependency `${name}` needs `git` or `path`"))
+    }
+    if (!d.Git.IsEmpty() && !d.Path.IsEmpty()) {
+        return Err(c.Fail("dependency `${name}` has both `git` and `path`; use one"))
+    }
+    if (!d.Path.IsEmpty() && specs > 0) {
+        return Err(c.Fail("dependency `${name}`: `tag`, `branch` and `rev` go with `git`, not `path`"))
+    }
+    if (specs > 1) {
+        return Err(c.Fail("dependency `${name}`: use only one of `tag`, `branch` and `rev`"))
+    }
+    Ok(d)
+}
+
+fn wantString(c: Cur, v: Value, what: String) -> Result<String, Error> {
+    if (v.Kind != 0) {
+        return Err(c.Fail("${what} must be a string"))
+    }
+    Ok(v.S)
+}
+
+// Reads `dir`/zevic.toml.
+fn Load(dir: String) -> Result<Manifest, Error> {
+    mut m: Manifest = Manifest.New(dir)
+    let text: String = match (Fs.ReadAll(m.File)) {
+        Ok(t) => t,
+        Err(_) => return Err(Error.New(ErrorKind.NotFound, "cannot read `${m.File}` (is this a Zevic package? `zevpm init` makes one)")),
+    }
+    mut sect: I32 = 0 // 0 none, 1 package, 2 deps, 3 native
+    mut seenPackage: Bool = false
+    mut lineNo: I64 = 0
+    for (raw in Text.Lines(text)) {
+        lineNo += 1
+        let line: String = Text.Trim(stripComment(raw))
+        if (line.IsEmpty()) {
+            continue
+        }
+        mut c: Cur = Cur.New(m.File, lineNo, line)
+        if (line.ByteAt(0) == b'[') {
+            match (Text.IndexOf(line, "]")) {
+                None => return Err(c.Fail("expected `]` after the section name")),
+                Some(end) => {
+                    let name: String = line.Slice(1, end)
+                    if (name == "package") {
+                        sect = 1
+                        seenPackage = true
+                    } else if (name == "deps") {
+                        sect = 2
+                    } else if (name == "native") {
+                        sect = 3
+                    } else {
+                        return Err(c.Fail("unknown section `[${name}]` (expected [package], [deps] or [native])"))
+                    }
+                },
+            }
+            continue
+        }
+        let key: String = parseKey(c)?
+        c.SkipWs()
+        if (c.Peek() != b'=') {
+            return Err(c.Fail("expected `=` after `${key}`"))
+        }
+        c.Skip()
+        let v: Value = parseValue(c)?
+        c.SkipWs()
+        if (c.Peek() != 0) {
+            return Err(c.Fail("unexpected text after the value"))
+        }
+        if (sect == 0) {
+            return Err(c.Fail("`${key}` is outside any section"))
+        } else if (sect == 1) {
+            let s: String = wantString(c, v, "`${key}`")?
+            if (key == "name") { m.Name = s }
+            else if (key == "version") { m.Version = s }
+            else if (key == "kind") { m.Kind = s }
+            else if (key == "zevic") { m.ZevicReq = s }
+            else { return Err(c.Fail("unknown key `${key}` in [package] (expected name, version, kind or zevic)")) }
+        } else if (sect == 2) {
+            if (m.FindDep(key).IsSome()) {
+                return Err(c.Fail("dependency `${key}` is listed twice"))
+            }
+            m.Deps.Push(makeDep(c, key, v)?)
+        } else {
+            if (key != "libs") {
+                return Err(c.Fail("unknown key `${key}` in [native] (expected libs)"))
+            }
+            if (v.Kind != 1) {
+                return Err(c.Fail("`libs` must be a list of strings"))
+            }
+            m.Libs.Extend(v.Items)
+        }
+    }
+    let c1: Cur = Cur.New(m.File, 1, "")
+    if (!seenPackage) {
+        return Err(c1.Fail("the [package] section is missing"))
+    }
+    if (m.Name.IsEmpty()) {
+        return Err(c1.Fail("[package] needs `name`"))
+    }
+    if (!IsPascalCase(m.Name)) {
+        return Err(c1.Fail("the package name `${m.Name}` must be PascalCase (for example \"MyApp\")"))
+    }
+    if (m.Version.IsEmpty()) {
+        return Err(c1.Fail("[package] needs `version`"))
+    }
+    if (!isVersion(m.Version)) {
+        return Err(c1.Fail("the version `${m.Version}` must look like 1.2.3"))
+    }
+    if (m.Kind.IsEmpty()) {
+        m.Kind = "bin"
+    }
+    if (m.Kind != "bin" && m.Kind != "lib") {
+        return Err(c1.Fail("`kind` must be \"bin\" or \"lib\", not \"${m.Kind}\""))
+    }
+    Ok(m)
+}
+
+// ---- editing ----
+
+// The line `Name = { git = "...", tag = "..." }` that describes a dependency.
+fn DepLine(d: Dep) -> String {
+    mut s: String = "${d.Name} = { "
+    if (!d.Path.IsEmpty()) {
+        s = s + "path = \"${d.Path}\""
+    } else {
+        s = s + "git = \"${d.Git}\""
+        if (!d.Tag.IsEmpty()) { s = s + ", tag = \"${d.Tag}\"" }
+        if (!d.Branch.IsEmpty()) { s = s + ", branch = \"${d.Branch}\"" }
+        if (!d.Rev.IsEmpty()) { s = s + ", rev = \"${d.Rev}\"" }
+    }
+    s + " }"
+}
+
+fn isSectionLine(l: String) -> Bool { Text.StartsWith(Text.TrimStart(l), "[") }
+
+fn isDepLine(l: String, name: String) -> Bool {
+    let t: String = Text.TrimStart(l)
+    if (!Text.StartsWith(t, name)) {
+        return false
+    }
+    Text.StartsWith(Text.TrimStart(t.Slice(name.Len(), t.Len())), "=")
+}
+
+fn findDepsHeader(lines: Array<String>) -> I64 {
+    for (i, l in lines) {
+        if (Text.StartsWith(Text.TrimStart(l), "[deps]")) {
+            return i
+        }
+    }
+    -1
+}
+
+fn save(m: Manifest, lines: Array<String>) -> Result<Unit, Error> {
+    Fs.WriteAll(m.File, Text.Join(lines, "\n") + "\n")
+}
+
+// Adds (or replaces) a dependency in the file, keeping the rest of the file as it is.
+fn AddDep(m: Manifest, d: Dep) -> Result<Unit, Error> {
+    let text: String = Fs.ReadAll(m.File)?
+    mut lines: Array<String> = Text.Lines(text)
+    let line: String = DepLine(d)
+    let h: I64 = findDepsHeader(lines)
+    if (h < 0) {
+        if (lines.Len() > 0 && !lines[lines.Len() - 1].IsEmpty()) {
+            lines.Push("")
+        }
+        lines.Push("[deps]")
+        lines.Push(line)
+        return save(m, lines)
+    }
+    mut end: I64 = h + 1 // one past the last dependency line
+    mut i: I64 = h + 1
+    while (i < lines.Len() && !isSectionLine(lines[i])) {
+        if (isDepLine(lines[i], d.Name)) {
+            lines[i] = line
+            return save(m, lines)
+        }
+        if (!lines[i].IsEmpty()) {
+            end = i + 1
+        }
+        i += 1
+    }
+    lines.Insert(end, line)
+    save(m, lines)
+}
+
+// Removes a dependency from the file. Returns false when there is none by that name.
+fn RemoveDep(m: Manifest, name: String) -> Result<Bool, Error> {
+    let text: String = Fs.ReadAll(m.File)?
+    mut lines: Array<String> = Text.Lines(text)
+    let h: I64 = findDepsHeader(lines)
+    if (h < 0) {
+        return Ok(false)
+    }
+    mut i: I64 = h + 1
+    while (i < lines.Len() && !isSectionLine(lines[i])) {
+        if (isDepLine(lines[i], name)) {
+            lines.RemoveAt(i)
+            save(m, lines)?
+            return Ok(true)
+        }
+        i += 1
+    }
+    Ok(false)
+}
