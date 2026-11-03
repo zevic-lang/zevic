@@ -837,7 +837,7 @@ static bool lex_string(Lexer *lx, bool raw) {
         for (;;) {
             if (k >= n || s[k] == '\n') {
                 diag_error(pos, "unterminated string (a string cannot span lines; use `\"\"\"` for that)");
-                while (lx->i < k) advance(lx);
+                while (lx->i < k && lx->i < lx->n) advance(lx);
                 return false;
             }
             if (!raw && s[k] == '\\') { k += 2; continue; }
