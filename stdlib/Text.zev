@@ -122,11 +122,18 @@ fn Lines(s: String) -> Array<String> {
 }
 
 fn Repeat(s: String, n: I64) -> String {
+    // doubling keeps the work linear in the size of the result
     mut out: String = ""
-    mut i: I64 = 0
-    while (i < n) {
-        out = out + s
-        i += 1
+    mut piece: String = s
+    mut k: I64 = n
+    while (k > 0) {
+        if (k % 2 == 1) {
+            out = out + piece
+        }
+        k = k / 2
+        if (k > 0) {
+            piece = piece + piece
+        }
     }
     out
 }
