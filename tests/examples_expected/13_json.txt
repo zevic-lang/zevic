@@ -1,0 +1,9 @@
+zevic version 3
+tag: fast
+tag: small
+{
+  "name": "zevic",
+  "version": 4,
+  "city": "Tokyo"
+}
+JSON: unexpected `]`, expected a value at line 1, column 7

@@ -1,0 +1,34 @@
+module Main
+
+import Zevic.Console
+import Zevic.Json
+
+// Reads a small JSON text, changes it and writes it again.
+fn Main() {
+    let text: String = "{\"name\": \"zevic\", \"version\": 3, \"tags\": [\"fast\", \"small\"], \"author\": {\"city\": \"Tokyo\"}}"
+    let doc: Json.Value = match (Json.Parse(text)) {
+        Ok(v) => v,
+        Err(e) => {
+            Console.Println(e.Message())
+            return
+        },
+    }
+    let name: String = doc.Get("name").UnwrapOr(Json.Value.Null).AsString().UnwrapOr("?")
+    let version: I64 = doc.Get("version").UnwrapOr(Json.Value.Null).AsI64().UnwrapOr(0)
+    Console.Println("${name} version ${version}")
+    for (tag in doc.Get("tags").UnwrapOr(Json.Value.Null).AsArray().UnwrapOr([])) {
+        Console.Println("tag: ${tag.AsString().UnwrapOr("?")}")
+    }
+
+    // a new object that keeps some of the old values
+    mut out: Map<String, Json.Value> = Map.New()
+    out.Set("name", Json.Value.Str(name))
+    out.Set("version", Json.Value.Number((version + 1).ToF64()))
+    out.Set("city", doc.Get("author").UnwrapOr(Json.Value.Null).Get("city").UnwrapOr(Json.Value.Null))
+    Console.Println(Json.Pretty(Json.Value.Object(out)))
+
+    match (Json.Parse("[1, 2,]")) {
+        Ok(_) => Console.Println("parsed?"),
+        Err(e) => Console.Println(e.Message()),
+    }
+}
