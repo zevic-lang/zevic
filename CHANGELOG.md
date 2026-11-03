@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- `xs[i].F = v` and `xs[i].F += v` work on a `mut` array whose elements are classes or structs (proposal 0004); a struct element is changed and stored back, so its array and index must be simple expressions
+- the specification's appendix B is the working wordcount example; a test keeps them equal
+
 Stage 7, first part: zevpm and zevfmt are written in Zevic.
 
 - `zevfmt` (`tools/zevfmt/`): `zevfmt file` prints the formatted source, `zevfmt -w path...` rewrites files, `zevfmt -check path...` lists files that are not formatted (exit code 1). It keeps comments and line breaks, fixes indentation (4 spaces), spacing, blank lines, trailing commas in multi-line lists and the order of imports; it refuses files that do not parse. Formatting is idempotent and never changes the AST (tested on the whole repository); `zevpm fmt` uses it. `make fmt` / `make fmt-check`
