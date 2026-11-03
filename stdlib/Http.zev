@@ -1,0 +1,587 @@
+module Zevic.Http
+
+// HTTP/1.1 over plain TCP: a client (`Get`, `Post`, `Send`) and a small server (`Listen`, `Serve`).
+//
+//     let r: Http.Response = Http.Get("http://localhost:8080/hello")?
+//     Console.Println("${r.Status} ${r.Body}")
+//
+// There is no TLS: `https://` addresses are an error. Every connection serves one request (`Connection: close`),
+// redirects are not followed. The server starts one task (a thread) for each connection.
+
+import Zevic.Async
+import Zevic.Text
+
+extern "zevic" {
+    fn zevic_net_failed() -> I32
+    fn zevic_net_errmsg() -> String
+    fn zevic_net_listen(host: String, port: I64) -> I64
+    fn zevic_net_port(fd: I64) -> I64
+    fn zevic_net_accept(fd: I64) -> I64
+    fn zevic_net_connect(host: String, port: I64, timeout_ms: I64) -> I64
+    fn zevic_net_timeout(fd: I64, ms: I64)
+    fn zevic_net_read(fd: I64, max: I64) -> String
+    fn zevic_net_write(fd: I64, data: String) -> I32
+    fn zevic_net_shutdown(fd: I64)
+    fn zevic_net_close(fd: I64)
+}
+
+// The longest message body that is accepted (16 MiB), and the longest set of header lines (64 KiB).
+let MaxBody: I64 = 16777216
+let MaxHead: I64 = 65536
+// How long a read or a write may wait, in milliseconds.
+let TimeoutMs: I64 = 30000
+
+fn ioError(what: String) -> Error {
+    Error.New(ErrorKind.Io, "${what}: ${zevic_net_errmsg()}")
+}
+
+fn bad(what: String) -> Error {
+    Error.New(ErrorKind.Io, "bad HTTP message: ${what}")
+}
+
+// ---- small text helpers ----
+
+// A non-negative decimal number, or -1.
+fn parseDec(s: String) -> I64 {
+    if (s.Len() == 0 || s.Len() > 18) {
+        return -1
+    }
+    mut n: I64 = 0
+    for (i in 0..s.Len()) {
+        let c: I32 = s.ByteAt(i).ToI32()
+        if (c < 48 || c > 57) {
+            return -1
+        }
+        n = n * 10 + (c - 48).ToI64()
+    }
+    n
+}
+
+// A non-negative hexadecimal number, or -1.
+fn parseHex(s: String) -> I64 {
+    if (s.Len() == 0 || s.Len() > 15) {
+        return -1
+    }
+    mut n: I64 = 0
+    for (i in 0..s.Len()) {
+        let c: I32 = s.ByteAt(i).ToI32()
+        mut d: I32 = -1
+        if (c >= 48 && c <= 57) {
+            d = c - 48
+        } else if (c >= 97 && c <= 102) {
+            d = c - 87
+        } else if (c >= 65 && c <= 70) {
+            d = c - 55
+        }
+        if (d < 0) {
+            return -1
+        }
+        n = n * 16 + d.ToI64()
+    }
+    n
+}
+
+fn lower(s: String) -> String { Text.ToLower(s) }
+
+// ---- headers ----
+
+// One header line.
+class Field {
+    Name: String
+    Value: String
+
+    fn Init(name: String, value: String) {
+        this.Name = name
+        this.Value = value
+    }
+}
+
+fn findHeader(fields: Array<Field>, name: String) -> Option<String> {
+    let want: String = lower(name)
+    for (f in fields) {
+        if (lower(f.Name) == want) {
+            return Some(f.Value)
+        }
+    }
+    None
+}
+
+// Replaces the header of that name, or adds it.
+fn putHeader(fields: Array<Field>, name: String, value: String) -> Array<Field> {
+    let want: String = lower(name)
+    mut out: Array<Field> = []
+    mut done: Bool = false
+    for (f in fields) {
+        if (lower(f.Name) == want) {
+            if (!done) {
+                out.Push(Field.New(name, value))
+                done = true
+            }
+        } else {
+            out.Push(f)
+        }
+    }
+    if (!done) {
+        out.Push(Field.New(name, value))
+    }
+    out
+}
+
+// ---- Request and Response ----
+
+// A request: what a client sends and what a server handler receives.
+class Request {
+    Method: String
+    // The address (client) or the target, like `/path?query` (server).
+    Url: String
+    Body: String
+    Headers: Array<Field>
+
+    fn Init(method: String, url: String) {
+        this.Method = method
+        this.Url = url
+        this.Body = ""
+        this.Headers = []
+    }
+
+    mut fn SetHeader(name: String, value: String) { this.Headers = putHeader(this.Headers, name, value) }
+    mut fn SetBody(body: String) { this.Body = body }
+
+    // The value of a header (the name is not case sensitive).
+    fn Header(name: String) -> Option<String> { findHeader(this.Headers, name) }
+
+    // The target without the query: `/a/b` for `/a/b?x=1`.
+    fn Path() -> String {
+        match (Text.IndexOf(this.Url, "?")) {
+            Some(i) => this.Url.Slice(0, i),
+            None => this.Url,
+        }
+    }
+
+    // What follows the `?` ("" when there is none).
+    fn Query() -> String {
+        match (Text.IndexOf(this.Url, "?")) {
+            Some(i) => this.Url.Slice(i + 1, this.Url.Len()),
+            None => "",
+        }
+    }
+}
+
+// A response: what a client gets and what a server handler returns.
+class Response {
+    Status: I64
+    Body: String
+    Headers: Array<Field>
+
+    fn Init(status: I64, body: String) {
+        this.Status = status
+        this.Body = body
+        this.Headers = []
+    }
+
+    // A plain text answer.
+    static fn Text(status: I64, body: String) -> Response {
+        mut r: Response = Response.New(status, body)
+        r.SetHeader("Content-Type", "text/plain; charset=utf-8")
+        r
+    }
+
+    mut fn SetHeader(name: String, value: String) { this.Headers = putHeader(this.Headers, name, value) }
+
+    fn Header(name: String) -> Option<String> { findHeader(this.Headers, name) }
+
+    // Status 200 to 299.
+    fn IsOk() -> Bool { this.Status >= 200 && this.Status < 300 }
+}
+
+fn reason(status: I64) -> String {
+    if (status == 200) { return "OK" }
+    if (status == 201) { return "Created" }
+    if (status == 204) { return "No Content" }
+    if (status == 301) { return "Moved Permanently" }
+    if (status == 302) { return "Found" }
+    if (status == 304) { return "Not Modified" }
+    if (status == 400) { return "Bad Request" }
+    if (status == 401) { return "Unauthorized" }
+    if (status == 403) { return "Forbidden" }
+    if (status == 404) { return "Not Found" }
+    if (status == 405) { return "Method Not Allowed" }
+    if (status == 408) { return "Request Timeout" }
+    if (status == 413) { return "Payload Too Large" }
+    if (status == 500) { return "Internal Server Error" }
+    if (status == 501) { return "Not Implemented" }
+    if (status == 503) { return "Service Unavailable" }
+    "Status"
+}
+
+// ---- a connection ----
+
+// A socket with the bytes that were read but not used yet.
+class Conn {
+    fd: I64
+    pending: String
+
+    fn Init(fd: I64) {
+        this.fd = fd
+        this.pending = ""
+    }
+
+    // Reads more bytes into `pending`. Ok(false) at the end of the stream.
+    mut fn fill() -> Result<Bool, Error> {
+        let chunk: String = zevic_net_read(this.fd, 65536)
+        if (zevic_net_failed() != 0) {
+            return Err(ioError("cannot read"))
+        }
+        if (chunk.Len() == 0) {
+            return Ok(false)
+        }
+        this.pending = this.pending + chunk
+        Ok(true)
+    }
+
+    // A line without its line break; Ok(None) when the stream ended before any byte.
+    mut fn line(limit: I64) -> Result<Option<String>, Error> {
+        mut from: I64 = 0
+        loop {
+            match (Text.IndexFrom(this.pending, "\n", from)) {
+                Some(i) => {
+                    mut end: I64 = i
+                    if (end > 0 && this.pending.ByteAt(end - 1).ToI32() == 13) {
+                        end -= 1
+                    }
+                    let l: String = this.pending.Slice(0, end)
+                    this.pending = this.pending.Slice(i + 1, this.pending.Len())
+                    return Ok(Some(l))
+                },
+                None => {},
+            }
+            if (this.pending.Len() > limit) {
+                return Err(bad("a line is too long"))
+            }
+            from = this.pending.Len()
+            let more: Bool = this.fill()?
+            if (!more) {
+                if (this.pending.Len() == 0) {
+                    return Ok(None)
+                }
+                return Err(bad("the stream ended inside a line"))
+            }
+        }
+    }
+
+    // Exactly `n` bytes.
+    mut fn take(n: I64) -> Result<String, Error> {
+        if (n > MaxBody) {
+            return Err(Error.New(ErrorKind.OutOfRange, "the message body is longer than ${MaxBody} bytes"))
+        }
+        mut parts: Array<String> = []
+        mut have: I64 = 0
+        if (this.pending.Len() > 0) {
+            let k: I64 = if (this.pending.Len() < n) { this.pending.Len() } else { n }
+            parts.Push(this.pending.Slice(0, k))
+            this.pending = this.pending.Slice(k, this.pending.Len())
+            have = k
+        }
+        while (have < n) {
+            let want: I64 = if (n - have > 1048576) { 1048576 } else { n - have }
+            let chunk: String = zevic_net_read(this.fd, want)
+            if (zevic_net_failed() != 0) {
+                return Err(ioError("cannot read"))
+            }
+            if (chunk.Len() == 0) {
+                return Err(bad("the stream ended inside the body"))
+            }
+            parts.Push(chunk)
+            have += chunk.Len()
+        }
+        Ok(Text.Join(parts, ""))
+    }
+
+    // Everything up to the end of the stream.
+    mut fn rest() -> Result<String, Error> {
+        mut parts: Array<String> = []
+        mut have: I64 = this.pending.Len()
+        parts.Push(this.pending)
+        this.pending = ""
+        loop {
+            let chunk: String = zevic_net_read(this.fd, 65536)
+            if (zevic_net_failed() != 0) {
+                return Err(ioError("cannot read"))
+            }
+            if (chunk.Len() == 0) {
+                break
+            }
+            parts.Push(chunk)
+            have += chunk.Len()
+            if (have > MaxBody) {
+                return Err(Error.New(ErrorKind.OutOfRange, "the message body is longer than ${MaxBody} bytes"))
+            }
+        }
+        Ok(Text.Join(parts, ""))
+    }
+
+    mut fn write(data: String) -> Result<Unit, Error> {
+        if (zevic_net_write(this.fd, data) == 0) {
+            return Err(ioError("cannot write"))
+        }
+        Ok(())
+    }
+
+    fn close() { zevic_net_close(this.fd) }
+}
+
+// The first line and the header lines. Ok(None) when the stream ended at once.
+fn readHead(mut conn: Conn) -> Result<Option<(String, Array<Field>)>, Error> {
+    let first: String = match (conn.line(MaxHead)?) {
+        None => return Ok(None),
+        Some(l) => l,
+    }
+    mut fields: Array<Field> = []
+    mut size: I64 = first.Len()
+    loop {
+        let l: String = match (conn.line(MaxHead)?) {
+            None => return Err(bad("the stream ended inside the header lines")),
+            Some(x) => x,
+        }
+        if (l.Len() == 0) {
+            break
+        }
+        size += l.Len() + 2
+        if (size > MaxHead) {
+            return Err(bad("the header lines are too long"))
+        }
+        match (Text.IndexOf(l, ":")) {
+            Some(k) => fields.Push(Field.New(Text.Trim(l.Slice(0, k)), Text.Trim(l.Slice(k + 1, l.Len())))),
+            None => return Err(bad("a header line without `:`")),
+        }
+    }
+    Ok(Some((first, fields)))
+}
+
+// The body that follows the header lines. `toEnd`: without a length, read until the connection closes (responses).
+fn readBody(mut conn: Conn, fields: Array<Field>, toEnd: Bool) -> Result<String, Error> {
+    let te: String = findHeader(fields, "Transfer-Encoding").UnwrapOr("")
+    if (Text.Contains(lower(te), "chunked")) {
+        mut parts: Array<String> = []
+        mut total: I64 = 0
+        loop {
+            let sizeLine: String = match (conn.line(MaxHead)?) {
+                None => return Err(bad("the stream ended inside a chunked body")),
+                Some(x) => x,
+            }
+            let hex: String = match (Text.IndexOf(sizeLine, ";")) {
+                Some(k) => Text.Trim(sizeLine.Slice(0, k)),
+                None => Text.Trim(sizeLine),
+            }
+            let n: I64 = parseHex(hex)
+            if (n < 0) {
+                return Err(bad("a chunk size is not a hexadecimal number"))
+            }
+            if (n == 0) {
+                // trailer lines up to the empty line
+                loop {
+                    match (conn.line(MaxHead)?) {
+                        Some(t) => {
+                            if (t.Len() == 0) {
+                                break
+                            }
+                        },
+                        None => break,
+                    }
+                }
+                break
+            }
+            total += n
+            if (total > MaxBody) {
+                return Err(Error.New(ErrorKind.OutOfRange, "the message body is longer than ${MaxBody} bytes"))
+            }
+            parts.Push(conn.take(n)?)
+            match (conn.line(MaxHead)?) {
+                Some(_) => {},
+                None => return Err(bad("the stream ended inside a chunked body")),
+            }
+        }
+        return Ok(Text.Join(parts, ""))
+    }
+    match (findHeader(fields, "Content-Length")) {
+        Some(v) => {
+            let n: I64 = parseDec(Text.Trim(v))
+            if (n < 0) {
+                return Err(bad("Content-Length is not a number"))
+            }
+            return conn.take(n)
+        },
+        None => {},
+    }
+    if (toEnd) {
+        return conn.rest()
+    }
+    Ok("")
+}
+
+fn writeHeaders(fields: Array<Field>) -> String {
+    mut out: String = ""
+    for (f in fields) {
+        out = out + "${f.Name}: ${f.Value}\r\n"
+    }
+    out
+}
+
+// ---- client ----
+
+// `http://host:port/target` -> (host, port, target).
+fn parseUrl(url: String) -> Result<(String, I64, String), Error> {
+    if (Text.StartsWith(url, "https://")) {
+        return Err(Error.New(ErrorKind.Invalid, "https is not supported yet"))
+    }
+    if (!Text.StartsWith(url, "http://")) {
+        return Err(Error.New(ErrorKind.Invalid, "the address must start with http://: ${url}"))
+    }
+    let rest: String = url.Slice(7, url.Len())
+    let slash: I64 = Text.IndexOf(rest, "/").UnwrapOr(rest.Len())
+    let hostPort: String = rest.Slice(0, slash)
+    let target: String = if (slash < rest.Len()) { rest.Slice(slash, rest.Len()) } else { "/" }
+    if (hostPort.Len() == 0) {
+        return Err(Error.New(ErrorKind.Invalid, "the address has no host: ${url}"))
+    }
+    match (Text.IndexOf(hostPort, ":")) {
+        Some(k) => {
+            let port: I64 = parseDec(hostPort.Slice(k + 1, hostPort.Len()))
+            if (port < 1 || port > 65535) {
+                return Err(Error.New(ErrorKind.Invalid, "bad port in ${url}"))
+            }
+            Ok((hostPort.Slice(0, k), port, target))
+        },
+        None => Ok((hostPort, 80, target)),
+    }
+}
+
+// Sends a request and reads the whole answer. A 404 or 500 is a Response, not an error.
+fn Send(req: Request) -> Result<Response, Error> {
+    let u: (String, I64, String) = parseUrl(req.Url)?
+    let (host, port, target): (String, I64, String) = u
+    let fd: I64 = zevic_net_connect(host, port, TimeoutMs)
+    if (fd < 0) {
+        return Err(ioError("cannot connect to ${host}:${port}"))
+    }
+    mut conn: Conn = Conn.New(fd)
+    let result: Result<Response, Error> = exchange(conn, req, host, port, target)
+    conn.close()
+    result
+}
+
+fn exchange(mut conn: Conn, req: Request, host: String, port: I64, target: String) -> Result<Response, Error> {
+    mut r: Request = req
+    if (r.Header("Host").IsNone()) {
+        r.SetHeader("Host", if (port == 80) { host } else { "${host}:${port}" })
+    }
+    r.SetHeader("Connection", "close")
+    if (r.Body.Len() > 0 || r.Method == "POST" || r.Method == "PUT") {
+        r.SetHeader("Content-Length", "${r.Body.Len()}")
+    }
+    if (r.Header("User-Agent").IsNone()) {
+        r.SetHeader("User-Agent", "zevic")
+    }
+    conn.write("${r.Method} ${target} HTTP/1.1\r\n${writeHeaders(r.Headers)}\r\n${r.Body}")?
+    let head: (String, Array<Field>) = match (readHead(conn)?) {
+        None => return Err(bad("the connection was closed before an answer")),
+        Some(h) => h,
+    }
+    let (statusLine, fields): (String, Array<Field>) = head
+    let parts: Array<String> = Text.Split(statusLine, " ")
+    if (parts.Len() < 2 || !Text.StartsWith(parts[0], "HTTP/")) {
+        return Err(bad("the status line is wrong: ${statusLine}"))
+    }
+    let status: I64 = parseDec(parts[1])
+    if (status < 100 || status > 999) {
+        return Err(bad("the status code is wrong: ${statusLine}"))
+    }
+    let noBody: Bool = r.Method == "HEAD" || status == 204 || status == 304 || status < 200
+    let body: String = if (noBody) { "" } else { readBody(conn, fields, true)? }
+    mut resp: Response = Response.New(status, body)
+    resp.Headers = fields
+    Ok(resp)
+}
+
+fn Get(url: String) -> Result<Response, Error> { Send(Request.New("GET", url)) }
+
+fn Post(url: String, body: String) -> Result<Response, Error> {
+    mut r: Request = Request.New("POST", url)
+    r.SetBody(body)
+    Send(r)
+}
+
+// ---- server ----
+
+class Server {
+    fd: I64
+    port: I64
+
+    fn Init(fd: I64, port: I64) {
+        this.fd = fd
+        this.port = port
+    }
+
+    // The port that was bound (useful after `Listen(host, 0)`).
+    fn Port() -> I64 { this.port }
+
+    // Takes connections until `Close` is called. Each connection gets its own task; the handler's answer is sent
+    // and the connection is closed.
+    fn Serve(handler: fn(Request) -> Response) -> Result<Unit, Error> {
+        loop {
+            let c: I64 = zevic_net_accept(this.fd)
+            if (c < 0) {
+                // the listening socket was shut down by Close
+                zevic_net_close(this.fd)
+                return Ok(())
+            }
+            let task: Async.Task<Unit> = async { serveOne(c, handler) }
+        }
+    }
+
+    // Ends `Serve`. Call it from another task.
+    fn Close() { zevic_net_shutdown(this.fd) }
+}
+
+fn Listen(host: String, port: I64) -> Result<Server, Error> {
+    let fd: I64 = zevic_net_listen(host, port)
+    if (fd < 0) {
+        return Err(ioError("cannot listen on ${host}:${port}"))
+    }
+    Ok(Server.New(fd, zevic_net_port(fd)))
+}
+
+fn serveOne(fd: I64, handler: fn(Request) -> Response) {
+    zevic_net_timeout(fd, TimeoutMs)
+    mut conn: Conn = Conn.New(fd)
+    let answer: Response = match (readRequest(conn)) {
+        Ok(Some(req)) => handler(req),
+        Ok(None) => {
+            conn.close()
+            return
+        },
+        Err(_) => Response.Text(400, "bad request"),
+    }
+    mut resp: Response = answer
+    resp.SetHeader("Content-Length", "${resp.Body.Len()}")
+    resp.SetHeader("Connection", "close")
+    let _w: Result<Unit, Error> = conn.write("HTTP/1.1 ${resp.Status} ${reason(resp.Status)}\r\n${writeHeaders(resp.Headers)}\r\n${resp.Body}")
+    zevic_net_shutdown(fd)
+    conn.close()
+}
+
+fn readRequest(mut conn: Conn) -> Result<Option<Request>, Error> {
+    let head: (String, Array<Field>) = match (readHead(conn)?) {
+        None => return Ok(None),
+        Some(h) => h,
+    }
+    let (line, fields): (String, Array<Field>) = head
+    let parts: Array<String> = Text.Split(line, " ")
+    if (parts.Len() != 3 || !Text.StartsWith(parts[2], "HTTP/")) {
+        return Err(bad("the request line is wrong: ${line}"))
+    }
+    mut req: Request = Request.New(parts[0], parts[1])
+    req.Headers = fields
+    req.Body = readBody(conn, fields, false)?
+    Ok(Some(req))
+}
