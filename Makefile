@@ -7,7 +7,7 @@ PM      := build/zevpm
 PMSRC   := $(wildcard zevpm/*.c) zevic0/util.c
 VERSION := $(shell cat VERSION)
 
-.PHONY: all test clean install zevpm2 zevfmt fmt fmt-check
+.PHONY: all test clean install zevpm2 zevfmt fmt fmt-check zevic1
 
 all: $(BIN) $(PM)
 
@@ -39,6 +39,13 @@ $(FMT): $(BIN) $(wildcard tools/zevfmt/src/*.zev) $(wildcard stdlib/*.zev) runti
 
 zevfmt: $(FMT)
 
+# the compiler written in Zevic (tools/zevic1), built by zevic0
+ZEVIC1  := build/zevic1
+$(ZEVIC1): $(BIN) $(wildcard tools/zevic1/src/*.zev) $(wildcard stdlib/*.zev) runtime/zevic_rt.c
+	./$(BIN) tools/zevic1/src/*.zev -o $@
+
+zevic1: $(ZEVIC1)
+
 FMT_DIRS := stdlib examples tools
 
 fmt: $(FMT)
@@ -47,12 +54,13 @@ fmt: $(FMT)
 fmt-check: $(FMT)
 	./$(FMT) -check $(FMT_DIRS)
 
-test: $(BIN) $(PM) $(PM2) $(FMT)
+test: $(BIN) $(PM) $(PM2) $(FMT) $(ZEVIC1)
 	python3 tests/run.py
 	python3 tests/zevpm_test.py
 	ZEVPM=$(CURDIR)/$(PM2) python3 tests/zevpm_test.py
 	python3 tests/examples_test.py
 	python3 tests/zevfmt_test.py ./$(BIN) ./$(FMT)
+	python3 tests/zevic1_test.py ./$(BIN) ./$(ZEVIC1) tokens
 
 clean:
 	rm -rf build
