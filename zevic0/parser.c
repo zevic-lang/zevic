@@ -19,6 +19,7 @@ static Token *peek_at(Parser *p, int k) {
     if (j >= p->n) j = p->n - 1;
     return &p->t[j];
 }
+static char *parse_jump_label(Parser *p, Token *kw, const char *what);
 static TokKind kind(Parser *p) { return p->t[p->i].k; }
 static Token *next(Parser *p) {
     Token *t = &p->t[p->i];
@@ -433,12 +434,13 @@ static Node *parse_primary(Parser *p) {
         if (starts_expr(kind(p))) n->a = parse_expr(p);
         return n;
     }
-    case TK_BREAK:
+    case TK_BREAK: case TK_CONTINUE: {
+        Token *kw = peek(p);
         next(p);
-        return node_new(N_BREAK, pos);
-    case TK_CONTINUE:
-        next(p);
-        return node_new(N_CONTINUE, pos);
+        Node *n = node_new(kw->k == TK_BREAK ? N_BREAK : N_CONTINUE, pos);
+        n->name = parse_jump_label(p, kw, kw->k == TK_BREAK ? "break" : "continue");
+        return n;
+    }
     default:
         perr(p, pos, "expected an expression, found %s", describe(t));
     }
@@ -763,9 +765,44 @@ static Node *parse_simple_stmt(Parser *p) {
     return s;
 }
 
+/* `name@ while/loop/for`: the label must be glued to the name and the loop keyword must follow on the same line */
+static bool at_label(Parser *p) {
+    Token *a = peek_at(p, 1), *b = peek_at(p, 2);
+    return kind(p) == TK_IDENT && a->k == TK_AT && (b->k == TK_WHILE || b->k == TK_LOOP || b->k == TK_FOR);
+}
+
+/* the `@name` after `break` / `continue`; returns the name or NULL. `@` and the name must touch the keyword. */
+static char *parse_jump_label(Parser *p, Token *kw, const char *what) {
+    if (kind(p) != TK_AT) return NULL;
+    Token *at = peek(p);
+    Token *id = peek_at(p, 1);
+    size_t klen = strlen(what);
+    if (at->pos.line != kw->pos.line || at->pos.col != kw->pos.col + (int)klen)
+        perr(p, at->pos, "write `%s@label` without a blank before `@`", what);
+    if (id->k != TK_IDENT || id->pos.line != at->pos.line || id->pos.col != at->pos.col + 1)
+        perr(p, at->pos, "expected a label name right after `@` (like `%s@outer`)", what);
+    next(p);
+    char *name = id->text;
+    next(p);
+    return name;
+}
+
 static Node *parse_stmt(Parser *p) {
     Token *t = peek(p);
     Pos pos = t->pos;
+    if (at_label(p)) {
+        Token *id = peek(p);
+        Token *b = peek_at(p, 2);
+        Token *at = peek_at(p, 1);
+        if (at->pos.line != id->pos.line || at->pos.col != id->pos.col + (int)strlen(id->text) || b->pos.line != at->pos.line)
+            perr(p, at->pos, "write the label as `name@ loop` on one line, with `@` right after the name");
+        char *label = id->text;
+        next(p);
+        next(p);
+        Node *n = parse_stmt(p);
+        n->name = label;
+        return n;
+    }
     switch (t->k) {
     case TK_LET: case TK_MUT: {
         next(p);
