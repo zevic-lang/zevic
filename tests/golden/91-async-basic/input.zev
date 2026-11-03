@@ -1,0 +1,41 @@
+module Main
+
+import Zevic.Async
+import Zevic.Console
+import Zevic.Time
+
+fn Slow(n: I64) -> I64 {
+    Time.Sleep(Time.Duration.FromMillis(20))
+    n * n
+}
+
+fn Fetch(name: String) -> Async.Task<String> {
+    async { "<${name}>" }
+}
+
+fn Main() {
+    let a: Async.Task<I64> = async { Slow(3) }
+    let b: Async.Task<I64> = async { Slow(4) }
+    let total: I64 = await a + await b
+    Console.Println("total ${total}")
+    Console.Println("again ${await a}")
+    Console.Println("done ${a.IsDone()}")
+    Console.Println(await Fetch("x"))
+    // many tasks at once
+    mut tasks: Array<Async.Task<I64>> = []
+    for (i in 0..10) {
+        let k: I64 = i
+        tasks.Push(async { Slow(k) })
+    }
+    mut sum: I64 = 0
+    for (t in tasks) {
+        sum += await t
+    }
+    Console.Println("sum ${sum}")
+    // a task that starts tasks
+    let outer: Async.Task<I64> = async {
+        let inner: Async.Task<I64> = async { 40 }
+        await inner + 2
+    }
+    Console.Println("nested ${await outer}")
+}

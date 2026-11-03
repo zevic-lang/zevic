@@ -1,0 +1,17 @@
+module Main
+
+import Zevic.Console
+
+class S<T> {
+    value: Option<T>
+    fn Init() { this.value = None }
+    mut fn Set(v: T) { this.value = Some(v) }
+    fn Get() -> T { this.value.Unwrap() }
+}
+
+fn Main() {
+    mut s: S<Unit> = S.New()
+    s.Set(())
+    s.Get()
+    Console.Println("ok")
+}

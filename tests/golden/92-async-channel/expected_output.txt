@@ -1,0 +1,2 @@
+received 100 values, sum 5050
+closed and empty: true

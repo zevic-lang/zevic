@@ -1,0 +1,33 @@
+module Main
+
+import Zevic.Async
+import Zevic.Console
+
+class Counter {
+    lock: Async.Mutex
+    N: I64 = 0
+
+    fn Init() { this.lock = Async.Mutex.New() }
+
+    mut fn Add() {
+        this.lock.Lock()
+        defer this.lock.Unlock()
+        this.N += 1
+    }
+}
+
+fn Main() {
+    mut c: Counter = Counter.New()
+    mut tasks: Array<Async.Task<Unit>> = []
+    for (i in 0..8) {
+        tasks.Push(async {
+            for (j in 0..5000) {
+                c.Add()
+            }
+        })
+    }
+    for (t in tasks) {
+        await t
+    }
+    Console.Println("count ${c.N}")
+}

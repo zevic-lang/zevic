@@ -1,0 +1,31 @@
+module Main
+
+import Zevic.Async
+import Zevic.Console
+
+fn Main() {
+    mut ch: Async.Channel<I64> = Async.Channel.New(4)
+    let producer: Async.Task<Unit> = async {
+        for (i in 1..=100) {
+            ch.Send(i)
+        }
+        ch.Close()
+    }
+    mut sum: I64 = 0
+    mut count: I64 = 0
+    loop {
+        match (ch.Recv()) {
+            Some(v) => {
+                sum += v
+                count += 1
+            },
+            None => break,
+        }
+    }
+    await producer
+    Console.Println("received ${count} values, sum ${sum}")
+    let empty: Async.Channel<String> = Async.Channel.New(0)
+    mut e: Async.Channel<String> = empty
+    e.Close()
+    Console.Println("closed and empty: ${e.Recv().IsNone()}")
+}

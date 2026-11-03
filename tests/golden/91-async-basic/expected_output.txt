@@ -1,0 +1,6 @@
+total 25
+again 9
+done true
+<x>
+sum 285
+nested 42

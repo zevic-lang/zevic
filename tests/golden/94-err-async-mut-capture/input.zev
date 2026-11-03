@@ -1,0 +1,13 @@
+module Main
+
+import Zevic.Async
+import Zevic.Console
+
+fn Main() {
+    mut n: I64 = 0
+    let t: Async.Task<Unit> = async {
+        n += 1
+    }
+    await t
+    Console.Println("${n}")
+}
