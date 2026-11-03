@@ -515,6 +515,7 @@ typedef struct {
     char *brk, *cont;
     Scope *scope;
     bool brk_used; /* some `break` jumps to `brk` */
+    const char *label; /* `name@ for ...`, or NULL */
 } Loop;
 
 typedef struct FnCtx {
@@ -1494,6 +1495,18 @@ static Val gen_expr(FnCtx *F, Node *n, Type *expect) {
             return err_val();
         }
         Loop *lp = F->loops.v[F->loops.n - 1];
+        if (n->name) {
+            lp = NULL;
+            for (int i = F->loops.n - 1; i >= 0; i--) {
+                Loop *c = F->loops.v[i];
+                if (c->label && strcmp(c->label, n->name) == 0) { lp = c; break; }
+            }
+            if (!lp) {
+                diag_error(n->pos, "there is no loop labeled `%s` around this `%s` (write `%s@ for (...) { ... }` on the loop)",
+                           n->name, n->kind == N_BREAK ? "break" : "continue", n->name);
+                return err_val();
+            }
+        }
         for (Scope *s = F->scope; s && s != lp->scope; s = s->up) run_defers_in(F, s);
         if (n->kind == N_BREAK) lp->brk_used = true;
         br(F, n->kind == N_BREAK ? lp->brk : lp->cont);
@@ -1674,7 +1687,7 @@ static void gen_while(FnCtx *F, Node *n) {
     c = coerce(F, n->a->pos, c, ty_bool, "a `while` condition");
     if (c.t != ty_never) condbr(F, c.v, body, end);
     start_block(F, body);
-    Loop lp = {end, head, F->scope, false};
+    Loop lp = {end, head, F->scope, false, n->name};
     vec_push(&F->loops, &lp);
     gen_block(F, n->b, ty_unit);
     F->loops.n--;
@@ -1685,7 +1698,7 @@ static void gen_while(FnCtx *F, Node *n) {
 static void gen_loop(FnCtx *F, Node *n) {
     char *body = newlabel(F, "loop.body"), *end = newlabel(F, "loop.end");
     goto_block(F, body);
-    Loop lp = {end, body, F->scope, false};
+    Loop lp = {end, body, F->scope, false, n->name};
     vec_push(&F->loops, &lp);
     gen_block(F, n->b, ty_unit);
     F->loops.n--;
@@ -1739,7 +1752,7 @@ static void gen_for_range(FnCtx *F, Node *n) {
         diag_error(n->a->pos, "a range loop variable must be a name or `_`");
     }
     if (n->c) diag_error(n->c->pos, "a range has no index; use a single loop variable");
-    Loop lp = {end, cont, F->scope->up, false};
+    Loop lp = {end, cont, F->scope->up, false, n->name};
     vec_push(&F->loops, &lp);
     gen_block(F, n->b, ty_unit);
     F->loops.n--;
@@ -1785,7 +1798,17 @@ static void gen_let(FnCtx *F, Node *n) {
     bind_pattern(F, n->a, v, n->flag);
 }
 
+static void check_loop_label(FnCtx *F, Node *s) {
+    if (!s->name) return;
+    for (int i = 0; i < F->loops.n; i++) {
+        Loop *c = F->loops.v[i];
+        if (c->label && strcmp(c->label, s->name) == 0)
+            diag_error(s->pos, "the label `%s` is already used by a loop around this one", s->name);
+    }
+}
+
 static void gen_stmt(FnCtx *F, Node *s) {
+    if (s->kind == N_WHILE || s->kind == N_LOOP || s->kind == N_FOR) check_loop_label(F, s);
     switch (s->kind) {
     case N_LET: gen_let(F, s); break;
     case N_ASSIGN: gen_assign(F, s); break;
@@ -3670,7 +3693,7 @@ static void gen_for_iterable(FnCtx *F, Node *n, Val src) {
         inc->b = mk_int(pos, 1);
         gen_assign(F, inc);
     }
-    Loop lp = {end, head, F->scope, false};
+    Loop lp = {end, head, F->scope, false, n->name};
     vec_push(&F->loops, &lp);
     gen_block(F, n->b, ty_unit);
     F->loops.n--;
@@ -3732,7 +3755,7 @@ static void gen_for_iter(FnCtx *F, Node *n) {
     gen_let(F, let_elem);
     if (let_idx) gen_let(F, let_idx);
     gen_assign(F, inc);
-    Loop lp = {end, head, F->scope, false};
+    Loop lp = {end, head, F->scope, false, n->name};
     vec_push(&F->loops, &lp);
     gen_block(F, n->b, ty_unit);
     F->loops.n--;
