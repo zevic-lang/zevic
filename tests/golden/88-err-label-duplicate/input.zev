@@ -1,0 +1,9 @@
+module Main
+
+fn Main() {
+    a@ for (i in 0..3) {
+        a@ for (j in 0..3) {
+            break@a
+        }
+    }
+}

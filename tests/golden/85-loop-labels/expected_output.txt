@@ -1,0 +1,9 @@
+sum 17
+defer 0 1
+defer 0 2
+defer 3 3
+defer 3 1
+defer 3 2
+defer 6 3
+defer 6 1
+i 6

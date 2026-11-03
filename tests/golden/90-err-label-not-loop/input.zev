@@ -1,0 +1,5 @@
+module Main
+
+fn Main() {
+    a@ let x: I32 = 1
+}

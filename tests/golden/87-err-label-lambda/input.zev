@@ -1,0 +1,10 @@
+module Main
+
+fn Main() {
+    outer@ for (i in 0..3) {
+        let f: fn() -> Unit = () => {
+            break@outer
+        }
+        f()
+    }
+}
