@@ -12,6 +12,9 @@
 
 #include <ctype.h>
 #include <errno.h>
+#ifndef _WIN32
+#include <poll.h>
+#endif
 #include <math.h>
 #include <setjmp.h>
 #ifdef __APPLE__
@@ -1352,3 +1355,242 @@ void *zevic_cond_new(void) {
 void zevic_cond_wait(void *c, void *m) { pthread_cond_wait(c, m); }
 void zevic_cond_broadcast(void *c) { pthread_cond_broadcast(c); }
 #endif
+
+/* ---------------------------------------------------------------------------------------------
+ * Sockets (Zevic.Http): TCP over POSIX sockets, or Winsock. A socket is an I64. A failing call returns -1 (or 0
+ * for zevic_net_write) and leaves the reason for zevic_net_failed() / zevic_net_errmsg().
+ * ------------------------------------------------------------------------------------------- */
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+typedef SOCKET zevic_sock;
+#define ZEVIC_BAD_SOCK INVALID_SOCKET
+#define zevic_sock_close closesocket
+#else
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <signal.h>
+#include <sys/socket.h>
+typedef int zevic_sock;
+#define ZEVIC_BAD_SOCK (-1)
+#define zevic_sock_close close
+#endif
+
+static _Thread_local int g_net_failed;
+static _Thread_local char g_net_msg[256];
+
+static void net_fail(const char *what) {
+    g_net_failed = 1;
+#ifdef _WIN32
+    snprintf(g_net_msg, sizeof g_net_msg, "%s (error %d)", what, WSAGetLastError());
+#else
+    snprintf(g_net_msg, sizeof g_net_msg, "%s: %s", what, strerror(errno));
+#endif
+}
+
+static void net_init(void) {
+#ifdef _WIN32
+    static int done;
+    if (!done) {
+        WSADATA d;
+        WSAStartup(MAKEWORD(2, 2), &d);
+        done = 1;
+    }
+#else
+    signal(SIGPIPE, SIG_IGN); /* a write to a closed connection is an error, not a signal */
+#endif
+}
+
+int32_t zevic_net_failed(void) { return g_net_failed; }
+
+void zevic_net_errmsg(zevic_str *out) { str_set(out, g_net_msg, (int64_t)strlen(g_net_msg)); }
+
+static int net_resolve(const char *host, int64_t port, int passive, struct addrinfo **res) {
+    struct addrinfo hints;
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    if (passive) hints.ai_flags = AI_PASSIVE;
+    char ps[16];
+    snprintf(ps, sizeof ps, "%d", (int)port);
+    return getaddrinfo(host, ps, &hints, res);
+}
+
+/* Listens on host:port (port 0 picks a free one). */
+int64_t zevic_net_listen(const char *hp, int64_t hn, int64_t port) {
+    net_init();
+    g_net_failed = 0;
+    char *host = nul_copy(hp, hn);
+    struct addrinfo *ai = NULL;
+    int rc = net_resolve(host, port, 1, &ai);
+    free(host);
+    if (rc != 0 || !ai) {
+        g_net_failed = 1;
+        snprintf(g_net_msg, sizeof g_net_msg, "cannot resolve the address");
+        return -1;
+    }
+    zevic_sock s = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+    if (s == ZEVIC_BAD_SOCK) {
+        net_fail("cannot create a socket");
+        freeaddrinfo(ai);
+        return -1;
+    }
+    int one = 1;
+    setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char *)&one, sizeof one);
+    if (bind(s, ai->ai_addr, (int)ai->ai_addrlen) != 0 || listen(s, 128) != 0) {
+        net_fail("cannot listen");
+        zevic_sock_close(s);
+        freeaddrinfo(ai);
+        return -1;
+    }
+    freeaddrinfo(ai);
+    return (int64_t)s;
+}
+
+int64_t zevic_net_port(int64_t fd) {
+    struct sockaddr_storage ss;
+    socklen_t len = sizeof ss;
+    if (getsockname((zevic_sock)fd, (struct sockaddr *)&ss, &len) != 0) return -1;
+    if (ss.ss_family == AF_INET) return ntohs(((struct sockaddr_in *)&ss)->sin_port);
+    if (ss.ss_family == AF_INET6) return ntohs(((struct sockaddr_in6 *)&ss)->sin6_port);
+    return -1;
+}
+
+/* Waits for a connection. -1 when the listener was shut down or closed. */
+/* The collector interrupts blocked system calls with signals (to stop threads): those are retried. */
+#ifdef _WIN32
+#define NET_INTR() 0
+static int net_connect(zevic_sock s, const struct sockaddr *a, int len) { return connect(s, a, len); }
+#else
+#define NET_INTR() (errno == EINTR)
+static int net_connect(zevic_sock s, const struct sockaddr *a, int len) {
+    if (connect(s, a, len) == 0) return 0;
+    if (errno != EINTR) return -1;
+    /* the connection goes on in the background: wait until it is done */
+    struct pollfd p = {s, POLLOUT, 0};
+    int r;
+    do {
+        r = poll(&p, 1, -1);
+    } while (r < 0 && errno == EINTR);
+    if (r < 0) return -1;
+    int err = 0;
+    socklen_t el = sizeof err;
+    if (getsockopt(s, SOL_SOCKET, SO_ERROR, &err, &el) != 0 || err != 0) {
+        errno = err;
+        return -1;
+    }
+    return 0;
+}
+#endif
+
+int64_t zevic_net_accept(int64_t fd) {
+    g_net_failed = 0;
+    zevic_sock c;
+    do {
+        c = accept((zevic_sock)fd, NULL, NULL);
+    } while (c == ZEVIC_BAD_SOCK && NET_INTR());
+    if (c == ZEVIC_BAD_SOCK) {
+        net_fail("cannot accept");
+        return -1;
+    }
+    int one = 1;
+    setsockopt(c, IPPROTO_TCP, TCP_NODELAY, (const char *)&one, sizeof one);
+    return (int64_t)c;
+}
+
+/* Receive and send time limits for one socket, in milliseconds (0: none). */
+void zevic_net_timeout(int64_t fd, int64_t ms) {
+#ifdef _WIN32
+    DWORD t = (DWORD)ms;
+    setsockopt((zevic_sock)fd, SOL_SOCKET, SO_RCVTIMEO, (const char *)&t, sizeof t);
+    setsockopt((zevic_sock)fd, SOL_SOCKET, SO_SNDTIMEO, (const char *)&t, sizeof t);
+#else
+    struct timeval tv;
+    tv.tv_sec = (time_t)(ms / 1000);
+    tv.tv_usec = (suseconds_t)((ms % 1000) * 1000);
+    setsockopt((zevic_sock)fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof tv);
+    setsockopt((zevic_sock)fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof tv);
+#endif
+}
+
+int64_t zevic_net_connect(const char *hp, int64_t hn, int64_t port, int64_t timeout_ms) {
+    net_init();
+    g_net_failed = 0;
+    char *host = nul_copy(hp, hn);
+    struct addrinfo *ai = NULL;
+    int rc = net_resolve(host, port, 0, &ai);
+    if (rc != 0 || !ai) {
+        g_net_failed = 1;
+        snprintf(g_net_msg, sizeof g_net_msg, "cannot find the host \"%.200s\"", host);
+        free(host);
+        return -1;
+    }
+    free(host);
+    zevic_sock s = ZEVIC_BAD_SOCK;
+    for (struct addrinfo *a = ai; a; a = a->ai_next) {
+        s = socket(a->ai_family, a->ai_socktype, a->ai_protocol);
+        if (s == ZEVIC_BAD_SOCK) continue;
+        zevic_net_timeout((int64_t)s, timeout_ms);
+        if (net_connect(s, a->ai_addr, (int)a->ai_addrlen) == 0) break;
+        zevic_sock_close(s);
+        s = ZEVIC_BAD_SOCK;
+    }
+    freeaddrinfo(ai);
+    if (s == ZEVIC_BAD_SOCK) {
+        net_fail("cannot connect");
+        return -1;
+    }
+    int one = 1;
+    setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (const char *)&one, sizeof one);
+    return (int64_t)s;
+}
+
+/* Reads up to `max` bytes; the result is empty at the end of the stream or on an error (check zevic_net_failed). */
+void zevic_net_read(zevic_str *out, int64_t fd, int64_t max) {
+    g_net_failed = 0;
+    if (max > 1 << 20) max = 1 << 20;
+    if (max < 1) max = 1;
+    char *buf = malloc((size_t)max);
+    if (!buf) exit(101);
+    int64_t n;
+    do {
+        n = (int64_t)recv((zevic_sock)fd, buf, (int)max, 0);
+    } while (n < 0 && NET_INTR());
+    if (n < 0) {
+        net_fail("cannot read");
+        n = 0;
+    }
+    str_set(out, buf, n);
+    free(buf);
+}
+
+/* Writes everything. 1 on success, 0 on failure. */
+int32_t zevic_net_write(int64_t fd, const char *d, int64_t dn) {
+    g_net_failed = 0;
+    int64_t sent = 0;
+    while (sent < dn) {
+        int64_t n;
+        do {
+            n = (int64_t)send((zevic_sock)fd, d + sent, (int)(dn - sent > (1 << 20) ? (1 << 20) : dn - sent), 0);
+        } while (n < 0 && NET_INTR());
+        if (n <= 0) {
+            net_fail("cannot write");
+            return 0;
+        }
+        sent += n;
+    }
+    return 1;
+}
+
+/* Wakes up threads blocked on this socket (an accept in another thread returns -1). */
+void zevic_net_shutdown(int64_t fd) {
+#ifdef _WIN32
+    shutdown((zevic_sock)fd, SD_BOTH);
+#else
+    shutdown((zevic_sock)fd, SHUT_RDWR);
+#endif
+}
+
+void zevic_net_close(int64_t fd) { zevic_sock_close((zevic_sock)fd); }
