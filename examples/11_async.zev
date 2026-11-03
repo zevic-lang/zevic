@@ -1,0 +1,43 @@
+module Main
+
+import Zevic.Async
+import Zevic.Console
+import Zevic.Time
+
+// Three slow jobs run at the same time, so the whole takes about as long as the slowest one.
+fn Job(name: String, ms: I64) -> Async.Task<String> {
+    async {
+        Time.Sleep(Time.Duration.FromMillis(ms))
+        "${name} done after ${ms} ms"
+    }
+}
+
+fn Main() {
+    let start: Time.Instant = Time.Now()
+    let a: Async.Task<String> = Job("a", 300)
+    let b: Async.Task<String> = Job("b", 200)
+    let c: Async.Task<String> = Job("c", 100)
+    Console.Println(await a)
+    Console.Println(await b)
+    Console.Println(await c)
+    let took: I64 = start.Elapsed().Millis()
+    Console.Println("all three: ${if (took < 550) { "in parallel" } else { "one after another" }}")
+
+    // a producer and a consumer talk through a channel
+    mut ch: Async.Channel<I64> = Async.Channel.New(8)
+    let producer: Async.Task<Unit> = async {
+        for (i in 1..=10) {
+            ch.Send(i * i)
+        }
+        ch.Close()
+    }
+    mut sum: I64 = 0
+    loop {
+        match (ch.Recv()) {
+            Some(v) => { sum += v },
+            None => break,
+        }
+    }
+    await producer
+    Console.Println("sum of squares: ${sum}")
+}

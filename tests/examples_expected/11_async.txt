@@ -1,0 +1,5 @@
+a done after 300 ms
+b done after 200 ms
+c done after 100 ms
+all three: in parallel
+sum of squares: 385
