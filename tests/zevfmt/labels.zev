@@ -1,0 +1,27 @@
+module Main
+
+import Zevic.Console
+
+fn Main() {
+    let rows: Array<Array<I32>> = [[1, 2, 3], [4, -5, 6], [7, 8, 9]]
+    mut sum: I32 = 0
+    outer@ for (row in rows) {
+        for (x in row) {
+            if (x < 0) { continue@outer }
+            if (x == 8) { break@outer }
+            sum += x
+        }
+    }
+    Console.Println("sum ${sum}")
+    mut i: I32 = 0
+    a@ while (i < 10) {
+        mut j: I32 = 0
+        b@ loop {
+            defer { Console.Println("defer ${i} ${j}") }
+            j += 1
+            if (j > 2) { i += 3; continue@a }
+            if (i > 5) { break@a }
+        }
+    }
+    Console.Println("i ${i}")
+}

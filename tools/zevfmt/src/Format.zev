@@ -484,7 +484,11 @@ fn gap(p: Scan.Tok, c: Scan.Tok, pPrefix: Bool, cPrefix: Bool) -> Bool {
     }
     // a word, a number or a literal
     if (p.Kind == Scan.KOp) {
-        if (p.Text == "(" || p.Text == "[" || p.Text == "." || p.Text == ".." || p.Text == "..=" || p.Text == "@" || pPrefix) {
+        if (p.Text == "@") {
+            // `outer@ for ...` (a label) keeps a blank; `break@outer` has none
+            return c.IsWord("while") || c.IsWord("loop") || c.IsWord("for")
+        }
+        if (p.Text == "(" || p.Text == "[" || p.Text == "." || p.Text == ".." || p.Text == "..=" || pPrefix) {
             return false
         }
         if (p.Text == "<" && p.Open) {
