@@ -1,0 +1,507 @@
+module Zevic.Json
+
+// JSON (RFC 8259): `Parse` text into a `Value`, `Stringify` / `Pretty` a `Value` back into text.
+//
+//     let v: Json.Value = Json.Parse("{\"name\": \"zevic\", \"tags\": [1, 2]}")?
+//     let name: String = v.Get("name").UnwrapOr(Json.Value.Null).AsString().UnwrapOr("?")
+//     Console.Println(Json.Pretty(v))
+//
+// Numbers are `F64` (whole numbers up to 2^53 stay exact; `AsI64` gives them back as `I64`). An object keeps the
+// order of its keys; a key that appears twice keeps its last value.
+
+import Zevic.Math
+import Zevic.Text
+
+// How deep arrays and objects may be nested when parsing (a deeper text is an error, not a crash).
+let MaxDepth: I64 = 512
+
+enum Value {
+    Null,
+    Bool(Bool),
+    Number(F64),
+    Str(String),
+    List(Array<Value>),
+    Object(Map<String, Value>),
+
+    fn IsNull() -> Bool {
+        match (this) {
+            Value.Null => true,
+            _ => false,
+        }
+    }
+
+    fn AsBool() -> Option<Bool> {
+        match (this) {
+            Value.Bool(b) => Some(b),
+            _ => None,
+        }
+    }
+
+    fn AsF64() -> Option<F64> {
+        match (this) {
+            Value.Number(n) => Some(n),
+            _ => None,
+        }
+    }
+
+    // A number with no fraction that fits in `I64`.
+    fn AsI64() -> Option<I64> {
+        match (this) {
+            Value.Number(n) => {
+                if (n >= -9007199254740992.0 && n <= 9007199254740992.0 && n == Math.Floor(n)) {
+                    Some(n.ToI64())
+                } else {
+                    None
+                }
+            },
+            _ => None,
+        }
+    }
+
+    fn AsString() -> Option<String> {
+        match (this) {
+            Value.Str(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    fn AsArray() -> Option<Array<Value>> {
+        match (this) {
+            Value.List(xs) => Some(xs),
+            _ => None,
+        }
+    }
+
+    fn AsObject() -> Option<Map<String, Value>> {
+        match (this) {
+            Value.Object(m) => Some(m),
+            _ => None,
+        }
+    }
+
+    // The member of an object (None for other values and for a missing key).
+    fn Get(key: String) -> Option<Value> {
+        match (this) {
+            Value.Object(m) => m.Get(key),
+            _ => None,
+        }
+    }
+
+    // The element of an array (None for other values and for an index out of range).
+    fn At(i: I64) -> Option<Value> {
+        match (this) {
+            Value.List(xs) => if (i >= 0 && i < xs.Len()) { Some(xs[i]) } else { None },
+            _ => None,
+        }
+    }
+}
+
+// ---- parsing ----
+
+class Parser {
+    src: String
+    pos: I64 = 0
+
+    fn Init(src: String) { this.src = src }
+
+    // An error that says where the text went wrong (line and column count from 1).
+    fn fail(what: String) -> Error {
+        mut line: I64 = 1
+        mut col: I64 = 1
+        mut i: I64 = 0
+        while (i < this.pos && i < this.src.Len()) {
+            if (this.src.ByteAt(i).ToI32() == 10) {
+                line += 1
+                col = 1
+            } else {
+                col += 1
+            }
+            i += 1
+        }
+        Error.New(ErrorKind.Parse, "JSON: ${what} at line ${line}, column ${col}")
+    }
+
+    // The byte at the position, or -1 at the end.
+    fn peek() -> I32 {
+        if (this.pos < this.src.Len()) { this.src.ByteAt(this.pos).ToI32() } else { -1 }
+    }
+
+    mut fn skipSpace() {
+        loop {
+            let c: I32 = this.peek()
+            if (c == 32 || c == 9 || c == 10 || c == 13) {
+                this.pos += 1
+            } else {
+                break
+            }
+        }
+    }
+
+    fn describe() -> String {
+        let c: I32 = this.peek()
+        if (c < 0) { "end of text" } else if (c < 32) { "a control character" } else { "`${this.src.Slice(this.pos, this.pos + 1)}`" }
+    }
+
+    mut fn expect(word: String, v: Value) -> Result<Value, Error> {
+        if (this.src.Len() - this.pos >= word.Len() && this.src.Slice(this.pos, this.pos + word.Len()) == word) {
+            this.pos += word.Len()
+            return Ok(v)
+        }
+        Err(this.fail("unexpected ${this.describe()}"))
+    }
+
+    mut fn value(depth: I64) -> Result<Value, Error> {
+        this.skipSpace()
+        let c: I32 = this.peek()
+        if (c == 123) {
+            return this.object(depth)
+        }
+        if (c == 91) {
+            return this.array(depth)
+        }
+        if (c == 34) {
+            let s: String = this.string()?
+            return Ok(Value.Str(s))
+        }
+        if (c == 116) {
+            return this.expect("true", Value.Bool(true))
+        }
+        if (c == 102) {
+            return this.expect("false", Value.Bool(false))
+        }
+        if (c == 110) {
+            return this.expect("null", Value.Null)
+        }
+        if (c == 45 || (c >= 48 && c <= 57)) {
+            return this.number()
+        }
+        Err(this.fail("unexpected ${this.describe()}, expected a value"))
+    }
+
+    mut fn array(depth: I64) -> Result<Value, Error> {
+        if (depth >= MaxDepth) {
+            return Err(this.fail("nested more than ${MaxDepth} levels"))
+        }
+        this.pos += 1
+        mut items: Array<Value> = []
+        this.skipSpace()
+        if (this.peek() == 93) {
+            this.pos += 1
+            return Ok(Value.List(items))
+        }
+        loop {
+            let v: Value = this.value(depth + 1)?
+            items.Push(v)
+            this.skipSpace()
+            let c: I32 = this.peek()
+            if (c == 44) {
+                this.pos += 1
+            } else if (c == 93) {
+                this.pos += 1
+                return Ok(Value.List(items))
+            } else {
+                return Err(this.fail("unexpected ${this.describe()}, expected `,` or `]`"))
+            }
+        }
+    }
+
+    mut fn object(depth: I64) -> Result<Value, Error> {
+        if (depth >= MaxDepth) {
+            return Err(this.fail("nested more than ${MaxDepth} levels"))
+        }
+        this.pos += 1
+        mut members: Map<String, Value> = Map.New()
+        this.skipSpace()
+        if (this.peek() == 125) {
+            this.pos += 1
+            return Ok(Value.Object(members))
+        }
+        loop {
+            this.skipSpace()
+            if (this.peek() != 34) {
+                return Err(this.fail("unexpected ${this.describe()}, expected a string as the key"))
+            }
+            let key: String = this.string()?
+            this.skipSpace()
+            if (this.peek() != 58) {
+                return Err(this.fail("unexpected ${this.describe()}, expected `:`"))
+            }
+            this.pos += 1
+            let v: Value = this.value(depth + 1)?
+            members.Set(key, v)
+            this.skipSpace()
+            let c: I32 = this.peek()
+            if (c == 44) {
+                this.pos += 1
+            } else if (c == 125) {
+                this.pos += 1
+                return Ok(Value.Object(members))
+            } else {
+                return Err(this.fail("unexpected ${this.describe()}, expected `,` or `}`"))
+            }
+        }
+    }
+
+    mut fn number() -> Result<Value, Error> {
+        let start: I64 = this.pos
+        if (this.peek() == 45) {
+            this.pos += 1
+        }
+        let first: I32 = this.peek()
+        if (first == 48) {
+            this.pos += 1
+        } else if (first >= 49 && first <= 57) {
+            this.digits()
+        } else {
+            return Err(this.fail("a number needs digits"))
+        }
+        if (this.peek() == 46) {
+            this.pos += 1
+            let before: I64 = this.pos
+            this.digits()
+            if (this.pos == before) {
+                return Err(this.fail("a number needs digits after the point"))
+            }
+        }
+        let e: I32 = this.peek()
+        if (e == 101 || e == 69) {
+            this.pos += 1
+            let sign: I32 = this.peek()
+            if (sign == 43 || sign == 45) {
+                this.pos += 1
+            }
+            let before: I64 = this.pos
+            this.digits()
+            if (this.pos == before) {
+                return Err(this.fail("a number needs digits in the exponent"))
+            }
+        }
+        let text: String = this.src.Slice(start, this.pos)
+        match (text.ToF64()) {
+            Ok(n) => {
+                if (n - n != 0.0) {
+                    this.pos = start
+                    return Err(this.fail("the number ${text} is too large"))
+                }
+                Ok(Value.Number(n))
+            },
+            Err(_) => {
+                this.pos = start
+                Err(this.fail("the number ${text} is not valid"))
+            },
+        }
+    }
+
+    mut fn digits() {
+        loop {
+            let c: I32 = this.peek()
+            if (c >= 48 && c <= 57) {
+                this.pos += 1
+            } else {
+                break
+            }
+        }
+    }
+
+    // Four hexadecimal digits after `\u`.
+    mut fn hex4() -> Result<I32, Error> {
+        mut n: I32 = 0
+        for (i in 0..4) {
+            let c: I32 = this.peek()
+            mut d: I32 = -1
+            if (c >= 48 && c <= 57) {
+                d = c - 48
+            } else if (c >= 97 && c <= 102) {
+                d = c - 87
+            } else if (c >= 65 && c <= 70) {
+                d = c - 55
+            }
+            if (d < 0) {
+                return Err(this.fail("a \\u escape needs four hexadecimal digits"))
+            }
+            n = n * 16 + d
+            this.pos += 1
+        }
+        Ok(n)
+    }
+
+    // A string literal; the position is on the opening quote.
+    mut fn string() -> Result<String, Error> {
+        this.pos += 1
+        mut parts: Array<String> = []
+        mut run: I64 = this.pos
+        loop {
+            let c: I32 = this.peek()
+            if (c < 0) {
+                return Err(this.fail("the string is not closed"))
+            }
+            if (c < 32) {
+                return Err(this.fail("a control character in a string must be escaped"))
+            }
+            if (c == 34) {
+                parts.Push(this.src.Slice(run, this.pos))
+                this.pos += 1
+                return Ok(Text.Join(parts, ""))
+            }
+            if (c == 92) {
+                parts.Push(this.src.Slice(run, this.pos))
+                this.pos += 1
+                let e: I32 = this.peek()
+                if (e == 34) { parts.Push("\"") }
+                else if (e == 92) { parts.Push("\\") }
+                else if (e == 47) { parts.Push("/") }
+                else if (e == 98) { parts.Push("\u{8}") }
+                else if (e == 102) { parts.Push("\u{c}") }
+                else if (e == 110) { parts.Push("\n") }
+                else if (e == 114) { parts.Push("\r") }
+                else if (e == 116) { parts.Push("\t") }
+                else if (e == 117) {
+                    this.pos += 1
+                    let hi: I32 = this.hex4()?
+                    this.pos -= 1
+                    mut cp: I32 = hi
+                    if (hi >= 55296 && hi <= 56319) {
+                        // a high surrogate: the low one must follow as another \u escape
+                        if (this.src.Len() - this.pos >= 7 && this.src.Slice(this.pos + 1, this.pos + 3) == "\\u") {
+                            this.pos += 3
+                            let lo: I32 = this.hex4()?
+                            this.pos -= 1
+                            if (lo < 56320 || lo > 57343) {
+                                return Err(this.fail("a high surrogate needs a low surrogate after it"))
+                            }
+                            cp = 65536 + (hi - 55296) * 1024 + (lo - 56320)
+                        } else {
+                            return Err(this.fail("a high surrogate needs a low surrogate after it"))
+                        }
+                    } else if (hi >= 56320 && hi <= 57343) {
+                        return Err(this.fail("a low surrogate without a high surrogate"))
+                    }
+                    let ch: Char = match (cp.ToU32Wrap().ToChar()) {
+                        Ok(x) => x,
+                        Err(_) => return Err(this.fail("not a character")),
+                    }
+                    parts.Push("${ch}")
+                } else {
+                    return Err(this.fail("unknown escape `\\${if (e < 0) { "" } else { this.src.Slice(this.pos, this.pos + 1) }}`"))
+                }
+                this.pos += 1
+                run = this.pos
+            } else {
+                this.pos += 1
+            }
+        }
+    }
+}
+
+// Reads a JSON text. The whole text must be one value (blanks around it are fine). Errors say where.
+fn Parse(text: String) -> Result<Value, Error> {
+    mut p: Parser = Parser.New(text)
+    let v: Value = p.value(0)?
+    p.skipSpace()
+    if (p.peek() >= 0) {
+        return Err(p.fail("unexpected ${p.describe()} after the value"))
+    }
+    Ok(v)
+}
+
+// ---- writing ----
+
+fn hexDigit(n: I32) -> String {
+    let digits: String = "0123456789abcdef"
+    digits.Slice(n.ToI64(), n.ToI64() + 1)
+}
+
+// A string literal with quotes. Everything except `"`, `\` and control characters is written as it is (UTF-8).
+fn quote(s: String) -> String {
+    mut parts: Array<String> = ["\""]
+    mut run: I64 = 0
+    mut i: I64 = 0
+    while (i < s.Len()) {
+        let c: I32 = s.ByteAt(i).ToI32()
+        if (c == 34 || c == 92 || c < 32) {
+            parts.Push(s.Slice(run, i))
+            if (c == 34) { parts.Push("\\\"") }
+            else if (c == 92) { parts.Push("\\\\") }
+            else if (c == 10) { parts.Push("\\n") }
+            else if (c == 13) { parts.Push("\\r") }
+            else if (c == 9) { parts.Push("\\t") }
+            else if (c == 8) { parts.Push("\\b") }
+            else if (c == 12) { parts.Push("\\f") }
+            else { parts.Push("\\u00${hexDigit(c / 16)}${hexDigit(c % 16)}") }
+            run = i + 1
+        }
+        i += 1
+    }
+    parts.Push(s.Slice(run, s.Len()))
+    parts.Push("\"")
+    Text.Join(parts, "")
+}
+
+// A whole number is written without ".0"; NaN and infinity have no JSON form and become null.
+fn numberText(n: F64) -> String {
+    if (n - n != 0.0) {
+        return "null"
+    }
+    if (n == Math.Floor(n) && n >= -1000000000000000.0 && n <= 1000000000000000.0) {
+        return "${n.ToI64()}"
+    }
+    "${n}"
+}
+
+fn write(v: Value, indent: I64, level: I64, out: Array<String>) {
+    mut o: Array<String> = out
+    let pad: String = if (indent > 0) { "\n" + Text.Repeat(" ", indent * (level + 1)) } else { "" }
+    let padEnd: String = if (indent > 0) { "\n" + Text.Repeat(" ", indent * level) } else { "" }
+    match (v) {
+        Value.Null => o.Push("null"),
+        Value.Bool(b) => o.Push(if (b) { "true" } else { "false" }),
+        Value.Number(n) => o.Push(numberText(n)),
+        Value.Str(s) => o.Push(quote(s)),
+        Value.List(xs) => {
+            if (xs.IsEmpty()) {
+                o.Push("[]")
+            } else {
+                o.Push("[")
+                for (i, x in xs) {
+                    if (i > 0) { o.Push(",") }
+                    o.Push(pad)
+                    write(x, indent, level + 1, o)
+                }
+                o.Push(padEnd)
+                o.Push("]")
+            }
+        },
+        Value.Object(m) => {
+            if (m.Len() == 0) {
+                o.Push("{}")
+            } else {
+                o.Push("{")
+                mut first: Bool = true
+                for ((k, x) in m) {
+                    if (!first) { o.Push(",") }
+                    first = false
+                    o.Push(pad)
+                    o.Push(quote(k))
+                    o.Push(if (indent > 0) { ": " } else { ":" })
+                    write(x, indent, level + 1, o)
+                }
+                o.Push(padEnd)
+                o.Push("}")
+            }
+        },
+    }
+}
+
+// The compact text of a value, without blanks.
+fn Stringify(v: Value) -> String {
+    mut parts: Array<String> = []
+    write(v, 0, 0, parts)
+    Text.Join(parts, "")
+}
+
+// The text of a value, one element per line, indented by two blanks for each level.
+fn Pretty(v: Value) -> String {
+    mut parts: Array<String> = []
+    write(v, 2, 0, parts)
+    Text.Join(parts, "")
+}
