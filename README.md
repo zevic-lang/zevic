@@ -35,7 +35,7 @@ fn Main() {
 
 
 ```sh
-make            # build/zevic と build/zevpm を作る
+make            # build/zevic と build/zevpm を作る(`make zevfmt` で整形ツール)
 make test       # ゴールデンテスト、zevpm のテスト、examples を実行
 ./build/zevic examples/01_hello.zev -o hello && ./hello
 ```
@@ -85,7 +85,7 @@ zevpm build --release    # build/ に出力(ライブラリは .a と include/<N
 
 v0.3.0: 型、`struct`/`class`/`enum`、`interface`、ジェネリクス、クロージャ、`defer`、GC、C との連携、
 `test` ブロック、`zevpm`、標準ライブラリ(`Fs` `Env` `Text` `Math` `Time` `Process` など)まで動きます。
-`zevfmt` とセルフホスティング(`zevic1`)はこれからです(計画は [`docs/plan.md`](docs/plan.md))。
+`zevfmt`(整形: `zevfmt -w .`、検査: `zevfmt -check .`)も動きます。セルフホスティング(`zevic1`)はこれからです(計画は [`docs/plan.md`](docs/plan.md))。
 
 仕様書は草案です。実装の進み具合は [`CHANGELOG.md`](CHANGELOG.md) を参照してください。
 
