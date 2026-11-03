@@ -8,6 +8,8 @@ Stage 7, first part: zevpm and zevfmt are written in Zevic.
 - `for (k, v in map)` now gives the (key, value) pair, as the specification says (it used to give an index and a pair)
 - loop labels (proposal 0001): `outer@ for (...) { ... break@outer ... continue@outer ... }` for `while`, `loop` and `for`; `defer` runs on the way out; labels do not cross lambdas
 - async (proposal 0002): `async { ... }` and `await e` (reserved words now), `Zevic.Async` with `Task`, `Spawn`, `Channel` and `Mutex`; tasks are threads, the collector and the runtime are built with thread support; an `async` block cannot use a `mut` local of the surrounding function (unless it is a class value)
+- HTTP (proposal 0003): `Zevic.Http` with `Get`, `Post`, `Send` (plain `http://`, `Content-Length`, chunked and read-to-close bodies, 16 MiB limit, 30 s timeout; no TLS, no redirects) and `Listen` / `Server.Serve` / `Close` (a task per connection). The runtime gets small `zevic_net_*` socket functions (POSIX; Winsock written but not tested), and system calls that the collector interrupts are retried
+- `Text.Repeat` takes linear time (it was quadratic)
 - fix: `Option<Unit>` (an enum whose payloads are all empty) no longer produces invalid IR
 - the Zevic sources of the repository are formatted with zevfmt; CI checks it
 

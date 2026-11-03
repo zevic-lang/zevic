@@ -355,7 +355,7 @@ zevic2       ─コンパイル→ zevic3
 
 - [x] ループのラベルと `break@ラベル` `continue@ラベル`(提案 0001)
 - [x] 非同期(`async` `await`、`Zevic.Async`)(提案 0002)
-- [ ] HTTP(`Zevic.Http`)(提案 0003)
+- [x] HTTP(`Zevic.Http`)(提案 0003。HTTPSは未対応。Windows(Winsock)は未検証)
 
 **完了**: `zevic2` の `.ll` が一致し、CI が通る。**v0.4.0**。
 
