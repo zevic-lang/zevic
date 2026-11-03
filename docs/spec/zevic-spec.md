@@ -517,6 +517,21 @@ let total: I64 = await a + await b              // 終わりを待って、結�
 - `async`ブロックの中で、外側の関数の`mut`の局所変数を使うと、エラー(競合するため)。ただしクラスの値は、参照として共有できる
 - `Task`の中の`Panic`は、プログラム全体を止める。`main`が終わると、走っているタスクを待たずに終わる
 
+### 乱数(Zevic.Random)
+
+```
+import Zevic.Random
+
+mut rng: Random.Rng = Random.Rng.New(42)       // 同じ種なら、どの環境でも同じ数列
+let dice: I64 = rng.Int(1, 7)                    // 1以上7未満
+let p: F64 = rng.Float()                         // 0.0以上1.0未満
+Random.Shuffle(rng, xs)                          // 並べ替え
+let one: Option<I64> = Random.Pick(rng, xs)      // 1つ選ぶ(空ならNone)
+```
+
+- 種を決めない生成器は`Random.Rng.Seeded()`(時計から作る)。メソッドは`NextU64` `Int(low, high)` `Float` `Bool`
+- アルゴリズムはSplitMix64。**暗号には使えない**。生成器はスレッドの間で共有せず、タスクごとに作る。詳しくは`docs/proposals/0005-random.md`
+
 ### HTTP(Zevic.Http)
 
 ```
