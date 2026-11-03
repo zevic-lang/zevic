@@ -347,6 +347,8 @@ int driver_build(const char *clang, const char *home, const char *ll_path, const
     sb_printf(&cmd, " -o %s", quote(out_path));
 #ifndef _WIN32
     sb_puts(&cmd, " -lm -pthread");
+#else
+    sb_puts(&cmd, " -lws2_32");
 #endif
     return run(sb_str(&cmd));
 }
