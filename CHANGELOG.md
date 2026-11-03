@@ -1,6 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.3.1
+
+Small language and library additions, and the first Zevic tools. (zevfmt, loop labels, async and HTTP also arrive in this release.)
+
+- `Zevic.Random` (proposal 0005): SplitMix64 `Rng` (`New(seed)`, `Seeded()`, `Int(low, high)` without bias, `Float`, `Bool`, `NextU64`), `Shuffle` and `Pick`; the same seed gives the same numbers everywhere; not for secrets
+- `Zevic.Json` (proposal 0006): `Value` (`Null` `Bool` `Number` `Str` `List` `Object`) with `AsBool` `AsF64` `AsI64` `AsString` `AsArray` `AsObject` `Get` `At`; `Parse` (RFC 8259, errors with line and column, 512 levels of nesting), `Stringify` and `Pretty`; objects keep the order of their keys
 
 - `xs[i].F = v` and `xs[i].F += v` work on a `mut` array whose elements are classes or structs (proposal 0004); a struct element is changed and stored back, so its array and index must be simple expressions
 - the specification's appendix B is the working wordcount example; a test keeps them equal
