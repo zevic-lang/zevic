@@ -1,0 +1,161 @@
+module Zevic.Async
+
+// Tasks that run on their own threads, channels and mutexes.
+//
+//     let a: Task<I32> = async { slow(3) }        // starts at once
+//     let n: I32 = await a                        // waits for the result
+//
+// `async { }` and `await` are sugar for `Spawn` and `Await`. Tasks share memory: keep it safe with a `Channel`
+// or a `Mutex`.
+
+extern "zevic" {
+    fn zevic_thread_start(f: fn() -> Unit)
+    fn zevic_mutex_new() -> *CVoid
+    fn zevic_mutex_lock(m: *CVoid)
+    fn zevic_mutex_unlock(m: *CVoid)
+    fn zevic_cond_new() -> *CVoid
+    fn zevic_cond_wait(c: *CVoid, m: *CVoid)
+    fn zevic_cond_broadcast(c: *CVoid)
+}
+
+// ---- Mutex ----
+
+// A lock. `Lock` waits until nobody holds it; the holder must call `Unlock` (`defer m.Unlock()` is the usual way).
+class Mutex {
+    handle: *CVoid
+
+    fn Init() { this.handle = zevic_mutex_new() }
+
+    fn Lock() { zevic_mutex_lock(this.handle) }
+    fn Unlock() { zevic_mutex_unlock(this.handle) }
+}
+
+// ---- Task ----
+
+// The place where a task leaves its result.
+class Slot<T> {
+    mu: *CVoid
+    cv: *CVoid
+    done: Bool
+    value: Option<T>
+
+    fn Init() {
+        this.mu = zevic_mutex_new()
+        this.cv = zevic_cond_new()
+        this.done = false
+        this.value = None
+    }
+
+    mut fn Set(v: T) {
+        zevic_mutex_lock(this.mu)
+        this.value = Some(v)
+        this.done = true
+        zevic_cond_broadcast(this.cv)
+        zevic_mutex_unlock(this.mu)
+    }
+
+    fn Get() -> T {
+        zevic_mutex_lock(this.mu)
+        while (!this.done) {
+            zevic_cond_wait(this.cv, this.mu)
+        }
+        zevic_mutex_unlock(this.mu)
+        this.value.Unwrap()
+    }
+
+    fn IsDone() -> Bool {
+        zevic_mutex_lock(this.mu)
+        let d: Bool = this.done
+        zevic_mutex_unlock(this.mu)
+        d
+    }
+}
+
+// A computation that runs on another thread. `Await` can be called any number of times, from any task.
+class Task<T> {
+    slot: Slot<T>
+
+    fn Init(slot: Slot<T>) { this.slot = slot }
+
+    // Waits for the result.
+    fn Await() -> T { this.slot.Get() }
+
+    fn IsDone() -> Bool { this.slot.IsDone() }
+}
+
+// Starts `f` on a new thread.
+fn Spawn<T>(f: fn() -> T) -> Task<T> {
+    mut slot: Slot<T> = Slot.New()
+    let run: fn() -> Unit = () => {
+        let v: T = f()
+        slot.Set(v)
+    }
+    zevic_thread_start(run)
+    Task.New(slot)
+}
+
+// ---- Channel ----
+
+// A queue for passing values between tasks. With a capacity, `Send` waits while the queue is full.
+class Channel<T> {
+    mu: *CVoid
+    cv: *CVoid
+    items: Array<T>
+    head: I64
+    cap: I64
+    closed: Bool
+
+    // `capacity` 0 or less: no limit.
+    fn Init(capacity: I64) {
+        this.mu = zevic_mutex_new()
+        this.cv = zevic_cond_new()
+        this.items = []
+        this.head = 0
+        this.cap = capacity
+        this.closed = false
+    }
+
+    // Puts a value in the queue. Panics when the channel is closed.
+    mut fn Send(v: T) {
+        zevic_mutex_lock(this.mu)
+        while (this.cap > 0 && this.items.Len() - this.head >= this.cap && !this.closed) {
+            zevic_cond_wait(this.cv, this.mu)
+        }
+        if (this.closed) {
+            zevic_mutex_unlock(this.mu)
+            Panic("send on a closed channel")
+        }
+        this.items.Push(v)
+        zevic_cond_broadcast(this.cv)
+        zevic_mutex_unlock(this.mu)
+    }
+
+    // Takes the oldest value. Waits while the queue is empty; None when it is closed and empty.
+    mut fn Recv() -> Option<T> {
+        zevic_mutex_lock(this.mu)
+        while (this.items.Len() == this.head && !this.closed) {
+            zevic_cond_wait(this.cv, this.mu)
+        }
+        if (this.items.Len() == this.head) {
+            zevic_mutex_unlock(this.mu)
+            return None
+        }
+        let v: T = this.items[this.head]
+        this.head += 1
+        if (this.head >= 64 && this.head * 2 >= this.items.Len()) {
+            this.items = this.items.Slice(this.head, this.items.Len())
+            this.head = 0
+        }
+        zevic_cond_broadcast(this.cv)
+        zevic_mutex_unlock(this.mu)
+        Some(v)
+    }
+
+    // No more values will be sent. Receivers still get what is queued.
+    mut fn Close() {
+        zevic_mutex_lock(this.mu)
+        this.closed = true
+        zevic_cond_broadcast(this.cv)
+        zevic_mutex_unlock(this.mu)
+    }
+}
