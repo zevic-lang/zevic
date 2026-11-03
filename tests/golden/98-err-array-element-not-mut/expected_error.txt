@@ -1,0 +1,1 @@
+cannot assign to field `N` because `xs` is not `mut`

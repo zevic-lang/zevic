@@ -1,0 +1,13 @@
+module Main
+
+struct Pt {
+    X: I64
+    fn Init(x: I64) { this.X = x }
+}
+
+fn Next() -> I64 { 0 }
+
+fn Main() {
+    mut ps: Array<Pt> = [Pt.New(1)]
+    ps[Next()].X = 5
+}

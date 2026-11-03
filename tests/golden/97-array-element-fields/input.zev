@@ -1,0 +1,86 @@
+module Main
+
+import Zevic.Console
+
+class Cell {
+    N: I64 = 0
+    Name: String = "cell"
+}
+
+struct Pt {
+    X: I64
+    Y: I64
+
+    fn Init(x: I64, y: I64) {
+        this.X = x
+        this.Y = y
+    }
+}
+
+struct Seg {
+    From: Pt
+    To: Pt
+    fn Init(a: Pt, b: Pt) {
+        this.From = a
+        this.To = b
+    }
+}
+
+class Board {
+    cells: Array<Cell> = [Cell.New(), Cell.New(), Cell.New()]
+    pts: Array<Pt> = [Pt.New(0, 0), Pt.New(1, 1)]
+
+    mut fn Hit(i: I64) {
+        this.cells[i].N += 1
+        this.pts[i].X = this.pts[i].X + 10
+    }
+
+    fn Show() {
+        Console.Println("cells ${this.cells[0].N} ${this.cells[1].N} ${this.cells[2].N}; pts ${this.pts[0].X} ${this.pts[1].X}")
+    }
+}
+
+fn Fill(mut xs: Array<Cell>) {
+    xs[0].Name = "first"
+    xs[1].N = 7
+}
+
+fn Main() {
+    mut cells: Array<Cell> = [Cell.New(), Cell.New()]
+    Fill(cells)
+    Console.Println("${cells[0].Name} ${cells[0].N} ${cells[1].N}")
+
+    mut pts: Array<Pt> = [Pt.New(1, 2), Pt.New(3, 4)]
+    pts[1].X = 30
+    pts[0].Y *= 5
+    Console.Println("${pts[0].X},${pts[0].Y} ${pts[1].X},${pts[1].Y}")
+
+    // a struct copy taken earlier does not change
+    let before: Pt = pts[0]
+    pts[0].X = 99
+    Console.Println("${before.X} ${pts[0].X}")
+
+    // a struct inside a struct inside an array
+    mut segs: Array<Seg> = [Seg.New(Pt.New(0, 0), Pt.New(1, 1))]
+    segs[0].To.Y = 8
+    Console.Println("${segs[0].From.Y} ${segs[0].To.Y}")
+
+    // an array in an array
+    mut grid: Array<Array<Cell>> = [[Cell.New()], [Cell.New(), Cell.New()]]
+    grid[1][1].N = 4
+    Console.Println("${grid[0][0].N} ${grid[1][0].N} ${grid[1][1].N}")
+
+    mut b: Board = Board.New()
+    b.Hit(0)
+    b.Hit(0)
+    b.Hit(1)
+    b.Show()
+
+    // the index is evaluated once
+    mut i: I64 = 0
+    mut cs: Array<Cell> = [Cell.New(), Cell.New()]
+    cs[i].N = 3
+    i += 1
+    cs[i].N = 4
+    Console.Println("${cs[0].N} ${cs[1].N}")
+}
