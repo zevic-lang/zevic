@@ -532,6 +532,21 @@ let one: Option<I64> = Random.Pick(rng, xs)      // 1つ選ぶ(空ならNone)
 - 種を決めない生成器は`Random.Rng.Seeded()`(時計から作る)。メソッドは`NextU64` `Int(low, high)` `Float` `Bool`
 - アルゴリズムはSplitMix64。**暗号には使えない**。生成器はスレッドの間で共有せず、タスクごとに作る。詳しくは`docs/proposals/0005-random.md`
 
+### JSON(Zevic.Json)
+
+```
+import Zevic.Json
+
+let v: Json.Value = Json.Parse("{\"name\": \"zevic\", \"tags\": [1, 2]}")?
+let name: String = v.Get("name").UnwrapOr(Json.Value.Null).AsString().UnwrapOr("?")
+Console.Println(Json.Stringify(v))      // {"name":"zevic","tags":[1,2]}
+Console.Println(Json.Pretty(v))         // 字下げあり
+```
+
+- `Json.Value`は`Null` `Bool(Bool)` `Number(F64)` `Str(String)` `List(Array<Value>)` `Object(Map<String, Value>)`の列挙型。取り出しは`AsBool` `AsF64` `AsI64` `AsString` `AsArray` `AsObject`(種類が違えば`None`)、`Get(キー)`と`At(添字)`
+- `Parse`のエラーは`ErrorKind.Parse`で、行と桁を含む。厳密にRFC 8259(末尾のカンマやコメントはエラー)。入れ子は512段まで
+- オブジェクトはキーの順番を保つ。数は`F64`(2^53までの整数は正確)。詳しくは`docs/proposals/0006-json.md`
+
 ### HTTP(Zevic.Http)
 
 ```
