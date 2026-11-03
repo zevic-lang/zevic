@@ -7,6 +7,8 @@ Stage 7, first part: zevpm and zevfmt are written in Zevic.
 - `zevfmt` (`tools/zevfmt/`): `zevfmt file` prints the formatted source, `zevfmt -w path...` rewrites files, `zevfmt -check path...` lists files that are not formatted (exit code 1). It keeps comments and line breaks, fixes indentation (4 spaces), spacing, blank lines, trailing commas in multi-line lists and the order of imports; it refuses files that do not parse. Formatting is idempotent and never changes the AST (tested on the whole repository); `zevpm fmt` uses it. `make fmt` / `make fmt-check`
 - `for (k, v in map)` now gives the (key, value) pair, as the specification says (it used to give an index and a pair)
 - loop labels (proposal 0001): `outer@ for (...) { ... break@outer ... continue@outer ... }` for `while`, `loop` and `for`; `defer` runs on the way out; labels do not cross lambdas
+- async (proposal 0002): `async { ... }` and `await e` (reserved words now), `Zevic.Async` with `Task`, `Spawn`, `Channel` and `Mutex`; tasks are threads, the collector and the runtime are built with thread support; an `async` block cannot use a `mut` local of the surrounding function (unless it is a class value)
+- fix: `Option<Unit>` (an enum whose payloads are all empty) no longer produces invalid IR
 - the Zevic sources of the repository are formatted with zevfmt; CI checks it
 
 - `tools/zevpm/` is a Zevic package (the first real program of the language). It passes the same integration tests as the C version (`zevpm/`, now frozen); the release ships the Zevic one

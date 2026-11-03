@@ -1,6 +1,6 @@
 # 提案 0002: 非同期 `async { }` と `await`、`Zevic.Async`
 
-- 状態: 採用(2026-11-03、実装は同日)
+- 状態: 採用(2026-11-03、実装は同日。型名は `Async.Task<T>` のように `Async.` を付けて書く)
 - 日付: 2026-11-03
 
 ## 動機
@@ -28,16 +28,16 @@ let total: I32 = await a + await b
 
 ```
 class Task<T> {
-    mut fn Await() -> T          // 2回呼んでも同じ値が返る
+    fn Await() -> T              // 2回呼んでも同じ値が返る
     fn IsDone() -> Bool
 }
 fn Spawn<T>(f: fn() -> T) -> Task<T>
 
 class Channel<T> {
     fn Init(capacity: I64)       // 0以下は無制限
-    fn Send(v: T)                // いっぱいなら待つ。閉じた後はPanic
-    fn Recv() -> Option<T>       // 空なら待つ。閉じて空ならNone
-    fn Close()
+    mut fn Send(v: T)            // いっぱいなら待つ。閉じた後はPanic
+    mut fn Recv() -> Option<T>   // 空なら待つ。閉じて空ならNone
+    mut fn Close()
 }
 
 class Mutex {
@@ -50,7 +50,7 @@ class Mutex {
 ### 実行の仕組み
 
 - `Task` は OS のスレッド(POSIX のpthread)1本。Boehm GC をスレッド対応でビルドし、実行時の `GC_pthread_create` で登録する
-- スレッド間で渡せるものに型の制限はない(参照を共有する)。データ競合を避けるのは書く人の責任で、そのための道具が `Channel` と `Mutex`。ただし1つだけ、コンパイラが守る:**`async` ブロックの中から、外側の関数の `mut` の局所変数を使えない**(エラー)。そこが一番事故になりやすいから
+- スレッド間で渡せるものに型の制限はない(参照を共有する)。データ競合を避けるのは書く人の責任で、そのための道具が `Channel` と `Mutex`。ただし1つだけ、コンパイラが守る:**`async` ブロックの中から、外側の関数の `mut` の局所変数(クラス以外の値)を使えない**(エラー)。`count += 1` のような事故が一番多いから。クラスの値は参照として共有できる(`Channel` や `Mutex` を持つクラスのため)
 - `Task` の中で`Panic`が起きたら、今までと同じようにプログラム全体が止まる(そのスレッドだけを止める仕組みは、今は入れない)
 - `main` が終わったら、走っているスレッドを待たずにプログラムは終わる
 

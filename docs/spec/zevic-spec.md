@@ -93,7 +93,7 @@ let a: I32 = 1; let b: I32 = 2
 - `_`だけは、パターンの「何でもよい」を表す
 - 予約語を識別子として使いたいときは、バッククォートで囲む(`` `type` ``)。Cのヘッダに出てくる`type`や`in`といった名前を扱うために必要
 
-### 予約語(28個)
+### 予約語(30個)
 
 識別子には使えません。小文字ばかりで、大文字なのは`Self`だけです。
 
@@ -103,6 +103,7 @@ let a: I32 = 1; let b: I32 = 2
 | 型 | `class` `struct` `enum` `interface` `static` `Self` |
 | C連携 | `extern` `export` |
 | 制御 | `if` `else` `while` `loop` `for` `in` `match` `return` `break` `continue` `defer` |
+| 非同期 | `async` `await` |
 | 値 | `true` `false` `this` |
 
 `extern`と`export`の後ろの`"C"`は、キーワードではなく文字列リテラルです。
@@ -116,7 +117,7 @@ let a: I32 = 1; let b: I32 = 2
 
 ### 将来のために予約する語
 
-今は使えません。`async` `await` `macro` `unsafe` `type` `where` `const` `yield` `impl` `null`。
+今は使えません。`macro` `unsafe` `type` `where` `const` `yield` `impl` `null`。
 
 ### 予約された名前
 
@@ -324,7 +325,7 @@ ws.Push("b")                // エラー: let の中身は変えられない
 | 順位 | 演算子 | 結合 |
 | --- | --- | --- |
 | 1 | `.`(メンバー)、`( )`(呼び出し)、`[ ]`(添字)、`?` | 左から |
-| 2 | 前置の`-` `!` `~` | 右から |
+| 2 | 前置の`-` `!` `~` `await` | 右から |
 | 3 | `*` `/` `%` | 左から |
 | 4 | `+` `-` | 左から |
 | 5 | `<<` `>>` | 左から |
@@ -496,6 +497,24 @@ fn Load(path: String) -> Result<String, Error> {
 - `defer`の中の変数は、実行時点の値を見る(引数を`defer`の時点で固定しない)
 - `defer`の中に`return` `break` `continue` `?`は書けない。`Result`を返す呼び出しの結果は、捨てられる
 - 実装は、コンパイラがブロックの出口ごとに、`defer`したコードをIRに複製して挿入する
+
+### 非同期(async、await)
+
+```
+import Zevic.Async
+
+let a: Async.Task<I64> = async { slow(3) }     // 別のスレッドですぐに走り始める
+let b: Async.Task<I64> = async { slow(4) }
+let total: I64 = await a + await b              // 終わりを待って、結果を取り出す
+```
+
+- `async { ... }`は式で、型は`Async.Task<T>`(`T`はブロックの値の型)。`Async.Spawn(() => { ... })`と同じ
+- `await e`は前置の演算子で、`!`と同じ強さ。`e.Await()`と同じ。`Task`は何回`await`してもよく、同じ値が返る
+- 関数に`async`は付けない。非同期の関数は、`Task<T>`を返す普通の関数にする
+- ブロックの中の`return` `break` `?`は、ラムダと同じで、ブロックを抜けるだけ
+- スレッドの間でメモリは共有される。安全に渡すには、`Async.Channel<T>`(`Send` `Recv` `Close`)と`Async.Mutex`(`Lock` `Unlock`)を使う
+- `async`ブロックの中で、外側の関数の`mut`の局所変数を使うと、エラー(競合するため)。ただしクラスの値は、参照として共有できる
+- `Task`の中の`Panic`は、プログラム全体を止める。`main`が終わると、走っているタスクを待たずに終わる
 
 ## 関数とラムダ
 
@@ -969,8 +988,8 @@ defer f.Close()
 
 ### スレッドとGC
 
-- スレッド(`Zevic.Thread`)を入れるときは、Boehm GCのスレッド対応ビルドを使う。スレッドの作成は、ランタイムのラッパーを通す
-- 第1段の実装は、単一スレッドを前提にする
+- スレッド(`Zevic.Async`)は、Boehm GCのスレッド対応ビルドを使う。スレッドの作成は、ランタイムのラッパーを通す
+- ランタイムの状態(エラー番号、プロセス起動の作業用の値、テストの`longjmp`先)は、スレッドごとに持つ
 
 ### 設定
 
@@ -1809,7 +1828,8 @@ label       = ident '@'
 jump        = ( 'break' | 'continue' ) [ '@' ident ]    (* '@'は直前・直後に空白なし *)
 forPat      = pat | Ident ',' pat
 
-expr        = ifExpr | matchExpr | binary | unary | postfix | lambda | literal | '(' expr ')'
+expr        = ifExpr | matchExpr | asyncExpr | 'await' expr | binary | unary | postfix | lambda | literal | '(' expr ')'
+asyncExpr   = 'async' block
 ifExpr      = 'if' '(' expr ')' block [ 'else' ( ifExpr | block ) ]
 matchExpr   = 'match' '(' expr ')' '{' arm { ',' arm } [ ',' ] '}'
 arm         = pat [ 'if' '(' expr ')' ] '=>' expr
@@ -1822,7 +1842,7 @@ type        = Ident [ '<' typelist '>' ] | '(' typelist ')' | 'fn' '(' [ typelis
 
 - 演算子の優先順位は、「変数・式・演算子」の章の表に従う
 - 条件式の括弧と、`{}`は必須(`if (x) { ... }`)
-- 予約語: `module import as fn let mut static struct class enum interface test extern export if else match while loop for in break continue return defer this params true false`
+- 予約語: `module import as fn let mut static struct class enum interface test extern export if else match while loop for in break continue return defer async await this params true false`
 
 ## 付録B 総合サンプルコード
 
