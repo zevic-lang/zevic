@@ -1865,7 +1865,7 @@ type        = Ident [ '<' typelist '>' ] | '(' typelist ')' | 'fn' '(' [ typelis
 
 ## 付録B 総合サンプルコード
 
-仕様の主な機能を使った、1つのプログラムです(単語の出現回数を数えます)。
+仕様の主な機能を使った、1つのプログラムです(単語の出現回数を数えます)。引数は`count <ファイル>`または`top <ファイル> [個数]`です。
 
 ```
 module Main
@@ -1873,12 +1873,22 @@ module Main
 import Zevic.Console
 import Zevic.Env
 import Zevic.Fs
-import Zevic.Text
 import Zevic.Test
+import Zevic.Text
 
 enum Command {
     Count(String),
     Top(String, I64),
+}
+
+struct Entry {
+    Word: String
+    Count: I64
+
+    fn Init(word: String, count: I64) {
+        this.Word = word
+        this.Count = count
+    }
 }
 
 class Counter {
@@ -1889,13 +1899,17 @@ class Counter {
         this.counts.Set(word, n + 1)
     }
 
-    fn Top(limit: I64) -> Array<(String, I64)> {
-        mut items: Array<(String, I64)> = []
+    fn Distinct() -> I64 { this.counts.Len() }
+
+    // The `limit` most frequent words, the most frequent first (equal counts keep the order of the words).
+    fn Top(limit: I64) -> Array<Entry> {
+        mut items: Array<Entry> = []
         for ((w, n) in this.counts) {
-            items.Push((w, n))
+            items.Push(Entry.New(w, n))
         }
-        items.SortBy((a, b) => b.1.Compare(a.1))
-        items.Slice(0, limit.Min(items.Len()))
+        items.SortBy((a: Entry, b: Entry) => b.Count.Compare(a.Count))
+        let end: I64 = if (limit < items.Len()) { limit } else { items.Len() }
+        items.Slice(0, end)
     }
 }
 
@@ -1916,8 +1930,10 @@ fn Parse(args: Array<String>) -> Result<Command, Error> {
 fn Load(path: String) -> Result<Counter, Error> {
     let text: String = Fs.ReadAll(path).Context("cannot read ${path}")?
     mut counter: Counter = Counter.New()
-    for (word in Text.Split(text.ToLower(), " ")) {
-        if (!word.IsEmpty()) { counter.Add(word) }
+    for (line in Text.Lines(Text.ToLower(text))) {
+        for (word in Text.Split(line, " ")) {
+            if (!word.IsEmpty()) { counter.Add(word) }
+        }
     }
     Ok(counter)
 }
@@ -1926,12 +1942,12 @@ fn Run(args: Array<String>) -> Result<Unit, Error> {
     match (Parse(args)?) {
         Command.Count(path) => {
             let c: Counter = Load(path)?
-            Console.Printf("%d distinct words\n", c.Top(I64.Max).Len())
+            Console.Printf("%d distinct words\n", c.Distinct())
         },
         Command.Top(path, n) => {
             let c: Counter = Load(path)?
-            for (i, (w, k) in c.Top(n)) {
-                Console.Printf("%2d. %-12s %d\n", i + 1, w, k)
+            for (i, e in c.Top(n)) {
+                Console.Printf("%2d. %-12s %d\n", i + 1, e.Word, e.Count)
             }
         },
     }
@@ -1953,6 +1969,6 @@ test "Parse rejects an unknown command" {
 }
 ```
 
-- このサンプルは、仕様の確認用です。標準ライブラリの関数名(`SortBy` `I64.Max` `Text.Split`など)は、第2段の実装で最終的に決める
+- このサンプルは`examples/apps/wordcount/src/Main.zev`と同じもので、コンパイラの実装でそのまま動く(`tests/examples_test.py`が一致を確かめる)
 - 標準ライブラリの`Zevic`は省略できる(`Console.Println`と`Zevic.Console.Println`は同じ)
 - 実装順①の最初の目標は、これではなく「Hello World」(`module Main` / `Console.Println`)

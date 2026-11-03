@@ -43,8 +43,22 @@ def check_single(name, sources):
     return None
 
 
+def spec_sample_matches():
+    """Appendix B of the specification is the wordcount example."""
+    with open(os.path.join(ROOT, "docs", "spec", "zevic-spec.md"), encoding="utf-8") as f:
+        spec = f.read()
+    start = spec.index("## 付録B")
+    start = spec.index("```\n", start) + 4
+    code = spec[start:spec.index("\n```\n", start)]
+    with open(os.path.join(EX, "apps", "wordcount", "src", "Main.zev"), encoding="utf-8") as f:
+        return code.strip() == f.read().strip()
+
+
 def main():
     failed = 0
+    if not spec_sample_matches():
+        print("FAIL  specification appendix B differs from examples/apps/wordcount/src/Main.zev")
+        failed += 1
     cases = []
     for f in sorted(glob.glob(os.path.join(EX, "*.zev"))):
         cases.append((os.path.basename(f)[:-4], [f]))
