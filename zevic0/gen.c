@@ -525,6 +525,8 @@ typedef struct FnCtx {
     Env *env;
     SB code, allocas, cold;
     int ntmp, nlbl, nslot;
+    Node *wb_elem;   /* `xs[i].F = v` on a struct element: the element expression whose copy must be stored back */
+    char *wb_name;   /* the local that holds that copy */
     char *cur;
     bool term;
     Type *ret;
@@ -778,6 +780,7 @@ static Val gen_index_read(FnCtx *F, Node *n, Type *expect);
 static Val gen_array_lit(FnCtx *F, Node *n, Type *expect);
 static Val gen_struct_lit(FnCtx *F, Node *n, Type *expect);
 static void gen_index_assign(FnCtx *F, Node *n);
+static bool is_pure_expr(Node *n);
 static void gen_for_iter(FnCtx *F, Node *n);
 
 static Type *type_from_suffix(const char *s) {
@@ -1647,13 +1650,36 @@ static char *gen_lvalue(FnCtx *F, Node *n, Type **t) {
     return NULL;
 }
 
+static void gen_assign_place(FnCtx *F, Node *n, Node **wb_elem, char **wb_name);
+
+/* After changing a field of a struct element (`xs[i].F = v`), the changed copy goes back into the array. */
 static void gen_assign(FnCtx *F, Node *n) {
     if (n->a->kind == N_INDEX) {
         gen_index_assign(F, n);
         return;
     }
+    Node *el = NULL;
+    char *name = NULL;
+    gen_assign_place(F, n, &el, &name);
+    if (el) {
+        if (!is_pure_expr(el->a) || !is_pure_expr(el->b)) {
+            diag_error(n->pos, "changing a field of an array element needs a simple array and index (put them in variables first)");
+            return;
+        }
+        Node *call = mk_method_call(el->a, "SetIndex", n->pos, el->b, mk_ident(n->pos, name));
+        call->flag3 = true;
+        gen_expr(F, call, NULL);
+    }
+}
+
+static void gen_assign_place(FnCtx *F, Node *n, Node **wb_elem, char **wb_name) {
     Type *t = NULL;
+    F->wb_elem = NULL;
     char *ptr = gen_lvalue(F, n->a, &t);
+    /* the right-hand side may read elements too, so the write-back is noted now */
+    *wb_elem = F->wb_elem;
+    *wb_name = F->wb_name;
+    F->wb_elem = NULL;
     if (!ptr) {
         gen_expr(F, n->b, NULL);
         return;
@@ -2411,6 +2437,32 @@ static Place gen_place(FnCtx *F, Node *n) {
         Place tp = {F->this_slot, F->this_t, F->this_mut};
         return tp;
     }
+    case N_INDEX: {
+        /* an element of an array: a class element is a reference, so its fields can be changed in place; a struct
+           element is copied into a local and stored back after the assignment (see gen_assign). Either way the
+           array itself must be `mut`. */
+        bool amut = false;
+        if (n->a->kind == N_IDENT || n->a->kind == N_MEMBER || n->a->kind == N_THIS || n->a->kind == N_INDEX) {
+            Place ap = gen_place(F, n->a);
+            if (is_err(ap.t) || ap.t == ty_never) return place_err();
+            amut = ap.mut;
+        }
+        Val v = gen_expr(F, n, NULL);
+        if (v.t == ty_never || is_err(v.t)) return place_err();
+        if (v.t->k == T_STRUCT) {
+            static int nel = 0;
+            char *name = zsprintf("$el%d", nel++);
+            Local *l = declare_local(F, name, v.t, true, n->pos);
+            store_to(F, v.t, v, l->ptr);
+            F->wb_elem = n;
+            F->wb_name = name;
+            Place p = {l->ptr, v.t, amut};
+            return p;
+        }
+        Place p = spill(F, v);
+        p.mut = amut;
+        return p;
+    }
     case N_MEMBER: {
         if (is_static_path(F, n)) break;
         Place b = gen_place(F, n->a);
@@ -2454,7 +2506,7 @@ static Place gen_place(FnCtx *F, Node *n) {
 
 /* The name of the variable a path starts from (for messages). */
 static const char *root_name(Node *n) {
-    while (n && n->kind == N_MEMBER) n = n->a;
+    while (n && (n->kind == N_MEMBER || n->kind == N_INDEX)) n = n->a;
     if (n && n->kind == N_IDENT) return n->name;
     if (n && n->kind == N_THIS) return "this";
     return "this value";
