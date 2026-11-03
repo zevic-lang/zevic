@@ -1,0 +1,76 @@
+module Main
+
+import Zevic.Console
+import Zevic.Json
+import Zevic.Text
+
+fn Try(text: String) {
+    match (Json.Parse(text)) {
+        Ok(v) => Console.Println("ok    ${Json.Stringify(v)}"),
+        Err(e) => Console.Println("error ${e.Message()}"),
+    }
+}
+
+fn Main() {
+    // reading
+    let text: String = "{\"name\": \"zevic\", \"version\": 3, \"pi\": 3.25, \"tags\": [\"a\", \"b\"], \"ok\": true, \"none\": null, \"deep\": {\"x\": [10, 20, 30]}}"
+    let v: Json.Value = Json.Parse(text).Unwrap()
+    Console.Println(v.Get("name").Unwrap().AsString().Unwrap())
+    Console.Println("${v.Get("version").Unwrap().AsI64().Unwrap()} ${v.Get("pi").Unwrap().AsF64().Unwrap()} ${v.Get("pi").Unwrap().AsI64().IsNone()}")
+    Console.Println("${v.Get("ok").Unwrap().AsBool().Unwrap()} ${v.Get("none").Unwrap().IsNull()} ${v.Get("missing").IsNone()}")
+    Console.Println("${v.Get("tags").Unwrap().At(1).Unwrap().AsString().Unwrap()} ${v.Get("tags").Unwrap().At(2).IsNone()} ${v.Get("tags").Unwrap().At(-1).IsNone()}")
+    Console.Println("${v.Get("deep").Unwrap().Get("x").Unwrap().At(2).Unwrap().AsI64().Unwrap()}")
+    Console.Println("${v.Get("name").Unwrap().AsF64().IsNone()} ${v.AsString().IsNone()} ${v.AsObject().Unwrap().Len()}")
+
+    // writing: compact keeps the order of the keys
+    Console.Println(Json.Stringify(v))
+    Console.Println(Json.Pretty(v))
+
+    // round trip
+    let again: Json.Value = Json.Parse(Json.Pretty(v)).Unwrap()
+    Console.Println("round trip: ${Json.Stringify(again) == Json.Stringify(v)}")
+
+    // building values
+    mut m: Map<String, Json.Value> = Map.New()
+    m.Set("list", Json.Value.List([Json.Value.Number(1.0), Json.Value.Str("two"), Json.Value.Null]))
+    m.Set("flag", Json.Value.Bool(false))
+    m.Set("text", Json.Value.Str("quote \" backslash \\ tab \t newline \n bell \u{7} é"))
+    m.Set("big", Json.Value.Number(12345678901234.0))
+    m.Set("small", Json.Value.Number(0.000125))
+    m.Set("inf", Json.Value.Number(1.0 / 0.0))
+    Console.Println(Json.Stringify(Json.Value.Object(m)))
+
+    // strings and numbers
+    Try("\"\\u0041\\u00e9\\ud83d\\ude00\\/\\b\\f\"")
+    Try("[0, -0, 1e3, 1E-2, 0.5, 123456789012]")
+    Try("  \n\t[ ]  ")
+    Try("{\"a\": 1, \"a\": 2, \"b\": {}}")
+
+    // errors, with the place
+    Try("")
+    Try("[1, 2")
+    Try("[1, 2,]")
+    Try("{\"a\" 1}")
+    Try("{a: 1}")
+    Try("[1] x")
+    Try("01")
+    Try("1.")
+    Try("1e")
+    Try("-")
+    Try("\"abc")
+    Try("\"a\nb\"")
+    Try("\"\\q\"")
+    Try("\"\\u12g4\"")
+    Try("\"\\ud83d\"")
+    Try("\"\\ude00\"")
+    Try("tru")
+    Try("{\"a\": 1,\n \"b\": ?}")
+    Try("1e999")
+
+    // nesting: deep but fine, and too deep
+    Try(Text.Repeat("[", 100) + Text.Repeat("]", 100) + "")
+    match (Json.Parse(Text.Repeat("[", 600) + Text.Repeat("]", 600))) {
+        Ok(_) => Console.Println("deep: ok"),
+        Err(e) => Console.Println("deep: ${e.Message()}"),
+    }
+}

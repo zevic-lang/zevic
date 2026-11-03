@@ -1,0 +1,52 @@
+zevic
+3 3.25 true
+true true true
+b true true
+30
+true true 7
+{"name":"zevic","version":3,"pi":3.25,"tags":["a","b"],"ok":true,"none":null,"deep":{"x":[10,20,30]}}
+{
+  "name": "zevic",
+  "version": 3,
+  "pi": 3.25,
+  "tags": [
+    "a",
+    "b"
+  ],
+  "ok": true,
+  "none": null,
+  "deep": {
+    "x": [
+      10,
+      20,
+      30
+    ]
+  }
+}
+round trip: true
+{"list":[1,"two",null],"flag":false,"text":"quote \" backslash \\ tab \t newline \n bell \u0007 é","big":12345678901234,"small":0.000125,"inf":null}
+ok    "Aé😀/\b\f"
+ok    [0,0,1000,0.01,0.5,123456789012]
+ok    []
+ok    {"a":2,"b":{}}
+error JSON: unexpected end of text, expected a value at line 1, column 1
+error JSON: unexpected end of text, expected `,` or `]` at line 1, column 6
+error JSON: unexpected `]`, expected a value at line 1, column 7
+error JSON: unexpected `1`, expected `:` at line 1, column 6
+error JSON: unexpected `a`, expected a string as the key at line 1, column 2
+error JSON: unexpected `x` after the value at line 1, column 5
+error JSON: unexpected `1` after the value at line 1, column 2
+error JSON: a number needs digits after the point at line 1, column 3
+error JSON: a number needs digits in the exponent at line 1, column 3
+error JSON: a number needs digits at line 1, column 2
+error JSON: the string is not closed at line 1, column 5
+error JSON: a control character in a string must be escaped at line 1, column 3
+error JSON: unknown escape `\q` at line 1, column 3
+error JSON: a \u escape needs four hexadecimal digits at line 1, column 6
+error JSON: a high surrogate needs a low surrogate after it at line 1, column 7
+error JSON: a low surrogate without a high surrogate at line 1, column 7
+error JSON: unexpected `t` at line 1, column 1
+error JSON: unexpected `?`, expected a value at line 2, column 7
+error JSON: the number 1e999 is too large at line 1, column 1
+ok    [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]
+deep: JSON: nested more than 512 levels at line 1, column 513
