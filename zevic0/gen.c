@@ -694,7 +694,7 @@ static void collect_idents(Node *n, Dict *out, bool *uses_this) {
 /* The names a lambda below `n` may capture. A variable with such a name is allocated on the heap when it is declared. */
 static void collect_lambda_names(Node *n, Dict *heap) {
     if (!n) return;
-    if (n->kind == N_LAMBDA) {
+    if (n->kind == N_LAMBDA || n->kind == N_ASYNC) { /* an `async` block becomes a lambda */
         bool t = false;
         collect_idents(n, heap, &t);
         return;
@@ -1311,6 +1311,9 @@ static Type *static_type(FnCtx *F, Decl *d, Node *tnode, Type *expect);
 
 static Val fn_value_of(FnCtx *F, Decl *d, Pos pos);
 static Val gen_lambda(FnCtx *F, Node *n, Type *expect);
+static Node *mk_ident(Pos pos, const char *name);
+static Node *mk_method_call(Node *recv, const char *method, Pos pos, Node *a1, Node *a2);
+static Val gen_call_decl(FnCtx *F, Node *call, Decl *d, Type *self, Vec *explicit, Type *expect, Val *recv);
 static Val gen_call_value(FnCtx *F, Node *call, Val f, Type *expect);
 
 static Val gen_ident(FnCtx *F, Node *n, Type *expect) {
@@ -1453,6 +1456,23 @@ static Val gen_expr(FnCtx *F, Node *n, Type *expect) {
     case N_STRUCTLIT: return gen_struct_lit(F, n, expect);
     case N_UNARY: return gen_unary(F, n, expect);
     case N_LAMBDA: return gen_lambda(F, n, expect);
+    case N_ASYNC: {
+        /* async { b }  ->  Zevic.Async.Spawn(() => { b }) */
+        Module *am = prog_find_module(F->g->pg, "Zevic.Async");
+        Decl *sp = am ? module_find(am, "Spawn") : NULL;
+        if (!sp) {
+            diag_error(n->pos, "internal error: `Zevic.Async.Spawn` is missing from the standard library");
+            return err_val();
+        }
+        Node *lam = node_new(N_LAMBDA, n->pos);
+        lam->b = n->b;
+        lam->flag = true;
+        Node *call = node_new(N_CALL, n->pos);
+        call->a = mk_ident(n->pos, "Spawn");
+        vec_push(&call->list, lam);
+        return gen_call_decl(F, call, sp, NULL, NULL, expect, NULL);
+    }
+    case N_AWAIT: return gen_expr(F, mk_method_call(n->a, "Await", n->pos, NULL, NULL), expect);
     case N_BINARY: return gen_binary(F, n, expect);
     case N_IF: return gen_if(F, n, expect);
     case N_BLOCK: return gen_block(F, n, expect);
@@ -2463,6 +2483,7 @@ static char *tag_ptr(FnCtx *F, Type *et, char *slot) {
 }
 
 static char *payload_ptr(FnCtx *F, Type *et, char *slot) {
+    if (et->payload_words == 0) return slot; /* every payload is empty (like Option<Unit>): the layout has no payload part */
     char *p = tmp(F);
     emit(F, "%s = getelementptr inbounds %s, ptr %s, i32 0, i32 1", p, type_ll(et), slot);
     return p;
@@ -5124,6 +5145,11 @@ static Val gen_lambda(FnCtx *F, Node *n, Type *expect) {
         if (is_param) continue;
         Local *l = find_local(F, used.keys[k]);
         if (!l) continue;
+        if (n->flag && l->mut && l->t->k != T_CLASS) {
+            diag_error(n->pos, "an `async` block cannot use the `mut` variable `%s` of the surrounding function (the two would race); "
+                       "send the value through a `Channel`, or keep it in a class that is guarded by a `Mutex`", l->name);
+            return err_val();
+        }
         vec_push(&cap_names, (void *)l->name);
         vec_push(&cap_locals, l);
     }

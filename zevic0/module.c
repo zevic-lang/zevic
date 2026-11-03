@@ -201,6 +201,11 @@ void prog_resolve(Program *pg) {
         bool is_std = false;
         try_load_module(pg, "Zevic.Env", &is_std);
     }
+    /* `async` and `await` are sugar for Zevic.Async, which the program need not import */
+    if (g_uses_async && !prog_find_module(pg, "Zevic.Async")) {
+        bool is_std = false;
+        try_load_module(pg, "Zevic.Async", &is_std);
+    }
     for (int i = 0; i < pg->files.n; i++) resolve_file_imports(pg, pg->files.v[i]);
     for (int i = 0; i < pg->modules.n; i++) {
         Module *m = pg->modules.v[i];
