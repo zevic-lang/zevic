@@ -76,11 +76,11 @@ void *zevic_alloc_atomic(int64_t size) {
 /* ---- panic ---- */
 
 /* While the test runner is working, a panic or a failed assertion jumps back to it instead of ending the program. */
-static jmp_buf *g_jmp;
-static int g_jmp_kind; /* 1: a panic, 2: a failed assertion */
-static char g_fail[2048];
-static const char *g_at_file = "?";
-static int g_at_line;
+static _Thread_local jmp_buf *g_jmp;
+static _Thread_local int g_jmp_kind; /* 1: a panic, 2: a failed assertion */
+static _Thread_local char g_fail[2048];
+static _Thread_local const char *g_at_file = "?";
+static _Thread_local int g_at_line;
 
 /* The file name without its directory (what the test report shows). */
 static const char *base_name(const char *path) {
@@ -586,7 +586,7 @@ void zevic_exit(int32_t code) {
 
 /* One line without its line ending (\n or \r\n). Whether a line was read (0 at the end of the input) is
  * answered by zevic_read_line_ok() straight afterwards, because a String result takes the return slot. */
-static int32_t g_read_ok;
+static _Thread_local int32_t g_read_ok;
 
 int32_t zevic_read_line_ok(void) {
     return g_read_ok;
@@ -737,7 +737,7 @@ void zevic_sleep_ns(int64_t ns) {
 /* ---- files ----
  * A failing call leaves the reason in g_fs_errno; zevic_fs_errkind() and zevic_fs_errmsg() describe it. */
 
-static int g_fs_errno;
+static _Thread_local int g_fs_errno;
 
 /* Did the last file call fail? */
 int32_t zevic_fs_failed(void) {
@@ -950,7 +950,7 @@ int32_t zevic_fs_file_write(void *h, const char *d, int64_t dn) {
     return 1;
 }
 
-static int32_t g_file_line_ok;
+static _Thread_local int32_t g_file_line_ok;
 
 int32_t zevic_fs_file_line_ok(void) {
     return g_file_line_ok;
@@ -1005,12 +1005,12 @@ void zevic_fs_file_read_all(zevic_str *out, void *h) {
  * redirected to temporary files. Every argument is quoted, so the shell does not interpret it. */
 
 
-static char *g_proc_cmd;
-static int64_t g_proc_len, g_proc_cap;
-static int32_t g_proc_code;
-static int32_t g_proc_failed;
-static char *g_proc_err;
-static int64_t g_proc_errlen;
+static _Thread_local char *g_proc_cmd;
+static _Thread_local int64_t g_proc_len, g_proc_cap;
+static _Thread_local int32_t g_proc_code;
+static _Thread_local int32_t g_proc_failed;
+static _Thread_local char *g_proc_err;
+static _Thread_local int64_t g_proc_errlen;
 
 static void proc_put(const char *p, int64_t n) {
     if (g_proc_len + n + 1 > g_proc_cap) {
@@ -1271,3 +1271,84 @@ int32_t zevic_test_main(void) {
     fflush(stdout);
     return failed ? 1 : 0;
 }
+
+/* ---------------------------------------------------------------------------------------------
+ * Threads, mutexes and condition variables (Zevic.Async). The collector is built with GC_THREADS, so
+ * threads started here are known to it. `fn(env)` is a Zevic closure: the code pointer and its environment.
+ * ------------------------------------------------------------------------------------------- */
+#ifdef _WIN32
+typedef struct { HANDLE h; } zevic_thread;
+typedef struct { void (*fn)(void *); void *env; } zevic_thread_start_info;
+
+static DWORD WINAPI zevic_thread_main(LPVOID p) {
+    zevic_thread_start_info *si = p;
+    si->fn(si->env);
+    return 0;
+}
+
+void zevic_thread_start(void (*fn)(void *), void *env) {
+    zevic_thread *t = malloc(sizeof *t);
+    zevic_thread_start_info *si = GC_malloc_uncollectable(sizeof *si);
+    si->fn = fn;
+    si->env = env;
+    t->h = CreateThread(NULL, 0, zevic_thread_main, si, 0, NULL);
+    if (t->h) CloseHandle(t->h); /* detached: a task reports its end through its own result slot */
+    free(t);
+}
+
+void *zevic_mutex_new(void) {
+    CRITICAL_SECTION *m = malloc(sizeof *m);
+    InitializeCriticalSection(m);
+    return m;
+}
+void zevic_mutex_lock(void *m) { EnterCriticalSection(m); }
+void zevic_mutex_unlock(void *m) { LeaveCriticalSection(m); }
+
+void *zevic_cond_new(void) {
+    CONDITION_VARIABLE *c = malloc(sizeof *c);
+    InitializeConditionVariable(c);
+    return c;
+}
+void zevic_cond_wait(void *c, void *m) { SleepConditionVariableCS(c, m, INFINITE); }
+void zevic_cond_broadcast(void *c) { WakeAllConditionVariable(c); }
+#else
+#include <pthread.h>
+
+typedef struct { void (*fn)(void *); void *env; } zevic_thread_start_info;
+
+static void *zevic_thread_main(void *p) {
+    zevic_thread_start_info *si = p;
+    void (*fn)(void *) = si->fn;
+    void *env = si->env;
+    fn(env);
+    return NULL;
+}
+
+void zevic_thread_start(void (*fn)(void *), void *env) {
+    pthread_t t;
+    zevic_thread_start_info *si = GC_malloc(sizeof *si);
+    si->fn = fn;
+    si->env = env;
+    if (pthread_create(&t, NULL, zevic_thread_main, si) != 0) {
+        fprintf(stderr, "panic: cannot start a thread\n");
+        exit(101);
+    }
+    pthread_detach(t); /* a task reports its end through its own result slot */
+}
+
+void *zevic_mutex_new(void) {
+    pthread_mutex_t *m = malloc(sizeof *m);
+    pthread_mutex_init(m, NULL);
+    return m;
+}
+void zevic_mutex_lock(void *m) { pthread_mutex_lock(m); }
+void zevic_mutex_unlock(void *m) { pthread_mutex_unlock(m); }
+
+void *zevic_cond_new(void) {
+    pthread_cond_t *c = malloc(sizeof *c);
+    pthread_cond_init(c, NULL);
+    return c;
+}
+void zevic_cond_wait(void *c, void *m) { pthread_cond_wait(c, m); }
+void zevic_cond_broadcast(void *c) { pthread_cond_broadcast(c); }
+#endif

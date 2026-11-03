@@ -301,6 +301,13 @@ static char *sibling_cxx(const char *clang) {
     return zsprintf("%.*s++%.*s%s", (int)stem, clang, (int)(n - stem), clang + stem, exe);
 }
 
+/* the runtime and the collector are built with thread support (Zevic.Async) */
+#ifdef _WIN32
+#define ZEVIC_THREAD_CFLAGS "-DGC_THREADS -DGC_BUILTIN_ATOMIC"
+#else
+#define ZEVIC_THREAD_CFLAGS "-DGC_THREADS -DGC_BUILTIN_ATOMIC -pthread"
+#endif
+
 int driver_build(const char *clang, const char *home, const char *ll_path, const char *out_path, BuildOpts *o) {
     SB cmd = {0};
     bool has_cpp = false;
@@ -316,7 +323,7 @@ int driver_build(const char *clang, const char *home, const char *ll_path, const
     char *gc_inc = zsprintf("%s/runtime/third_party/bgc/include", home);
     char *rt_src = zsprintf("%s/runtime/zevic_rt.c", home);
     char *gc_src = zsprintf("%s/runtime/third_party/bgc/extra/gc.c", home);
-    char *cflags = zsprintf("-O2 -w -I%s", quote(gc_inc));
+    char *cflags = zsprintf("-O2 -w " ZEVIC_THREAD_CFLAGS " -I%s", quote(gc_inc));
     const char *rt_keys[] = {rt_src, zsprintf("%s/runtime/zevic_rt.h", home), NULL};
     const char *gc_keys[] = {zsprintf("%s/runtime/third_party/bgc/VENDORED.txt", home), NULL};
     char *rt_obj = cached_object(clang, "zevic_rt", rt_src, rt_keys, cflags);
@@ -339,7 +346,7 @@ int driver_build(const char *clang, const char *home, const char *ll_path, const
     for (int i = 0; i < o->libs.n; i++) sb_printf(&cmd, " -l%s", (char *)o->libs.v[i]);
     sb_printf(&cmd, " -o %s", quote(out_path));
 #ifndef _WIN32
-    sb_puts(&cmd, " -lm");
+    sb_puts(&cmd, " -lm -pthread");
 #endif
     return run(sb_str(&cmd));
 }
@@ -401,7 +408,7 @@ int driver_build_lib(const char *clang, const char *home, const char *ll_path, c
     char *gc_inc = zsprintf("%s/runtime/third_party/bgc/include", home);
     char *rt_src = zsprintf("%s/runtime/zevic_rt.c", home);
     char *gc_src = zsprintf("%s/runtime/third_party/bgc/extra/gc.c", home);
-    char *cflags = zsprintf("-O2 -w -I%s", quote(gc_inc));
+    char *cflags = zsprintf("-O2 -w " ZEVIC_THREAD_CFLAGS " -I%s", quote(gc_inc));
     const char *rt_keys[] = {rt_src, zsprintf("%s/runtime/zevic_rt.h", home), NULL};
     const char *gc_keys[] = {zsprintf("%s/runtime/third_party/bgc/VENDORED.txt", home), NULL};
     char *rt_obj = cached_object(clang, "zevic_rt", rt_src, rt_keys, cflags);
