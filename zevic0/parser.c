@@ -13,6 +13,8 @@ typedef struct {
 
 /* ---- helpers ---- */
 
+bool g_uses_async; /* the program writes `async` or `await`: Zevic.Async is loaded for it */
+
 static Token *peek(Parser *p) { return &p->t[p->i]; }
 static Token *peek_at(Parser *p, int k) {
     int j = p->i + k;
@@ -434,6 +436,14 @@ static Node *parse_primary(Parser *p) {
         if (starts_expr(kind(p))) n->a = parse_expr(p);
         return n;
     }
+    case TK_ASYNC: {
+        next(p);
+        if (kind(p) != TK_LBRACE) perr(p, peek(p)->pos, "expected `{` after `async` (an `async` block: `async { ... }`)");
+        Node *n = node_new(N_ASYNC, pos);
+        n->b = parse_block(p);
+        g_uses_async = true;
+        return n;
+    }
     case TK_BREAK: case TK_CONTINUE: {
         Token *kw = peek(p);
         next(p);
@@ -554,6 +564,15 @@ static Node *parse_postfix(Parser *p) {
 
 static Node *parse_unary(Parser *p) {
     Token *t = peek(p);
+    if (t->k == TK_AWAIT) {
+        if (++p->depth > 200) perr(p, t->pos, "expression is nested too deeply");
+        next(p);
+        Node *n = node_new(N_AWAIT, t->pos);
+        n->a = parse_unary(p);
+        p->depth--;
+        g_uses_async = true;
+        return n;
+    }
     if (t->k == TK_MINUS || t->k == TK_BANG || t->k == TK_TILDE || t->k == TK_AMP) {
         if (++p->depth > 200) perr(p, t->pos, "expression is nested too deeply");
         next(p);

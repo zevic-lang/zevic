@@ -22,7 +22,7 @@ static const char *g_tok_names[TK_COUNT] = {
     [TK_SELF_T] = "Self", [TK_EXTERN] = "extern", [TK_EXPORT] = "export",
     [TK_IF] = "if", [TK_ELSE] = "else", [TK_WHILE] = "while", [TK_LOOP] = "loop",
     [TK_FOR] = "for", [TK_IN] = "in", [TK_MATCH] = "match", [TK_RETURN] = "return",
-    [TK_BREAK] = "break", [TK_CONTINUE] = "continue", [TK_DEFER] = "defer",
+    [TK_BREAK] = "break", [TK_CONTINUE] = "continue", [TK_DEFER] = "defer", [TK_ASYNC] = "async", [TK_AWAIT] = "await",
     [TK_TRUE] = "true", [TK_FALSE] = "false", [TK_THIS] = "this",
     [TK_PLUS] = "+", [TK_MINUS] = "-", [TK_STAR] = "*", [TK_SLASH] = "/", [TK_PERCENT] = "%",
     [TK_AMP] = "&", [TK_PIPE] = "|", [TK_CARET] = "^", [TK_TILDE] = "~", [TK_BANG] = "!",
@@ -53,12 +53,12 @@ static const struct {
     {"Self", TK_SELF_T}, {"extern", TK_EXTERN}, {"export", TK_EXPORT},
     {"if", TK_IF}, {"else", TK_ELSE}, {"while", TK_WHILE}, {"loop", TK_LOOP},
     {"for", TK_FOR}, {"in", TK_IN}, {"match", TK_MATCH}, {"return", TK_RETURN},
-    {"break", TK_BREAK}, {"continue", TK_CONTINUE}, {"defer", TK_DEFER},
+    {"break", TK_BREAK}, {"continue", TK_CONTINUE}, {"defer", TK_DEFER}, {"async", TK_ASYNC}, {"await", TK_AWAIT},
     {"true", TK_TRUE}, {"false", TK_FALSE}, {"this", TK_THIS},
 };
 
 /* Words reserved for the future (the spec lists them). */
-static const char *g_future[] = {"async", "await", "macro", "unsafe", "type",
+static const char *g_future[] = {"macro", "unsafe", "type",
                                  "where", "const", "yield", "impl", "null", NULL};
 
 /* ---- cursor helpers ---- */

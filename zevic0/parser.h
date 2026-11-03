@@ -8,4 +8,6 @@
  * is never NULL but may be incomplete when zv_error_count grew. */
 SourceFile *parse_file(int file, const char *text, size_t len);
 
+extern bool g_uses_async;
+
 #endif

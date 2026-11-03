@@ -146,7 +146,7 @@ const char *node_kind_name(NodeKind k) {
         [N_MAPLIT] = "MapLit", [N_PAIR] = "Pair", [N_TUPLE] = "Tuple", [N_STRUCTLIT] = "StructLit", [N_LET] = "Let",
         [N_ASSIGN] = "Assign", [N_EXPRSTMT] = "ExprStmt", [N_RETURN] = "Return",
         [N_BREAK] = "Break", [N_CONTINUE] = "Continue", [N_DEFER] = "Defer", [N_WHILE] = "While",
-        [N_LOOP] = "Loop", [N_FOR] = "For", [P_WILD] = "PWild", [P_BIND] = "PBind",
+        [N_LOOP] = "Loop", [N_ASYNC] = "Async", [N_AWAIT] = "Await", [N_FOR] = "For", [P_WILD] = "PWild", [P_BIND] = "PBind",
         [P_LIT] = "PLit", [P_RANGE] = "PRange", [P_TUPLE] = "PTuple", [P_VARIANT] = "PVariant",
         [P_FIELD] = "PField", [P_OR] = "POr", [D_FN] = "Fn", [D_STRUCT] = "Struct",
         [D_CLASS] = "Class", [D_ENUM] = "Enum", [D_INTERFACE] = "Interface", [D_EXTERN] = "Extern",

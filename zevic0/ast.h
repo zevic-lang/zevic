@@ -34,7 +34,9 @@ typedef enum {
     N_MATCH,   /* a = scrutinee, list = N_ARM */
     N_ARM,     /* a = pattern, b = guard or NULL, c = body */
     N_BLOCK,   /* list = statements; a = tail expression or NULL */
-    N_LAMBDA,  /* list = N_PARAM, b = body */
+    N_LAMBDA,  /* list = N_PARAM, b = body; flag = the body of an `async` block */
+    N_ASYNC,   /* b = block */
+    N_AWAIT,   /* a = task */
     N_ARRAY,   /* list = elements */
     N_MAPLIT,  /* list = N_PAIR */
     N_PAIR,    /* a, b */
