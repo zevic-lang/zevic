@@ -516,6 +516,25 @@ let total: I64 = await a + await b              // 終わりを待って、結�
 - `async`ブロックの中で、外側の関数の`mut`の局所変数を使うと、エラー(競合するため)。ただしクラスの値は、参照として共有できる
 - `Task`の中の`Panic`は、プログラム全体を止める。`main`が終わると、走っているタスクを待たずに終わる
 
+### HTTP(Zevic.Http)
+
+```
+import Zevic.Http
+
+let r: Http.Response = Http.Get("http://127.0.0.1:8080/hello")?     // Post(url, body)、Send(request) もある
+Console.Println("${r.Status} ${r.Body}")                              // 404や500は Err ではなく Status で見る
+
+let server: Http.Server = Http.Listen("127.0.0.1", 0)?                // ポート0: 空いているポートを選ぶ
+let task: Async.Task<Result<Unit, Error>> = async {
+    server.Serve((req: Http.Request) => Http.Response.Text(200, "hello ${req.Path()}"))
+}
+server.Close()                                                        // Serve を終わらせる
+```
+
+- `http://`だけ。`https://`は`Err`(TLSは未対応)。リダイレクトは追わない。接続は1回ごとに閉じる
+- 本文は`Content-Length`、`chunked`、接続が閉じるまで、に対応。上限16MiB、待ち時間30秒
+- `Serve`は、接続ごとに`async`のタスクを1つ作る。詳しくは`docs/proposals/0003-http.md`
+
 ## 関数とラムダ
 
 関数は`fn`で宣言し、引数と戻り値の型を必ず書きます。同じ名前の関数は、1つのモジュールに1つだけです(オーバーロードなし)。
