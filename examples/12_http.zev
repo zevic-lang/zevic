@@ -1,0 +1,37 @@
+module Main
+
+import Zevic.Async
+import Zevic.Console
+import Zevic.Http
+
+// A small web server and a client in one program. Everything stays on this computer (127.0.0.1).
+fn Main() {
+    let server: Http.Server = Http.Listen("127.0.0.1", 0).Unwrap()
+    let base: String = "http://127.0.0.1:${server.Port()}"
+    let serving: Async.Task<Result<Unit, Error>> = async {
+        server.Serve((req: Http.Request) => {
+            if (req.Path() == "/hello") {
+                return Http.Response.Text(200, "Hello, ${req.Query()}!")
+            }
+            if (req.Path() == "/shout") {
+                return Http.Response.Text(200, req.Body)
+            }
+            Http.Response.Text(404, "nothing at ${req.Path()}")
+        })
+    }
+
+    match (Http.Get("${base}/hello?world")) {
+        Ok(r) => Console.Println("GET /hello -> ${r.Status} ${r.Body}"),
+        Err(e) => Console.Println("error: ${e.Message()}"),
+    }
+    match (Http.Post("${base}/shout", "posted text")) {
+        Ok(r) => Console.Println("POST /shout -> ${r.Status} ${r.Body}"),
+        Err(e) => Console.Println("error: ${e.Message()}"),
+    }
+    match (Http.Get("${base}/missing")) {
+        Ok(r) => Console.Println("GET /missing -> ${r.Status} ${r.Body} (ok: ${r.IsOk()})"),
+        Err(e) => Console.Println("error: ${e.Message()}"),
+    }
+    server.Close()
+    let _done: Result<Unit, Error> = await serving
+}

@@ -1,0 +1,3 @@
+GET /hello -> 200 Hello, world!
+POST /shout -> 200 posted text
+GET /missing -> 404 nothing at /missing (ok: false)
