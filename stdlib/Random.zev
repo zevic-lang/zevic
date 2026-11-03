@@ -1,0 +1,81 @@
+module Zevic.Random
+
+// Pseudo-random numbers (SplitMix64). The same seed always gives the same numbers, on every machine.
+// This is not for secrets: anyone who sees a few numbers can predict the rest.
+//
+//     mut rng: Random.Rng = Random.Rng.New(42)       // or Random.Rng.Seeded() for a different series each run
+//     let dice: I64 = rng.Int(1, 7)                    // 1 to 6
+//     let p: F64 = rng.Float()                         // 0.0 up to (not including) 1.0
+
+extern "zevic" {
+    fn zevic_time_monotonic_ns() -> I64
+    fn zevic_time_unix_ns() -> I64
+}
+
+let golden: U64 = 0x9E3779B97F4A7C15_U64
+
+class Rng {
+    state: U64
+
+    fn Init(seed: I64) { this.state = seed.ToU64Wrap() }
+
+    // A generator that starts differently every time (it uses the clock).
+    static fn Seeded() -> Rng {
+        let t: U64 = zevic_time_unix_ns().ToU64Wrap()
+        let m: U64 = zevic_time_monotonic_ns().ToU64Wrap()
+        Rng.New((t ^ m.WrapMul(golden)).ToI64Wrap())
+    }
+
+    // The next 64 random bits.
+    mut fn NextU64() -> U64 {
+        this.state = this.state.WrapAdd(golden)
+        mut z: U64 = this.state
+        z = (z ^ (z >> 30)).WrapMul(0xBF58476D1CE4E5B9_U64)
+        z = (z ^ (z >> 27)).WrapMul(0x94D049BB133111EB_U64)
+        z ^ (z >> 31)
+    }
+
+    // A whole number from `low` up to (not including) `high`, every value equally likely. Panics when `high <= low`.
+    mut fn Int(low: I64, high: I64) -> I64 {
+        if (high <= low) {
+            Panic("Random.Int: the range ${low}..${high} is empty")
+        }
+        // the width can be larger than I64 holds: work with U64
+        let span: U64 = (high.ToU64Wrap()).WrapSub(low.ToU64Wrap())
+        // the first `rest` values of the 2^64 possible ones would make small numbers a little more likely: skip them
+        let rest: U64 = 0_U64.WrapSub(span) % span
+        loop {
+            let x: U64 = this.NextU64()
+            if (x >= rest) {
+                return (low.ToU64Wrap().WrapAdd(x % span)).ToI64Wrap()
+            }
+        }
+    }
+
+    // A number from 0.0 up to (not including) 1.0.
+    mut fn Float() -> F64 {
+        (this.NextU64() >> 11).ToF64() / 9007199254740992.0
+    }
+
+    mut fn Bool() -> Bool { this.NextU64() >> 63 == 1_U64 }
+}
+
+// Puts the elements in a random order (Fisher-Yates).
+fn Shuffle<T>(mut rng: Rng, mut xs: Array<T>) {
+    mut i: I64 = xs.Len() - 1
+    while (i > 0) {
+        let j: I64 = rng.Int(0, i + 1)
+        let t: T = xs[i]
+        xs[i] = xs[j]
+        xs[j] = t
+        i -= 1
+    }
+}
+
+// One random element (None for an empty array).
+fn Pick<T>(mut rng: Rng, xs: Array<T>) -> Option<T> {
+    if (xs.IsEmpty()) {
+        return None
+    }
+    Some(xs[rng.Int(0, xs.Len())])
+}
