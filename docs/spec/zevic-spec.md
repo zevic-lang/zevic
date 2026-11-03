@@ -206,7 +206,7 @@ r"""
 
 ### 記号
 
-`. .. ..= , ; : => -> ? ! ~ & | ^ << >> + - * / % = == != < > <= >= && || ( ) [ ] { }`と、文字列の中だけの`${`。`@` `#` `::`は今は使いません。
+`. .. ..= , ; : => -> ? ! ~ & | ^ << >> + - * / % = == != < > <= >= && || ( ) [ ] { }`と、文字列の中だけの`${`。`@`はループのラベルにだけ使います([提案 0001](../proposals/0001-loop-labels.md))。`#` `::`は今は使いません。
 
 ## 型
 
@@ -396,7 +396,23 @@ loop {
 ```
 
 - `loop`は無限ループで、`break`で抜ける。`break`は値を持たない
-- `break`と`continue`は、一番内側のループに効く。ラベル付きの`break`は、今はない
+- `break`と`continue`は、一番内側のループに効く
+- ループには`名前@`でラベルを付けられる。`break@名前`と`continue@名前`は、そのラベルのループに効く(Kotlinと同じ形)
+
+```
+outer@ for (row in rows) {
+    for (x in row) {
+        if (x < 0) { continue@outer }
+        if (x == target) { break@outer }
+    }
+}
+```
+
+  - ラベルを付けられるのは`while` `loop` `for`だけ。`名前@`はループと同じ行に、`@`を名前にくっつけて書く
+  - `break@名前`は、`break`と`@`と名前の間に空白を入れない
+  - ラベルが指すのは、同じ関数の中で、その位置を囲んでいるループ。ラムダは越えられない
+  - 存在しないラベル、囲んでいるループと同じ名前のラベルは、エラー
+  - 抜けるとき、間にある`defer`は内側から順に実行する
 
 ### for
 
@@ -1785,9 +1801,12 @@ testDecl    = 'test' String block
 
 block       = '{' { stmt } [ expr ] '}'
 stmt        = 'let' pat ':' type '=' expr | 'mut' pat ':' type '=' expr
-            | expr [ assignOp expr ] | 'return' [ expr ] | 'break' | 'continue'
-            | 'defer' expr | 'while' '(' expr ')' block | 'loop' block
+            | expr [ assignOp expr ] | 'return' [ expr ] | jump
+            | 'defer' expr | [ label ] loopStmt
+loopStmt    = 'while' '(' expr ')' block | 'loop' block
             | 'for' '(' forPat 'in' expr ')' block
+label       = ident '@'
+jump        = ( 'break' | 'continue' ) [ '@' ident ]    (* '@'は直前・直後に空白なし *)
 forPat      = pat | Ident ',' pat
 
 expr        = ifExpr | matchExpr | binary | unary | postfix | lambda | literal | '(' expr ')'
