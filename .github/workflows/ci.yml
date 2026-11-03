@@ -65,6 +65,8 @@ jobs:
           "build/zevic${{ matrix.exe }}" tools/zevpm/src/*.zev -o "build/zevpm${{ matrix.exe }}"
           "build/zevic${{ matrix.exe }}" --version
           "build/zevpm${{ matrix.exe }}" --version
+          # zevfmt is written in Zevic too (tools/zevfmt)
+          "build/zevic${{ matrix.exe }}" tools/zevfmt/src/*.zev -o "build/zevfmt${{ matrix.exe }}"
 
       - name: Test
         run: |
@@ -72,6 +74,8 @@ jobs:
           python tests/zevpm_test.py
           ZEVPM="build/zevpm-c${{ matrix.exe }}" python tests/zevpm_test.py
           python tests/examples_test.py
+          python tests/zevfmt_test.py "build/zevic${{ matrix.exe }}" "build/zevfmt${{ matrix.exe }}"
+          "build/zevfmt${{ matrix.exe }}" -check stdlib examples tools
 
       - name: Package
         id: pkg
@@ -79,7 +83,7 @@ jobs:
           VERSION="$(cat VERSION)"
           NAME="zevic-${VERSION}-${{ matrix.name }}"
           mkdir -p "dist/$NAME/bin"
-          cp "build/zevic${{ matrix.exe }}" "build/zevpm${{ matrix.exe }}" "dist/$NAME/bin/"
+          cp "build/zevic${{ matrix.exe }}" "build/zevpm${{ matrix.exe }}" "build/zevfmt${{ matrix.exe }}" "dist/$NAME/bin/"
           cp -r stdlib runtime examples "dist/$NAME/"
           cp LICENSE README.md CHANGELOG.md VERSION "dist/$NAME/"
           cd dist
