@@ -1,0 +1,11 @@
+6457827717110365317 3203168211198807973 9817491932198370423
+same seed, same numbers: true
+fair die: true
+negative range: true, wide range: true
+single value: 3
+floats in range: true, mean near 0.5: true
+shuffled sum: 55, moved: true
+picked from the array: true
+pick from nothing: true
+bools balanced: true
+seeded in range: true

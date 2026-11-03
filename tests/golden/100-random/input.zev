@@ -1,0 +1,74 @@
+module Main
+
+import Zevic.Console
+import Zevic.Random
+
+fn Main() {
+    // the reference values of SplitMix64 for the seed 1234567
+    mut r: Random.Rng = Random.Rng.New(1234567)
+    Console.Println("${r.NextU64()} ${r.NextU64()} ${r.NextU64()}")
+
+    // the same seed gives the same numbers
+    mut a: Random.Rng = Random.Rng.New(7)
+    mut b: Random.Rng = Random.Rng.New(7)
+    mut same: Bool = true
+    for (i in 0..100) {
+        if (a.Int(0, 1000) != b.Int(0, 1000)) { same = false }
+    }
+    Console.Println("same seed, same numbers: ${same}")
+
+    // a die: every face about 1/6 of the time, never out of range
+    mut q: Random.Rng = Random.Rng.New(42)
+    mut counts: Array<I64> = [0, 0, 0, 0, 0, 0]
+    for (i in 0..60000) {
+        let d: I64 = q.Int(1, 7)
+        counts[d - 1] += 1
+    }
+    mut fair: Bool = true
+    for (c in counts) {
+        if (c < 9500 || c > 10500) { fair = false }
+    }
+    Console.Println("fair die: ${fair}")
+
+    // negative ranges and the widest range
+    mut inside: Bool = true
+    for (i in 0..1000) {
+        let x: I64 = q.Int(-5, 5)
+        if (x < -5 || x >= 5) { inside = false }
+    }
+    let wide: I64 = q.Int(-9223372036854775807 - 1, 9223372036854775807)
+    Console.Println("negative range: ${inside}, wide range: ${wide != 0 || wide == 0}")
+    Console.Println("single value: ${q.Int(3, 4)}")
+
+    // floats are in [0, 1)
+    mut floats: Bool = true
+    mut sum: F64 = 0.0
+    for (i in 0..10000) {
+        let f: F64 = q.Float()
+        if (f < 0.0 || f >= 1.0) { floats = false }
+        sum += f
+    }
+    Console.Println("floats in range: ${floats}, mean near 0.5: ${sum / 10000.0 > 0.48 && sum / 10000.0 < 0.52}")
+
+    // Shuffle keeps the elements; Pick takes one of them
+    mut xs: Array<I64> = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    Random.Shuffle(q, xs)
+    mut total: I64 = 0
+    for (x in xs) { total += x }
+    Console.Println("shuffled sum: ${total}, moved: ${xs[0] != 1 || xs[1] != 2 || xs[2] != 3}")
+    let picked: I64 = Random.Pick(q, xs).Unwrap()
+    Console.Println("picked from the array: ${xs.Contains(picked)}")
+    let empty: Array<I64> = []
+    let none: Option<I64> = Random.Pick(q, empty)
+    Console.Println("pick from nothing: ${none.IsNone()}")
+
+    mut bools: I64 = 0
+    for (i in 0..1000) {
+        if (q.Bool()) { bools += 1 }
+    }
+    Console.Println("bools balanced: ${bools > 400 && bools < 600}")
+
+    // an unseeded generator works too
+    mut s: Random.Rng = Random.Rng.Seeded()
+    Console.Println("seeded in range: ${s.Int(0, 10) < 10}")
+}
