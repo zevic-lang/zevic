@@ -34,7 +34,7 @@ static const char *g_tok_names[TK_COUNT] = {
     [TK_SHLEQ] = "<<=", [TK_SHREQ] = ">>=",
     [TK_DOT] = ".", [TK_DOTDOT] = "..", [TK_DOTDOTEQ] = "..=", [TK_ELLIPSIS] = "...",
     [TK_COMMA] = ",", [TK_COLON] = ":", [TK_ARROW] = "->", [TK_FATARROW] = "=>",
-    [TK_QUESTION] = "?",
+    [TK_QUESTION] = "?", [TK_AT] = "@",
     [TK_LPAREN] = "(", [TK_RPAREN] = ")", [TK_LBRACK] = "[", [TK_RBRACK] = "]",
     [TK_LBRACE] = "{", [TK_RBRACE] = "}",
 };
@@ -302,6 +302,7 @@ static void lex_op(Lexer *lx) {
     OP1(',', TK_COMMA)
     OP1(':', TK_COLON)
     OP1('?', TK_QUESTION)
+    OP1('@', TK_AT)
     case '(': k = TK_LPAREN; if (lx->sp < 255) lx->stack[lx->sp++] = '('; break;
     case '[': k = TK_LBRACK; if (lx->sp < 255) lx->stack[lx->sp++] = '['; break;
     case '{': k = TK_LBRACE; if (lx->sp < 255) lx->stack[lx->sp++] = '{'; break;
@@ -315,7 +316,7 @@ static void lex_op(Lexer *lx) {
     if (k == TK_EOF) {
         if (c >= 0x80)
             diag_error(pos, "unexpected non-ASCII character outside a string or comment");
-        else if (c == '@' || c == '#')
+        else if (c == '#')
             diag_error(pos, "`%c` is not used in Zevic", c);
         else
             diag_error(pos, "unexpected character `%c`", c);
