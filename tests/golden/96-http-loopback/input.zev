@@ -1,0 +1,90 @@
+module Main
+
+import Zevic.Async
+import Zevic.Console
+import Zevic.Http
+import Zevic.Text
+
+extern "zevic" {
+    fn zevic_net_listen(host: String, port: I64) -> I64
+    fn zevic_net_port(fd: I64) -> I64
+    fn zevic_net_accept(fd: I64) -> I64
+    fn zevic_net_read(fd: I64, max: I64) -> String
+    fn zevic_net_write(fd: I64, data: String) -> I32
+    fn zevic_net_close(fd: I64)
+}
+
+// A server that answers every connection with fixed bytes.
+fn Raw(answer: String) -> I64 {
+    let fd: I64 = zevic_net_listen("127.0.0.1", 0)
+    let port: I64 = zevic_net_port(fd)
+    let t: Async.Task<Unit> = async {
+        let c: I64 = zevic_net_accept(fd)
+        let _a: String = zevic_net_read(c, 4096)
+        let _w: I32 = zevic_net_write(c, answer)
+        zevic_net_close(c)
+        zevic_net_close(fd)
+    }
+    port
+}
+
+fn Show(label: String, r: Result<Http.Response, Error>) {
+    match (r) {
+        Ok(x) => Console.Println("${label}: ${x.Status} [${x.Body.Len()}] ${x.Body.Slice(0, if (x.Body.Len() > 30) { 30 } else { x.Body.Len() })}"),
+        Err(e) => Console.Println("${label}: error ${e.Kind().ToString()}"),
+    }
+}
+
+fn Main() {
+    let server: Http.Server = Http.Listen("127.0.0.1", 0).Unwrap()
+    let base: String = "http://127.0.0.1:${server.Port()}"
+    let serving: Async.Task<Result<Unit, Error>> = async {
+        server.Serve((req: Http.Request) => {
+            if (req.Path() == "/hello") {
+                return Http.Response.Text(200, "hello ${req.Query()}")
+            }
+            if (req.Path() == "/echo") {
+                mut r: Http.Response = Http.Response.Text(201, "${req.Method} ${req.Body}")
+                r.SetHeader("X-Seen", req.Header("x-test").UnwrapOr("none"))
+                return r
+            }
+            if (req.Path() == "/big") {
+                return Http.Response.Text(200, Text.Repeat("0123456789", 100000))
+            }
+            Http.Response.Text(404, "no ${req.Path()}")
+        })
+    }
+
+    Show("get", Http.Get("${base}/hello?a=1"))
+    Show("post", Http.Post("${base}/echo", "some body"))
+    Show("404", Http.Get("${base}/nothing"))
+    Show("big", Http.Get("${base}/big"))
+
+    mut req: Http.Request = Http.Request.New("PUT", "${base}/echo")
+    req.SetHeader("X-Test", "yes")
+    req.SetBody("put body")
+    match (Http.Send(req)) {
+        Ok(r) => Console.Println("put: ${r.Status} ${r.Body} seen=${r.Header("x-seen").UnwrapOr("?")} ok=${r.IsOk()}"),
+        Err(e) => Console.Println("put: error ${e.Message()}"),
+    }
+
+    // answers that the server above cannot make
+    let p1: I64 = Raw("HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nhello\r\n6;ext=1\r\n world\r\n0\r\n\r\n")
+    Show("chunked", Http.Get("http://127.0.0.1:${p1}/"))
+    let p2: I64 = Raw("HTTP/1.1 200 OK\r\n\r\nuntil the end")
+    Show("to-end", Http.Get("http://127.0.0.1:${p2}/"))
+    let p3: I64 = Raw("garbage\r\n\r\n")
+    Show("garbage", Http.Get("http://127.0.0.1:${p3}/"))
+    let p4: I64 = Raw("HTTP/1.1 200 OK\r\nContent-Length: 50\r\n\r\nshort")
+    Show("truncated", Http.Get("http://127.0.0.1:${p4}/"))
+
+    Show("https", Http.Get("https://127.0.0.1:1/"))
+    Show("scheme", Http.Get("ftp://x/"))
+    Show("refused", Http.Get("http://127.0.0.1:1/"))
+
+    server.Close()
+    match (await serving) {
+        Ok(_) => Console.Println("server stopped"),
+        Err(e) => Console.Println("server error ${e.Message()}"),
+    }
+}

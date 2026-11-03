@@ -1,0 +1,13 @@
+get: 200 [9] hello a=1
+post: 201 [14] POST some body
+404: 404 [11] no /nothing
+big: 200 [1000000] 012345678901234567890123456789
+put: 201 PUT put body seen=yes ok=true
+chunked: 200 [11] hello world
+to-end: 200 [13] until the end
+garbage: error Io
+truncated: error Io
+https: error Invalid
+scheme: error Invalid
+refused: error Io
+server stopped
