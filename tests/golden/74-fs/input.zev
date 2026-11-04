@@ -13,7 +13,6 @@ fn Run() -> Result<Unit, Error> {
     Console.Println("exists ${Fs.Exists(path)} file ${Fs.IsFile(path)} dir ${Fs.IsDir(dir)}")
 
     mut f: Fs.File = Fs.Open(path, Fs.Mode.Read)?
-    defer f.Close()
     mut n: I32 = 0
     loop {
         match (f.ReadLine()) {
@@ -24,6 +23,8 @@ fn Run() -> Result<Unit, Error> {
             None => break,
         }
     }
+    // closed before the file is removed: Windows cannot remove an open file
+    f.Close()?
 
     mut w: Fs.File = Fs.Open("${dir}/b.txt", Fs.Mode.Write)?
     w.WriteLine("written")?
