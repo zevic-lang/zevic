@@ -1121,32 +1121,45 @@ static char *slurp(const char *path, int64_t *len) {
 }
 
 #ifdef _WIN32
-/* 1 when the program named by the first (quoted) word of the command line exists. cmd.exe answers a missing program
- * with an exit code that cannot be told from a program's own, so the lookup is done here. */
-static int win_program_exists(const char *cmd) {
-    char name[MAX_PATH];
-    size_t k = 0;
-    const char *c = cmd;
-    if (*c == '"') c++;
-    while (*c && *c != '"' && k + 1 < sizeof name) name[k++] = *c++;
-    name[k] = 0;
-    static const char *exts[] = {".exe", ".cmd", ".bat", ".com"};
-    int has_dir = strchr(name, '/') || strchr(name, '\\') || strchr(name, ':');
-    const char *dot = strrchr(name, '.');
-    int has_ext = dot && !strchr(dot, '/') && !strchr(dot, '\\');
-    char found[MAX_PATH];
-    for (int i = 0; i < 4; i++) {
-        if (has_ext && i > 0) break;
-        if (has_dir) {
-            char full[MAX_PATH + 8];
-            snprintf(full, sizeof full, "%s%s", name, has_ext ? "" : exts[i]);
-            DWORD a = GetFileAttributesA(full);
-            if (a != INVALID_FILE_ATTRIBUTES && !(a & FILE_ATTRIBUTE_DIRECTORY)) return 1;
-        } else if (SearchPathA(NULL, name, has_ext ? NULL : exts[i], MAX_PATH, found, NULL)) {
-            return 1;
-        }
-    }
-    return 0;
+/* Starts the command line (without cmd.exe, whose quoting rules are a trap) and waits for it. `in`, `out` and `err`
+ * are the child's standard handles. Returns the exit code, 127 when the program does not exist (what a POSIX shell
+ * says), or -1 when it cannot be started for another reason. */
+static int win_spawn(const char *cmdline, HANDLE in, HANDLE out, HANDLE err) {
+    STARTUPINFOA si;
+    PROCESS_INFORMATION pi;
+    memset(&si, 0, sizeof si);
+    memset(&pi, 0, sizeof pi);
+    si.cb = sizeof si;
+    si.dwFlags = STARTF_USESTDHANDLES;
+    si.hStdInput = in;
+    si.hStdOutput = out;
+    si.hStdError = err;
+    char *line = strdup(cmdline); /* CreateProcess may modify it */
+    if (!line) exit(101);
+    BOOL ok = CreateProcessA(NULL, line, NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi);
+    DWORD last = GetLastError();
+    free(line);
+    if (!ok) return (last == ERROR_FILE_NOT_FOUND || last == ERROR_PATH_NOT_FOUND) ? 127 : -1;
+    WaitForSingleObject(pi.hProcess, INFINITE);
+    DWORD code = 1;
+    GetExitCodeProcess(pi.hProcess, &code);
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+    return (int)code;
+}
+
+static HANDLE win_open_inheritable(const char *path, DWORD access, DWORD disposition) {
+    SECURITY_ATTRIBUTES sa;
+    sa.nLength = sizeof sa;
+    sa.lpSecurityDescriptor = NULL;
+    sa.bInheritHandle = TRUE;
+    return CreateFileA(path, access, FILE_SHARE_READ | FILE_SHARE_WRITE, &sa, disposition, FILE_ATTRIBUTE_NORMAL, NULL);
+}
+
+static HANDLE win_std_inheritable(DWORD which) {
+    HANDLE h = GetStdHandle(which);
+    if (h && h != INVALID_HANDLE_VALUE) SetHandleInformation(h, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
+    return h;
 }
 #endif
 
@@ -1167,28 +1180,34 @@ void zevic_proc_run(zevic_str *out) {
         return;
     }
     int64_t base = g_proc_len;
-    proc_put(" >", 2);
-    proc_put(fo, (int64_t)strlen(fo));
-    proc_put(" 2>", 3);
-    proc_put(fe, (int64_t)strlen(fe));
 #ifdef _WIN32
-    if (!win_program_exists(g_proc_cmd)) {
+    HANDLE ho = win_open_inheritable(fo, GENERIC_WRITE, CREATE_ALWAYS);
+    HANDLE he = win_open_inheritable(fe, GENERIC_WRITE, CREATE_ALWAYS);
+    if (ho == INVALID_HANDLE_VALUE || he == INVALID_HANDLE_VALUE) {
+        if (ho != INVALID_HANDLE_VALUE) CloseHandle(ho);
+        if (he != INVALID_HANDLE_VALUE) CloseHandle(he);
+        g_proc_failed = 1;
+        str_set(out, "", 0);
+        return;
+    }
+    int rc = win_spawn(g_proc_cmd, win_std_inheritable(STD_INPUT_HANDLE), ho, he);
+    CloseHandle(ho);
+    CloseHandle(he);
+    if (rc == 127) {
         /* what a POSIX shell does */
-        g_proc_code = 127;
         FILE *ef = fopen(fe, "wb");
         if (ef) {
             fputs("program not found\n", ef);
             fclose(ef);
         }
-    } else {
-        /* cmd.exe strips one pair of outer quotes */
-        char *line = malloc((size_t)g_proc_len + 3);
-        sprintf(line, "\"%s\"", g_proc_cmd);
-        int rc = system(line);
-        free(line);
-        g_proc_code = rc;
     }
+    if (rc < 0) g_proc_failed = 1;
+    else g_proc_code = rc;
 #else
+    proc_put(" >", 2);
+    proc_put(fo, (int64_t)strlen(fo));
+    proc_put(" 2>", 3);
+    proc_put(fe, (int64_t)strlen(fe));
     int rc = system(g_proc_cmd);
     if (rc == -1) g_proc_failed = 1;
     else if (WIFEXITED(rc)) g_proc_code = WEXITSTATUS(rc);
@@ -1215,15 +1234,10 @@ void zevic_proc_inherit(void) {
     g_proc_failed = 0;
     g_proc_code = -1;
 #ifdef _WIN32
-    if (!win_program_exists(g_proc_cmd)) {
-        g_proc_code = 127;
-        return;
-    }
-    char *line = malloc((size_t)g_proc_len + 3);
-    sprintf(line, "\"%s\"", g_proc_cmd);
-    int rc = system(line);
-    free(line);
-    g_proc_code = rc;
+    int rc = win_spawn(g_proc_cmd, win_std_inheritable(STD_INPUT_HANDLE), win_std_inheritable(STD_OUTPUT_HANDLE),
+                       win_std_inheritable(STD_ERROR_HANDLE));
+    if (rc < 0) g_proc_failed = 1;
+    else g_proc_code = rc;
 #else
     int rc = system(g_proc_cmd);
     if (rc == -1) g_proc_failed = 1;
