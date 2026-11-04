@@ -23,6 +23,7 @@ def sources():
 
 
 FLOAT = re.compile(r"^(\d+:\d+ number) (\S+)( _\w+)?$")
+AST_FLOAT = re.compile(r"^(\s*Float) (\S+?)(_\w+)?$")
 
 
 def normalize(text, floats):
@@ -31,7 +32,7 @@ def normalize(text, floats):
         return text
     lines = []
     for l in text.split("\n"):
-        m = FLOAT.match(l)
+        m = FLOAT.match(l) or AST_FLOAT.match(l)
         if m:
             try:
                 l = "%s %g%s" % (m.group(1), float(m.group(2)), m.group(3) or "")
@@ -57,7 +58,7 @@ def main():
             rel = os.path.relpath(path, ROOT)
             c0, o0, e0 = run(z0, opt, path)
             c1, o1, e1 = run(z1, opt, path)
-            floats = flag == "tokens"
+            floats = True
             # the file name in the messages is the path that was given: the same for both
             if c0 != c1 or normalize(o0, floats) != normalize(o1, floats) or e0 != e1:
                 print("FAIL  %s %s" % (flag, rel))

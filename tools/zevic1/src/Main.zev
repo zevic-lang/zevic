@@ -3,8 +3,10 @@ module Main
 import Zevic.Console
 import Zevic.Env
 import Zevic.Fs
+import Zevic1.Ast as Ast
 import Zevic1.Diag as Diag
 import Zevic1.Lexer as Lexer
+import Zevic1.Parser as Parser
 import Zevic1.Token as Token
 
 fn dumpTokens(path: String) -> I32 {
@@ -52,10 +54,30 @@ fn dumpTokens(path: String) -> I32 {
     if (diag.Errors > 0) { 1 } else { 0 }
 }
 
+fn dumpAst(path: String) -> I32 {
+    let text: String = match (Fs.ReadAll(path)) {
+        Ok(t) => t,
+        Err(_) => {
+            Console.Eprintln("zevic: error: cannot read ${path}")
+            return 2
+        },
+    }
+    mut diag: Diag.Diag = Diag.Diag.New()
+    let file: I32 = diag.AddSource(path, text)
+    let sf: Ast.SourceFile = Parser.ParseFile(diag, file, text)
+    if (diag.Errors == 0) {
+        Ast.Dump(sf)
+    }
+    if (diag.Errors > 0) { 1 } else { 0 }
+}
+
 fn Main(args: Array<String>) {
     if (args.Len() == 2 && args[0] == "--dump-tokens") {
         Env.Exit(dumpTokens(args[1]))
     }
-    Console.Eprintln("usage: zevic1 --dump-tokens <file>")
+    if (args.Len() == 2 && args[0] == "--dump-ast") {
+        Env.Exit(dumpAst(args[1]))
+    }
+    Console.Eprintln("usage: zevic1 --dump-tokens <file> | --dump-ast <file>")
     Env.Exit(2)
 }
