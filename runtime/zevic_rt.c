@@ -842,7 +842,13 @@ int32_t zevic_fs_kind(const char *p, int64_t n) {
 int32_t zevic_fs_remove(const char *p, int64_t n) {
     char *path = nul_copy(p, n);
     g_fs_errno = 0;
+#ifdef _WIN32
+    /* the C library's remove() cannot remove a directory on Windows */
+    DWORD attr = GetFileAttributesA(path);
+    int rc = (attr != INVALID_FILE_ATTRIBUTES && (attr & FILE_ATTRIBUTE_DIRECTORY)) ? _rmdir(path) : remove(path);
+#else
     int rc = remove(path);
+#endif
     free(path);
     if (rc != 0) {
         g_fs_errno = errno;
@@ -855,7 +861,13 @@ int32_t zevic_fs_rename(const char *a, int64_t an, const char *b, int64_t bn) {
     char *from = nul_copy(a, an);
     char *to = nul_copy(b, bn);
     g_fs_errno = 0;
+#ifdef _WIN32
+    /* rename() refuses to replace an existing file on Windows; POSIX replaces it */
+    int rc = MoveFileExA(from, to, MOVEFILE_REPLACE_EXISTING) ? 0 : -1;
+    if (rc != 0) errno = (GetLastError() == ERROR_FILE_NOT_FOUND || GetLastError() == ERROR_PATH_NOT_FOUND) ? ENOENT : EACCES;
+#else
     int rc = rename(from, to);
+#endif
     free(from);
     free(to);
     if (rc != 0) {
@@ -1108,6 +1120,36 @@ static char *slurp(const char *path, int64_t *len) {
     return buf;
 }
 
+#ifdef _WIN32
+/* 1 when the program named by the first (quoted) word of the command line exists. cmd.exe answers a missing program
+ * with an exit code that cannot be told from a program's own, so the lookup is done here. */
+static int win_program_exists(const char *cmd) {
+    char name[MAX_PATH];
+    size_t k = 0;
+    const char *c = cmd;
+    if (*c == '"') c++;
+    while (*c && *c != '"' && k + 1 < sizeof name) name[k++] = *c++;
+    name[k] = 0;
+    static const char *exts[] = {".exe", ".cmd", ".bat", ".com"};
+    int has_dir = strchr(name, '/') || strchr(name, '\\') || strchr(name, ':');
+    const char *dot = strrchr(name, '.');
+    int has_ext = dot && !strchr(dot, '/') && !strchr(dot, '\\');
+    char found[MAX_PATH];
+    for (int i = 0; i < 4; i++) {
+        if (has_ext && i > 0) break;
+        if (has_dir) {
+            char full[MAX_PATH + 8];
+            snprintf(full, sizeof full, "%s%s", name, has_ext ? "" : exts[i]);
+            DWORD a = GetFileAttributesA(full);
+            if (a != INVALID_FILE_ATTRIBUTES && !(a & FILE_ATTRIBUTE_DIRECTORY)) return 1;
+        } else if (SearchPathA(NULL, name, has_ext ? NULL : exts[i], MAX_PATH, found, NULL)) {
+            return 1;
+        }
+    }
+    return 0;
+}
+#endif
+
 /* Runs the command; its standard output is the result. Afterwards zevic_proc_failed() says whether it could not
  * be run at all, zevic_proc_code() gives the exit code and zevic_proc_stderr() what it wrote to stderr. */
 void zevic_proc_run(zevic_str *out) {
@@ -1130,12 +1172,22 @@ void zevic_proc_run(zevic_str *out) {
     proc_put(" 2>", 3);
     proc_put(fe, (int64_t)strlen(fe));
 #ifdef _WIN32
-    /* cmd.exe strips one pair of outer quotes */
-    char *line = malloc((size_t)g_proc_len + 3);
-    sprintf(line, "\"%s\"", g_proc_cmd);
-    int rc = system(line);
-    free(line);
-    g_proc_code = rc;
+    if (!win_program_exists(g_proc_cmd)) {
+        /* what a POSIX shell does */
+        g_proc_code = 127;
+        FILE *ef = fopen(fe, "wb");
+        if (ef) {
+            fputs("program not found\n", ef);
+            fclose(ef);
+        }
+    } else {
+        /* cmd.exe strips one pair of outer quotes */
+        char *line = malloc((size_t)g_proc_len + 3);
+        sprintf(line, "\"%s\"", g_proc_cmd);
+        int rc = system(line);
+        free(line);
+        g_proc_code = rc;
+    }
 #else
     int rc = system(g_proc_cmd);
     if (rc == -1) g_proc_failed = 1;
@@ -1163,6 +1215,10 @@ void zevic_proc_inherit(void) {
     g_proc_failed = 0;
     g_proc_code = -1;
 #ifdef _WIN32
+    if (!win_program_exists(g_proc_cmd)) {
+        g_proc_code = 127;
+        return;
+    }
     char *line = malloc((size_t)g_proc_len + 3);
     sprintf(line, "\"%s\"", g_proc_cmd);
     int rc = system(line);
