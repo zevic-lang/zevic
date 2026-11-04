@@ -1,7 +1,0 @@
-module Main
-
-import Zevic.Console
-import Console
-import Zevic.Fs as Console
-
-fn Main() {}
