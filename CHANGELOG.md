@@ -9,7 +9,7 @@ Small language and library additions, and the first Zevic tools. (zevfmt, loop l
 
 - `xs[i].F = v` and `xs[i].F += v` work on a `mut` array whose elements are classes or structs (proposal 0004); a struct element is changed and stored back, so its array and index must be simple expressions
 - the specification's appendix B is the working wordcount example; a test keeps them equal
-- fixes found by the first CI runs: `Http.Server.Close` now stops a waiting `accept` on macOS and Windows too (the listener is polled in short slices); the runtime includes `winsock2.h` before `windows.h`; the Boehm GC no longer asks for executable pages (macOS/arm64 aborted); the collector is built without its Windows message box (it needed user32); on Windows `Fs.Remove` removes directories, `Fs.Rename` replaces an existing file and `Process.Run` of a missing program gives exit code 127, as on POSIX; the test runners time out instead of hanging
+- fixes found by the first CI runs: `Http.Server.Close` now stops a waiting `accept` on macOS and Windows too (the listener is polled in short slices); the runtime includes `winsock2.h` before `windows.h`; the Boehm GC no longer asks for executable pages (macOS/arm64 aborted); the collector is built without its Windows message box (it needed user32); on Windows `Fs.Remove` removes directories, `Fs.Rename` replaces an existing file and `Process.Run` of a missing program gives exit code 127, as on POSIX; zevpm builds Windows paths with `/`, keeps its git cache directory names short and starts programs without cmd.exe; the test runners time out instead of hanging
 
 Stage 7, first part: zevpm and zevfmt are written in Zevic.
 
