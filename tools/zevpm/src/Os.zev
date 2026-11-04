@@ -21,8 +21,16 @@ fn ExeSuffix() -> String {
 
 fn isSep(b: U8) -> Bool { b == b'/' || b == b'\\' }
 
+// On Windows every path zevpm builds uses `/`: the programs it starts (git above all) read the backslashes of a
+// mixed path like C:\Users\x/git/y wrongly.
+fn slashes(p: String) -> String {
+    if (IsWindows()) { Text.Replace(p, "\\", "/") } else { p }
+}
+
 // a/b, without doubling the separator. An empty or "." left side gives just b.
-fn Join(a: String, b: String) -> String {
+fn Join(left: String, right: String) -> String {
+    let a: String = slashes(left)
+    let b: String = slashes(right)
     if (a.IsEmpty() || a == ".") {
         return b
     }

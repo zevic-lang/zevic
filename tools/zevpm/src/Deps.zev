@@ -180,7 +180,23 @@ fn isAlnum(b: U8) -> Bool {
     (b >= b'a' && b <= b'z') || (b >= b'A' && b <= b'Z') || (b >= b'0' && b <= b'9')
 }
 
+// The name of a repository's directory in the cache. Long addresses are cut and given a hash: paths are limited
+// to 260 characters on Windows, and git adds a long tail of its own.
 fn sanitize(url: String) -> String {
+    let full: String = sanitizeAll(url)
+    if (full.Len() <= 40) {
+        return full
+    }
+    mut h: I64 = 2166136261
+    mut i: I64 = 0
+    while (i < url.Len()) {
+        h = ((h ^ url.ByteAt(i).ToI64()) * 16777619) % 4294967296
+        i += 1
+    }
+    "${full.Slice(full.Len() - 32, full.Len())}-${h}"
+}
+
+fn sanitizeAll(url: String) -> String {
     mut out: String = ""
     mut i: I64 = 0
     while (i < url.Len()) {

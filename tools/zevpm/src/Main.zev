@@ -81,7 +81,7 @@ fn checkZevicVersion(zevic: String, m: Toml.Manifest) -> Result<Unit, Error> {
     }
     let (code, out): (I32, String) = Os.RunCapture([zevic, "--version"])
     if (code != 0) {
-        return Err(tool("cannot run `${zevic} --version`"))
+        return Err(tool("cannot run `${zevic} --version` (exit code ${code}${if (out.IsEmpty()) { "" } else { ", it printed: ${out}" }})"))
     }
     let have: Array<I64> = numbers(out)
     if (have.Len() < 2) {
