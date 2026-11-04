@@ -23,7 +23,7 @@ def zev_files():
 
 
 def ast(zevic, path):
-    p = subprocess.run([zevic, "--dump-ast", path], capture_output=True, text=True)
+    p = subprocess.run([zevic, "--dump-ast", path], capture_output=True, text=True, timeout=120)
     return p.returncode, p.stdout, p.stderr
 
 
@@ -37,7 +37,7 @@ def same_ast(a, b):
 
 
 def fmt(zevfmt, path):
-    p = subprocess.run([zevfmt, path], capture_output=True, text=True)
+    p = subprocess.run([zevfmt, path], capture_output=True, text=True, timeout=120)
     return p.returncode, p.stdout, p.stderr
 
 

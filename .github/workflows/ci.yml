@@ -18,6 +18,7 @@ jobs:
   build:
     name: build (${{ matrix.name }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -70,11 +71,11 @@ jobs:
 
       - name: Test
         run: |
-          python tests/run.py
-          python tests/zevpm_test.py
-          ZEVPM="build/zevpm-c${{ matrix.exe }}" python tests/zevpm_test.py
-          python tests/examples_test.py
-          python tests/zevfmt_test.py "build/zevic${{ matrix.exe }}" "build/zevfmt${{ matrix.exe }}"
+          python -u tests/run.py
+          python -u tests/zevpm_test.py
+          ZEVPM="build/zevpm-c${{ matrix.exe }}" python -u tests/zevpm_test.py
+          python -u tests/examples_test.py
+          python -u tests/zevfmt_test.py "build/zevic${{ matrix.exe }}" "build/zevfmt${{ matrix.exe }}"
           "build/zevfmt${{ matrix.exe }}" -check stdlib examples tools
 
       - name: Package
@@ -99,7 +100,7 @@ jobs:
         run: |
           cd dist
           if [ "${{ matrix.archive }}" = "zip" ]; then 7z x -y *.zip >/dev/null; else tar -xzf *.tar.gz; fi
-          cd zevic-*
+          cd "zevic-$(cat ../VERSION)-${{ matrix.name }}"
           ./bin/zevic${{ matrix.exe }} examples/01_hello.zev -o hello${{ matrix.exe }}
           ./hello${{ matrix.exe }}
           ./bin/zevpm${{ matrix.exe }} new smoke

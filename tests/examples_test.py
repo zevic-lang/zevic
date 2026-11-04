@@ -19,7 +19,7 @@ def run(args, cwd=None, env=None):
     e = dict(os.environ)
     e["ZEVIC"] = ZEVIC
     e.update(env or {})
-    return subprocess.run(args, cwd=cwd, capture_output=True, text=True, encoding="utf-8", env=e)
+    return subprocess.run(args, cwd=cwd, capture_output=True, text=True, encoding="utf-8", env=e, timeout=300)
 
 
 def check_single(name, sources):

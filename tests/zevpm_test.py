@@ -20,7 +20,7 @@ def sh(args, cwd, env=None, check=True):
     e = dict(os.environ)
     e["ZEVIC"] = ZEVIC
     e.update(env or {})
-    p = subprocess.run(args, cwd=cwd, capture_output=True, text=True, encoding="utf-8", env=e)
+    p = subprocess.run(args, cwd=cwd, capture_output=True, text=True, encoding="utf-8", env=e, timeout=300)
     if check and p.returncode != 0:
         raise AssertionError("%s failed (%d)\n%s%s" % (args, p.returncode, p.stdout, p.stderr))
     return p
