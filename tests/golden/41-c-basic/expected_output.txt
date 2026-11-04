@@ -1,5 +1,5 @@
 hello from C
-puts returned 13
+puts ok = true
 abs = 5
 strlen = 6
 labs = 9000000000

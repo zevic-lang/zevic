@@ -12,7 +12,8 @@ extern "C" {
 
 fn Main() {
     let r: CInt = puts("hello from C".ToC())
-    Console.Println("puts returned ${r.ToI32()}")
+    // the C standard only says puts returns a non-negative number on success (glibc: the length, macOS: 10)
+    Console.Println("puts ok = ${r.ToI32() >= 0}")
     Console.Println("abs = ${abs((-5).ToCInt()).ToI32()}")
     Console.Println("strlen = ${strlen("héllo".ToC()).ToU64()}")
     let big: I64 = -9000000000
