@@ -303,7 +303,8 @@ static char *sibling_cxx(const char *clang) {
 
 /* the runtime and the collector are built with thread support (Zevic.Async) */
 #ifdef _WIN32
-#define ZEVIC_THREAD_CFLAGS "-DGC_THREADS -DGC_BUILTIN_ATOMIC"
+/* NO_MSGBOX_ON_ERROR: the collector reports fatal errors on stderr, not in a dialog (which would also need user32) */
+#define ZEVIC_THREAD_CFLAGS "-DGC_THREADS -DGC_BUILTIN_ATOMIC -DNO_MSGBOX_ON_ERROR"
 #else
 #define ZEVIC_THREAD_CFLAGS "-DGC_THREADS -DGC_BUILTIN_ATOMIC -pthread"
 #endif
