@@ -29,7 +29,19 @@
 
 /* ---- paths (always written with `/`; Windows accepts it too) ---- */
 
-char *path_join(const char *a, const char *b) {
+/* On Windows a path is written with `/` only: git and friends misread a mix like C:\\Users\\x/git/y. */
+static char *slashes(const char *p) {
+    char *r = zstrdup(p);
+#ifdef _WIN32
+    for (char *c = r; *c; c++)
+        if (*c == '\\') *c = '/';
+#endif
+    return r;
+}
+
+char *path_join(const char *a0, const char *b0) {
+    const char *a = a0 ? slashes(a0) : NULL;
+    const char *b = slashes(b0);
     if (!a || !*a || strcmp(a, ".") == 0) return zstrdup(b);
     size_t n = strlen(a);
     if (a[n - 1] == '/' || a[n - 1] == '\\') return zsprintf("%s%s", a, b);
@@ -258,33 +270,110 @@ static int exit_code(int rc) {
 #endif
 }
 
+#ifdef _WIN32
+/* The command line of a Windows program, quoted the way the C runtime reads it back. */
+static char *win_command_line(Vec *argv) {
+    SB sb = {0};
+    for (int i = 0; i < argv->n; i++) {
+        if (i) sb_putc(&sb, ' ');
+        const char *a = argv->v[i];
+        sb_putc(&sb, '"');
+        int backslashes = 0;
+        for (; *a; a++) {
+            if (*a == '\\') {
+                backslashes++;
+                continue;
+            }
+            if (*a == '"') {
+                for (int k = 0; k < backslashes; k++) sb_putc(&sb, '\\');
+                sb_putc(&sb, '\\');
+            }
+            backslashes = 0;
+            sb_putc(&sb, *a);
+        }
+        for (int k = 0; k < backslashes; k++) sb_putc(&sb, '\\');
+        sb_putc(&sb, '"');
+    }
+    return sb_str(&sb);
+}
+
+/* Starts a program without cmd.exe and waits. `out` is its standard output (NULL: ours). Returns the exit code,
+ * 127 when the program does not exist, -1 when it cannot be started. */
+static int win_run(Vec *argv, const char *dir, HANDLE out) {
+    STARTUPINFOA si;
+    PROCESS_INFORMATION pi;
+    memset(&si, 0, sizeof si);
+    memset(&pi, 0, sizeof pi);
+    si.cb = sizeof si;
+    si.dwFlags = STARTF_USESTDHANDLES;
+    si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+    si.hStdOutput = out ? out : GetStdHandle(STD_OUTPUT_HANDLE);
+    si.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+    SetHandleInformation(si.hStdInput, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
+    SetHandleInformation(si.hStdOutput, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
+    SetHandleInformation(si.hStdError, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
+    char *line = win_command_line(argv);
+    BOOL ok = CreateProcessA(NULL, line, NULL, NULL, TRUE, 0, NULL, dir, &si, &pi);
+    DWORD last = GetLastError();
+    if (!ok) return (last == ERROR_FILE_NOT_FOUND || last == ERROR_PATH_NOT_FOUND) ? 127 : -1;
+    WaitForSingleObject(pi.hProcess, INFINITE);
+    DWORD code = 1;
+    GetExitCodeProcess(pi.hProcess, &code);
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+    return (int)code;
+}
+#endif
+
 int os_run(Vec *argv, const char *dir) {
-    char *cmd = command_line(argv, dir);
     fflush(stdout);
     fflush(stderr);
 #ifdef _WIN32
-    cmd = zsprintf("\"%s\"", cmd); /* cmd.exe strips one pair of outer quotes */
-#endif
+    return win_run(argv, dir, NULL);
+#else
+    char *cmd = command_line(argv, dir);
     return exit_code(system(cmd));
+#endif
 }
 
 int os_run_capture(Vec *argv, const char *dir, char **out) {
-    char *cmd = command_line(argv, dir);
     fflush(stdout);
     fflush(stderr);
+    SB sb = {0};
+    int rc;
 #ifdef _WIN32
-    cmd = zsprintf("\"%s\"", cmd);
-#endif
+    /* the output goes to a temporary file, so a program that prints a lot cannot block on a full pipe */
+    char tdir[MAX_PATH], tname[MAX_PATH];
+    if (!GetTempPathA(MAX_PATH, tdir) || !GetTempFileNameA(tdir, "zpm", 0, tname)) return -1;
+    SECURITY_ATTRIBUTES sa;
+    sa.nLength = sizeof sa;
+    sa.lpSecurityDescriptor = NULL;
+    sa.bInheritHandle = TRUE;
+    HANDLE h = CreateFileA(tname, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, &sa, CREATE_ALWAYS,
+                           FILE_ATTRIBUTE_NORMAL, NULL);
+    if (h == INVALID_HANDLE_VALUE) return -1;
+    rc = win_run(argv, dir, h);
+    CloseHandle(h);
+    FILE *f = fopen(tname, "rb");
+    if (f) {
+        char buf[512];
+        size_t n;
+        while ((n = fread(buf, 1, sizeof buf, f)) > 0) sb_putn(&sb, buf, n);
+        fclose(f);
+    }
+    remove(tname);
+#else
+    char *cmd = command_line(argv, dir);
     FILE *p = POPEN(cmd, "r");
     if (!p) return -1;
-    SB sb = {0};
     char buf[512];
     size_t n;
     while ((n = fread(buf, 1, sizeof buf, p)) > 0) sb_putn(&sb, buf, n);
-    int rc = PCLOSE(p);
+    rc = exit_code(PCLOSE(p));
+#endif
     char *s = sb_str(&sb);
     size_t len = strlen(s);
     while (len > 0 && (s[len - 1] == '\n' || s[len - 1] == '\r')) s[--len] = 0;
     *out = s;
-    return exit_code(rc);
+    return rc;
 }

@@ -1,6 +1,8 @@
 #define _POSIX_C_SOURCE 200809L
 #include "deps.h"
 
+#include <stdint.h>
+
 #include <ctype.h>
 #include <time.h>
 
@@ -132,10 +134,17 @@ static char *cache_root(void) {
     return path_join(home, ".zevpm");
 }
 
+/* The name of a repository's directory in the cache. Long addresses are cut and given a hash (32-bit FNV-1a):
+ * paths are limited to 260 characters on Windows, and git adds a long tail of its own. */
 static char *sanitize(const char *url) {
     SB sb = {0};
     for (const char *p = url; *p; p++) sb_putc(&sb, isalnum((unsigned char)*p) || *p == '.' || *p == '-' ? *p : '_');
-    return sb_str(&sb);
+    char *full = sb_str(&sb);
+    size_t n = strlen(full);
+    if (n <= 40) return full;
+    uint32_t h = 2166136261u;
+    for (const char *p = url; *p; p++) h = (h ^ (unsigned char)*p) * 16777619u;
+    return zsprintf("%s-%u", full + n - 32, (unsigned)h);
 }
 
 static bool is_full_hash(const char *s) {
