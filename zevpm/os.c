@@ -154,8 +154,17 @@ void os_walk(const char *dir, const char *const *exts, Vec *out) {
     }
 }
 
+/* remove() on a file; on Windows a read-only file (git writes its objects that way) is made writable first */
+static bool remove_file(const char *path) {
+    if (remove(path) == 0) return true;
+#ifdef _WIN32
+    if (errno == EACCES && SetFileAttributesA(path, FILE_ATTRIBUTE_NORMAL) && remove(path) == 0) return true;
+#endif
+    return errno == ENOENT;
+}
+
 bool os_rmtree(const char *path) {
-    if (!os_is_dir(path)) return remove(path) == 0 || errno == ENOENT;
+    if (!os_is_dir(path)) return remove_file(path);
     Vec names = {0};
     list_dir(path, &names);
     bool ok = true;
@@ -284,6 +293,8 @@ static char *win_command_line(Vec *argv) {
                 backslashes++;
                 continue;
             }
+            /* backslashes only matter in front of a quote: each is written twice, and the quote gets one more */
+            for (int k = 0; k < backslashes; k++) sb_putc(&sb, '\\');
             if (*a == '"') {
                 for (int k = 0; k < backslashes; k++) sb_putc(&sb, '\\');
                 sb_putc(&sb, '\\');
@@ -291,7 +302,7 @@ static char *win_command_line(Vec *argv) {
             backslashes = 0;
             sb_putc(&sb, *a);
         }
-        for (int k = 0; k < backslashes; k++) sb_putc(&sb, '\\');
+        for (int k = 0; k < 2 * backslashes; k++) sb_putc(&sb, '\\'); /* in front of the closing quote */
         sb_putc(&sb, '"');
     }
     return sb_str(&sb);

@@ -846,6 +846,12 @@ int32_t zevic_fs_remove(const char *p, int64_t n) {
     /* the C library's remove() cannot remove a directory on Windows */
     DWORD attr = GetFileAttributesA(path);
     int rc = (attr != INVALID_FILE_ATTRIBUTES && (attr & FILE_ATTRIBUTE_DIRECTORY)) ? _rmdir(path) : remove(path);
+    if (rc != 0 && errno == EACCES && attr != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY) &&
+        (attr & FILE_ATTRIBUTE_READONLY)) {
+        /* like rm -f: a read-only file (git writes its objects that way) is made writable first */
+        SetFileAttributesA(path, FILE_ATTRIBUTE_NORMAL);
+        rc = remove(path);
+    }
 #else
     int rc = remove(path);
 #endif
@@ -1059,6 +1065,7 @@ void zevic_proc_begin(void) {
 void zevic_proc_arg(const char *p, int64_t n) {
     if (g_proc_len > 0) proc_put(" ", 1);
 #ifdef _WIN32
+    /* the rules of the C runtime's command line parser: backslashes only matter in front of a quote */
     proc_put("\"", 1);
     int64_t backslashes = 0;
     for (int64_t i = 0; i < n; i++) {
@@ -1067,13 +1074,14 @@ void zevic_proc_arg(const char *p, int64_t n) {
             continue;
         }
         if (p[i] == '"') {
-            for (int64_t k = 0; k < backslashes; k++) proc_put("\\", 1);
-            proc_put("\\", 1);
+            for (int64_t k = 0; k < backslashes; k++) proc_put("\\", 1); /* each one twice, then the quote's own */
         }
+        for (int64_t k = 0; k < backslashes; k++) proc_put("\\", 1);
+        if (p[i] == '"') proc_put("\\", 1);
         backslashes = 0;
         proc_put(p + i, 1);
     }
-    for (int64_t k = 0; k < backslashes; k++) proc_put("\\", 1);
+    for (int64_t k = 0; k < 2 * backslashes; k++) proc_put("\\", 1); /* in front of the closing quote */
     proc_put("\"", 1);
 #else
     proc_put("'", 1);
