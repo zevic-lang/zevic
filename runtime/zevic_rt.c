@@ -6,6 +6,17 @@
  *  - a String result is written through a leading `zevic_str *out` parameter
  *  - bools cross the boundary as int32_t
  */
+#ifdef _WIN32
+/* winsock2.h has to come before anything that includes windows.h (gc.h does): windows.h pulls in the old winsock.h,
+ * whose definitions clash with winsock2.h. WIN32_LEAN_AND_MEAN keeps windows.h from doing that. */
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <windows.h>
+#endif
+
 #include "zevic_rt.h"
 
 #include "gc.h"
@@ -25,10 +36,6 @@
 #include <string.h>
 
 #ifdef _WIN32
-/* winsock2.h must come before windows.h (which would pull in the old winsock.h) */
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <windows.h>
 #else
 #include <time.h>
 #include <dirent.h>
@@ -1421,6 +1428,8 @@ static int net_resolve(const char *host, int64_t port, int passive, struct addri
     return getaddrinfo(host, ps, &hints, res);
 }
 
+static void shut_clear(int64_t fd);
+
 /* Listens on host:port (port 0 picks a free one). */
 int64_t zevic_net_listen(const char *hp, int64_t hn, int64_t port) {
     net_init();
@@ -1449,6 +1458,7 @@ int64_t zevic_net_listen(const char *hp, int64_t hn, int64_t port) {
         return -1;
     }
     freeaddrinfo(ai);
+    shut_clear((int64_t)s); /* a stale mark of an earlier socket with this number */
     return (int64_t)s;
 }
 
@@ -1488,15 +1498,73 @@ static int net_connect(zevic_sock s, const struct sockaddr *a, int len) {
 }
 #endif
 
+/* Sockets that Close asked to stop. shutdown() wakes a blocked accept() on Linux only (macOS answers ENOTCONN for a
+ * listening socket, Windows does too), so accept waits in short slices and looks at this list in between. */
+#define ZEVIC_SHUT_MAX 64
+static int64_t g_shut[ZEVIC_SHUT_MAX];
+
+static void shut_clear(int64_t fd) {
+    for (int i = 0; i < ZEVIC_SHUT_MAX; i++) {
+        if (__atomic_load_n(&g_shut[i], __ATOMIC_ACQUIRE) == fd + 1) __atomic_store_n(&g_shut[i], 0, __ATOMIC_RELEASE);
+    }
+}
+
+static void shut_mark(int64_t fd) {
+    for (int i = 0; i < ZEVIC_SHUT_MAX; i++) {
+        int64_t expect = 0;
+        if (__atomic_compare_exchange_n(&g_shut[i], &expect, fd + 1, 0, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE)) return;
+    }
+}
+
+static int shut_marked(int64_t fd) {
+    for (int i = 0; i < ZEVIC_SHUT_MAX; i++)
+        if (__atomic_load_n(&g_shut[i], __ATOMIC_ACQUIRE) == fd + 1) return 1;
+    return 0;
+}
+
+/* 1: a connection is waiting, 0: the time slice ran out, -1: error */
+static int net_wait_readable(zevic_sock s, int ms) {
+#ifdef _WIN32
+    fd_set set;
+    FD_ZERO(&set);
+    FD_SET(s, &set);
+    struct timeval tv;
+    tv.tv_sec = ms / 1000;
+    tv.tv_usec = (ms % 1000) * 1000;
+    int r = select(0, &set, NULL, NULL, &tv);
+    return r < 0 ? -1 : r > 0;
+#else
+    struct pollfd p = {s, POLLIN, 0};
+    int r = poll(&p, 1, ms);
+    if (r < 0) return errno == EINTR ? 0 : -1;
+    return r > 0;
+#endif
+}
+
 int64_t zevic_net_accept(int64_t fd) {
     g_net_failed = 0;
-    zevic_sock c;
-    do {
+    zevic_sock c = ZEVIC_BAD_SOCK;
+    for (;;) {
+        if (shut_marked(fd)) {
+            net_fail("cannot accept: the socket was shut down");
+            return -1;
+        }
+        int w = net_wait_readable((zevic_sock)fd, 50);
+        if (w < 0) {
+            net_fail("cannot accept");
+            return -1;
+        }
+        if (w == 0) continue;
         c = accept((zevic_sock)fd, NULL, NULL);
-    } while (c == ZEVIC_BAD_SOCK && NET_INTR());
-    if (c == ZEVIC_BAD_SOCK) {
-        net_fail("cannot accept");
-        return -1;
+        if (c != ZEVIC_BAD_SOCK) break;
+        if (!NET_INTR() && shut_marked(fd)) {
+            net_fail("cannot accept: the socket was shut down");
+            return -1;
+        }
+        if (!NET_INTR()) {
+            net_fail("cannot accept");
+            return -1;
+        }
     }
     int one = 1;
     setsockopt(c, IPPROTO_TCP, TCP_NODELAY, (const char *)&one, sizeof one);
@@ -1589,6 +1657,7 @@ int32_t zevic_net_write(int64_t fd, const char *d, int64_t dn) {
 
 /* Wakes up threads blocked on this socket (an accept in another thread returns -1). */
 void zevic_net_shutdown(int64_t fd) {
+    shut_mark(fd);
 #ifdef _WIN32
     shutdown((zevic_sock)fd, SD_BOTH);
 #else
@@ -1596,4 +1665,7 @@ void zevic_net_shutdown(int64_t fd) {
 #endif
 }
 
-void zevic_net_close(int64_t fd) { zevic_sock_close((zevic_sock)fd); }
+void zevic_net_close(int64_t fd) {
+    zevic_sock_close((zevic_sock)fd);
+    shut_clear(fd);
+}
