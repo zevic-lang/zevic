@@ -25,6 +25,9 @@
 #include <string.h>
 
 #ifdef _WIN32
+/* winsock2.h must come before windows.h (which would pull in the old winsock.h) */
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #include <windows.h>
 #else
 #include <time.h>
@@ -45,6 +48,8 @@ static int g_argc;
 static char **g_argv;
 
 void zevic_init(int argc, char **argv) {
+    /* The heap never holds code; macOS/arm64 refuses executable mappings ("Cannot allocate executable pages") */
+    GC_set_pages_executable(0);
     GC_INIT();
     g_argc = argc;
     g_argv = argv;
@@ -1361,8 +1366,6 @@ void zevic_cond_broadcast(void *c) { pthread_cond_broadcast(c); }
  * for zevic_net_write) and leaves the reason for zevic_net_failed() / zevic_net_errmsg().
  * ------------------------------------------------------------------------------------------- */
 #ifdef _WIN32
-#include <winsock2.h>
-#include <ws2tcpip.h>
 typedef SOCKET zevic_sock;
 #define ZEVIC_BAD_SOCK INVALID_SOCKET
 #define zevic_sock_close closesocket

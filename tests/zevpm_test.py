@@ -10,8 +10,8 @@ import tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 EXE = ".exe" if os.name == "nt" else ""
-ZEVPM = os.environ.get("ZEVPM", os.path.join(ROOT, "build", "zevpm" + EXE))
-ZEVIC = os.environ.get("ZEVIC", os.path.join(ROOT, "build", "zevic" + EXE))
+ZEVPM = os.path.abspath(os.environ.get("ZEVPM", os.path.join(ROOT, "build", "zevpm" + EXE)))
+ZEVIC = os.path.abspath(os.environ.get("ZEVIC", os.path.join(ROOT, "build", "zevic" + EXE)))
 
 failures = []
 
