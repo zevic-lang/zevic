@@ -1,0 +1,5 @@
+module Zevic.Mine
+
+fn String() {}
+fn Option() {}
+let Ok: I32 = 1

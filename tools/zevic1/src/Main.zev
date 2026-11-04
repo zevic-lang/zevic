@@ -5,8 +5,10 @@ import Zevic.Env
 import Zevic.Fs
 import Zevic1.Ast as Ast
 import Zevic1.Diag as Diag
+import Zevic1.Home as Home
 import Zevic1.Lexer as Lexer
 import Zevic1.Parser as Parser
+import Zevic1.Resolve as Resolve
 import Zevic1.Token as Token
 
 fn dumpTokens(path: String) -> I32 {
@@ -71,6 +73,92 @@ fn dumpAst(path: String) -> I32 {
     if (diag.Errors > 0) { 1 } else { 0 }
 }
 
+fn dumpModules(files: Array<String>) -> I32 {
+    let home: String = match (Home.Find()) {
+        Some(h) => h,
+        None => {
+            Console.Eprintln("zevic: error: cannot find the Zevic standard library")
+            return 2
+        },
+    }
+    mut diag: Diag.Diag = Diag.Diag.New()
+    mut pg: Resolve.Program = Resolve.Program.New("${home}/stdlib")
+    pg.SearchDirs.Push(Home.DirOf(files[0]))
+    pg.SearchDirs.Push(".")
+    for (f in files) {
+        match (Resolve.LoadFile(pg, diag, f, false)) {
+            Some(_) => {},
+            None => {
+                Console.Eprintln("zevic: error: cannot read ${f}")
+                return 2
+            },
+        }
+    }
+    let core: String = "${home}/stdlib/Core.zev"
+    if (Fs.IsFile(core)) {
+        let r: Option<Resolve.FileInfo> = Resolve.LoadFile(pg, diag, core, true)
+    }
+    Resolve.Resolve(pg, diag)
+    if (diag.Errors > 0) { return 1 }
+    for (info in pg.Files) {
+        Console.Println("file ${diag.Name(info.Sf.Pos.File)}${if (info.Sf.IsStd) { " std" } else { "" }}")
+    }
+    for (m in pg.Modules) {
+        Console.Println("module ${m.Name}${if (m.IsStd) { " std" } else { "" }}")
+        for (d in m.Deps) {
+            Console.Println("  dep ${d.Name}")
+        }
+        for (info in m.Files) {
+            let sf: Ast.SourceFile = info.Sf
+            Console.Println("  source ${diag.Name(sf.Pos.File)}")
+            for (im in sf.Imports) {
+                let name: String = Ast.PathJoin(im.Path, ".")
+                let key: String = if (im.HasName) { im.Name } else { name }
+                let t: String = match (info.ImportMap.Get(key)) {
+                    Some(x) => x.Name,
+                    None => "?",
+                }
+                Console.Println("    import ${key} -> ${t}")
+                if (!im.HasName && name.Len() >= 6 && name.Slice(0, 6) == "Zevic.") {
+                    let short: String = name.Slice(6, name.Len())
+                    let t2: String = match (info.ImportMap.Get(short)) {
+                        Some(x) => x.Name,
+                        None => "?",
+                    }
+                    Console.Println("    import ${short} -> ${t2}")
+                }
+            }
+            for (d in sf.Decls) {
+                if (d.Kind == Ast.NK.DTest) { continue }
+                if (d.Kind == Ast.NK.DExtern) {
+                    for (e in d.List) {
+                        let x: Option<Resolve.Decl> = m.Decls.Get(e.Name)
+                        let pub: String = match (x) {
+                            Some(y) => if (y.IsPub) { "pub" } else { "priv" },
+                            None => "priv",
+                        }
+                        let abi: String = match (x) {
+                            Some(y) => if (y.HasAbi) { y.Abi } else { "-" },
+                            None => "-",
+                        }
+                        Console.Println("    decl ${e.Name} ${pub} abi=${abi}")
+                    }
+                    continue
+                }
+                let pub: String = match (m.Decls.Get(d.Name)) {
+                    Some(y) => if (y.IsPub) { "pub" } else { "priv" },
+                    None => "priv",
+                }
+                Console.Println("    decl ${d.Name} ${pub}")
+            }
+        }
+        for (t in m.Tests) {
+            Console.Println("  test ${t.Name} ${t.TestName}")
+        }
+    }
+    0
+}
+
 fn Main(args: Array<String>) {
     if (args.Len() == 2 && args[0] == "--dump-tokens") {
         Env.Exit(dumpTokens(args[1]))
@@ -78,6 +166,9 @@ fn Main(args: Array<String>) {
     if (args.Len() == 2 && args[0] == "--dump-ast") {
         Env.Exit(dumpAst(args[1]))
     }
-    Console.Eprintln("usage: zevic1 --dump-tokens <file> | --dump-ast <file>")
+    if (args.Len() >= 2 && args[0] == "--dump-modules") {
+        Env.Exit(dumpModules(args.Slice(1, args.Len())))
+    }
+    Console.Eprintln("usage: zevic1 --dump-tokens <file> | --dump-ast <file> | --dump-modules <file>...")
     Env.Exit(2)
 }

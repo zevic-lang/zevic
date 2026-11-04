@@ -60,7 +60,7 @@ test: $(BIN) $(PM) $(PM2) $(FMT) $(ZEVIC1)
 	ZEVPM=$(CURDIR)/$(PM2) python3 tests/zevpm_test.py
 	python3 tests/examples_test.py
 	python3 tests/zevfmt_test.py ./$(BIN) ./$(FMT)
-	python3 tests/zevic1_test.py ./$(BIN) ./$(ZEVIC1) tokens ast
+	python3 tests/zevic1_test.py ./$(BIN) ./$(ZEVIC1) tokens ast modules
 
 clean:
 	rm -rf build

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Differential tests for zevic1 (the compiler written in Zevic) against zevic0 (the C one).
 
-usage: zevic1_test.py <zevic0> <zevic1> [tokens] [ast]
+usage: zevic1_test.py <zevic0> <zevic1> [tokens] [ast] [modules]
 
-For every .zev file of the repository: `--dump-tokens` (and, later, `--dump-ast`) of both must be equal,
+For every .zev file of the repository: `--dump-tokens`, `--dump-ast` and (as programs) `--dump-modules` of both must be equal,
 and so must the error messages and the exit code.
 """
 import glob
@@ -47,11 +47,55 @@ def run(exe, flag, path):
     return p.returncode, p.stdout, p.stderr
 
 
+def programs():
+    """Each file alone, plus the multi-file programs: a package's src/*.zev and the directories of examples."""
+    units = [[f] for f in sources()]
+    for d in sorted(set(os.path.dirname(f) for f in sources())):
+        fs = sorted(f for f in glob.glob(os.path.join(d, "*.zev")) if not f.endswith("_test.zev"))
+        if len(fs) > 1 and "stdlib" not in d and "golden" not in d and "tests/zevic1" not in d.replace(os.sep, "/"):
+            units.append(fs)
+    units.append(sorted(glob.glob(os.path.join(ROOT, "tests/zevic1/resolve/cycle/*.zev"))))
+    return units
+
+
+def run_modules(z0, z1):
+    failed = 0
+    env = dict(os.environ, ZEVIC_HOME=ROOT)
+    units = programs()
+    for files in units:
+        rel = " ".join(os.path.relpath(f, ROOT) for f in files)
+        res = []
+        for exe in (z0, z1):
+            p = subprocess.run([exe, "--dump-modules"] + files, capture_output=True, text=True, env=env, cwd=ROOT)
+            res.append((p.returncode, p.stdout, p.stderr))
+        if res[0] != res[1]:
+            print("FAIL  modules %s" % rel)
+            (c0, o0, e0), (c1, o1, e1) = res
+            if c0 != c1:
+                print("      exit code %d (zevic0) and %d (zevic1)" % (c0, c1))
+            for i, (x, y) in enumerate(zip(o0.split("\n"), o1.split("\n"))):
+                if x != y:
+                    print("      line %d:\n        zevic0: %s\n        zevic1: %s" % (i + 1, x, y))
+                    break
+            if e0 != e1:
+                print("      stderr zevic0: %r\n      stderr zevic1: %r" % (e0[:300], e1[:300]))
+            failed += 1
+        else:
+            print("ok    modules %s" % rel)
+    return failed, len(units)
+
+
 def main():
     z0, z1 = sys.argv[1], sys.argv[2]
     flags = sys.argv[3:] or ["tokens"]
     failed = 0
     files = sources()
+    total = 0
+    if "modules" in flags:
+        flags = [f for f in flags if f != "modules"]
+        f, n = run_modules(z0, z1)
+        failed += f
+        total += n
     for flag in flags:
         opt = "--dump-" + flag
         for path in files:
@@ -78,7 +122,7 @@ def main():
                 failed += 1
             else:
                 print("ok    %s %s" % (flag, rel))
-    print("\n%d failed (of %d)" % (failed, len(files) * len(flags)))
+    print("\n%d failed (of %d)" % (failed, total + len(files) * len(flags)))
     sys.exit(1 if failed else 0)
 
 
