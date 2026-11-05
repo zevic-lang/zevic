@@ -23,7 +23,7 @@ def zev_files():
 
 
 def ast(zevic, path):
-    p = subprocess.run([zevic, "--dump-ast", path], capture_output=True, text=True, timeout=120)
+    p = subprocess.run([zevic, "--dump-ast", path], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
     return p.returncode, p.stdout, p.stderr
 
 
@@ -37,7 +37,7 @@ def same_ast(a, b):
 
 
 def fmt(zevfmt, path):
-    p = subprocess.run([zevfmt, path], capture_output=True, text=True, timeout=120)
+    p = subprocess.run([zevfmt, path], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
     return p.returncode, p.stdout, p.stderr
 
 
@@ -53,7 +53,7 @@ def main():
             failed += 1
             continue
         once = os.path.join(tmp, "once.zev")
-        with open(once, "w") as f:
+        with open(once, "w", encoding="utf-8", newline="\n") as f:
             f.write(out)
         c0, a0, e0 = ast(zevic, path)
         c1, a1, e1 = ast(zevic, once)
@@ -67,14 +67,14 @@ def main():
             failed += 1
             continue
         if os.path.join(ROOT, "tests") not in path:
-            with open(path) as f:
+            with open(path, encoding="utf-8") as f:
                 if f.read() != out:
                     print("FAIL  %s: not formatted (run `zevfmt -w`)" % rel)
                     failed += 1
                     continue
         expected = path[:-4] + ".expected"
         if os.path.exists(expected):
-            with open(expected) as f:
+            with open(expected, encoding="utf-8") as f:
                 if f.read() != out:
                     print("FAIL  %s: differs from %s" % (rel, os.path.basename(expected)))
                     failed += 1
