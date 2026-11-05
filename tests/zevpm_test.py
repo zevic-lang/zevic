@@ -4,6 +4,7 @@
 Git dependencies are served from local repositories (file:// addresses), so no network is needed."""
 import os
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -14,6 +15,17 @@ ZEVPM = os.path.abspath(os.environ.get("ZEVPM", os.path.join(ROOT, "build", "zev
 ZEVIC = os.path.abspath(os.environ.get("ZEVIC", os.path.join(ROOT, "build", "zevic" + EXE)))
 
 failures = []
+
+
+def rmtree(path):
+    """shutil.rmtree that also removes read-only files: git writes its objects that way, and Windows refuses them."""
+    def writable(func, p, _exc):
+        try:
+            os.chmod(p, stat.S_IWRITE)
+            func(p)
+        except OSError:
+            pass
+    shutil.rmtree(path, onerror=writable)
 
 
 def sh(args, cwd, env=None, check=True):
@@ -79,7 +91,7 @@ def scenario(fn):
         print("FAIL  " + name)
         print("      " + str(ex).replace("\n", "\n      "))
     finally:
-        shutil.rmtree(tmp, ignore_errors=True)
+        rmtree(tmp)
 
 
 def new_run_test_clean(tmp):
@@ -149,7 +161,9 @@ def library_for_c(tmp):
           '#include <stdio.h>\n#include "build/include/Geo.h"\nint main(void) {\n    zevic_init(0, 0);\n'
           '    printf("%d\\n", geo_add(2, 40));\n    return 0;\n}\n')
     cc = os.environ.get("CC", "clang")
-    sh([cc, "use.c", lib, "-lm", "-o", "use" + EXE], geo)
+    # what a C program needs to link next to the library: the math library, or Winsock on Windows
+    syslibs = ["-lws2_32"] if os.name == "nt" else ["-lm", "-pthread"]
+    sh([cc, "use.c", lib] + syslibs + ["-o", "use" + EXE], geo)
     expect(sh([os.path.join(geo, "use" + EXE)], geo).stdout.strip() == "42", "C calls the Zevic library")
     p = pm(["test"], geo)
     expect("1 passed, 0 failed" in p.stdout, "tests of a library: " + p.stdout)
@@ -187,7 +201,7 @@ def git_dependencies(tmp):
     expect('name = "Ay"' in lock and 'name = "Bee"' in lock and rev_b1 in lock, "the lock has both packages:\n" + lock)
     expect(pm(["run"], app, env).stdout.strip() == "ay+bee 1", "transitive dependency is built")
     # the cache is used: a second build works without the repositories
-    shutil.rmtree(a), shutil.rmtree(b, ignore_errors=True)
+    rmtree(a), rmtree(b)
     expect(pm(["run"], app, env).stdout.strip() == "ay+bee 1", "built from the cache")
     # a conflict: the app asks for Bee at another tag than Ay does
     b2 = os.path.join(tmp, "b2")

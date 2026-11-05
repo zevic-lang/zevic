@@ -1,0 +1,13 @@
+# Checked out with LF line endings on every system (the formatter and the tests compare text exactly).
+* text=auto eol=lf
+*.zev text eol=lf
+*.c text eol=lf
+*.h text eol=lf
+*.py text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.expected text eol=lf
+*.yml text eol=lf
+*.toml text eol=lf
+# golden tests keep their bytes exactly (some inputs have mixed line endings on purpose)
+tests/golden/** -text
