@@ -46,7 +46,7 @@ fn isTypeToken(t: Scan.Tok) -> Bool {
         return true
     }
     t.Kind == Scan.KOp && (t.Text == "," || t.Text == "." || t.Text == "<" || t.Text == ">" || t.Text == ">>" ||
-            t.Text == "(" || t.Text == ")" || t.Text == "*" || t.Text == "->" || t.Text == ":" || t.Text == "+")
+            t.Text == "(" || t.Text == ")" || t.Text == "*" || t.Text == "->" || t.Text == ":" || t.Text == "+" || t.Text == "|")
 }
 
 fn startsUpper(s: String) -> Bool {

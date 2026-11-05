@@ -1,0 +1,79 @@
+module Main
+
+import Zevic.Console
+
+class Oops {
+    Msg: String
+    fn Init(m: String) { this.Msg = m }
+}
+
+struct Box {
+    V: I32 | String
+    fn Init(v: I32 | String) { this.V = v }
+}
+
+fn Parse(s: String) -> I32 | Oops {
+    if (s == "1") { return 1 }
+    if (s == "2") { return 2 }
+    Oops.New("cannot parse ${s}")
+}
+
+fn Twice(r: I32 | Oops) -> I32 | Oops {
+    if (r is Oops) { return r }
+    r * 2
+}
+
+fn Wide(r: I32 | Oops) -> I32 | String | Oops { r }
+
+fn Pass<T>(x: T) -> T | Oops { x }
+
+fn Label(r: I32 | String | Oops) -> String {
+    if (r is I32 && r > 1) { return "big" }
+    if (r !is Oops && r !is String) { return "small" }
+    if (r is Oops || r is String) { return "other" }
+    "never"
+}
+
+fn Main() {
+    let a: I32 | Oops = Parse("2")
+    let b: I32 | Oops = Parse("x")
+    if (a is I32) { Console.Println("a=${a}") } else { Console.Println(a.Msg) }
+    if (b is I32) { Console.Println("b=${b}") } else { Console.Println(b.Msg) }
+    let t: I32 | Oops = Twice(a)
+    if (t is I32) { Console.Println("t=${t}") }
+    let u: I32 | Oops = Twice(b)
+    if (u is Oops) { Console.Println("u failed: ${u.Msg}") }
+    let w: I32 | String | Oops = Wide(a)
+    match (w) {
+        n: I32 => Console.Println("wide int ${n}"),
+        s: String => Console.Println(s),
+        e: Oops => Console.Println(e.Msg),
+    }
+    let w2: I32 | String | Oops = Wide(b)
+    match (w2) {
+        n: I32 => Console.Println("wide int ${n}"),
+        s: String => Console.Println(s),
+        e: Oops => Console.Println("wide ${e.Msg}"),
+    }
+    let bx: Box = Box.New("text")
+    match (bx.V) {
+        n: I32 => Console.Println("box int"),
+        s: String => Console.Println("box ${s}"),
+    }
+    let items: Array<I32 | String> = [1, "two", 3]
+    for (it in items) {
+        match (it) {
+            n: I32 => Console.Println("item int ${n}"),
+            s: String => Console.Println("item str ${s}"),
+        }
+    }
+    let p: I32 | Oops = Pass<I32>(5)
+    if (p is I32) { Console.Println("pass ${p}") }
+    let f: fn() -> I32 = () => {
+        if (a is I32) { a + 100 } else { 0 }
+    }
+    Console.Println("closure ${f()}")
+    Console.Println(Label(5))
+    Console.Println(Label(1))
+    Console.Println(Label("s"))
+}
