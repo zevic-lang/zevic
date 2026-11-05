@@ -1,0 +1,5 @@
+module Main
+
+import Zevic.Intrinsics
+
+fn Main() {}

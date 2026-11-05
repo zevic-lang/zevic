@@ -98,6 +98,64 @@ static void dump_ast(const char *path) {
     if (!zv_error_count) ast_dump(sf, stdout);
 }
 
+
+/* `--dump-modules <file>...`: load the files the way a build does, resolve the imports and print the module table */
+static void dump_modules(int nfiles, char **files) {
+    char *home = driver_find_home("zevic");
+    if (!home) die("cannot find the Zevic standard library");
+    Program *pg = prog_new(zsprintf("%s/stdlib", home));
+    vec_push(&pg->search_dirs, dir_name(files[0]));
+    vec_push(&pg->search_dirs, zstrdup("."));
+    for (int i = 0; i < nfiles; i++)
+        if (!prog_load_file(pg, files[i], false)) die("cannot read %s", files[i]);
+    char *core = zsprintf("%s/stdlib/Core.zev", home);
+    if (file_exists(core)) prog_load_file(pg, core, true);
+    prog_resolve(pg);
+    if (zv_error_count) return;
+    for (int i = 0; i < pg->files.n; i++) {
+        SourceFile *sf = pg->files.v[i];
+        printf("file %s%s\n", src_name(sf->pos.file), sf->is_std ? " std" : "");
+    }
+    for (int i = 0; i < pg->modules.n; i++) {
+        Module *m = pg->modules.v[i];
+        printf("module %s%s\n", m->name, m->is_std ? " std" : "");
+        for (int k = 0; k < m->deps.n; k++) printf("  dep %s\n", ((Module *)m->deps.v[k])->name);
+        for (int k = 0; k < m->files.n; k++) {
+            SourceFile *sf = m->files.v[k];
+            printf("  source %s\n", src_name(sf->pos.file));
+            for (int j = 0; j < sf->imports.n; j++) {
+                Node *im = sf->imports.v[j];
+                char *name = path_join(&im->path, ".");
+                const char *key = im->name ? im->name : name;
+                Module *t = dict_get(&sf->import_map, key);
+                printf("    import %s -> %s\n", key, t ? t->name : "?");
+                if (!im->name && strncmp(name, "Zevic.", 6) == 0) {
+                    t = dict_get(&sf->import_map, name + 6);
+                    printf("    import %s -> %s\n", name + 6, t ? t->name : "?");
+                }
+            }
+            for (int j = 0; j < sf->decls.n; j++) {
+                Node *d = sf->decls.v[j];
+                if (d->kind == D_TEST) continue;
+                if (d->kind == D_EXTERN) {
+                    for (int q = 0; q < d->list.n; q++) {
+                        Node *e = d->list.v[q];
+                        Decl *x = module_find(m, e->name);
+                        printf("    decl %s %s abi=%s\n", e->name, x && x->is_pub ? "pub" : "priv", x && x->abi ? x->abi : "-");
+                    }
+                    continue;
+                }
+                Decl *x = module_find(m, d->name);
+                printf("    decl %s %s\n", d->name, x && x->is_pub ? "pub" : "priv");
+            }
+        }
+        for (int k = 0; k < m->tests.n; k++) {
+            Decl *t = m->tests.v[k];
+            printf("  test %s %s\n", t->name, t->test_name);
+        }
+    }
+}
+
 static const char *path_base_of(const char *path) {
     const char *b = path;
     for (const char *c = path; *c; c++)
@@ -121,6 +179,9 @@ int main(int argc, char **argv) {
             return zv_error_count ? 1 : 0;
         } else if (strcmp(a, "--dump-ast") == 0 && i + 1 < argc) {
             dump_ast(argv[i + 1]);
+            return zv_error_count ? 1 : 0;
+        } else if (strcmp(a, "--dump-modules") == 0 && i + 1 < argc) {
+            dump_modules(argc - i - 1, argv + i + 1);
             return zv_error_count ? 1 : 0;
         } else if (strcmp(a, "--version") == 0) {
             printf("zevic %s\n", ZEVIC_VERSION);

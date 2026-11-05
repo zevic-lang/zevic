@@ -1,0 +1,9 @@
+module Dup
+
+import Zevic.Console
+import Zevic.Console
+import Zevic.Text as Console
+
+fn F() {}
+fn F() {}
+struct F { x: I32 }
