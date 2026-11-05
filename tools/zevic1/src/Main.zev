@@ -10,6 +10,7 @@ import Zevic1.Lexer as Lexer
 import Zevic1.Parser as Parser
 import Zevic1.Resolve as Resolve
 import Zevic1.Token as Token
+import Zevic1.Types as Types
 
 fn dumpTokens(path: String) -> I32 {
     let text: String = match (Fs.ReadAll(path)) {
@@ -159,7 +160,97 @@ fn dumpModules(files: Array<String>) -> I32 {
     0
 }
 
+// `--selftest-types`: builds a fixed set of types and prints their names, sizes and LLVM types (same as zevic0)
+fn stShow(mut tt: Types.TypeTable, t: Types.Type) {
+    tt.Layout(t)
+    Console.Println("${t.Name} | size=${t.Size} align=${t.Align} ll=${t.Ll} words=${t.PayloadWords} id=${t.Id}")
+}
+
+fn stField(mut t: Types.Type, name: String, ft: Types.Type) {
+    t.Fields.Push(Types.Field.New(name, ft))
+}
+
+fn stVariant(mut tt: Types.TypeTable, mut t: Types.Type, name: String, tag: I32, fts: Array<Types.Type>) {
+    mut v: Types.Variant = Types.Variant.New(name, tag)
+    mut i: I64 = 0
+    while (i < fts.Len()) {
+        v.Fields.Push(Types.Field.New("${i}", fts[i]))
+        i += 1
+    }
+    if (fts.Len() > 0) {
+        v.Payload = Some(tt.Tuple(fts))
+    }
+    t.Variants.Push(v)
+}
+
+fn b2i(b: Bool) -> I32 { if (b) { 1 } else { 0 } }
+
+fn selftestTypes() -> I32 {
+    mut tt: Types.TypeTable = Types.TypeTable.New(8)
+    let all: Array<Types.Type> = [tt.I8, tt.I16, tt.I32, tt.I64, tt.U8, tt.U16, tt.U32, tt.U64, tt.F32, tt.F64, tt.Bool, tt.Char, tt.Str, tt.Unit, tt.Never]
+    for (t in all) { stShow(tt, t) }
+    stShow(tt, tt.Tuple([tt.I32, tt.Str]))
+    stShow(tt, tt.Tuple([]))
+    stShow(tt, tt.Tuple([tt.I8, tt.I64, tt.U16]))
+    let fnt: Types.Type = tt.Fn([tt.I32, tt.Bool], tt.Unit)
+    stShow(tt, fnt)
+    stShow(tt, tt.Ptr(tt.I8))
+    stShow(tt, tt.Param("T"))
+    for (n in ["CChar", "CInt", "CUInt", "CLong", "CULong", "CSizeT", "CString", "CVoid", "CBool", "CDouble", "CFloat"]) {
+        match (tt.CByName(n)) {
+            Some(t) => stShow(tt, t),
+            None => Console.Println("missing ${n}"),
+        }
+    }
+    Console.Println("cbyname unknown: ${match (tt.CByName("CNope")) { Some(_) => "found", None => "none" }}")
+    stShow(tt, tt.CType("MyC", 2, true))
+    Console.Println("prim String: ${match (tt.PrimByName("String")) { Some(_) => "yes", None => "no" }}, prim Never: ${match (tt.PrimByName("Never")) { Some(_) => "yes", None => "no" }}")
+    let u1: Types.Type = tt.Union([tt.Str, tt.I32])
+    stShow(tt, u1)
+    let u2: Types.Type = tt.Union([tt.I32, tt.Str, tt.Bool])
+    stShow(tt, u2)
+    let u3: Types.Type = tt.Union([tt.Union([tt.I32, tt.Bool]), tt.Str])
+    Console.Println("same: ${if (u2.Id == u3.Id) { "yes" } else { "no" }}")
+    Console.Println("one member: ${tt.Union([tt.I32, tt.I32]).Name}")
+    stShow(tt, tt.Union([fnt, tt.I32]))
+    stShow(tt, tt.Union([tt.Unit, tt.I32]))
+    stShow(tt, tt.Union([tt.Unit, tt.Bool]))
+    stShow(tt, tt.Union([tt.Tuple([tt.I32, tt.I32, tt.I32]), tt.I8]))
+    for (v in u2.Variants) {
+        let pn: String = match (v.Payload) { Some(p) => p.Name, None => "" }
+        Console.Println("  variant ${v.Name} tag=${v.Tag} payload=${pn}")
+    }
+    mut pt: Types.Type = tt.Named(Types.TKind.Struct, "", "Main.Point", [])
+    stField(pt, "X", tt.I32)
+    stField(pt, "Y", tt.F64)
+    stShow(tt, pt)
+    stShow(tt, tt.Named(Types.TKind.Struct, "", "Main.Empty", []))
+    mut holder: Types.Type = tt.Named(Types.TKind.Struct, "", "Main.Holder", [])
+    stField(holder, "A", tt.Bool)
+    stField(holder, "U", u2)
+    stField(holder, "P", pt)
+    stShow(tt, holder)
+    mut sh: Types.Type = tt.Named(Types.TKind.Enum, "", "Main.Shape", [])
+    stVariant(tt, sh, "Circle", 0, [tt.F64])
+    stVariant(tt, sh, "Rect", 1, [tt.F64, tt.F64])
+    stVariant(tt, sh, "Dot", 2, [])
+    stShow(tt, sh)
+    mut color: Types.Type = tt.Named(Types.TKind.Enum, "", "Main.Color", [])
+    stVariant(tt, color, "Red", 0, [])
+    stVariant(tt, color, "Blue", 1, [])
+    stShow(tt, color)
+    let box: Types.Type = tt.Named(Types.TKind.Class, "", "Main.Box", [tt.I32])
+    stShow(tt, box)
+    stShow(tt, tt.Named(Types.TKind.Class, "", "Main.Map", [tt.Str, tt.Union([tt.I32, tt.Str])]))
+    stShow(tt, tt.Fn([u1], u2))
+    Console.Println("is_int ${b2i(tt.U8.IsInt())}${b2i(tt.F32.IsInt())}${b2i(tt.Bool.IsInt())} signed ${b2i(tt.I8.IsSigned())}${b2i(tt.U8.IsSigned())} float ${b2i(tt.F32.IsFloat())}${b2i(tt.I32.IsFloat())} value_agg ${b2i(u2.IsValueAgg())}${b2i(box.IsValueAgg())}${b2i(tt.Str.IsValueAgg())} bits ${tt.I8.Bits()}${tt.U16.Bits()}${tt.I32.Bits()}${tt.Bool.Bits()}")
+    0
+}
+
 fn Main(args: Array<String>) {
+    if (args.Len() == 1 && args[0] == "--selftest-types") {
+        Env.Exit(selftestTypes())
+    }
     if (args.Len() == 2 && args[0] == "--dump-tokens") {
         Env.Exit(dumpTokens(args[1]))
     }

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Differential tests for zevic1 (the compiler written in Zevic) against zevic0 (the C one).
 
-usage: zevic1_test.py <zevic0> <zevic1> [tokens] [ast] [modules]
+usage: zevic1_test.py <zevic0> <zevic1> [tokens] [ast] [modules] [types]
 
 For every .zev file of the repository: `--dump-tokens`, `--dump-ast` and (as programs) `--dump-modules` of both must be equal,
 and so must the error messages and the exit code.
@@ -85,12 +85,34 @@ def run_modules(z0, z1):
     return failed, len(units)
 
 
+def run_types(z0, z1):
+    """--selftest-types: the same types, sizes and LLVM types from both."""
+    res = []
+    for exe in (z0, z1):
+        p = subprocess.run([exe, "--selftest-types"], capture_output=True, text=True)
+        res.append((p.returncode, p.stdout, p.stderr))
+    if res[0] != res[1]:
+        print("FAIL  types selftest")
+        for i, (x, y) in enumerate(zip(res[0][1].split("\n"), res[1][1].split("\n"))):
+            if x != y:
+                print("      line %d:\n        zevic0: %s\n        zevic1: %s" % (i + 1, x, y))
+                break
+        return 1, 1
+    print("ok    types selftest")
+    return 0, 1
+
+
 def main():
     z0, z1 = sys.argv[1], sys.argv[2]
     flags = sys.argv[3:] or ["tokens"]
     failed = 0
     files = sources()
     total = 0
+    if "types" in flags:
+        flags = [f for f in flags if f != "types"]
+        f, n = run_types(z0, z1)
+        failed += f
+        total += n
     if "modules" in flags:
         flags = [f for f in flags if f != "modules"]
         f, n = run_modules(z0, z1)

@@ -9,12 +9,13 @@
 | `lexer.c` | `Lexer.zev` `Token.zev` | `--dump-tokens` が全 `.zev`(エラーを含む)で一致 |
 | `ast.c` `parser.c` | `Ast.zev` `Parser.zev` | `--dump-ast` が一致。ユニオン型(`A \| B`、`is`、型パターン)も |
 | `module.c` | `Home.zev` `Resolve.zev` | `--dump-modules`(import の解決、循環、エラー)が一致 |
+| `types.c` | `Types.zev` | `--selftest-types`(型の名前、intern、ユニオンの正規化、サイズ、LLVM 型)が一致 |
 
-差分テストは 501 件(`tests/zevic1_test.py`)。
+差分テストは 505 件(`tests/zevic1_test.py`)。
 
 ## これから
 
-1. `types.c`(型の表現、配置、intern)→ `Types.zev`。`--dump-layout` のような出力を足して差分テストにする
+1. ~~`types.c`~~ → `Types.zev`(できた。`--selftest-types` の出力が zevic0 と一致)
 2. `gen.c`(約 6000 行。型検査と IR 生成が1パス)を段階に分けて移す: 式と文 → 関数とジェネリクスの単相化 → 型の定義(`struct` `class` `enum` ユニオン)→ `match` と網羅性 → クロージャ・`defer`・`async` → 標準ライブラリの組み込み
 3. `driver.c`(clang の呼び出し、ランタイムと GC のキャッシュ)
 4. ブートストラップ: `zevic1` が自分をコンパイルした `zevic2` の `.ll` と、`zevic1` の `.ll` が一致する。`bootstrap/zevic.ll` をコミットする

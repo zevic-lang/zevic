@@ -1,10 +1,12 @@
 /* main.c - command line entry point of zevic0 */
+#include <stdarg.h>
 #include "ast.h"
 #include "driver.h"
 #include "gen.h"
 #include "lexer.h"
 #include "module.h"
 #include "parser.h"
+#include "types.h"
 #include "util.h"
 
 #ifndef ZEVIC_VERSION
@@ -99,6 +101,104 @@ static void dump_ast(const char *path) {
 }
 
 
+/* `--selftest-types`: build a fixed set of types and print their names, sizes and LLVM types (tests the Zevic port) */
+static void st_show(Type *t) {
+    ty_layout(t);
+    printf("%s | size=%lld align=%lld ll=%s words=%d id=%d\n", t->name, (long long)t->size, (long long)t->align, t->ll,
+           t->payload_words, t->id);
+}
+
+static Vec st_vec(int n, ...) {
+    Vec v = {0};
+    va_list ap;
+    va_start(ap, n);
+    for (int i = 0; i < n; i++) vec_push(&v, va_arg(ap, Type *));
+    va_end(ap);
+    return v;
+}
+
+static void st_field(Type *t, const char *name, Type *ft) {
+    Field *f = zalloc(sizeof *f);
+    f->name = zstrdup(name);
+    f->t = ft;
+    vec_push(&t->fields, f);
+}
+
+static void st_variant(Type *t, const char *name, int tag, Vec fts) {
+    Variant *v = zalloc(sizeof *v);
+    v->name = zstrdup(name);
+    v->tag = tag;
+    for (int i = 0; i < fts.n; i++) {
+        Field *f = zalloc(sizeof *f);
+        f->name = zsprintf("%d", i);
+        f->t = fts.v[i];
+        vec_push(&v->fields, f);
+    }
+    if (fts.n) v->payload = ty_tuple(fts);
+    vec_push(&t->variants, v);
+}
+
+static void selftest_types(void) {
+    types_init();
+    Type *all[] = {ty_i8, ty_i16, ty_i32, ty_i64, ty_u8, ty_u16, ty_u32, ty_u64, ty_f32, ty_f64, ty_bool, ty_char, ty_string, ty_unit, ty_never};
+    for (size_t i = 0; i < sizeof all / sizeof *all; i++) st_show(all[i]);
+    st_show(ty_tuple(st_vec(2, ty_i32, ty_string)));
+    st_show(ty_tuple(st_vec(0)));
+    st_show(ty_tuple(st_vec(3, ty_i8, ty_i64, ty_u16)));
+    Type *fn = ty_fn(st_vec(2, ty_i32, ty_bool), ty_unit);
+    st_show(fn);
+    st_show(ty_ptr(ty_i8));
+    st_show(ty_param("T"));
+    const char *cs[] = {"CChar", "CInt", "CUInt", "CLong", "CULong", "CSizeT", "CString", "CVoid", "CBool", "CDouble", "CFloat"};
+    for (size_t i = 0; i < sizeof cs / sizeof *cs; i++) st_show(ty_c_by_name(cs[i]));
+    printf("cbyname unknown: %s\n", ty_c_by_name("CNope") ? "found" : "none");
+    st_show(ty_ctype("MyC", 2, true));
+    printf("prim String: %s, prim Never: %s\n", ty_prim_by_name("String") ? "yes" : "no", ty_prim_by_name("Never") ? "yes" : "no");
+    Type *u1 = ty_union(st_vec(2, ty_string, ty_i32));
+    st_show(u1);
+    Type *u2 = ty_union(st_vec(3, ty_i32, ty_string, ty_bool));
+    st_show(u2);
+    Type *u3 = ty_union(st_vec(2, ty_union(st_vec(2, ty_i32, ty_bool)), ty_string));
+    printf("same: %s\n", u2 == u3 ? "yes" : "no");
+    printf("one member: %s\n", ty_union(st_vec(2, ty_i32, ty_i32))->name);
+    st_show(ty_union(st_vec(2, fn, ty_i32)));
+    st_show(ty_union(st_vec(2, ty_unit, ty_i32)));
+    st_show(ty_union(st_vec(2, ty_unit, ty_bool)));
+    st_show(ty_union(st_vec(2, ty_tuple(st_vec(3, ty_i32, ty_i32, ty_i32)), ty_i8)));
+    for (int i = 0; i < u2->variants.n; i++) {
+        Variant *v = u2->variants.v[i];
+        printf("  variant %s tag=%d payload=%s\n", v->name, v->tag, v->payload->name);
+    }
+    Type *pt = ty_named(T_STRUCT, NULL, "Main.Point", (Vec){0});
+    st_field(pt, "X", ty_i32);
+    st_field(pt, "Y", ty_f64);
+    st_show(pt);
+    Type *empty = ty_named(T_STRUCT, NULL, "Main.Empty", (Vec){0});
+    st_show(empty);
+    Type *holder = ty_named(T_STRUCT, NULL, "Main.Holder", (Vec){0});
+    st_field(holder, "A", ty_bool);
+    st_field(holder, "U", u2);
+    st_field(holder, "P", pt);
+    st_show(holder);
+    Type *sh = ty_named(T_ENUM, NULL, "Main.Shape", (Vec){0});
+    st_variant(sh, "Circle", 0, st_vec(1, ty_f64));
+    st_variant(sh, "Rect", 1, st_vec(2, ty_f64, ty_f64));
+    st_variant(sh, "Dot", 2, st_vec(0));
+    st_show(sh);
+    Type *nothing = ty_named(T_ENUM, NULL, "Main.Color", (Vec){0});
+    st_variant(nothing, "Red", 0, st_vec(0));
+    st_variant(nothing, "Blue", 1, st_vec(0));
+    st_show(nothing);
+    Type *box = ty_named(T_CLASS, NULL, "Main.Box", st_vec(1, ty_i32));
+    st_show(box);
+    Type *map = ty_named(T_CLASS, NULL, "Main.Map", st_vec(2, ty_string, ty_union(st_vec(2, ty_i32, ty_string))));
+    st_show(map);
+    st_show(ty_fn(st_vec(1, u1), u2));
+    printf("is_int %d%d%d signed %d%d float %d%d value_agg %d%d%d bits %d%d%d%d\n", ty_is_int(ty_u8), ty_is_int(ty_f32), ty_is_int(ty_bool),
+           ty_is_signed(ty_i8), ty_is_signed(ty_u8), ty_is_float(ty_f32), ty_is_float(ty_i32), ty_is_value_agg(u2), ty_is_value_agg(box),
+           ty_is_value_agg(ty_string), ty_bits(ty_i8), ty_bits(ty_u16), ty_bits(ty_i32), ty_bits(ty_bool));
+}
+
 /* `--dump-modules <file>...`: load the files the way a build does, resolve the imports and print the module table */
 static void dump_modules(int nfiles, char **files) {
     char *home = driver_find_home("zevic");
@@ -180,6 +280,9 @@ int main(int argc, char **argv) {
         } else if (strcmp(a, "--dump-ast") == 0 && i + 1 < argc) {
             dump_ast(argv[i + 1]);
             return zv_error_count ? 1 : 0;
+        } else if (strcmp(a, "--selftest-types") == 0) {
+            selftest_types();
+            return 0;
         } else if (strcmp(a, "--dump-modules") == 0 && i + 1 < argc) {
             dump_modules(argc - i - 1, argv + i + 1);
             return zv_error_count ? 1 : 0;
