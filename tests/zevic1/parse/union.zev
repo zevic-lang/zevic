@@ -1,0 +1,14 @@
+module Main
+
+fn A(x: I32 | String | *Foo, f: fn(I32) -> I32 | Bool) -> (I32 | Bool) | Array<I32 | String> {
+    let a: I32 | String = 1
+    if (a is I32 && a !is String || a is Foo.Bar) { }
+    match (a) {
+        n: I32 => 1,
+        _: String | Bool => 2,
+        Some(m: I32) => 3,
+        b if (b is I32) => 4,
+    }
+    let is: I32 = 1
+    is + 1
+}

@@ -858,6 +858,7 @@ static char *parse_jump_label(Parser *p, Token *kw, const char *what) {
 }
 
 static Node *parse_stmt(Parser *p) {
+    p->arm_pat = false; /* a failed match arm may have left it set */
     Token *t = peek(p);
     Pos pos = t->pos;
     if (at_label(p)) {
@@ -878,6 +879,7 @@ static Node *parse_stmt(Parser *p) {
         next(p);
         Node *n = node_new(N_LET, pos);
         n->flag = t->k == TK_MUT;
+        p->arm_pat = false; /* (a failed arm leaves it set) */
         n->a = parse_pattern(p);
         if (!accept(p, TK_COLON))
             perr(p, peek(p)->pos, "a variable needs a type: write `%s name: Type = value`", t->k == TK_MUT ? "mut" : "let");

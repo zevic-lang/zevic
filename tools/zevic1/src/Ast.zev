@@ -12,6 +12,9 @@ enum NK {
     TypeTuple,
     TypeFn,
     TypePtr,
+    TypeUnion,
+    Is,
+    PType,
     Int,
     Float,
     Bool,
@@ -79,6 +82,9 @@ enum NK {
             NK.TypeTuple => "TypeTuple",
             NK.TypeFn => "TypeFn",
             NK.TypePtr => "TypePtr",
+            NK.TypeUnion => "TypeUnion",
+            NK.Is => "Is",
+            NK.PType => "PType",
             NK.Int => "Int",
             NK.Float => "Float",
             NK.Bool => "Bool",
@@ -278,6 +284,7 @@ fn dump(n: Node, ind: I64) {
         },
         NK.Unary | NK.Binary | NK.Assign => Console.Print(" ${n.Op.Name()}"),
         NK.Range | NK.PRange => Console.Print(if (n.Flag) { " (inclusive)" } else { "" }),
+        NK.Is => Console.Print(if (n.Flag) { " (negated)" } else { "" }),
         NK.Let => Console.Print(if (n.Flag) { " mut" } else { " let" }),
         _ => {
             if (n.HasName) {

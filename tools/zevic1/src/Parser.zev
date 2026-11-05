@@ -56,6 +56,8 @@ class Parser {
     quiet: Bool = false
     // A recursion guard.
     depth: I64 = 0
+    // Parsing the pattern of a `match` arm: `n: Type` is allowed there.
+    armPat: Bool = false
     // The text has `async` or `await`.
     UsesAsync: Bool = false
 
@@ -177,7 +179,22 @@ class Parser {
         u
     }
 
+    // A | B | C: a union of two or more types
     mut fn parseType() -> Result<Ast.Node, Error> {
+        let first: Ast.Node = this.parseTypeAtom()?
+        if (this.kind() != T.Tk.Pipe) {
+            return Ok(first)
+        }
+        mut u: Ast.Node = newNode(Ast.NK.TypeUnion, first.Pos)
+        u.List.Push(first)
+        while (this.accept(T.Tk.Pipe)) {
+            let m: Ast.Node = this.parseTypeAtom()?
+            u.List.Push(m)
+        }
+        Ok(u)
+    }
+
+    mut fn parseTypeAtom() -> Result<Ast.Node, Error> {
         let t: T.Token = this.peek()
         let pos: T.Pos = t.Pos
         this.depth += 1
@@ -212,7 +229,7 @@ class Parser {
         } else if (t.Kind == T.Tk.Star) {
             this.next()
             mut n: Ast.Node = newNode(Ast.NK.TypePtr, pos)
-            let inner: Ast.Node = this.parseType()?
+            let inner: Ast.Node = this.parseTypeAtom()?
             n.A = Some(inner)
             res = n
         } else if (t.Kind == T.Tk.SelfT) {
@@ -408,7 +425,9 @@ class Parser {
                 return Err(this.perr(this.peek().Pos, "unterminated `match`: expected `}`"))
             }
             mut arm: Ast.Node = newNode(Ast.NK.Arm, this.peek().Pos)
+            this.armPat = true
             let pat: Ast.Node = this.parsePattern()?
+            this.armPat = false
             arm.A = Some(pat)
             if (this.accept(T.Tk.If)) {
                 this.expect(T.Tk.LParen, "`(` (a guard condition is written in parentheses)")?
@@ -727,9 +746,40 @@ class Parser {
         this.parsePostfix()
     }
 
+    // `is` is a word only here, after an operand: it stays usable as a name everywhere else
+    fn atIs() -> Bool {
+        let t: T.Token = this.peek()
+        if (t.Kind == T.Tk.Ident && !t.Quoted && t.Text == "is") {
+            return true
+        }
+        if (t.Kind == T.Tk.Bang) {
+            let u: T.Token = this.peekAt(1)
+            return u.Kind == T.Tk.Ident && !u.Quoted && u.Text == "is"
+        }
+        false
+    }
+
     mut fn parseBinary(minprec: I64) -> Result<Ast.Node, Error> {
         mut left: Ast.Node = this.parseUnary()?
         loop {
+            if (3 >= minprec && this.atIs()) {
+                let pos: T.Pos = this.peek().Pos
+                let neg: Bool = this.kind() == T.Tk.Bang
+                if (neg) {
+                    this.next()
+                }
+                this.next()
+                mut n: Ast.Node = newNode(Ast.NK.Is, pos)
+                n.A = Some(left)
+                let ty: Ast.Node = this.parseTypeAtom()?
+                n.B = Some(ty)
+                n.Flag = neg
+                left = n
+                if (binprec(this.kind()) == 3 || this.atIs()) {
+                    return Err(this.perr(this.peek().Pos, "comparison operators cannot be chained (write `a < b && b < c`)"))
+                }
+                continue
+            }
             let k: T.Tk = this.kind()
             let prec: I64 = binprec(k)
             if (prec == 0 || prec < minprec) {
@@ -830,6 +880,15 @@ class Parser {
             },
             T.Tk.Ident => {
                 this.next()
+                if (this.armPat && this.kind() == T.Tk.Colon && !isUpper(t.Text)) {
+                    // `n: I32`, `_: Error`: matches one member of a union
+                    this.next()
+                    mut pt: Ast.Node = newNode(Ast.NK.PType, pos)
+                    pt.SetName(t.Text)
+                    let ty: Ast.Node = this.parseTypeAtom()?
+                    pt.A = Some(ty)
+                    return Ok(pt)
+                }
                 if (t.Text == "_" && !t.Quoted) {
                     return Ok(newNode(Ast.NK.PWild, pos))
                 }
@@ -949,6 +1008,7 @@ class Parser {
     }
 
     mut fn parseStmt() -> Result<Ast.Node, Error> {
+        this.armPat = false // a failed match arm may have left it set
         let t: T.Token = this.peek()
         let pos: T.Pos = t.Pos
         if (this.atLabel()) {
