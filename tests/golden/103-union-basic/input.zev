@@ -1,0 +1,42 @@
+module Main
+
+import Zevic.Console
+
+struct Oops {
+    Msg: String
+    fn Init(m: String) { this.Msg = m }
+}
+
+fn Describe(r: I32 | String | Oops) -> String {
+    match (r) {
+        n: I32 => "int ${n}",
+        s: String => "str ${s}",
+        e: Oops => "oops ${e.Msg}",
+    }
+}
+
+fn Pick(k: I32) -> I32 | String {
+    match (k) {
+        0 => 7,
+        _ => "other",
+    }
+}
+
+fn Main() {
+    let a: I32 | String | Oops = 3
+    let b: I32 | String | Oops = "hi"
+    let c: I32 | String | Oops = Oops.New("bad")
+    Console.Println(Describe(a))
+    Console.Println(Describe(b))
+    Console.Println(Describe(c))
+    let p: I32 | String = Pick(0)
+    match (p) {
+        n: I32 => Console.Println("p int ${n}"),
+        _: String => Console.Println("p str"),
+    }
+    let q: I32 | String = Pick(1)
+    match (q) {
+        n: I32 => Console.Println("q int ${n}"),
+        _ => Console.Println("q other"),
+    }
+}

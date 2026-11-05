@@ -1,0 +1,5 @@
+int 3
+str hi
+oops bad
+p int 7
+q other

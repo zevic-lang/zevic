@@ -1249,22 +1249,24 @@ static void collect_narrow(FnCtx *F, Node *c, bool truth, Vec *out) {
 }
 
 /* Open a scope in which the variables are known to have narrower types. Returns true when a scope was opened. */
-static bool push_narrow(FnCtx *F, Node *cond, bool truth, int errs) {
-    if (zv_error_count != errs) return false;
+static int push_narrow(FnCtx *F, Node *cond, bool truth, int errs) {
+    if (zv_error_count != errs) return 0;
+    int scopes = 0;
     Vec ns = {0};
     collect_narrow(F, cond, truth, &ns);
-    if (!ns.n) return false;
-    push_scope(F);
     for (int i = 0; i < ns.n; i++) {
         Narrow *nr = ns.v[i];
         Local *l = find_local(F, nr->name);
         if (!l || l->t->k != T_UNION) continue;
+        if (union_index(l->t, nr->t->k == T_UNION ? nr->t->args.v[0] : nr->t) < 0) continue;
+        push_scope(F); /* one scope for each name, so that a name can be narrowed again */
+        scopes++;
         Val cur = load_local(F, l);
         Val nv = nr->t->k == T_UNION ? union_remap(F, cur, l->t, nr->t) : union_extract(F, cur, nr->t);
         Local *nl = declare_local(F, nr->name, nr->t, false, l->pos);
         if (ty_size(nr->t) > 0) emit(F, "store %s %s, ptr %s", type_ll(nr->t), nv.v, nl->ptr);
     }
-    return true;
+    return scopes;
 }
 
 static Val gen_is(FnCtx *F, Node *n) {
@@ -1303,10 +1305,10 @@ static Val gen_logic(FnCtx *F, Node *n) {
     if (is_and) condbr(F, a.v, rhs, end);
     else condbr(F, a.v, end, rhs);
     start_block(F, rhs);
-    bool nsc = push_narrow(F, n->a, is_and, errs);
+    int nsc = push_narrow(F, n->a, is_and, errs);
     Val b = gen_expr(F, n->b, ty_bool);
     b = coerce(F, n->b->pos, b, ty_bool, "the operand of a logical operator");
-    if (nsc) pop_scope(F);
+    while (nsc-- > 0) pop_scope(F);
     char *from2 = F->cur;
     bool b_live = !F->term;
     if (b_live) br(F, end);
@@ -1516,11 +1518,11 @@ static Val gen_if(FnCtx *F, Node *n, Type *expect) {
     condbr(F, c.v, then_l, n->c ? else_l : end_l);
     start_block(F, then_l);
     Type *want = (expect && expect != ty_unit) ? expect : NULL;
-    bool ns1 = push_narrow(F, n->a, true, errs);
+    int ns1 = push_narrow(F, n->a, true, errs);
     Val v1 = gen_block(F, n->b, n->c ? want : ty_unit);
     if (want && want->k == T_UNION && v1.t != want && v1.t != ty_never && !is_err(v1.t))
         v1 = coerce(F, n->b->pos, v1, want, "an `if` branch");
-    if (ns1) pop_scope(F);
+    while (ns1-- > 0) pop_scope(F);
     char *pred1 = F->cur;
     bool live1 = !F->term;
     if (live1) br(F, end_l);
@@ -1531,12 +1533,12 @@ static Val gen_if(FnCtx *F, Node *n, Type *expect) {
     start_block(F, else_l);
     Type *t1 = (v1.t == ty_never) ? want : v1.t;
     Val v2;
-    bool ns2 = push_narrow(F, n->a, false, errs);
+    int ns2 = push_narrow(F, n->a, false, errs);
     if (n->c->kind == N_IF) v2 = gen_if(F, n->c, t1);
     else v2 = gen_block(F, n->c, t1);
     if (t1 && t1->k == T_UNION && v2.t != t1 && v2.t != ty_never && !is_err(v2.t))
         v2 = coerce(F, n->c->pos, v2, t1, "an `if` branch");
-    if (ns2) pop_scope(F);
+    while (ns2-- > 0) pop_scope(F);
     char *pred2 = F->cur;
     bool live2 = !F->term;
     if (live2) br(F, end_l);
@@ -1583,7 +1585,7 @@ static Val gen_block(FnCtx *F, Node *blk, Type *expect) {
         gen_stmt(F, st);
         /* `if (x is E) { return ... }`: afterwards x is known not to be an E */
         Node *e = st->kind == N_EXPRSTMT ? st->a : st;
-        if (e->kind == N_IF && !e->c && block_leaves(e->b) && push_narrow(F, e->a, false, errs)) extra++;
+        if (e->kind == N_IF && !e->c && block_leaves(e->b)) extra += push_narrow(F, e->a, false, errs);
     }
     Val v = unit_val();
     if (blk->a) {
@@ -3166,6 +3168,28 @@ static void pat_test(FnCtx *F, Node *pat, Place pl, const char *fail) {
     switch (pat->kind) {
     case P_WILD: case P_BIND:
         return;
+    case P_TYPE: {
+        if (pl.t->k != T_UNION) {
+            diag_error(pat->pos, "a type pattern needs a union to match on, but this is `%s`", pl.t->name);
+            return;
+        }
+        Type *mt = pat->aux ? (Type *)pat->aux : resolve_type(F->g, F->file, F->env, pat->a);
+        if (is_err(mt)) return;
+        int idx = union_index(pl.t, mt);
+        if (idx < 0) {
+            diag_error(pat->a->pos, "`%s` is not a member of `%s`", mt->name, pl.t->name);
+            pat->aux = ty_err;
+            return;
+        }
+        pat->aux = mt;
+        char *tg = tmp(F), *eq = tmp(F);
+        emit(F, "%s = load i32, ptr %s", tg, tag_ptr(F, pl.t, pl.ptr));
+        emit(F, "%s = icmp eq i32 %s, %d", eq, tg, idx);
+        char *ok = newlabel(F, "pat.type");
+        condbr(F, eq, ok, fail);
+        start_block(F, ok);
+        return;
+    }
     case P_LIT: {
         Val v = gen_expr(F, pat->a, pl.t);
         if (is_err(v.t) || v.t == ty_never) return;
@@ -3265,6 +3289,7 @@ static void pat_test(FnCtx *F, Node *pat, Place pl, const char *fail) {
 static bool pat_has_binding(Node *pat) {
     switch (pat->kind) {
     case P_BIND: return true;
+    case P_TYPE: return strcmp(pat->name, "_") != 0;
     case P_TUPLE: case P_OR: case P_VARIANT:
         for (int i = 0; i < pat->list.n; i++)
             if (pat_has_binding(pat->list.v[i])) return true;
@@ -3284,6 +3309,17 @@ static void pat_bind(FnCtx *F, Node *pat, Place pl, bool mut) {
         if (pl.t != ty_unit) {
             Val v = load_place(F, pl);
             store_to(F, pl.t, v, l->ptr);
+        }
+        return;
+    }
+    case P_TYPE: {
+        Type *mt = (Type *)pat->aux;
+        if (pl.t->k != T_UNION || !mt || strcmp(pat->name, "_") == 0) return;
+        Local *l = declare_local(F, pat->name, mt, mut, pat->pos);
+        if (ty_size(mt) > 0) {
+            Place mp = {payload_ptr(F, pl.t, pl.ptr), mt, pl.mut};
+            Val v = load_place(F, mp);
+            store_to(F, mt, v, l->ptr);
         }
         return;
     }
@@ -3398,6 +3434,18 @@ static bool rows_cover(Vec *rows_in, Vec *tys) {
         }
         return true;
     }
+    if (t->k == T_UNION) {
+        for (int mi = 0; mi < t->args.n; mi++) {
+            Vec nrows = {0};
+            for (int i = 0; i < rows.n; i++) {
+                Vec *r = rows.v[i];
+                Node *p = r->v[0];
+                if (pat_is_wild(p) || (p->kind == P_TYPE && p->aux == t->args.v[mi])) vec_push(&nrows, row_with(&(Vec){0}, r, 1));
+            }
+            if (!rows_cover(&nrows, &rest_tys)) return false;
+        }
+        return true;
+    }
     if (t->k == T_TUPLE) {
         Vec nrows = {0};
         for (int i = 0; i < rows.n; i++) {
@@ -3442,6 +3490,19 @@ static bool rows_cover(Vec *rows_in, Vec *tys) {
 }
 
 static const char *missing_hint(Type *t, Vec *rows) {
+    if (t->k == T_UNION) {
+        for (int mi = 0; mi < t->args.n; mi++) {
+            bool seen = false;
+            for (int i = 0; i < rows->n && !seen; i++) {
+                Node *p = ((Vec *)rows->v[i])->v[0];
+                if (pat_is_wild(p) || (p->kind == P_TYPE && p->aux == t->args.v[mi])) seen = true;
+                else if (p->kind == P_OR)
+                    for (int k = 0; k < p->list.n; k++)
+                        if (((Node *)p->list.v[k])->kind == P_TYPE && ((Node *)p->list.v[k])->aux == t->args.v[mi]) seen = true;
+            }
+            if (!seen) return zsprintf("`%s` is not handled", ((Type *)t->args.v[mi])->name);
+        }
+    }
     /* name one enum variant that no arm mentions, to make the message concrete */
     if (t->k == T_ENUM) {
         for (int vi = 0; vi < t->variants.n; vi++) {
@@ -3469,10 +3530,19 @@ static const char *missing_hint(Type *t, Vec *rows) {
     return NULL;
 }
 
+/* Resolve the types of the type patterns first: the exhaustiveness check looks at them before the arms are generated. */
+static void resolve_type_pats(FnCtx *F, Node *pat) {
+    if (!pat) return;
+    if (pat->kind == P_TYPE) pat->aux = resolve_type(F->g, F->file, F->env, pat->a);
+    for (int i = 0; i < pat->list.n; i++) resolve_type_pats(F, pat->list.v[i]);
+    for (int i = 0; i < pat->list2.n; i++) resolve_type_pats(F, ((Node *)pat->list2.v[i])->a);
+}
+
 static Val gen_match(FnCtx *F, Node *n, Type *expect) {
     Place sp = gen_place(F, n->a);
     if (sp.t == ty_never) return never_val(expect);
     bool bad = is_err(sp.t);
+    for (int i = 0; i < n->list.n; i++) resolve_type_pats(F, ((Node *)n->list.v[i])->a);
     if (!bad) {
         Vec rows = {0}, tys = {0};
         for (int i = 0; i < n->list.n; i++) {
@@ -3514,6 +3584,8 @@ static Val gen_match(FnCtx *F, Node *n, Type *expect) {
         Type *arm_want = rt ? rt : want;
         Val v = arm->c->kind == N_BLOCK ? gen_block(F, arm->c, arm_want) : gen_expr(F, arm->c, arm_want);
         bool live = !F->term;
+        if (live && want && want->k == T_UNION && v.t != want && !is_err(v.t) && v.t != ty_never)
+            v = coerce(F, arm->c->pos, v, want, "a `match` arm");
         if (live) {
             if (is_err(v.t)) {
                 /* keep going: the error is already reported */

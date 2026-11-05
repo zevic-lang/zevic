@@ -1,0 +1,7 @@
+module Main
+
+fn Main() {
+    let a: I32 | String = 3
+    let b: I32 | Bool = a
+    if (a is F64) { }
+}

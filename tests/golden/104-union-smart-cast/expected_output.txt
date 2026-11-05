@@ -1,0 +1,15 @@
+a=2
+cannot parse x
+t=4
+u failed: cannot parse x
+wide int 2
+wide cannot parse x
+box text
+item int 1
+item str two
+item int 3
+pass 5
+closure 102
+big
+small
+other

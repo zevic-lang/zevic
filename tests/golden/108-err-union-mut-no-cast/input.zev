@@ -1,0 +1,8 @@
+module Main
+
+fn Main() {
+    mut a: I32 | String = 3
+    if (a is I32) {
+        let b: I32 = a
+    }
+}

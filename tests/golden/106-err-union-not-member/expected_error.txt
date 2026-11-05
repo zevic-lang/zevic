@@ -1,0 +1,2 @@
+`String` is not a member of `Bool | I32`
+`F64` is not a member of `I32 | String`
