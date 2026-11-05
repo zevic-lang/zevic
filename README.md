@@ -83,7 +83,7 @@ zevpm build --release    # build/ に出力(ライブラリは .a と include/<N
 
 ## 状態
 
-v0.3.1: 型、`struct`/`class`/`enum`、`interface`、ジェネリクス、クロージャ、`defer`、GC、C との連携、
+v0.3.1: 型、`struct`/`class`/`enum`、ユニオン型(`A | B`、`is`、型パターン)、`interface`、ジェネリクス、クロージャ、`defer`、GC、C との連携、
 `test` ブロック、ループのラベル(`break@名前`)、`async`/`await`、HTTP(`Zevic.Http`、TLSなし)、`zevpm`、標準ライブラリ(`Fs` `Env` `Text` `Math` `Time` `Process` `Random` `Json` など)まで動きます。
 `zevfmt`(整形: `zevfmt -w .`、検査: `zevfmt -check .`)も動きます。セルフホスティング(`zevic1`)はこれからです(計画は [`docs/plan.md`](docs/plan.md))。
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- union types (proposal 0007): `A | B | C`, Kotlin style. Members convert to the union and a union converts to a larger union; `x is T` / `x !is T`; smart casts for non-`mut` locals (`if`/`else`, `&&`, `||`, early `return`); `match` type patterns (`n: I32 =>`, `_: Error =>`) with exhaustiveness checking; `if`/`match` branches convert to the expected union. No `==` or `${}` on unions. zevfmt keeps `A | B` in type arguments together
+
 ## 0.3.1
 
 Small language and library additions, and the first Zevic tools. (zevfmt, loop labels, async and HTTP also arrive in this release.)
