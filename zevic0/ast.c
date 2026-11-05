@@ -65,6 +65,7 @@ static void dump(FILE *o, Node *n, int ind) {
     case N_STR_LIT: fputc(' ', o); dump_str(o, n->name, n->slen); break;
     case N_UNARY: case N_BINARY: case N_ASSIGN: fprintf(o, " %s", tok_name(n->op)); break;
     case N_RANGE: case P_RANGE: fprintf(o, "%s", n->flag ? " (inclusive)" : ""); break;
+    case N_IS: fprintf(o, "%s", n->flag ? " (negated)" : ""); break;
     case N_LET: fprintf(o, "%s", n->flag ? " mut" : " let"); break;
     default:
         if (n->name) fprintf(o, " %s", n->name);
@@ -137,7 +138,7 @@ void ast_dump(SourceFile *f, FILE *out) {
 const char *node_kind_name(NodeKind k) {
     static const char *names[] = {
         [N_TYPE_NAME] = "TypeName", [N_TYPE_TUPLE] = "TypeTuple", [N_TYPE_FN] = "TypeFn",
-        [N_TYPE_PTR] = "TypePtr", [N_INT] = "Int", [N_FLOAT] = "Float", [N_BOOL] = "Bool",
+        [N_TYPE_PTR] = "TypePtr", [N_TYPE_UNION] = "TypeUnion", [N_IS] = "Is", [P_TYPE] = "PType", [N_INT] = "Int", [N_FLOAT] = "Float", [N_BOOL] = "Bool",
         [N_CHAR] = "Char", [N_BYTE] = "Byte", [N_STRING] = "String", [N_STR_LIT] = "Lit",
         [N_UNIT] = "Unit", [N_IDENT] = "Ident", [N_THIS] = "This", [N_MEMBER] = "Member",
         [N_CALL] = "Call", [N_INDEX] = "Index", [N_TRY] = "Try", [N_UNARY] = "Unary",

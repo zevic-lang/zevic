@@ -14,7 +14,9 @@ typedef enum {
     T_BUF,    /* Zevic.Intrinsics.Buf<T>: a fixed-size block of T (args[0]); only the standard library uses it */
     T_IFACE,  /* an interface value: { object, method table } */
     T_CTYPE,  /* C types: name says which */
-    T_PARAM   /* an unbound type parameter (only inside generic declarations) */
+    T_PARAM,  /* an unbound type parameter (only inside generic declarations) */
+    T_UNION   /* A | B: args = the member types, in the order of their names; laid out like an enum with one
+                 variant per member (variants[i] holds args[i] as its only field) */
 } TKind;
 
 struct Decl;
@@ -62,6 +64,9 @@ extern Type *ty_cycle;
 
 Type *ty_tuple(Vec elems);
 Type *ty_fn(Vec params, Type *ret);
+/* The union of the given types: nested unions are flattened, duplicates dropped and the members put in the order
+   of their names, so `A | B` and `B | A` are the same type. One member left: that member itself. */
+Type *ty_union(Vec members);
 Type *ty_ptr(Type *pointee);
 Type *ty_param(const char *name);
 Type *ty_ctype(const char *name, int64_t size, bool is_signed);

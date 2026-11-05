@@ -9,6 +9,7 @@ typedef struct {
     jmp_buf *jb;
     bool quiet; /* speculative parse: do not print errors */
     int depth;  /* recursion guard */
+    bool arm_pat; /* parsing a `match` arm pattern: `n: Type` is allowed there */
 } Parser;
 
 /* ---- helpers ---- */
@@ -105,6 +106,7 @@ static Node *parse_pattern(Parser *p);
 /* ---- types ---- */
 
 static Node *parse_type(Parser *p);
+static Node *parse_type_atom(Parser *p);
 
 static void parse_type_list(Parser *p, Vec *out, TokKind close) {
     skip_nl(p);
@@ -116,7 +118,17 @@ static void parse_type_list(Parser *p, Vec *out, TokKind close) {
     }
 }
 
+/* A | B | C: a union of two or more types (the members are flattened and put in order later, when the type is resolved) */
 static Node *parse_type(Parser *p) {
+    Node *first = parse_type_atom(p);
+    if (kind(p) != TK_PIPE) return first;
+    Node *u = node_new(N_TYPE_UNION, first->pos);
+    vec_push(&u->list, first);
+    while (accept(p, TK_PIPE)) vec_push(&u->list, parse_type_atom(p));
+    return u;
+}
+
+static Node *parse_type_atom(Parser *p) {
     Token *t = peek(p);
     Pos pos = t->pos;
     if (++p->depth > 200) perr(p, pos, "type is nested too deeply");
@@ -150,7 +162,7 @@ static Node *parse_type(Parser *p) {
     } else if (t->k == TK_STAR) {
         next(p);
         Node *n = node_new(N_TYPE_PTR, pos);
-        n->a = parse_type(p);
+        n->a = parse_type_atom(p);
         res = n;
     } else if (t->k == TK_SELF_T) {
         next(p);
@@ -303,7 +315,9 @@ static Node *parse_match(Parser *p) {
     while (kind(p) != TK_RBRACE) {
         if (kind(p) == TK_EOF) perr(p, peek(p)->pos, "unterminated `match`: expected `}`");
         Node *arm = node_new(N_ARM, peek(p)->pos);
+        p->arm_pat = true;
         arm->a = parse_pattern(p);
+        p->arm_pat = false;
         if (accept(p, TK_IF)) {
             expect(p, TK_LPAREN, "`(` (a guard condition is written in parentheses)");
             arm->b = parse_expr(p);
@@ -600,9 +614,38 @@ static int binprec(TokKind k) {
     }
 }
 
+/* `is` is a word only here, after an operand: it stays usable as a name everywhere else */
+static bool at_is(Parser *p, bool *negated) {
+    Token *t = peek(p);
+    *negated = false;
+    if (t->k == TK_IDENT && !t->quoted && strcmp(t->text, "is") == 0) return true;
+    if (t->k == TK_BANG) {
+        Token *u = peek_at(p, 1);
+        if (u->k == TK_IDENT && !u->quoted && strcmp(u->text, "is") == 0) {
+            *negated = true;
+            return true;
+        }
+    }
+    return false;
+}
+
 static Node *parse_binary(Parser *p, int minprec) {
     Node *left = parse_unary(p);
     for (;;) {
+        bool neg;
+        if (3 >= minprec && at_is(p, &neg)) {
+            Pos pos = peek(p)->pos;
+            if (neg) next(p);
+            next(p);
+            Node *n = node_new(N_IS, pos);
+            n->a = left;
+            n->b = parse_type_atom(p);
+            n->flag = neg;
+            left = n;
+            if (binprec(kind(p)) == 3 || at_is(p, &neg))
+                perr(p, peek(p)->pos, "comparison operators cannot be chained (write `a < b && b < c`)");
+            continue;
+        }
         TokKind k = kind(p);
         int prec = binprec(k);
         if (prec == 0 || prec < minprec) return left;
@@ -693,6 +736,14 @@ static Node *parse_pattern_atom(Parser *p) {
     }
     case TK_IDENT: {
         next(p);
+        if (p->arm_pat && kind(p) == TK_COLON && !is_upper(t->text)) {
+            /* `n: I32`, `_: Error`: matches one member of a union */
+            next(p);
+            Node *n = node_new(P_TYPE, pos);
+            n->name = t->text;
+            n->a = parse_type_atom(p);
+            return n;
+        }
         if (strcmp(t->text, "_") == 0 && !t->quoted) return node_new(P_WILD, pos);
         bool qualified = kind(p) == TK_DOT && peek_at(p, 1)->k == TK_IDENT;
         bool args = kind(p) == TK_LPAREN;

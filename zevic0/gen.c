@@ -195,7 +195,7 @@ static bool syntax_mentions_self(Node *te) {
         for (int i = 0; i < te->list.n; i++)
             if (syntax_mentions_self(te->list.v[i])) return true;
         return false;
-    case N_TYPE_TUPLE: case N_TYPE_FN:
+    case N_TYPE_TUPLE: case N_TYPE_FN: case N_TYPE_UNION:
         for (int i = 0; i < te->list.n; i++)
             if (syntax_mentions_self(te->list.v[i])) return true;
         return syntax_mentions_self(te->a);
@@ -327,6 +327,25 @@ static Type *resolve_type(Gen *g, SourceFile *f, Env *env, Node *te) {
     }
     case N_TYPE_PTR:
         return ty_ptr(resolve_type(g, f, env, te->a));
+    case N_TYPE_UNION: {
+        Vec ms = {0};
+        bool bad = false;
+        for (int i = 0; i < te->list.n; i++) {
+            Type *m = resolve_type(g, f, env, te->list.v[i]);
+            if (is_err(m)) {
+                bad = true;
+            } else if (m == ty_never) {
+                diag_error(((Node *)te->list.v[i])->pos, "`Never` cannot be a member of a union");
+                bad = true;
+            } else {
+                vec_push(&ms, m);
+            }
+        }
+        if (bad) return ty_err;
+        Type *u = ty_union(ms);
+        if (u->k != T_UNION) diag_error(te->pos, "a union needs at least two different types (found only `%s`)", u->name);
+        return u;
+    }
     case N_TYPE_NAME: {
         char **segs = (char **)te->path.v;
         int n = te->path.n;
@@ -626,6 +645,11 @@ static void type_error(Pos pos, Type *want, Type *got, const char *what) {
 
 static bool is_user_type(Type *t);
 static Val to_iface(FnCtx *F, Pos pos, Val v, Type *it, const char *what);
+static Val union_coerce(FnCtx *F, Pos pos, Val v, Type *want, const char *what);
+static int union_index(Type *u, Type *m);
+static Val union_remap(FnCtx *F, Val v, Type *from, Type *to);
+static Val union_extract(FnCtx *F, Val v, Type *m);
+static char *tag_ptr(FnCtx *F, Type *et, char *slot);
 
 /* Check that `v` has type `want`; a value of type Never fits everywhere. */
 static Val coerce(FnCtx *F, Pos pos, Val v, Type *want, const char *what) {
@@ -633,6 +657,7 @@ static Val coerce(FnCtx *F, Pos pos, Val v, Type *want, const char *what) {
     if (v.t == want || is_err(v.t) || is_err(want)) return v;
     if (v.t == ty_never) return never_val(want);
     if (want->k == T_IFACE && is_user_type(v.t)) return to_iface(F, pos, v, want, what);
+    if (want->k == T_UNION) return union_coerce(F, pos, v, want, what);
     /* like C, any pointer converts to `*CVoid` */
     if (v.t->k == T_PTR && want->k == T_PTR && want->args.n && want->args.v[0] == ty_c_by_name("CVoid")) {
         Val r = {want, v.v};
@@ -787,8 +812,25 @@ static Type *type_from_suffix(const char *s) {
     return ty_prim_by_name(s);
 }
 
+/* The type a number literal takes when a union is expected: its only integer (or decimal) member; otherwise the
+   default type (`I64`, `F64`), which then has to be a member. */
+static Type *lit_member(Type *expect, bool is_float) {
+    if (!expect || expect->k != T_UNION) return expect;
+    Type *found = NULL;
+    int cnt = 0;
+    for (int i = 0; i < expect->args.n; i++) {
+        Type *m = expect->args.v[i];
+        if (is_float ? ty_is_float(m) : ty_is_int(m)) {
+            found = m;
+            cnt++;
+        }
+    }
+    return cnt == 1 ? found : NULL;
+}
+
 static Val gen_int_lit_raw(FnCtx *F, Node *n, Type *expect, bool neg) {
     Type *t;
+    expect = lit_member(expect, false);
     if (n->suffix) t = type_from_suffix(n->suffix);
     else if (expect && ty_is_int(expect)) t = expect;
     else if (expect && ty_is_float(expect)) {
@@ -832,6 +874,7 @@ static char *double_hex(double d) {
 
 static Val gen_float_lit_raw(FnCtx *F, Node *n, Type *expect, bool neg) {
     Type *t;
+    expect = lit_member(expect, true);
     (void)F;
     if (n->suffix) t = type_from_suffix(n->suffix);
     else if (expect && ty_is_float(expect)) t = expect;
@@ -1160,8 +1203,97 @@ static void gen_pair(FnCtx *F, Node *na, Node *nb, Type *hint, Val *va, Val *vb)
     }
 }
 
+/* ---- `is` and smart casts ---- */
+
+typedef struct {
+    const char *name;
+    Type *t;
+} Narrow;
+
+static Local *narrowable(FnCtx *F, Node *x) {
+    if (x->kind != N_IDENT) return NULL;
+    Local *l = find_local(F, x->name);
+    if (!l || l->mut || l->t->k != T_UNION) return NULL;
+    return l;
+}
+
+/* The type of `l` once it is known to be (truth) or not to be (!truth) `t`. */
+static Type *narrowed_type(Type *u, Type *t, bool truth) {
+    if (union_index(u, t) < 0) return NULL;
+    if (truth) return t;
+    Vec rest = {0};
+    for (int i = 0; i < u->args.n; i++)
+        if (u->args.v[i] != t) vec_push(&rest, u->args.v[i]);
+    return ty_union(rest);
+}
+
+/* What the condition `c` tells about variables when it is true (truth) or false (!truth). */
+static void collect_narrow(FnCtx *F, Node *c, bool truth, Vec *out) {
+    if (c->kind == N_IS) {
+        Local *l = narrowable(F, c->a);
+        if (!l) return;
+        Type *t = resolve_type(F->g, F->file, F->env, c->b);
+        if (is_err(t)) return;
+        Type *nt = narrowed_type(l->t, t, truth != (bool)c->flag);
+        if (!nt) return;
+        Narrow *nr = zalloc(sizeof *nr);
+        nr->name = l->name;
+        nr->t = nt;
+        vec_push(out, nr);
+    } else if (c->kind == N_UNARY && c->op == TK_BANG) {
+        collect_narrow(F, c->a, !truth, out);
+    } else if (c->kind == N_BINARY && ((c->op == TK_ANDAND && truth) || (c->op == TK_OROR && !truth))) {
+        collect_narrow(F, c->a, truth, out);
+        collect_narrow(F, c->b, truth, out);
+    }
+}
+
+/* Open a scope in which the variables are known to have narrower types. Returns true when a scope was opened. */
+static bool push_narrow(FnCtx *F, Node *cond, bool truth, int errs) {
+    if (zv_error_count != errs) return false;
+    Vec ns = {0};
+    collect_narrow(F, cond, truth, &ns);
+    if (!ns.n) return false;
+    push_scope(F);
+    for (int i = 0; i < ns.n; i++) {
+        Narrow *nr = ns.v[i];
+        Local *l = find_local(F, nr->name);
+        if (!l || l->t->k != T_UNION) continue;
+        Val cur = load_local(F, l);
+        Val nv = nr->t->k == T_UNION ? union_remap(F, cur, l->t, nr->t) : union_extract(F, cur, nr->t);
+        Local *nl = declare_local(F, nr->name, nr->t, false, l->pos);
+        if (ty_size(nr->t) > 0) emit(F, "store %s %s, ptr %s", type_ll(nr->t), nv.v, nl->ptr);
+    }
+    return true;
+}
+
+static Val gen_is(FnCtx *F, Node *n) {
+    Val v = gen_expr(F, n->a, NULL);
+    if (is_err(v.t) || v.t == ty_never) return is_err(v.t) ? err_val() : never_val(ty_bool);
+    Type *t = resolve_type(F->g, F->file, F->env, n->b);
+    if (is_err(t)) return err_val();
+    if (v.t->k != T_UNION) {
+        diag_error(n->pos, "`is` needs a union on the left, but this is `%s`", v.t->name);
+        return err_val();
+    }
+    int idx = union_index(v.t, t);
+    if (idx < 0) {
+        diag_error(n->b->pos, "`%s` is not a member of `%s`", t->name, v.t->name);
+        return err_val();
+    }
+    char *slot = new_slot(F, v.t);
+    emit(F, "store %s %s, ptr %s", type_ll(v.t), v.v, slot);
+    char *tg = tmp(F);
+    emit(F, "%s = load i32, ptr %s", tg, tag_ptr(F, v.t, slot));
+    char *r = tmp(F);
+    emit(F, "%s = icmp %s i32 %s, %d", r, n->flag ? "ne" : "eq", tg, idx);
+    Val out = {ty_bool, r};
+    return out;
+}
+
 static Val gen_logic(FnCtx *F, Node *n) {
     bool is_and = n->op == TK_ANDAND;
+    int errs = zv_error_count;
     Val a = gen_expr(F, n->a, ty_bool);
     a = coerce(F, n->a->pos, a, ty_bool, "the operand of a logical operator");
     if (a.t == ty_never) return never_val(ty_bool);
@@ -1171,8 +1303,10 @@ static Val gen_logic(FnCtx *F, Node *n) {
     if (is_and) condbr(F, a.v, rhs, end);
     else condbr(F, a.v, end, rhs);
     start_block(F, rhs);
+    bool nsc = push_narrow(F, n->a, is_and, errs);
     Val b = gen_expr(F, n->b, ty_bool);
     b = coerce(F, n->b->pos, b, ty_bool, "the operand of a logical operator");
+    if (nsc) pop_scope(F);
     char *from2 = F->cur;
     bool b_live = !F->term;
     if (b_live) br(F, end);
@@ -1374,6 +1508,7 @@ static Val gen_tuple(FnCtx *F, Node *n, Type *expect) {
 }
 
 static Val gen_if(FnCtx *F, Node *n, Type *expect) {
+    int errs = zv_error_count;
     Val c = gen_expr(F, n->a, ty_bool);
     c = coerce(F, n->a->pos, c, ty_bool, "an `if` condition");
     if (c.t == ty_never) return never_val(expect);
@@ -1381,7 +1516,11 @@ static Val gen_if(FnCtx *F, Node *n, Type *expect) {
     condbr(F, c.v, then_l, n->c ? else_l : end_l);
     start_block(F, then_l);
     Type *want = (expect && expect != ty_unit) ? expect : NULL;
+    bool ns1 = push_narrow(F, n->a, true, errs);
     Val v1 = gen_block(F, n->b, n->c ? want : ty_unit);
+    if (want && want->k == T_UNION && v1.t != want && v1.t != ty_never && !is_err(v1.t))
+        v1 = coerce(F, n->b->pos, v1, want, "an `if` branch");
+    if (ns1) pop_scope(F);
     char *pred1 = F->cur;
     bool live1 = !F->term;
     if (live1) br(F, end_l);
@@ -1392,8 +1531,12 @@ static Val gen_if(FnCtx *F, Node *n, Type *expect) {
     start_block(F, else_l);
     Type *t1 = (v1.t == ty_never) ? want : v1.t;
     Val v2;
+    bool ns2 = push_narrow(F, n->a, false, errs);
     if (n->c->kind == N_IF) v2 = gen_if(F, n->c, t1);
     else v2 = gen_block(F, n->c, t1);
+    if (t1 && t1->k == T_UNION && v2.t != t1 && v2.t != ty_never && !is_err(v2.t))
+        v2 = coerce(F, n->c->pos, v2, t1, "an `if` branch");
+    if (ns2) pop_scope(F);
     char *pred2 = F->cur;
     bool live2 = !F->term;
     if (live2) br(F, end_l);
@@ -1421,14 +1564,33 @@ static Val gen_if(FnCtx *F, Node *n, Type *expect) {
     return res;
 }
 
+/* Does this block always leave (return, break, continue)? Decided from the syntax only. */
+static bool block_leaves(Node *b) {
+    if (!b || b->kind != N_BLOCK) return false;
+    Node *last = b->a;
+    if (!last && b->list.n) last = b->list.v[b->list.n - 1];
+    if (!last) return false;
+    if (last->kind == N_EXPRSTMT) last = last->a;
+    return last->kind == N_RETURN || last->kind == N_BREAK || last->kind == N_CONTINUE;
+}
+
 static Val gen_block(FnCtx *F, Node *blk, Type *expect) {
     push_scope(F);
-    for (int i = 0; i < blk->list.n; i++) gen_stmt(F, blk->list.v[i]);
+    int extra = 0;
+    for (int i = 0; i < blk->list.n; i++) {
+        Node *st = blk->list.v[i];
+        int errs = zv_error_count;
+        gen_stmt(F, st);
+        /* `if (x is E) { return ... }`: afterwards x is known not to be an E */
+        Node *e = st->kind == N_EXPRSTMT ? st->a : st;
+        if (e->kind == N_IF && !e->c && block_leaves(e->b) && push_narrow(F, e->a, false, errs)) extra++;
+    }
     Val v = unit_val();
     if (blk->a) {
         v = gen_expr(F, blk->a, expect == ty_unit ? NULL : expect);
         if (expect == ty_unit && v.t != ty_never) v = unit_val();
     }
+    for (int i = 0; i < extra; i++) pop_scope(F);
     pop_scope(F);
     if (F->term && v.t != ty_never) return never_val(expect ? expect : v.t);
     return v;
@@ -1477,6 +1639,7 @@ static Val gen_expr(FnCtx *F, Node *n, Type *expect) {
     }
     case N_AWAIT: return gen_expr(F, mk_method_call(n->a, "Await", n->pos, NULL, NULL), expect);
     case N_BINARY: return gen_binary(F, n, expect);
+    case N_IS: return gen_is(F, n);
     case N_IF: return gen_if(F, n, expect);
     case N_BLOCK: return gen_block(F, n, expect);
     case N_CALL: return gen_call(F, n, expect);
@@ -1899,7 +2062,7 @@ static bool syntax_uses_unbound(Node *te, Node *fn, Env *env) {
         for (int i = 0; i < te->list.n; i++)
             if (syntax_uses_unbound(te->list.v[i], fn, env)) return true;
         return false;
-    case N_TYPE_TUPLE:
+    case N_TYPE_TUPLE: case N_TYPE_UNION:
         for (int i = 0; i < te->list.n; i++)
             if (syntax_uses_unbound(te->list.v[i], fn, env)) return true;
         return false;
@@ -2552,6 +2715,84 @@ static Val build_variant(FnCtx *F, Type *et, Variant *v, Vec *fieldvals) {
     emit(F, "%s = load %s, ptr %s", t, type_ll(et), slot);
     Val r = {et, t};
     return r;
+}
+
+static int union_index(Type *u, Type *m) {
+    for (int i = 0; i < u->args.n; i++)
+        if (u->args.v[i] == m) return i;
+    return -1;
+}
+
+/* A member value becomes a union value, or a union value becomes a wider union (a subset of its members). */
+/* The same value in another union: every member of `from` that `to` has keeps its payload (members `to` lacks
+   never reach here at run time, their tag becomes 0). */
+static Val union_remap(FnCtx *F, Val v, Type *from, Type *to) {
+    char *src = new_slot(F, from);
+    emit(F, "store %s %s, ptr %s", type_ll(from), v.v, src);
+    char *tg = tmp(F);
+    emit(F, "%s = load i32, ptr %s", tg, tag_ptr(F, from, src));
+    char *dst = new_slot(F, to);
+    char *base = tg;
+    for (int i = 0; i < from->args.n; i++) {
+        int di = union_index(to, from->args.v[i]);
+        if (di < 0) di = 0;
+        if (di == i) continue;
+        char *c = tmp(F);
+        emit(F, "%s = icmp eq i32 %s, %d", c, tg, i);
+        char *nx = tmp(F);
+        emit(F, "%s = select i1 %s, i32 %d, i32 %s", nx, c, di, base);
+        base = nx;
+    }
+    emit(F, "store i32 %s, ptr %s", base, tag_ptr(F, to, dst));
+    int words = from->payload_words < to->payload_words ? from->payload_words : to->payload_words;
+    if (words > 0) {
+        char *pv = tmp(F);
+        emit(F, "%s = load [%d x i64], ptr %s", pv, words, payload_ptr(F, from, src));
+        emit(F, "store [%d x i64] %s, ptr %s", words, pv, payload_ptr(F, to, dst));
+    }
+    char *r = tmp(F);
+    emit(F, "%s = load %s, ptr %s", r, type_ll(to), dst);
+    Val out = {to, r};
+    return out;
+}
+
+/* The member `m` of a union value. */
+static Val union_extract(FnCtx *F, Val v, Type *m) {
+    if (ty_size(m) == 0) {
+        Val z = {m, m == ty_unit ? "zeroinitializer" : "zeroinitializer"};
+        return z;
+    }
+    char *slot = new_slot(F, v.t);
+    emit(F, "store %s %s, ptr %s", type_ll(v.t), v.v, slot);
+    char *r = tmp(F);
+    emit(F, "%s = load %s, ptr %s", r, type_ll(m), payload_ptr(F, v.t, slot));
+    Val out = {m, r};
+    return out;
+}
+
+static Val union_coerce(FnCtx *F, Pos pos, Val v, Type *want, const char *what) {
+    if (v.t->k == T_UNION) {
+        for (int i = 0; i < v.t->args.n; i++)
+            if (union_index(want, v.t->args.v[i]) < 0) {
+                type_error(pos, want, v.t, what);
+                diag_note("`%s` is not a member of `%s`", ((Type *)v.t->args.v[i])->name, want->name);
+                return err_val();
+            }
+        return union_remap(F, v, v.t, want);
+    }
+    int idx = union_index(want, v.t);
+    if (idx < 0) {
+        type_error(pos, want, v.t, what);
+        diag_note("`%s` is not a member of `%s`", v.t->name, want->name);
+        return err_val();
+    }
+    char *slot = new_slot(F, want);
+    emit(F, "store i32 %d, ptr %s", idx, tag_ptr(F, want, slot));
+    if (ty_size(v.t) > 0) emit(F, "store %s %s, ptr %s", type_ll(v.t), v.v, payload_ptr(F, want, slot));
+    char *r = tmp(F);
+    emit(F, "%s = load %s, ptr %s", r, type_ll(want), slot);
+    Val out = {want, r};
+    return out;
 }
 
 /* `Some` and `None` belong to Option, `Ok` and `Err` to Result (both live in Zevic.Core). */

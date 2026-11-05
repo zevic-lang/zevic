@@ -11,6 +11,7 @@ typedef enum {
     N_TYPE_TUPLE, /* list = element types */
     N_TYPE_FN,    /* list = parameter types, a = return type */
     N_TYPE_PTR,   /* a = pointee */
+    N_TYPE_UNION, /* list = member types (two or more): A | B */
 
     /* ---- expressions ---- */
     N_INT,     /* ival, suffix */
@@ -30,6 +31,7 @@ typedef enum {
     N_UNARY,   /* op (TK_MINUS, TK_BANG, TK_TILDE), a */
     N_BINARY,  /* op, a, b */
     N_RANGE,   /* a .. b (flag = inclusive) */
+    N_IS,      /* a is b (b = type); flag = negated (`!is`) */
     N_IF,      /* a = condition, b = then block, c = else (block / if) or NULL */
     N_MATCH,   /* a = scrutinee, list = N_ARM */
     N_ARM,     /* a = pattern, b = guard or NULL, c = body */
@@ -65,6 +67,7 @@ typedef enum {
                   list2 = N_FIELDPAT for { Name: pat, .. }; flag2 = has braces; flag3 = has `..` */
     P_FIELD,   /* name, a = pattern */
     P_OR,      /* list */
+    P_TYPE,    /* name = the binding ("_" for none), a = type: `n: I32` matches a union member */
 
     /* ---- declarations ---- */
     D_FN,

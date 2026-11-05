@@ -104,6 +104,57 @@ Type *ty_c_by_name(const char *n) {
     return NULL;
 }
 
+static int cmp_type_names(const void *a, const void *b) {
+    return strcmp((*(Type *const *)a)->name, (*(Type *const *)b)->name);
+}
+
+Type *ty_union(Vec members) {
+    Vec flat = {0};
+    for (int i = 0; i < members.n; i++) {
+        Type *m = members.v[i];
+        if (m->k == T_UNION) {
+            for (int k = 0; k < m->args.n; k++) vec_push(&flat, m->args.v[k]);
+        } else {
+            vec_push(&flat, m);
+        }
+    }
+    if (flat.n > 1) qsort(flat.v, (size_t)flat.n, sizeof(void *), cmp_type_names);
+    Vec uniq = {0};
+    for (int i = 0; i < flat.n; i++)
+        if (i == 0 || flat.v[i] != flat.v[i - 1]) vec_push(&uniq, flat.v[i]);
+    if (uniq.n == 1) return uniq.v[0];
+    SB sb = {0};
+    for (int i = 0; i < uniq.n; i++) {
+        if (i) sb_puts(&sb, " | ");
+        Type *m = uniq.v[i];
+        /* a function type needs parentheses inside a union: fn(A) -> B | C reads as a function returning a union */
+        if (m->k == T_FN) sb_printf(&sb, "(%s)", m->name);
+        else sb_puts(&sb, m->name);
+    }
+    char *name = sb_str(&sb);
+    Type *old = dict_get(&g_types, name);
+    if (old) return old;
+    Type *t = zalloc(sizeof *t);
+    t->k = T_UNION;
+    t->name = name;
+    t->args = uniq;
+    t->members_done = true;
+    for (int i = 0; i < uniq.n; i++) {
+        Variant *v = zalloc(sizeof *v);
+        Field *f = zalloc(sizeof *f);
+        f->name = "0";
+        f->t = uniq.v[i];
+        v->name = ((Type *)uniq.v[i])->name;
+        v->tag = i;
+        vec_push(&v->fields, f);
+        Vec one = {0};
+        vec_push(&one, uniq.v[i]);
+        v->payload = ty_tuple(one);
+        vec_push(&t->variants, v);
+    }
+    return intern(t);
+}
+
 Type *ty_tuple(Vec elems) {
     SB sb = {0};
     sb_putc(&sb, '(');
@@ -199,7 +250,7 @@ int ty_bits(Type *t) {
 
 bool ty_is_ref(Type *t) { return t->k == T_CLASS; }
 bool ty_is_value_agg(Type *t) {
-    return t->k == T_STRUCT || t->k == T_ENUM || t->k == T_TUPLE || t->k == T_STRING;
+    return t->k == T_STRUCT || t->k == T_ENUM || t->k == T_UNION || t->k == T_TUPLE || t->k == T_STRING;
 }
 
 /* ---- layout ---- */
@@ -280,7 +331,7 @@ void ty_layout(Type *t) {
         struct_layout(&ts, &t->size, &t->align);
         break;
     }
-    case T_ENUM: {
+    case T_ENUM: case T_UNION: {
         int64_t max = 0;
         for (int i = 0; i < t->variants.n; i++) {
             Variant *v = t->variants.v[i];
