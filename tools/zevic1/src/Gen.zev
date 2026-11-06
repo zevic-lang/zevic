@@ -558,7 +558,7 @@ fn declNode(g: Gen, t: Types.Type) -> Option<Ast.Node> {
 
 fn declOfType(g: Gen, t: Types.Type) -> Option<Resolve.Decl> { g.DeclByKey.Get(t.DeclName) }
 
-fn isUserType(t: Types.Type) -> Bool {
+fn IsUserType(t: Types.Type) -> Bool {
     t.Kind == Types.TKind.Struct || t.Kind == Types.TKind.Class || t.Kind == Types.TKind.Enum
 }
 

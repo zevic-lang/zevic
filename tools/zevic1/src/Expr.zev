@@ -269,3 +269,372 @@ fn genToString(mut F: Ctx.FnCtx, v: Ctx.Val, pos: Token.Pos) -> Ctx.Val {
     g.Diag.Error(pos, "`ToString` is not available for type `${t.Name}` yet")
     strVal(F, nullStr)
 }
+
+// ---- errors, panics and conversions ----
+
+fn isUntypedLit(n: Ast.Node) -> Bool {
+    if (n.Kind == Ast.NK.Unary && n.Op == Token.Tk.Minus) {
+        return match (n.A) {
+            Some(x) => isUntypedLit(x),
+            None => false,
+        }
+    }
+    (n.Kind == Ast.NK.Int || n.Kind == Ast.NK.Float) && n.Suffix == ""
+}
+
+// A runtime call that panics, in the cold section; returns the label to branch to.
+fn coldPanic(mut F: Ctx.FnCtx, msg: String, pos: Token.Pos) -> String {
+    mut g: Gen.Gen = F.G
+    Gen.Declare(g, "zevic_panic", "declare void @zevic_panic(ptr, i64, ptr, i32) noreturn")
+    let label: String = F.NewLabel("panic")
+    let file: String = g.Diag.Name(pos.File)
+    let m: String = Gen.StrConst(g, msg)
+    let fl: String = Gen.StrConst(g, file)
+    // the constants are `{ ptr @x, i64 n }`; the runtime takes the pieces
+    let mp: String = m.Slice(6, Text.IndexOf(m, ",").Unwrap())
+    let fp: String = fl.Slice(6, Text.IndexOf(fl, ",").Unwrap())
+    F.Cold.Put("${label}:\n  call void @zevic_panic(ptr ${mp}, i64 ${msg.Len()}, ptr ${fp}, i32 ${pos.Line})\n  unreachable\n")
+    label
+}
+
+fn unionIndex(u: Types.Type, m: Types.Type) -> I64 {
+    mut i: I64 = 0
+    while (i < u.Args.Len()) {
+        if (u.Args[i].Id == m.Id) {
+            return i
+        }
+        i += 1
+    }
+    -1
+}
+
+// TODO(port): the interface part of gen.c (`to_iface`) is ported with the calls.
+fn toIface(mut F: Ctx.FnCtx, pos: Token.Pos, v: Ctx.Val, it: Types.Type, what: String) -> Ctx.Val {
+    Panic("not ported yet: conversion to an interface value")
+}
+
+// Checks that `v` has type `want`; a value of type Never fits everywhere.
+fn coerce(mut F: Ctx.FnCtx, pos: Token.Pos, v: Ctx.Val, want: Types.Type, what: String) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    if (v.T.Id == want.Id || g.IsErr(v.T) || g.IsErr(want)) {
+        return v
+    }
+    if (v.T.Id == g.Tt.Never.Id) {
+        return F.NeverVal(Some(want))
+    }
+    if (want.Kind == Types.TKind.Iface && Gen.IsUserType(v.T)) {
+        return toIface(F, pos, v, want, what)
+    }
+    if (want.Kind == Types.TKind.Union) {
+        return unionCoerce(F, pos, v, want, what)
+    }
+    // like C, any pointer converts to `*CVoid`
+    if (v.T.Kind == Types.TKind.Ptr && want.Kind == Types.TKind.Ptr && want.Args.Len() > 0) {
+        match (g.Tt.CByName("CVoid")) {
+            Some(cv) => {
+                if (want.Args[0].Id == cv.Id) {
+                    return Ctx.Val.New(want, v.V)
+                }
+            },
+            None => {},
+        }
+    }
+    F.TypeError(pos, want, v.T, what)
+    F.ErrVal()
+}
+
+// ---- unions ----
+
+fn tagPtr(mut F: Ctx.FnCtx, et: Types.Type, slot: String) -> String {
+    let p: String = F.Tmp()
+    F.Emit("${p} = getelementptr inbounds ${F.LlOf(et)}, ptr ${slot}, i32 0, i32 0")
+    p
+}
+
+fn payloadPtr(mut F: Ctx.FnCtx, et: Types.Type, slot: String) -> String {
+    // every payload is empty (like Option<Unit>): the layout has no payload part
+    if (et.PayloadWords == 0) {
+        return slot
+    }
+    let p: String = F.Tmp()
+    F.Emit("${p} = getelementptr inbounds ${F.LlOf(et)}, ptr ${slot}, i32 0, i32 1")
+    p
+}
+
+// The same value in another union: every member of `from` that `to` has keeps its payload (members `to` lacks
+// never reach here at run time, their tag becomes 0).
+fn unionRemap(mut F: Ctx.FnCtx, v: Ctx.Val, from: Types.Type, to: Types.Type) -> Ctx.Val {
+    let src: String = F.NewSlot(from)
+    F.Emit("store ${F.LlOf(from)} ${v.V}, ptr ${src}")
+    let tg: String = F.Tmp()
+    F.Emit("${tg} = load i32, ptr ${tagPtr(F, from, src)}")
+    let dst: String = F.NewSlot(to)
+    mut base: String = tg
+    mut i: I64 = 0
+    while (i < from.Args.Len()) {
+        mut di: I64 = unionIndex(to, from.Args[i])
+        if (di < 0) {
+            di = 0
+        }
+        if (di != i) {
+            let c: String = F.Tmp()
+            F.Emit("${c} = icmp eq i32 ${tg}, ${i}")
+            let nx: String = F.Tmp()
+            F.Emit("${nx} = select i1 ${c}, i32 ${di}, i32 ${base}")
+            base = nx
+        }
+        i += 1
+    }
+    F.Emit("store i32 ${base}, ptr ${tagPtr(F, to, dst)}")
+    let words: I32 = if (from.PayloadWords < to.PayloadWords) { from.PayloadWords } else { to.PayloadWords }
+    if (words > 0) {
+        let pv: String = F.Tmp()
+        F.Emit("${pv} = load [${words} x i64], ptr ${payloadPtr(F, from, src)}")
+        F.Emit("store [${words} x i64] ${pv}, ptr ${payloadPtr(F, to, dst)}")
+    }
+    let r: String = F.Tmp()
+    F.Emit("${r} = load ${F.LlOf(to)}, ptr ${dst}")
+    Ctx.Val.New(to, r)
+}
+
+// The member `m` of a union value.
+fn unionExtract(mut F: Ctx.FnCtx, v: Ctx.Val, m: Types.Type) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    if (g.Tt.SizeOf(m) == 0) {
+        return Ctx.Val.New(m, "zeroinitializer")
+    }
+    let slot: String = F.NewSlot(v.T)
+    F.Emit("store ${F.LlOf(v.T)} ${v.V}, ptr ${slot}")
+    let r: String = F.Tmp()
+    F.Emit("${r} = load ${F.LlOf(m)}, ptr ${payloadPtr(F, v.T, slot)}")
+    Ctx.Val.New(m, r)
+}
+
+// A member value becomes a union value, or a union value becomes a wider union (a subset of its members).
+fn unionCoerce(mut F: Ctx.FnCtx, pos: Token.Pos, v: Ctx.Val, want: Types.Type, what: String) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    if (v.T.Kind == Types.TKind.Union) {
+        for (m in v.T.Args) {
+            if (unionIndex(want, m) < 0) {
+                F.TypeError(pos, want, v.T, what)
+                g.Diag.Note("`${m.Name}` is not a member of `${want.Name}`")
+                return F.ErrVal()
+            }
+        }
+        return unionRemap(F, v, v.T, want)
+    }
+    let idx: I64 = unionIndex(want, v.T)
+    if (idx < 0) {
+        F.TypeError(pos, want, v.T, what)
+        g.Diag.Note("`${v.T.Name}` is not a member of `${want.Name}`")
+        return F.ErrVal()
+    }
+    let slot: String = F.NewSlot(want)
+    F.Emit("store i32 ${idx}, ptr ${tagPtr(F, want, slot)}")
+    if (g.Tt.SizeOf(v.T) > 0) {
+        F.Emit("store ${F.LlOf(v.T)} ${v.V}, ptr ${payloadPtr(F, want, slot)}")
+    }
+    let r: String = F.Tmp()
+    F.Emit("${r} = load ${F.LlOf(want)}, ptr ${slot}")
+    Ctx.Val.New(want, r)
+}
+
+// ---- operators ----
+
+fn intIntrinsic(mut F: Ctx.FnCtx, op: String, t: Types.Type) -> String {
+    mut g: Gen.Gen = F.G
+    let bits: I32 = t.Bits()
+    let name: String = "llvm.${op}.with.overflow.i${bits}"
+    Gen.Declare(g, name, "declare { i${bits}, i1 } @${name}(i${bits}, i${bits})")
+    name
+}
+
+fn genIntArith(mut F: Ctx.FnCtx, op: Token.Tk, a: Ctx.Val, b: Ctx.Val, pos: Token.Pos) -> Ctx.Val {
+    let t: Types.Type = a.T
+    let bits: I32 = t.Bits()
+    let sgn: Bool = t.IsSigned()
+    let ll: String = F.LlOf(t)
+    if (op == Token.Tk.Plus || op == Token.Tk.Minus || op == Token.Tk.Star) {
+        let nm: String = match (op) {
+            Token.Tk.Plus => if (sgn) { "sadd" } else { "uadd" },
+            Token.Tk.Minus => if (sgn) { "ssub" } else { "usub" },
+            _ => if (sgn) { "smul" } else { "umul" },
+        }
+        let fnName: String = intIntrinsic(F, nm, t)
+        let r: String = F.Tmp()
+        let v: String = F.Tmp()
+        let o: String = F.Tmp()
+        F.Emit("${r} = call { ${ll}, i1 } @${fnName}(${ll} ${a.V}, ${ll} ${b.V})")
+        F.Emit("${v} = extractvalue { ${ll}, i1 } ${r}, 0")
+        F.Emit("${o} = extractvalue { ${ll}, i1 } ${r}, 1")
+        let ok: String = F.NewLabel("ok")
+        let panicL: String = coldPanic(F, "integer overflow", pos)
+        F.CondBr(o, panicL, ok)
+        F.StartBlock(ok)
+        return Ctx.Val.New(t, v)
+    }
+    if (op == Token.Tk.Slash || op == Token.Tk.Percent) {
+        let z: String = F.Tmp()
+        F.Emit("${z} = icmp eq ${ll} ${b.V}, 0")
+        let ok: String = F.NewLabel("ok")
+        let panicL: String = coldPanic(F, if (op == Token.Tk.Slash) { "division by zero" } else { "remainder by zero" }, pos)
+        F.CondBr(z, panicL, ok)
+        F.StartBlock(ok)
+        if (sgn) {
+            // MIN / -1 overflows
+            let min: String = if (bits == 64) { "-9223372036854775808" } else { "${-(1_I64 << (bits - 1))}" }
+            let c1: String = F.Tmp()
+            let c2: String = F.Tmp()
+            let both: String = F.Tmp()
+            F.Emit("${c1} = icmp eq ${ll} ${a.V}, ${min}")
+            F.Emit("${c2} = icmp eq ${ll} ${b.V}, -1")
+            F.Emit("${both} = and i1 ${c1}, ${c2}")
+            let ok2: String = F.NewLabel("ok")
+            let panic2: String = coldPanic(F, "integer overflow", pos)
+            F.CondBr(both, panic2, ok2)
+            F.StartBlock(ok2)
+        }
+        let r: String = F.Tmp()
+        let ins: String = if (op == Token.Tk.Slash) { if (sgn) { "sdiv" } else { "udiv" } } else { if (sgn) { "srem" } else { "urem" } }
+        F.Emit("${r} = ${ins} ${ll} ${a.V}, ${b.V}")
+        return Ctx.Val.New(t, r)
+    }
+    let ins: String = match (op) {
+        Token.Tk.Amp => "and",
+        Token.Tk.Pipe => "or",
+        _ => "xor",
+    }
+    let r: String = F.Tmp()
+    F.Emit("${r} = ${ins} ${ll} ${a.V}, ${b.V}")
+    Ctx.Val.New(t, r)
+}
+
+// a << n and a >> n: the amount is an I32 and must be below the width.
+fn genShift(mut F: Ctx.FnCtx, op: Token.Tk, a: Ctx.Val, amt: Ctx.Val, pos: Token.Pos) -> Ctx.Val {
+    let t: Types.Type = a.T
+    let bits: I32 = t.Bits()
+    let ll: String = F.LlOf(t)
+    let bad: String = F.Tmp()
+    F.Emit("${bad} = icmp uge i32 ${amt.V}, ${bits}")
+    let ok: String = F.NewLabel("ok")
+    let panicL: String = coldPanic(F, "shift amount is out of range", pos)
+    F.CondBr(bad, panicL, ok)
+    F.StartBlock(ok)
+    mut x: String = amt.V
+    if (bits != 32) {
+        x = F.Tmp()
+        F.Emit("${x} = ${if (bits < 32) { "trunc" } else { "zext" }} i32 ${amt.V} to ${ll}")
+    }
+    let r: String = F.Tmp()
+    let ins: String = if (op == Token.Tk.Shl) { "shl" } else { if (t.IsSigned()) { "ashr" } else { "lshr" } }
+    F.Emit("${r} = ${ins} ${ll} ${a.V}, ${x}")
+    Ctx.Val.New(t, r)
+}
+
+fn genFloatArith(mut F: Ctx.FnCtx, op: Token.Tk, a: Ctx.Val, b: Ctx.Val) -> Ctx.Val {
+    let ins: String = match (op) {
+        Token.Tk.Plus => "fadd",
+        Token.Tk.Minus => "fsub",
+        Token.Tk.Star => "fmul",
+        Token.Tk.Slash => "fdiv",
+        _ => "frem",
+    }
+    let r: String = F.Tmp()
+    F.Emit("${r} = ${ins} ${F.LlOf(a.T)} ${a.V}, ${b.V}")
+    Ctx.Val.New(a.T, r)
+}
+
+// TODO(port): equality of structs, tuples, enums and classes comes with the equality part of gen.c.
+fn genEq(mut F: Ctx.FnCtx, a: Ctx.Val, b: Ctx.Val, pos: Token.Pos) -> Ctx.Val {
+    Panic("not ported yet: equality of aggregates")
+}
+
+fn icmpPred(op: Token.Tk, sgn: Bool) -> String {
+    match (op) {
+        Token.Tk.EqEq => "eq",
+        Token.Tk.Neq => "ne",
+        Token.Tk.Lt => if (sgn) { "slt" } else { "ult" },
+        Token.Tk.Le => if (sgn) { "sle" } else { "ule" },
+        Token.Tk.Gt => if (sgn) { "sgt" } else { "ugt" },
+        _ => if (sgn) { "sge" } else { "uge" },
+    }
+}
+
+fn fcmpPred(op: Token.Tk) -> String {
+    match (op) {
+        Token.Tk.EqEq => "oeq",
+        Token.Tk.Neq => "une",
+        Token.Tk.Lt => "olt",
+        Token.Tk.Le => "ole",
+        Token.Tk.Gt => "ogt",
+        _ => "oge",
+    }
+}
+
+fn genCompare(mut F: Ctx.FnCtx, op: Token.Tk, a: Ctx.Val, b: Ctx.Val, pos: Token.Pos) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let t: Types.Type = a.T
+    let r: String = F.Tmp()
+    let res: Ctx.Val = Ctx.Val.New(g.Tt.Bool, r)
+    if (t.IsInt() || t.Kind == Types.TKind.Char || t.Kind == Types.TKind.Bool) {
+        F.Emit("${r} = icmp ${icmpPred(op, t.IsSigned())} ${F.LlOf(t)} ${a.V}, ${b.V}")
+        return res
+    }
+    if (t.Kind == Types.TKind.CType && t.Name != "CVoid") {
+        let isF: Bool = t.Ll == "float" || t.Ll == "double"
+        let isP: Bool = t.Ll == "ptr"
+        if (isF) {
+            F.Emit("${r} = fcmp ${fcmpPred(op)} ${t.Ll} ${a.V}, ${b.V}")
+            return res
+        }
+        if (isP && op != Token.Tk.EqEq && op != Token.Tk.Neq) {
+            g.Diag.Error(pos, "`CString` values can only be compared with `==` and `!=`")
+            return F.ErrVal()
+        }
+        F.Emit("${r} = icmp ${icmpPred(op, t.PayloadWords == 1)} ${t.Ll} ${a.V}, ${b.V}")
+        return res
+    }
+    if (t.IsFloat()) {
+        F.Emit("${r} = fcmp ${fcmpPred(op)} ${F.LlOf(t)} ${a.V}, ${b.V}")
+        return res
+    }
+    if (t.Kind == Types.TKind.Str) {
+        let (ap, an): (String, String) = strParts(F, a)
+        let (bp, bn): (String, String) = strParts(F, b)
+        let c: String = F.Tmp()
+        if (op == Token.Tk.EqEq || op == Token.Tk.Neq) {
+            rtDecl(F, "zevic_str_eq", "declare i32 @zevic_str_eq(ptr, i64, ptr, i64)")
+            F.Emit("${c} = call i32 @zevic_str_eq(ptr ${ap}, i64 ${an}, ptr ${bp}, i64 ${bn})")
+            F.Emit("${r} = icmp ${if (op == Token.Tk.EqEq) { "ne" } else { "eq" }} i32 ${c}, 0")
+        } else {
+            rtDecl(F, "zevic_str_cmp", "declare i32 @zevic_str_cmp(ptr, i64, ptr, i64)")
+            F.Emit("${c} = call i32 @zevic_str_cmp(ptr ${ap}, i64 ${an}, ptr ${bp}, i64 ${bn})")
+            let p: String = match (op) {
+                Token.Tk.Lt => "slt",
+                Token.Tk.Le => "sle",
+                Token.Tk.Gt => "sgt",
+                _ => "sge",
+            }
+            F.Emit("${r} = icmp ${p} i32 ${c}, 0")
+        }
+        return res
+    }
+    if (t.Kind == Types.TKind.Unit) {
+        return Ctx.Val.New(g.Tt.Bool, if (op == Token.Tk.EqEq) { "true" } else { "false" })
+    }
+    if ((op == Token.Tk.EqEq || op == Token.Tk.Neq) && (t.Kind == Types.TKind.Struct || t.Kind == Types.TKind.Enum || t.Kind == Types.TKind.Tuple || t.Kind == Types.TKind.Class || t.Kind == Types.TKind.Ptr)) {
+        let e: Ctx.Val = genEq(F, a, b, pos)
+        if (g.IsErr(e.T) || op == Token.Tk.EqEq) {
+            return e
+        }
+        let n: String = F.Tmp()
+        F.Emit("${n} = xor i1 ${e.V}, true")
+        return Ctx.Val.New(g.Tt.Bool, n)
+    }
+    if (op == Token.Tk.EqEq || op == Token.Tk.Neq) {
+        g.Diag.Error(pos, "values of type `${t.Name}` cannot be compared with `${op.Name()}`")
+    } else {
+        g.Diag.Error(pos, "values of type `${t.Name}` cannot be ordered with `${op.Name()}`")
+    }
+    F.ErrVal()
+}

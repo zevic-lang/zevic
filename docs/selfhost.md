@@ -14,6 +14,10 @@
 
 差分テストは 505 件(`tests/zevic1_test.py`)。
 
+## 進行中: `gen.c` の移植
+
+`Gen.zev`(型の解決、インターフェース、関数インスタンス、文字列定数)、`Ctx.zev`(関数コンテキストと IR 出力の土台)、`Expr.zev`(リテラル、to-string、`coerce`、ユニオンの変換、算術と比較)まで移した。式と文(`gen_expr` から先)がまだなので、ここから先は `--emit-ll` を zevic0 と比べるまで差分テストがない。未移植の関数は `Panic("not ported yet: ...")` の仮実装(`toIface`、`genEq`)にしてある。
+
 ## これから
 
 1. ~~`types.c`~~ → `Types.zev`(できた。`--selftest-types` の出力が zevic0 と一致)
