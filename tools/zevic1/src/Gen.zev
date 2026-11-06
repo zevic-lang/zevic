@@ -47,6 +47,11 @@ class Gen {
     // declarations made for methods and for the default methods of interfaces (once each)
     MethodDecls: Map<String, Resolve.Decl> = Map.New()
     Defaults: Map<String, Resolve.Decl> = Map.New()
+    // the function instances (one LLVM function each) by their symbol, and the ones still to be generated
+    Insts: Map<String, Inst> = Map.New()
+    Worklist: Array<Inst> = []
+    // the `export "C"` functions
+    Exports: Array<Inst> = []
 
     fn Init(pg: Resolve.Program, diag: Diag.Diag, longBytes: I64) {
         this.Pg = pg
@@ -897,4 +902,164 @@ fn checkBounds(mut g: Gen, f: Resolve.FileInfo, owner: Ast.Node, targs: Array<Ty
         }
         g.AllowSelfyIface = saved
     }
+}
+
+// ---- function instances ----
+
+// A function (or method) with its type arguments fixed: one LLVM function.
+class Inst {
+    D: Resolve.Decl
+    // owning type for methods
+    SelfT: Option<Types.Type> = None
+    Env: Env = Env.New()
+    // the LLVM symbol without the @
+    Name: String = ""
+    Ptypes: Array<Types.Type> = []
+    Ret: Types.Type
+    Emitted: Bool = false
+    IsExtern: Bool = false
+    // `export "C"`: the symbol is the plain name and the signature is C's
+    IsExport: Bool = false
+    // a method: the first parameter is `ptr %this`
+    HasThis: Bool = false
+
+    fn Init(d: Resolve.Decl, ret: Types.Type) {
+        this.D = d
+        this.Ret = ret
+    }
+}
+
+fn mangleName(s: String) -> String { Text.Replace(s, ".", "_") }
+
+// Arguments and results of `extern "C"` functions are C types or pointers.
+fn isCValueType(t: Types.Type) -> Bool {
+    if (t.Kind == Types.TKind.Fn) {
+        // a callback: C types and pointers only
+        for (a in t.Args) {
+            if (!isCValueType(a)) {
+                return false
+            }
+        }
+        let r: Types.Type = match (t.Ret) {
+            Some(x) => x,
+            None => return false,
+        }
+        return r.Kind == Types.TKind.Unit || (r.Kind == Types.TKind.CType && r.Name == "CVoid") || isCValueType(r)
+    }
+    t.Kind == Types.TKind.Ptr || (t.Kind == Types.TKind.CType && t.Name != "CVoid")
+}
+
+fn checkCSignature(mut g: Gen, mut inst: Inst, fnNode: Ast.Node) {
+    mut pi: I64 = 0
+    for (p in fnNode.List) {
+        if (p.Flag3) {
+            continue
+        }
+        let pt: Types.Type = inst.Ptypes[pi]
+        pi += 1
+        if (g.IsErr(pt)) {
+            continue
+        }
+        if (!isCValueType(pt)) {
+            g.Diag.Error(p.Pos, "parameter `${p.Name}` of the C function `${fnNode.Name}` has type `${pt.Name}`; C functions take only C types and pointers")
+            if (pt.Kind == Types.TKind.Struct) {
+                match (declOfType(g, pt)) {
+                    Some(sd) => {
+                        if (sd.HasAbi) {
+                            g.Diag.Note("structs are passed by pointer: write `*${pt.Name}` and pass `&value`")
+                        }
+                    },
+                    None => {},
+                }
+            } else if (pt.Id == g.Tt.Str.Id) {
+                g.Diag.Note("convert a String with `.ToC()`")
+            } else if (pt.IsNumeric()) {
+                g.Diag.Note("convert it with a method such as `.ToCInt()`")
+            }
+        }
+    }
+    if (g.IsErr(inst.Ret)) {
+        return
+    }
+    if (inst.Ret.Kind == Types.TKind.CType && inst.Ret.Name == "CVoid") {
+        inst.Ret = g.Tt.Unit
+    } else if (inst.Ret.Id != g.Tt.Unit.Id && !isCValueType(inst.Ret)) {
+        g.Diag.Error(fnNode.Pos, "the C function `${fnNode.Name}` returns `${inst.Ret.Name}`; C functions return only C types, pointers and `CVoid`")
+    }
+}
+
+fn getInst(mut g: Gen, d: Resolve.Decl, self: Option<Types.Type>, targs: Option<Array<Types.Type>>) -> Inst {
+    let fnNode: Ast.Node = d.Node
+    let isExtern: Bool = d.HasAbi
+    let isExport: Bool = fnNode.IsExport && self.IsNone()
+    mut key: String = ""
+    if (isExport) {
+        key = fnNode.Name
+    } else if (isExtern) {
+        key = if (fnNode.Name2 != "") { fnNode.Name2 } else { fnNode.Name }
+    } else {
+        key = match (self) {
+            Some(st) => "zevic_${mangleName(st.Name)}_${fnNode.Name}",
+            None => "zevic_${mangleName(d.ModName)}_${fnNode.Name}",
+        }
+    }
+    match (targs) {
+        Some(ts) => {
+            if (ts.Len() > 0 && !isExtern) {
+                mut names: Array<String> = []
+                for (t in ts) {
+                    names.Push(t.Name)
+                }
+                key += "<${names.Join(", ")}>"
+            }
+        },
+        None => {},
+    }
+    match (g.Insts.Get(key)) {
+        Some(old) => {
+            if (isExport && old.D.Key() != d.Key()) {
+                g.Diag.Error(fnNode.Pos, "the C name `${fnNode.Name}` is exported twice")
+                g.Diag.Note("the other one is in module `${old.D.ModName}`")
+            }
+            return old
+        },
+        None => {},
+    }
+    mut env: Env = makeEnv(g, d, self, targs)
+    mut ptypes: Array<Types.Type> = []
+    for (p in fnNode.List) {
+        if (p.Flag3) {
+            continue
+        }
+        ptypes.Push(resolveType(g, d.FileInfo(), env, unwrapNode(p.A)))
+    }
+    let ret: Types.Type = match (fnNode.A) {
+        Some(r) => resolveType(g, d.FileInfo(), env, r),
+        None => g.Tt.Unit,
+    }
+    mut inst: Inst = Inst.New(d, ret)
+    inst.IsExport = isExport
+    inst.SelfT = self
+    inst.Name = key
+    inst.IsExtern = isExtern
+    inst.HasThis = self.IsSome() && !fnNode.IsStatic && !isExtern
+    inst.Env = env
+    inst.Ptypes = ptypes
+    if (isExport) {
+        g.Exports.Push(inst)
+    }
+    if ((isExtern && d.Abi == "C") || isExport) {
+        checkCSignature(g, inst, fnNode)
+    }
+    if (isExport && fnNode.List2.Len() > 0) {
+        g.Diag.Error(fnNode.Pos, "an exported function cannot have type parameters")
+    }
+    if (isExport && fnNode.Name == "Main" && d.ModName == "Main") {
+        g.Diag.Error(fnNode.Pos, "`Main` cannot be exported")
+    }
+    g.Insts.Set(key, inst)
+    if (!isExtern) {
+        g.Worklist.Push(inst)
+    }
+    inst
 }
