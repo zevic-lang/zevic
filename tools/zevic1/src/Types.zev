@@ -75,6 +75,9 @@ class Type {
     Ll: String = ""
     // enum, union: size of the payload in 8-byte words. C types: 1 for a signed integer.
     PayloadWords: I32 = 0
+    // the interfaces this type implements (for an interface: the ones it extends)
+    Supers: Array<Type> = []
+    SupersDone: Bool = false
 
     fn Init(kind: TKind, name: String) {
         this.Kind = kind

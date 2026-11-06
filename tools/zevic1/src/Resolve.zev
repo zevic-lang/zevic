@@ -10,6 +10,7 @@ import Zevic1.Ast as Ast
 import Zevic1.Diag as Diag
 import Zevic1.Parser as Parser
 import Zevic1.Token as Token
+import Zevic1.Types as Types
 
 class Decl {
     Node: Ast.Node
@@ -23,6 +24,8 @@ class Decl {
     ModName: String = ""
     ModIsStd: Bool = false
     File: Option<FileInfo> = None
+    // a default method taken from this interface type (with its type arguments)
+    Iface: Option<Types.Type> = None
 
     fn Init(node: Ast.Node, name: String) {
         this.Node = node

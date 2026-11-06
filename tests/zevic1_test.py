@@ -59,7 +59,7 @@ def programs():
 
 
 # programs whose errors come from the interface checks, which are not ported yet
-GENTYPES_TODO = ("52-err-iface-mismatch", "54-err-iface-default-conflict")
+GENTYPES_TODO = ()
 
 
 def run_modules(z0, z1, flag="--dump-modules", label="modules"):

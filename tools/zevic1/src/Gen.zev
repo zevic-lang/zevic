@@ -44,6 +44,9 @@ class Gen {
     AllowSelfyIface: Bool = false
     // every declaration of the program by its key
     DeclByKey: Map<String, Resolve.Decl> = Map.New()
+    // declarations made for methods and for the default methods of interfaces (once each)
+    MethodDecls: Map<String, Resolve.Decl> = Map.New()
+    Defaults: Map<String, Resolve.Decl> = Map.New()
 
     fn Init(pg: Resolve.Program, diag: Diag.Diag, longBytes: I64) {
         this.Pg = pg
@@ -174,11 +177,6 @@ fn ifaceUsesSelf(decl: Ast.Node) -> Bool {
     false
 }
 
-// TODO(port): checkBounds (constraints of type parameters) and checkConformance (a type implements its interfaces)
-// come with the interface part of gen.c. Until then valid programs resolve as in zevic0 and invalid ones are not
-// diagnosed here.
-fn checkBounds(g: Gen) {}
-
 fn instantiate(mut g: Gen, d: Resolve.Decl, targs: Array<Types.Type>, pos: Token.Pos) -> Types.Type {
     let n: Ast.Node = d.Node
     if (n.List2.Len() != targs.Len()) {
@@ -190,7 +188,7 @@ fn instantiate(mut g: Gen, d: Resolve.Decl, targs: Array<Types.Type>, pos: Token
         return g.Err
     }
     if (targs.Len() > 0) {
-        checkBounds(g)
+        checkBounds(g, d.FileInfo(), n, targs, None, d.Name, pos)
     }
     mut k: Types.TKind = match (n.Kind) {
         Ast.NK.DStruct => Types.TKind.Struct,
@@ -274,7 +272,9 @@ fn ensureMembers(mut g: Gen, mut t: Types.Type) {
             t.Variants.Push(v)
         }
     }
-    // TODO(port): check_conformance(t) when the type lists interfaces
+    if (n.List3.Len() > 0 && n.Kind != Ast.NK.DInterface) {
+        checkConformance(g, t)
+    }
 }
 
 fn unwrapNode(n: Option<Ast.Node>) -> Ast.Node {
@@ -458,4 +458,443 @@ fn DumpTypes(mut g: Gen) {
     }
     dumpType(g, arrayType(g, g.Tt.I32))
     dumpType(g, arrayType(g, arrayType(g, g.Tt.Str)))
+}
+
+// ---- function environments and members ----
+
+fn makeEnv(g: Gen, d: Resolve.Decl, self: Option<Types.Type>, fnTargs: Option<Array<Types.Type>>) -> Env {
+    mut e: Env = Env.New()
+    match (self) {
+        Some(st) => {
+            e.SelfT = Some(st)
+            match (declNode(g, st)) {
+                Some(td) => {
+                    mut i: I64 = 0
+                    while (i < td.List2.Len() && i < st.Args.Len()) {
+                        e.Add(td.List2[i].Name, st.Args[i])
+                        i += 1
+                    }
+                },
+                None => {},
+            }
+        },
+        None => {},
+    }
+    match (d.Iface) {
+        Some(it) => {
+            // a default method of an interface: the interface's type parameters are in scope
+            match (declNode(g, it)) {
+                Some(itd) => {
+                    mut i: I64 = 0
+                    while (i < itd.List2.Len() && i < it.Args.Len()) {
+                        e.Add(itd.List2[i].Name, it.Args[i])
+                        i += 1
+                    }
+                },
+                None => {},
+            }
+        },
+        None => {},
+    }
+    match (fnTargs) {
+        Some(ts) => {
+            mut i: I64 = 0
+            while (i < d.Node.List2.Len() && i < ts.Len()) {
+                e.Add(d.Node.List2[i].Name, ts[i])
+                i += 1
+            }
+        },
+        None => {},
+    }
+    e
+}
+
+// ---- interfaces ----
+
+class IMethod {
+    // the method as declared in the interface
+    Fn: Ast.Node
+    // the interface type (with type arguments) that declares it
+    Owner: Types.Type
+
+    fn Init(fnNode: Ast.Node, owner: Types.Type) {
+        this.Fn = fnNode
+        this.Owner = owner
+    }
+}
+
+// the syntax node a struct, class, enum or interface type was declared with
+fn declNode(g: Gen, t: Types.Type) -> Option<Ast.Node> {
+    match (g.DeclByKey.Get(t.DeclName)) {
+        Some(d) => Some(d.Node),
+        None => None,
+    }
+}
+
+fn declOfType(g: Gen, t: Types.Type) -> Option<Resolve.Decl> { g.DeclByKey.Get(t.DeclName) }
+
+fn isUserType(t: Types.Type) -> Bool {
+    t.Kind == Types.TKind.Struct || t.Kind == Types.TKind.Class || t.Kind == Types.TKind.Enum
+}
+
+fn nameIsPub(n: String) -> Bool {
+    let c: I32 = n.ByteAt(0).ToI32Wrap()
+    c >= 65 && c <= 90
+}
+
+// The declaration of a method of `t`, made once per method.
+fn methodDecl(mut g: Gen, t: Types.Type, fnNode: Ast.Node) -> Resolve.Decl {
+    let key: String = "${t.DeclName}.${fnNode.Name}"
+    match (g.MethodDecls.Get(key)) {
+        Some(d) => return d,
+        None => {},
+    }
+    let owner: Resolve.Decl = match (declOfType(g, t)) {
+        Some(x) => x,
+        None => Panic("method of a type without a declaration"),
+    }
+    mut d: Resolve.Decl = Resolve.Decl.New(fnNode, fnNode.Name)
+    d.ModName = owner.ModName
+    d.ModIsStd = owner.ModIsStd
+    d.File = owner.File
+    d.IsPub = nameIsPub(fnNode.Name)
+    g.MethodDecls.Set(key, d)
+    d
+}
+
+fn findMember(g: Gen, t: Types.Type, name: String) -> Option<Ast.Node> {
+    match (declNode(g, t)) {
+        Some(td) => {
+            for (m in td.List) {
+                if (m.Kind == Ast.NK.DFn && m.Name == name) {
+                    return Some(m)
+                }
+            }
+            None
+        },
+        None => None,
+    }
+}
+
+fn ifaceEnv(g: Gen, it: Types.Type, self: Types.Type) -> Env {
+    mut env: Env = Env.New()
+    env.SelfT = Some(self)
+    match (declNode(g, it)) {
+        Some(n) => {
+            mut i: I64 = 0
+            while (i < n.List2.Len() && i < it.Args.Len()) {
+                env.Add(n.List2[i].Name, it.Args[i])
+                i += 1
+            }
+        },
+        None => {},
+    }
+    env
+}
+
+// The interfaces a type implements (for an interface: the ones it extends).
+fn typeSupers(mut g: Gen, mut t: Types.Type) -> Array<Types.Type> {
+    if (t.SupersDone) {
+        return t.Supers
+    }
+    t.SupersDone = true
+    let d: Resolve.Decl = match (declOfType(g, t)) {
+        Some(x) => x,
+        None => return t.Supers,
+    }
+    let n: Ast.Node = d.Node
+    mut env: Env = Env.New()
+    env.SelfT = Some(t)
+    mut i: I64 = 0
+    while (i < n.List2.Len() && i < t.Args.Len()) {
+        env.Add(n.List2[i].Name, t.Args[i])
+        i += 1
+    }
+    let saved: Bool = g.AllowSelfyIface
+    g.AllowSelfyIface = true
+    for (te in n.List3) {
+        let s: Types.Type = resolveType(g, d.FileInfo(), env, te)
+        if (g.IsErr(s)) {
+            continue
+        }
+        if (s.Kind != Types.TKind.Iface) {
+            g.Diag.Error(te.Pos, "`${s.Name}` is not an interface, so `${t.Name}` cannot implement it")
+            continue
+        }
+        t.Supers.Push(s)
+    }
+    g.AllowSelfyIface = saved
+    t.Supers
+}
+
+fn typeImplementsD(mut g: Gen, t: Types.Type, it: Types.Type, depth: I32) -> Bool {
+    if (t.Id == it.Id) {
+        return true
+    }
+    if (t.DeclName == "" || depth > 20) {
+        return false
+    }
+    for (s in typeSupers(g, t)) {
+        if (typeImplementsD(g, s, it, depth + 1)) {
+            return true
+        }
+    }
+    false
+}
+
+fn typeImplements(mut g: Gen, t: Types.Type, it: Types.Type) -> Bool { typeImplementsD(g, t, it, 0) }
+
+// Every instance method of an interface and the ones it extends, parents first.
+fn collectIfaceMethods(mut g: Gen, it: Types.Type, mut out: Array<IMethod>, depth: I32) {
+    if (depth > 20 || it.DeclName == "") {
+        return
+    }
+    for (s in typeSupers(g, it)) {
+        collectIfaceMethods(g, s, out, depth + 1)
+    }
+    let n: Ast.Node = match (declNode(g, it)) {
+        Some(x) => x,
+        None => return,
+    }
+    for (m in n.List) {
+        if (m.Kind != Ast.NK.DFn || m.IsStatic) {
+            continue
+        }
+        mut dup: Bool = false
+        for (o in out) {
+            if (o.Fn.Name == m.Name) {
+                dup = true
+            }
+        }
+        if (dup) {
+            continue
+        }
+        out.Push(IMethod.New(m, it))
+    }
+}
+
+// The default method (one with a body) of that name that `t` gets from its interfaces, and whether two interfaces
+// both supply a default with this name.
+fn findDefault(mut g: Gen, t: Types.Type, name: String) -> (Option<IMethod>, Bool) {
+    if (t.DeclName == "") {
+        return (None, false)
+    }
+    mut all: Array<IMethod> = []
+    for (s in typeSupers(g, t)) {
+        collectIfaceMethods(g, s, all, 0)
+    }
+    mut found: Option<IMethod> = None
+    mut conflict: Bool = false
+    for (m in all) {
+        if (m.Fn.Name != name || m.Fn.B.IsNone()) {
+            continue
+        }
+        match (found) {
+            Some(f) => {
+                if (!sameFn(f, m)) {
+                    conflict = true
+                }
+                continue
+            },
+            None => {},
+        }
+        found = Some(m)
+    }
+    (found, conflict)
+}
+
+// two interface methods are the same declaration
+fn sameFn(a: IMethod, b: IMethod) -> Bool {
+    a.Owner.DeclName == b.Owner.DeclName && a.Fn.Name == b.Fn.Name
+}
+
+fn defaultDecl(mut g: Gen, t: Types.Type, m: IMethod) -> Resolve.Decl {
+    let key: String = "${t.Name}|${m.Fn.Name}|${m.Owner.DeclName}"
+    match (g.Defaults.Get(key)) {
+        Some(d) => return d,
+        None => {},
+    }
+    let od: Resolve.Decl = match (declOfType(g, m.Owner)) {
+        Some(x) => x,
+        None => Panic("interface without a declaration"),
+    }
+    mut d: Resolve.Decl = Resolve.Decl.New(m.Fn, m.Fn.Name)
+    d.ModName = od.ModName
+    d.ModIsStd = od.ModIsStd
+    d.File = od.File
+    d.IsPub = nameIsPub(m.Fn.Name)
+    d.Iface = Some(m.Owner)
+    g.Defaults.Set(key, d)
+    d
+}
+
+fn sigString(ptypes: Array<Types.Type>, ret: Types.Type) -> String {
+    mut names: Array<String> = []
+    for (p in ptypes) {
+        names.Push(p.Name)
+    }
+    "(${names.Join(", ")}) -> ${ret.Name}"
+}
+
+fn fnSig(mut g: Gen, f: Resolve.FileInfo, env: Env, fnNode: Ast.Node) -> (Array<Types.Type>, Types.Type) {
+    mut ptypes: Array<Types.Type> = []
+    for (p in fnNode.List) {
+        if (p.Flag3) {
+            continue
+        }
+        ptypes.Push(resolveType(g, f, env, unwrapNode(p.A)))
+    }
+    let ret: Types.Type = match (fnNode.A) {
+        Some(r) => resolveType(g, f, env, r),
+        None => g.Tt.Unit,
+    }
+    (ptypes, ret)
+}
+
+// Does `t` provide everything its interfaces ask for?
+fn checkConformance(mut g: Gen, t: Types.Type) {
+    let td: Resolve.Decl = match (declOfType(g, t)) {
+        Some(x) => x,
+        None => return,
+    }
+    let tn: Ast.Node = td.Node
+    mut seenDefaults: Array<IMethod> = []
+    for (s in typeSupers(g, t)) {
+        mut all: Array<IMethod> = []
+        collectIfaceMethods(g, s, all, 0)
+        for (m in all) {
+            let memberFn: Ast.Node = match (findMember(g, t, m.Fn.Name)) {
+                Some(x) => x,
+                None => {
+                    if (m.Fn.B.IsSome()) {
+                        mut dup: Bool = false
+                        for (o in seenDefaults) {
+                            if (o.Fn.Name == m.Fn.Name && !sameFn(o, m)) {
+                                g.Diag.Error(tn.Pos, "`${t.Name}` gets a default `${m.Fn.Name}` from both `${o.Owner.Name}` and `${m.Owner.Name}`; write its own `${m.Fn.Name}` to choose")
+                            }
+                            if (sameFn(o, m)) {
+                                dup = true
+                            }
+                        }
+                        if (!dup) {
+                            seenDefaults.Push(m)
+                        }
+                    } else {
+                        g.Diag.Error(tn.Pos, "`${t.Name}` does not implement `${m.Fn.Name}`, which `${s.Name}` requires")
+                    }
+                    continue
+                },
+            }
+            // generic methods are not compared
+            if (memberFn.List2.Len() > 0 || m.Fn.List2.Len() > 0) {
+                continue
+            }
+            let md: Resolve.Decl = methodDecl(g, t, memberFn)
+            let (ip, iret): (Array<Types.Type>, Types.Type) = fnSig(g, md.FileInfo(), makeEnv(g, md, Some(t), None), memberFn)
+            let od: Resolve.Decl = match (declOfType(g, m.Owner)) {
+                Some(x) => x,
+                None => continue,
+            }
+            let (mp, mret): (Array<Types.Type>, Types.Type) = fnSig(g, od.FileInfo(), ifaceEnv(g, m.Owner, t), m.Fn)
+            mut ok: Bool = ip.Len() == mp.Len() && iret.Id == mret.Id && memberFn.IsMutFn == m.Fn.IsMutFn && memberFn.IsStatic == m.Fn.IsStatic
+            mut k: I64 = 0
+            while (ok && k < ip.Len()) {
+                if (ip[k].Id != mp[k].Id && !g.IsErr(ip[k]) && !g.IsErr(mp[k])) {
+                    ok = false
+                }
+                k += 1
+            }
+            if (!ok && !g.IsErr(iret) && !g.IsErr(mret)) {
+                g.Diag.Error(memberFn.Pos, "`${t.Name}.${memberFn.Name}` does not match the declaration in `${m.Owner.Name}`: it should be `${if (m.Fn.IsMutFn) { "mut " } else { "" }}fn ${m.Fn.Name}${sigString(mp, mret)}`")
+            }
+        }
+    }
+}
+
+// The built-in types satisfy Equatable, Comparable and Hashable without declaring them.
+fn builtinSatisfies(t: Types.Type, iface: String) -> Bool {
+    let num: Bool = t.IsInt() || t.Kind == Types.TKind.Char || t.Kind == Types.TKind.Bool
+    if (iface == "Equatable") {
+        return num || t.IsFloat() || t.Kind == Types.TKind.Str
+    }
+    if (iface == "Comparable") {
+        return t.IsInt() || t.Kind == Types.TKind.Char || t.IsFloat() || t.Kind == Types.TKind.Str
+    }
+    if (iface == "Hashable") {
+        return num || t.Kind == Types.TKind.Str
+    }
+    false
+}
+
+fn isBuiltinValue(t: Types.Type) -> Bool {
+    t.IsNumeric() || t.Kind == Types.TKind.Char || t.Kind == Types.TKind.Bool || t.Kind == Types.TKind.Str
+}
+
+fn satisfies(mut g: Gen, t: Types.Type, bound: Types.Type) -> Bool {
+    if (g.IsErr(t) || t.Kind == Types.TKind.Param || g.IsErr(bound)) {
+        return true
+    }
+    if (isBuiltinValue(t)) {
+        match (declOfType(g, bound)) {
+            Some(bd) => {
+                if (bd.ModIsStd) {
+                    return builtinSatisfies(t, bd.Name)
+                }
+            },
+            None => {},
+        }
+    }
+    typeImplements(g, t, bound)
+}
+
+// Checks the `<T: Bound + Bound>` constraints of a generic declaration against the type arguments.
+fn checkBounds(mut g: Gen, f: Resolve.FileInfo, owner: Ast.Node, targs: Array<Types.Type>, base: Option<Env>, what: String, pos: Token.Pos) {
+    mut i: I64 = 0
+    while (i < owner.List2.Len() && i < targs.Len()) {
+        let tp: Ast.Node = owner.List2[i]
+        let arg: Types.Type = targs[i]
+        i += 1
+        if (tp.List.Len() == 0) {
+            continue
+        }
+        if (g.IsErr(arg) || arg.Kind == Types.TKind.Param) {
+            continue
+        }
+        mut env: Env = Env.New()
+        match (base) {
+            Some(b) => {
+                env.SelfT = b.SelfT
+                mut k: I64 = 0
+                while (k < b.Names.Len()) {
+                    env.Add(b.Names[k], b.Types[k])
+                    k += 1
+                }
+            },
+            None => {},
+        }
+        mut k2: I64 = 0
+        while (k2 < owner.List2.Len() && k2 < targs.Len()) {
+            env.Add(owner.List2[k2].Name, targs[k2])
+            k2 += 1
+        }
+        // `Self` in a bound is the constrained type
+        env.SelfT = Some(arg)
+        let saved: Bool = g.AllowSelfyIface
+        g.AllowSelfyIface = true
+        for (be in tp.List) {
+            let bound: Types.Type = resolveType(g, f, env, be)
+            if (g.IsErr(bound)) {
+                continue
+            }
+            if (bound.Kind != Types.TKind.Iface) {
+                g.Diag.Error(be.Pos, "`${bound.Name}` is not an interface, so it cannot be a constraint")
+                continue
+            }
+            if (!satisfies(g, arg, bound)) {
+                g.Diag.Error(pos, "`${arg.Name}` does not satisfy the constraint `${tp.Name}: ${bound.Name}` of `${what}`")
+                g.Diag.Note("`${arg.Name}` would have to implement `${bound.Name}`")
+            }
+        }
+        g.AllowSelfyIface = saved
+    }
 }
