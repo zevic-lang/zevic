@@ -33,7 +33,7 @@ typedef struct {
     Vec modules;
     Dict mod_by_name;
     Vec files;
-    char *std_dir;  /* directory holding the standard library, e.g. .../stdlib */
+    char *std_dir;  /* directory holding the standard library, e.g. .../packages/Zevic/src */
     Vec search_dirs;
 } Program;
 

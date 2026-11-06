@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Generate stdlib/Convert.zev: the conversions that can fail and therefore return a Result.
+"""Generate packages/Zevic/src/Convert.zev: the conversions that can fail and therefore return a Result.
 
   <From>To<To>(x)     integer -> narrower or differently signed integer, e.g. I64ToI32
   StringTo<Type>(s)   text -> number, e.g. StringToI32, StringToF64
 
 The compiler calls these when it sees `x.ToI32()` and `s.ToI32()`.
-Run:  python3 tools/gen_convert.py > stdlib/Convert.zev
+Run:  python3 tools/gen_convert.py > packages/Zevic/src/Convert.zev
 """
 
 INTS = [("I8", True, 8), ("I16", True, 16), ("I32", True, 32), ("I64", True, 64),

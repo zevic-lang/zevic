@@ -59,8 +59,8 @@ static char *dir_of(const char *path) {
 
 static bool is_home(const char *dir) {
     char *rt = zsprintf("%s/runtime/zevic_rt.c", dir);
-    char *sd = zsprintf("%s/stdlib", dir);
-    return file_exists(rt) && dir_exists(sd);
+    char *sd = zsprintf("%s/packages/Zevic/zevic.toml", dir);
+    return file_exists(rt) && file_exists(sd);
 }
 
 char *driver_find_home(const char *argv0) {

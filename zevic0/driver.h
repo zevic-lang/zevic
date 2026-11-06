@@ -14,7 +14,7 @@ typedef struct {
     bool keep_ll;
 } BuildOpts;
 
-/* The directory that holds `stdlib/` and `runtime/`, or NULL. */
+/* The directory that holds `packages/Zevic/` and `runtime/`, or NULL. */
 char *driver_find_home(const char *argv0);
 /* A usable clang (version 15 or newer), or NULL after printing install instructions. */
 char *driver_find_clang(const char *cli_cc);

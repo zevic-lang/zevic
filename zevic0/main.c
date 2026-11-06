@@ -203,12 +203,12 @@ static void selftest_types(void) {
 static Program *load_program(int nfiles, char **files) {
     char *home = driver_find_home("zevic");
     if (!home) die("cannot find the Zevic standard library");
-    Program *pg = prog_new(zsprintf("%s/stdlib", home));
+    Program *pg = prog_new(zsprintf("%s/packages/Zevic/src", home));
     vec_push(&pg->search_dirs, dir_name(files[0]));
     vec_push(&pg->search_dirs, zstrdup("."));
     for (int i = 0; i < nfiles; i++)
         if (!prog_load_file(pg, files[i], false)) die("cannot read %s", files[i]);
-    char *core = zsprintf("%s/stdlib/Core.zev", home);
+    char *core = zsprintf("%s/packages/Zevic/src/Core.zev", home);
     if (file_exists(core)) prog_load_file(pg, core, true);
     prog_resolve(pg);
     return pg;
@@ -303,6 +303,11 @@ int main(int argc, char **argv) {
         } else if (strcmp(a, "--version") == 0) {
             printf("zevic %s\n", ZEVIC_VERSION);
             return 0;
+        } else if (strcmp(a, "--print-stdlib") == 0) {
+            char *home = driver_find_home(argv[0]);
+            if (!home) return 2;
+            printf("%s/packages/Zevic\n", home);
+            return 0;
         } else if (strcmp(a, "--help") == 0 || strcmp(a, "-h") == 0) {
             usage();
             return 0;
@@ -363,11 +368,11 @@ int main(int argc, char **argv) {
     char *home = driver_find_home(argv[0]);
     if (!home) {
         fprintf(stderr, "error: cannot find the Zevic standard library and runtime.\n"
-                        "Set ZEVIC_HOME to the directory that contains `stdlib/` and `runtime/`.\n");
+                        "Set ZEVIC_HOME to the directory that contains `packages/Zevic/` and `runtime/`.\n");
         return 2;
     }
 
-    Program *pg = prog_new(zsprintf("%s/stdlib", home));
+    Program *pg = prog_new(zsprintf("%s/packages/Zevic/src", home));
     vec_push(&pg->search_dirs, dir_name(zev_files.v[0]));
     vec_push(&pg->search_dirs, zstrdup("."));
     for (int i = 0; i < zev_files.n; i++) {
@@ -376,7 +381,7 @@ int main(int argc, char **argv) {
             return 1;
         }
     }
-    char *core = zsprintf("%s/stdlib/Core.zev", home);
+    char *core = zsprintf("%s/packages/Zevic/src/Core.zev", home);
     if (file_exists(core)) prog_load_file(pg, core, true);
     prog_resolve(pg);
 

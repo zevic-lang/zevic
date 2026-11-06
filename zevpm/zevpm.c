@@ -66,6 +66,17 @@ static void check_zevic_version(const char *zevic, Manifest *m) {
     char *out = NULL;
     if (os_run_capture(&a, NULL, &out) != 0 || !out) fatal("cannot run `%s --version`", zevic);
     const char *v = strchr(out, ' ');
+    /* the standard library is the package `Zevic`: its version is what `zevic = ">=..."` asks for */
+    Vec b = {0};
+    vec_push(&b, (void *)zevic);
+    vec_push(&b, "--print-stdlib");
+    char *sd = NULL;
+    if (os_run_capture(&b, NULL, &sd) == 0 && sd) {
+        size_t n = strlen(sd);
+        while (n && (sd[n - 1] == '\n' || sd[n - 1] == '\r')) sd[--n] = 0;
+        Manifest *zm = manifest_load(sd);
+        if (zm && zm->version) v = zm->version - 1;
+    }
     int have[3] = {0, 0, 0}, want[3] = {0, 0, 0};
     if (!v || sscanf(v + 1, "%d.%d.%d", &have[0], &have[1], &have[2]) < 2) return; /* a development build */
     const char *r = m->zevic_req;

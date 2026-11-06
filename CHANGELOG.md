@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- the standard library is now a real package, `Zevic` (`packages/Zevic/` with a `zevic.toml` and `src/`), instead of a flat `stdlib/` directory. The compiler finds it through `ZEVIC_HOME` / `share/zevic/packages/Zevic`; `zevic --print-stdlib` prints its directory; zevpm checks a package's `zevic = ">=..."` against the version of the `Zevic` package. Release archives carry `packages/Zevic/`
+- release notes: `tools/release_notes.py` builds them from `CHANGELOG.md` and the commits since the previous tag; CI uses them as the body of every GitHub release (and no longer uses generated notes)
+
 - union types (proposal 0007): `A | B | C`, Kotlin style. Members convert to the union and a union converts to a larger union; `x is T` / `x !is T`; smart casts for non-`mut` locals (`if`/`else`, `&&`, `||`, early `return`); `match` type patterns (`n: I32 =>`, `_: Error =>`) with exhaustiveness checking; `if`/`match` branches convert to the expected union. No `==` or `${}` on unions. zevfmt keeps `A | B` in type arguments together
 
 ## 0.3.1

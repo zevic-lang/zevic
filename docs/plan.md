@@ -395,7 +395,7 @@ zevic/
   runtime/
     zevic_rt.c  ...       ランタイム
     third_party/bgc/      Boehm GC
-  stdlib/                 標準ライブラリ(Zevic.*)
+  packages/Zevic/         標準ライブラリ(Zevic.*)。zevic.toml + src/
   tools/
     zevpm/  zevfmt/
   bootstrap/zevic.ll      コミットしておく .ll

@@ -948,7 +948,7 @@ fn Main(args: Array<String>) {
 1. `zevic.toml`のあるディレクトリがパッケージの根
 2. 自分のパッケージのモジュールは、`src/`の下のディレクトリ構造から見つける
 3. 依存パッケージ(`zevpm get`で取得)は、`zevic.toml`の`[deps]`にある名前で見つける。依存のパッケージ名が、モジュール名の先頭の要素になる
-4. 標準ライブラリは、コンパイラと同梱
+4. 標準ライブラリは、コンパイラと同梱の`Zevic`パッケージ(`packages/Zevic/`。`zevic.toml`と`src/`を持つ普通のzevpmパッケージ)。`zevic = ">=…"`の判定は、このパッケージのバージョンに対して行う
 
 ```
 myapp/
@@ -1819,7 +1819,7 @@ zevic0/
 | --- | --- |
 | `zevic` | コンパイラ(`zevic0`、のちにセルフホスト版)とランタイム |
 | `zevpm` | パッケージマネージャ(初期は`zevic`と同じリポジトリでもよい) |
-| `stdlib` | 標準ライブラリ(`Zevic.*`) |
+| `packages/Zevic` | 標準ライブラリ(`Zevic.*`)。`zevic.toml`を持つパッケージ |
 | `docs` | 言語仕様、チュートリアル、設計メモ |
 | `examples` | サンプルコード |
 | `.github` | Organization共通のIssue/PRテンプレート、行動規範 |

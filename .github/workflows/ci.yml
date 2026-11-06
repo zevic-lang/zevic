@@ -63,6 +63,7 @@ jobs:
           # zevpm is written in Zevic (tools/zevpm); the C version (zevpm/) is the frozen one for bootstrapping
           clang -std=c11 -O2 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -DZEVPM_VERSION="\"$VERSION\"" zevpm/*.c zevic0/util.c -o "build/zevpm-c${{ matrix.exe }}"
           grep -q "\"$VERSION\"" tools/zevpm/src/Version.zev
+          grep -q "^version = \"$VERSION\"" packages/Zevic/zevic.toml
           "build/zevic${{ matrix.exe }}" tools/zevpm/src/*.zev -o "build/zevpm${{ matrix.exe }}"
           "build/zevic${{ matrix.exe }}" --version
           "build/zevpm${{ matrix.exe }}" --version
@@ -76,7 +77,7 @@ jobs:
           ZEVPM="build/zevpm-c${{ matrix.exe }}" python -u tests/zevpm_test.py
           python -u tests/examples_test.py
           python -u tests/zevfmt_test.py "build/zevic${{ matrix.exe }}" "build/zevfmt${{ matrix.exe }}"
-          "build/zevfmt${{ matrix.exe }}" -check stdlib examples tools
+          "build/zevfmt${{ matrix.exe }}" -check packages examples tools
 
       - name: Package
         id: pkg
@@ -85,7 +86,7 @@ jobs:
           NAME="zevic-${VERSION}-${{ matrix.name }}"
           mkdir -p "dist/$NAME/bin"
           cp "build/zevic${{ matrix.exe }}" "build/zevpm${{ matrix.exe }}" "build/zevfmt${{ matrix.exe }}" "dist/$NAME/bin/"
-          cp -r stdlib runtime examples "dist/$NAME/"
+          cp -r packages runtime examples "dist/$NAME/"
           cp LICENSE README.md CHANGELOG.md VERSION "dist/$NAME/"
           cd dist
           if [ "${{ matrix.archive }}" = "zip" ]; then
@@ -123,6 +124,9 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
       - uses: actions/download-artifact@v4
         with:
@@ -141,6 +145,13 @@ jobs:
             echo "prerelease=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Release notes
+        run: |
+          ARGS="--tag ${{ steps.tag.outputs.name }}"
+          if [ "${{ steps.tag.outputs.prerelease }}" = "true" ]; then ARGS="$ARGS --prerelease"; fi
+          python3 tools/release_notes.py $ARGS > RELEASE_NOTES.md
+          cat RELEASE_NOTES.md
+
       - name: Checksums
         run: |
           cd artifacts
@@ -153,5 +164,5 @@ jobs:
           name: zevic ${{ steps.tag.outputs.name }}
           target_commitish: ${{ github.sha }}
           prerelease: ${{ steps.tag.outputs.prerelease == 'true' }}
-          generate_release_notes: true
+          body_path: RELEASE_NOTES.md
           files: artifacts/*

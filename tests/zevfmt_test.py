@@ -10,7 +10,7 @@ import sys
 import tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DIRS = ["stdlib", "examples", "tools"]
+DIRS = ["packages/Zevic/src", "examples", "tools"]
 EXTRA = [os.path.join("tests", "zevfmt")]
 
 

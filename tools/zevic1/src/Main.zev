@@ -84,7 +84,7 @@ fn loadProgram(files: Array<String>, mut diag: Diag.Diag) -> Result<Resolve.Prog
             return Err(2)
         },
     }
-    mut pg: Resolve.Program = Resolve.Program.New("${home}/stdlib")
+    mut pg: Resolve.Program = Resolve.Program.New("${home}/packages/Zevic/src")
     pg.SearchDirs.Push(Home.DirOf(files[0]))
     pg.SearchDirs.Push(".")
     for (f in files) {
@@ -96,7 +96,7 @@ fn loadProgram(files: Array<String>, mut diag: Diag.Diag) -> Result<Resolve.Prog
             },
         }
     }
-    let core: String = "${home}/stdlib/Core.zev"
+    let core: String = "${home}/packages/Zevic/src/Core.zev"
     if (Fs.IsFile(core)) {
         let r: Option<Resolve.FileInfo> = Resolve.LoadFile(pg, diag, core, true)
     }

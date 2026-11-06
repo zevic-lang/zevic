@@ -51,7 +51,7 @@ zevic hello.zev --emit-ll -o hello.ll   # LLVM IR だけ出す
 zevic --version
 ```
 
-標準ライブラリ(`stdlib/`)とランタイム(`runtime/`)は、実行ファイルの隣の `share/zevic/` か、
+標準ライブラリ(`Zevic` パッケージ、`packages/Zevic/`)とランタイム(`runtime/`)は、実行ファイルの隣の `share/zevic/` か、
 環境変数 `ZEVIC_HOME` が指す場所から探します。リポジトリ直下で実行するときは追加の設定は不要です。
 
 ## zevpm(パッケージとビルド)

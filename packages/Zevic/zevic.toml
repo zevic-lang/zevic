@@ -1,0 +1,4 @@
+[package]
+name = "Zevic"
+version = "0.3.1"
+kind = "lib"

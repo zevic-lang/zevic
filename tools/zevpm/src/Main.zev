@@ -83,7 +83,15 @@ fn checkZevicVersion(zevic: String, m: Toml.Manifest) -> Result<Unit, Error> {
     if (code != 0) {
         return Err(tool("cannot run `${zevic} --version` (exit code ${code}${if (out.IsEmpty()) { "" } else { ", it printed: ${out}" }})"))
     }
-    let have: Array<I64> = numbers(out)
+    mut have: Array<I64> = numbers(out)
+    // the standard library is the package `Zevic`: its version is what `zevic = ">=..."` asks for
+    let (sc, sd): (I32, String) = Os.RunCapture([zevic, "--print-stdlib"])
+    if (sc == 0) {
+        match (Toml.Load(Text.Trim(sd))) {
+            Ok(zm) => { have = numbers(zm.Version) },
+            Err(_) => {},
+        }
+    }
     if (have.Len() < 2) {
         return Ok(()) // a development build
     }

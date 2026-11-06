@@ -17,7 +17,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def sources():
     out = []
-    for pat in ["stdlib/*.zev", "examples/*.zev", "examples/**/*.zev", "tools/**/*.zev", "tests/golden/*/*.zev", "tests/zevfmt/*.zev", "tests/zevic1/**/*.zev"]:
+    for pat in ["packages/Zevic/src/*.zev", "examples/*.zev", "examples/**/*.zev", "tools/**/*.zev", "tests/golden/*/*.zev", "tests/zevfmt/*.zev", "tests/zevic1/**/*.zev"]:
         out += glob.glob(os.path.join(ROOT, pat), recursive=True)
     return sorted(set(out))
 
@@ -52,7 +52,7 @@ def programs():
     units = [[f] for f in sources()]
     for d in sorted(set(os.path.dirname(f) for f in sources())):
         fs = sorted(f for f in glob.glob(os.path.join(d, "*.zev")) if not f.endswith("_test.zev"))
-        if len(fs) > 1 and "stdlib" not in d and "golden" not in d and "tests/zevic1" not in d.replace(os.sep, "/"):
+        if len(fs) > 1 and "packages/Zevic" not in d.replace(os.sep, "/") and "golden" not in d and "tests/zevic1" not in d.replace(os.sep, "/"):
             units.append(fs)
     units.append(sorted(glob.glob(os.path.join(ROOT, "tests/zevic1/resolve/cycle/*.zev"))))
     return units

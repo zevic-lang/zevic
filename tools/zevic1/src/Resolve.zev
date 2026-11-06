@@ -77,7 +77,7 @@ class Program {
     Modules: Array<Module> = []
     ModByName: Map<String, Module> = Map.New()
     Files: Array<FileInfo> = []
-    // the directory holding the standard library, e.g. .../stdlib
+    // the directory holding the standard library, e.g. .../packages/Zevic/src
     StdDir: String
     SearchDirs: Array<String> = []
 

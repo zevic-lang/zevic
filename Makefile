@@ -27,26 +27,26 @@ PM2     := build/zevpm2
 tools/zevpm/src/Version.zev: VERSION
 	@printf 'module Zevpm.Version\n\n// Generated from the file VERSION by `make` (do not edit).\nlet Current: String = "%s"\n' "$(VERSION)" > $@
 
-$(PM2): $(BIN) $(wildcard tools/zevpm/src/*.zev) tools/zevpm/src/Version.zev $(wildcard stdlib/*.zev) runtime/zevic_rt.c
+$(PM2): $(BIN) $(wildcard tools/zevpm/src/*.zev) tools/zevpm/src/Version.zev $(wildcard packages/Zevic/src/*.zev) runtime/zevic_rt.c
 	./$(BIN) tools/zevpm/src/*.zev -o $@
 
 zevpm2: $(PM2)
 
 # the formatter, written in Zevic (tools/zevfmt)
 FMT     := build/zevfmt
-$(FMT): $(BIN) $(wildcard tools/zevfmt/src/*.zev) $(wildcard stdlib/*.zev) runtime/zevic_rt.c
+$(FMT): $(BIN) $(wildcard tools/zevfmt/src/*.zev) $(wildcard packages/Zevic/src/*.zev) runtime/zevic_rt.c
 	./$(BIN) tools/zevfmt/src/*.zev -o $@
 
 zevfmt: $(FMT)
 
 # the compiler written in Zevic (tools/zevic1), built by zevic0
 ZEVIC1  := build/zevic1
-$(ZEVIC1): $(BIN) $(wildcard tools/zevic1/src/*.zev) $(wildcard stdlib/*.zev) runtime/zevic_rt.c
+$(ZEVIC1): $(BIN) $(wildcard tools/zevic1/src/*.zev) $(wildcard packages/Zevic/src/*.zev) runtime/zevic_rt.c
 	./$(BIN) tools/zevic1/src/*.zev -o $@
 
 zevic1: $(ZEVIC1)
 
-FMT_DIRS := stdlib examples tools
+FMT_DIRS := packages examples tools
 
 fmt: $(FMT)
 	./$(FMT) -w $(FMT_DIRS)
