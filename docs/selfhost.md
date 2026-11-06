@@ -10,6 +10,7 @@
 | `ast.c` `parser.c` | `Ast.zev` `Parser.zev` | `--dump-ast` が一致。ユニオン型(`A \| B`、`is`、型パターン)も |
 | `module.c` | `Home.zev` `Resolve.zev` | `--dump-modules`(import の解決、循環、エラー)が一致 |
 | `types.c` | `Types.zev` | `--selftest-types`(型の名前、intern、ユニオンの正規化、サイズ、LLVM 型)が一致 |
+| `gen.c`(型の解決の区間: 状態、宣言の検索、構文からの型、メンバー) | `Gen.zev` | `--dump-types`(全プログラムの非ジェネリックな型と、Option・Result・Map・Array の実体)が一致 |
 
 差分テストは 505 件(`tests/zevic1_test.py`)。
 

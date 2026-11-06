@@ -19,10 +19,24 @@ class Decl {
     IsPub: Bool = false
     // for the hidden function of a `test "name" { }` block: the name
     TestName: String = ""
+    // the module and the file the declaration is in
+    ModName: String = ""
+    ModIsStd: Bool = false
+    File: Option<FileInfo> = None
 
     fn Init(node: Ast.Node, name: String) {
         this.Node = node
         this.Name = name
+    }
+
+    // the unique name of the declaration
+    fn Key() -> String { "${this.ModName}::${this.Name}" }
+
+    fn FileInfo() -> FileInfo {
+        match (this.File) {
+            Some(f) => f,
+            None => Panic("declaration without a file"),
+        }
     }
 }
 
@@ -97,7 +111,7 @@ fn isUpper(name: String) -> Bool {
     c >= 65 && c <= 90
 }
 
-fn addDecl(mut diag: Diag.Diag, mut m: Module, n: Ast.Node, abi: Option<String>) {
+fn addDecl(mut diag: Diag.Diag, mut m: Module, info: FileInfo, n: Ast.Node, abi: Option<String>) {
     if (n.Kind == Ast.NK.DTest) {
         // a test becomes a function `test.N` that no name can reach; it is only built by `--test`
         mut tf: Ast.Node = Ast.Node.New(Ast.NK.DFn, n.Pos)
@@ -105,10 +119,16 @@ fn addDecl(mut diag: Diag.Diag, mut m: Module, n: Ast.Node, abi: Option<String>)
         tf.B = n.B
         mut t: Decl = Decl.New(tf, tf.Name)
         t.TestName = n.Name
+        t.ModName = m.Name
+        t.ModIsStd = m.IsStd
+        t.File = Some(info)
         m.Tests.Push(t)
         return
     }
     mut d: Decl = Decl.New(n, n.Name)
+    d.ModName = m.Name
+    d.ModIsStd = m.IsStd
+    d.File = Some(info)
     match (abi) {
         Some(a) => {
             d.Abi = a
@@ -150,14 +170,14 @@ fn LoadFile(mut pg: Program, mut diag: Diag.Diag, path: String, isStd: Bool) -> 
     for (d in sf.Decls) {
         if (d.Kind == Ast.NK.DExtern) {
             for (e in d.List) {
-                addDecl(diag, m, e, Some(d.Name))
+                addDecl(diag, m, info, e, Some(d.Name))
             }
             continue
         }
         if (!isStd && d.HasName && reservedName(d.Name)) {
             diag.Error(d.Pos, "`${d.Name}` is a reserved name (it is part of the prelude)")
         }
-        addDecl(diag, m, d, None)
+        addDecl(diag, m, info, d, None)
     }
     Some(info)
 }

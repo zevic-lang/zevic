@@ -17,4 +17,7 @@ void gen_set_lib_mode(Gen *g);
 /* The C header for the `export \"C\"` functions (call after gen_program succeeded). */
 void gen_header(Gen *g, const char *guard, SB *out);
 
+/* `--dump-types`: instantiate every non-generic struct, class and enum and print them (tests the Zevic port). */
+void gen_dump_types(Gen *g);
+
 #endif

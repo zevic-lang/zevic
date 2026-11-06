@@ -58,7 +58,7 @@ def programs():
     return units
 
 
-def run_modules(z0, z1):
+def run_modules(z0, z1, flag="--dump-modules", label="modules"):
     failed = 0
     env = dict(os.environ, ZEVIC_HOME=ROOT)
     units = programs()
@@ -66,10 +66,10 @@ def run_modules(z0, z1):
         rel = " ".join(os.path.relpath(f, ROOT) for f in files)
         res = []
         for exe in (z0, z1):
-            p = subprocess.run([exe, "--dump-modules"] + files, capture_output=True, text=True, env=env, cwd=ROOT)
+            p = subprocess.run([exe, flag] + files, capture_output=True, text=True, env=env, cwd=ROOT)
             res.append((p.returncode, p.stdout, p.stderr))
         if res[0] != res[1]:
-            print("FAIL  modules %s" % rel)
+            print("FAIL  %s %s" % (label, rel))
             (c0, o0, e0), (c1, o1, e1) = res
             if c0 != c1:
                 print("      exit code %d (zevic0) and %d (zevic1)" % (c0, c1))
@@ -81,7 +81,7 @@ def run_modules(z0, z1):
                 print("      stderr zevic0: %r\n      stderr zevic1: %r" % (e0[:300], e1[:300]))
             failed += 1
         else:
-            print("ok    modules %s" % rel)
+            print("ok    %s %s" % (label, rel))
     return failed, len(units)
 
 
@@ -111,6 +111,11 @@ def main():
     if "types" in flags:
         flags = [f for f in flags if f != "types"]
         f, n = run_types(z0, z1)
+        failed += f
+        total += n
+    if "gentypes" in flags:
+        flags = [f for f in flags if f != "gentypes"]
+        f, n = run_modules(z0, z1, "--dump-types", "gentypes")
         failed += f
         total += n
     if "modules" in flags:

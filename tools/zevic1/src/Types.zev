@@ -108,6 +108,16 @@ class Type {
     }
 }
 
+// the number of the kind (the order of the C enum), for the tests
+fn KindNo(k: TKind) -> I32 {
+    match (k) {
+        TKind.I8 => 0, TKind.I16 => 1, TKind.I32 => 2, TKind.I64 => 3, TKind.U8 => 4, TKind.U16 => 5, TKind.U32 => 6, TKind.U64 => 7,
+        TKind.F32 => 8, TKind.F64 => 9, TKind.Bool => 10, TKind.Char => 11, TKind.Str => 12, TKind.Unit => 13, TKind.Never => 14,
+        TKind.Tuple => 15, TKind.Fn => 16, TKind.Struct => 17, TKind.Class => 18, TKind.Enum => 19, TKind.Ptr => 20, TKind.Buf => 21,
+        TKind.Iface => 22, TKind.CType => 23, TKind.Param => 24, TKind.Union => 25,
+    }
+}
+
 fn roundUp(n: I64, a: I64) -> I64 { (n + a - 1) / a * a }
 
 class CTypeRow {

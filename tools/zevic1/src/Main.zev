@@ -5,6 +5,7 @@ import Zevic.Env
 import Zevic.Fs
 import Zevic1.Ast as Ast
 import Zevic1.Diag as Diag
+import Zevic1.Gen as Gen
 import Zevic1.Home as Home
 import Zevic1.Lexer as Lexer
 import Zevic1.Parser as Parser
@@ -74,15 +75,15 @@ fn dumpAst(path: String) -> I32 {
     if (diag.Errors > 0) { 1 } else { 0 }
 }
 
-fn dumpModules(files: Array<String>) -> I32 {
+// Loads the files and the standard library and resolves the imports; the error is the exit code.
+fn loadProgram(files: Array<String>, mut diag: Diag.Diag) -> Result<Resolve.Program, I32> {
     let home: String = match (Home.Find()) {
         Some(h) => h,
         None => {
             Console.Eprintln("zevic: error: cannot find the Zevic standard library")
-            return 2
+            return Err(2)
         },
     }
-    mut diag: Diag.Diag = Diag.Diag.New()
     mut pg: Resolve.Program = Resolve.Program.New("${home}/stdlib")
     pg.SearchDirs.Push(Home.DirOf(files[0]))
     pg.SearchDirs.Push(".")
@@ -91,7 +92,7 @@ fn dumpModules(files: Array<String>) -> I32 {
             Some(_) => {},
             None => {
                 Console.Eprintln("zevic: error: cannot read ${f}")
-                return 2
+                return Err(2)
             },
         }
     }
@@ -100,7 +101,27 @@ fn dumpModules(files: Array<String>) -> I32 {
         let r: Option<Resolve.FileInfo> = Resolve.LoadFile(pg, diag, core, true)
     }
     Resolve.Resolve(pg, diag)
-    if (diag.Errors > 0) { return 1 }
+    if (diag.Errors > 0) { return Err(1) }
+    Ok(pg)
+}
+
+fn dumpTypes(files: Array<String>) -> I32 {
+    mut diag: Diag.Diag = Diag.Diag.New()
+    let pg: Resolve.Program = match (loadProgram(files, diag)) {
+        Ok(p) => p,
+        Err(c) => return c,
+    }
+    mut g: Gen.Gen = Gen.Gen.New(pg, diag, 8)
+    Gen.DumpTypes(g)
+    if (diag.Errors > 0) { 1 } else { 0 }
+}
+
+fn dumpModules(files: Array<String>) -> I32 {
+    mut diag: Diag.Diag = Diag.Diag.New()
+    let pg: Resolve.Program = match (loadProgram(files, diag)) {
+        Ok(p) => p,
+        Err(c) => return c,
+    }
     for (info in pg.Files) {
         Console.Println("file ${diag.Name(info.Sf.Pos.File)}${if (info.Sf.IsStd) { " std" } else { "" }}")
     }
@@ -256,6 +277,9 @@ fn Main(args: Array<String>) {
     }
     if (args.Len() == 2 && args[0] == "--dump-ast") {
         Env.Exit(dumpAst(args[1]))
+    }
+    if (args.Len() >= 2 && args[0] == "--dump-types") {
+        Env.Exit(dumpTypes(args.Slice(1, args.Len())))
     }
     if (args.Len() >= 2 && args[0] == "--dump-modules") {
         Env.Exit(dumpModules(args.Slice(1, args.Len())))

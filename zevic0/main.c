@@ -200,7 +200,7 @@ static void selftest_types(void) {
 }
 
 /* `--dump-modules <file>...`: load the files the way a build does, resolve the imports and print the module table */
-static void dump_modules(int nfiles, char **files) {
+static Program *load_program(int nfiles, char **files) {
     char *home = driver_find_home("zevic");
     if (!home) die("cannot find the Zevic standard library");
     Program *pg = prog_new(zsprintf("%s/stdlib", home));
@@ -211,6 +211,17 @@ static void dump_modules(int nfiles, char **files) {
     char *core = zsprintf("%s/stdlib/Core.zev", home);
     if (file_exists(core)) prog_load_file(pg, core, true);
     prog_resolve(pg);
+    return pg;
+}
+
+static void dump_types(int nfiles, char **files) {
+    Program *pg = load_program(nfiles, files);
+    if (zv_error_count) return;
+    gen_dump_types(gen_new(pg));
+}
+
+static void dump_modules(int nfiles, char **files) {
+    Program *pg = load_program(nfiles, files);
     if (zv_error_count) return;
     for (int i = 0; i < pg->files.n; i++) {
         SourceFile *sf = pg->files.v[i];
@@ -283,6 +294,9 @@ int main(int argc, char **argv) {
         } else if (strcmp(a, "--selftest-types") == 0) {
             selftest_types();
             return 0;
+        } else if (strcmp(a, "--dump-types") == 0 && i + 1 < argc) {
+            dump_types(argc - i - 1, argv + i + 1);
+            return zv_error_count ? 1 : 0;
         } else if (strcmp(a, "--dump-modules") == 0 && i + 1 < argc) {
             dump_modules(argc - i - 1, argv + i + 1);
             return zv_error_count ? 1 : 0;

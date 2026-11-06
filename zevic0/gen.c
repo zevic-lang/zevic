@@ -395,6 +395,68 @@ static Type *resolve_type(Gen *g, SourceFile *f, Env *env, Node *te) {
 }
 
 /* =========================================================================
+ * --dump-types (tests the Zevic port of the type resolution)
+ * ========================================================================= */
+
+static void dump_type(Gen *g, Type *t) {
+    (void)g;
+    if (is_err(t)) {
+        printf("<error>\n");
+        return;
+    }
+    ty_layout(t);
+    printf("%s | kind=%d size=%lld align=%lld ll=%s words=%d\n", t->name, (int)t->k, (long long)t->size, (long long)t->align,
+           t->ll, t->payload_words);
+    for (int i = 0; i < t->fields.n; i++) {
+        Field *f = t->fields.v[i];
+        printf("  field %s: %s\n", f->name, f->t->name);
+    }
+    for (int i = 0; i < t->variants.n; i++) {
+        Variant *v = t->variants.v[i];
+        printf("  variant %s tag=%d named=%d payload=%s\n", v->name, v->tag, v->named ? 1 : 0, v->payload ? v->payload->name : "-");
+        for (int k = 0; k < v->fields.n; k++) {
+            Field *f = v->fields.v[k];
+            printf("    %s: %s\n", f->name, f->t->name);
+        }
+    }
+}
+
+void gen_dump_types(Gen *g) {
+    Pos none = {0};
+    for (int i = 0; i < g->pg->modules.n; i++) {
+        Module *m = g->pg->modules.v[i];
+        for (int k = 0; k < m->files.n; k++) {
+            SourceFile *sf = m->files.v[k];
+            for (int j = 0; j < sf->decls.n; j++) {
+                Node *n = sf->decls.v[j];
+                if (n->kind != D_STRUCT && n->kind != D_CLASS && n->kind != D_ENUM) continue;
+                if (n->list2.n) continue;
+                Decl *d = module_find(m, n->name);
+                if (!d || d->node != n) continue;
+                Vec none_args = {0};
+                dump_type(g, instantiate(g, d, none_args, none));
+            }
+        }
+    }
+    /* generic instances */
+    Decl *dopt = lookup_in_prelude(g, "Option"), *dres = lookup_in_prelude(g, "Result"), *dmap = lookup_in_prelude(g, "Map");
+    Type *err = lookup_in_prelude(g, "Error") ? instantiate(g, lookup_in_prelude(g, "Error"), (Vec){0}, none) : ty_i32;
+    Vec a1 = {0};
+    vec_push(&a1, ty_string);
+    if (dopt) dump_type(g, instantiate(g, dopt, a1, none));
+    Vec a2 = {0};
+    vec_push(&a2, ty_i32);
+    vec_push(&a2, err);
+    if (dres) dump_type(g, instantiate(g, dres, a2, none));
+    Vec a3 = {0};
+    vec_push(&a3, ty_string);
+    vec_push(&a3, ty_i64);
+    if (dmap) dump_type(g, instantiate(g, dmap, a3, none));
+    dump_type(g, array_type(g, ty_i32));
+    dump_type(g, array_type(g, array_type(g, ty_string)));
+}
+
+/* =========================================================================
  * Function instances
  * ========================================================================= */
 

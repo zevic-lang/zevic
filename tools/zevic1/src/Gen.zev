@@ -1,0 +1,461 @@
+module Zevic1.Gen
+
+// Type checking and LLVM IR generation: a port of zevic0/gen.c, in the order of that file.
+// So far: the state, names, declaration lookup and types from syntax.
+
+import Zevic.Console
+import Zevic.Text
+import Zevic1.Ast as Ast
+import Zevic1.Diag as Diag
+import Zevic1.Resolve as Resolve
+import Zevic1.Token as Token
+import Zevic1.Types as Types
+
+// A mapping from type parameter names to types, plus `Self`.
+class Env {
+    Names: Array<String> = []
+    Types: Array<Types.Type> = []
+    SelfT: Option<Types.Type> = None
+
+    mut fn Add(name: String, t: Types.Type) {
+        this.Names.Push(name)
+        this.Types.Push(t)
+    }
+
+    fn Get(name: String) -> Option<Types.Type> {
+        mut i: I64 = this.Names.Len() - 1
+        while (i >= 0) {
+            if (this.Names[i] == name) {
+                return Some(this.Types[i])
+            }
+            i -= 1
+        }
+        None
+    }
+}
+
+class Gen {
+    Pg: Resolve.Program
+    Diag: Diag.Diag
+    Tt: Types.TypeTable
+    // The type of an expression that already produced an error: it matches everything.
+    Err: Types.Type
+    // set while resolving the interfaces a type implements or extends, and constraints
+    AllowSelfyIface: Bool = false
+    // every declaration of the program by its key
+    DeclByKey: Map<String, Resolve.Decl> = Map.New()
+
+    fn Init(pg: Resolve.Program, diag: Diag.Diag, longBytes: I64) {
+        this.Pg = pg
+        this.Diag = diag
+        this.Tt = Types.TypeTable.New(longBytes)
+        this.Err = this.Tt.Param("error")
+        for (m in pg.Modules) {
+            for (d in m.Decls.Values()) {
+                this.DeclByKey.Set(d.Key(), d)
+            }
+        }
+    }
+
+    fn IsErr(t: Types.Type) -> Bool { t.Id == this.Err.Id }
+}
+
+// ---- names ----
+
+fn qualifiedName(d: Resolve.Decl) -> String {
+    if (d.ModName == "Zevic.Core") {
+        return d.Name
+    }
+    "${d.ModName}.${d.Name}"
+}
+
+// ---- declaration lookup ----
+
+fn lookupInPrelude(g: Gen, name: String) -> Option<Resolve.Decl> {
+    match (g.Pg.FindModule("Zevic.Core")) {
+        Some(core) => {
+            match (core.Decls.Get(name)) {
+                Some(d) => if (d.IsPub) { Some(d) } else { None },
+                None => None,
+            }
+        },
+        None => None,
+    }
+}
+
+// Finds the declaration a dotted path starts with. `used` is the number of segments consumed (the module prefix plus
+// the declaration name), or -1 after an error was reported.
+fn findDecl(mut g: Gen, f: Resolve.FileInfo, segs: Array<String>, pos: Token.Pos) -> (Option<Resolve.Decl>, I64) {
+    let mod: Resolve.Module = match (f.Mod) {
+        Some(m) => m,
+        None => return (None, 0),
+    }
+    mut k: I64 = segs.Len() - 1
+    while (k >= 1) {
+        let prefix: String = segs.Slice(0, k).Join(".")
+        match (f.ImportMap.Get(prefix)) {
+            Some(m) => {
+                match (m.Decls.Get(segs[k])) {
+                    Some(d) => {
+                        if (!d.IsPub && d.ModName != mod.Name) {
+                            g.Diag.Error(pos, "`${segs[k]}` is private to module `${m.Name}` (names starting with a lowercase letter are not exported)")
+                            return (None, -1)
+                        }
+                        return (Some(d), k + 1)
+                    },
+                    None => {
+                        g.Diag.Error(pos, "module `${m.Name}` has no member `${segs[k]}`")
+                        return (None, -1)
+                    },
+                }
+            },
+            None => {},
+        }
+        k -= 1
+    }
+    match (mod.Decls.Get(segs[0])) {
+        Some(d) => return (Some(d), 1),
+        None => {},
+    }
+    match (lookupInPrelude(g, segs[0])) {
+        Some(d) => return (Some(d), 1),
+        None => {},
+    }
+    (None, 0)
+}
+
+// ---- types from syntax ----
+
+fn syntaxMentionsSelf(te: Option<Ast.Node>) -> Bool {
+    let n: Ast.Node = match (te) {
+        Some(x) => x,
+        None => return false,
+    }
+    match (n.Kind) {
+        Ast.NK.TypeName => {
+            if (n.Path.Len() == 1 && n.Path[0] == "Self") {
+                return true
+            }
+            for (x in n.List) {
+                if (syntaxMentionsSelf(Some(x))) {
+                    return true
+                }
+            }
+            false
+        },
+        Ast.NK.TypeTuple | Ast.NK.TypeFn | Ast.NK.TypeUnion => {
+            for (x in n.List) {
+                if (syntaxMentionsSelf(Some(x))) {
+                    return true
+                }
+            }
+            syntaxMentionsSelf(n.A)
+        },
+        Ast.NK.TypePtr => syntaxMentionsSelf(n.A),
+        _ => false,
+    }
+}
+
+// Does an interface mention `Self` in a method signature? Such an interface only works as a constraint.
+fn ifaceUsesSelf(decl: Ast.Node) -> Bool {
+    for (m in decl.List) {
+        if (m.Kind != Ast.NK.DFn) {
+            continue
+        }
+        for (p in m.List) {
+            if (syntaxMentionsSelf(p.A)) {
+                return true
+            }
+        }
+        if (syntaxMentionsSelf(m.A)) {
+            return true
+        }
+    }
+    false
+}
+
+// TODO(port): checkBounds (constraints of type parameters) and checkConformance (a type implements its interfaces)
+// come with the interface part of gen.c. Until then valid programs resolve as in zevic0 and invalid ones are not
+// diagnosed here.
+fn checkBounds(g: Gen) {}
+
+fn instantiate(mut g: Gen, d: Resolve.Decl, targs: Array<Types.Type>, pos: Token.Pos) -> Types.Type {
+    let n: Ast.Node = d.Node
+    if (n.List2.Len() != targs.Len()) {
+        if (n.List2.Len() == 0) {
+            g.Diag.Error(pos, "type `${d.Name}` takes no type arguments")
+        } else {
+            g.Diag.Error(pos, "type `${d.Name}` needs ${n.List2.Len()} type argument(s), found ${targs.Len()}")
+        }
+        return g.Err
+    }
+    if (targs.Len() > 0) {
+        checkBounds(g)
+    }
+    mut k: Types.TKind = match (n.Kind) {
+        Ast.NK.DStruct => Types.TKind.Struct,
+        Ast.NK.DClass => Types.TKind.Class,
+        Ast.NK.DInterface => Types.TKind.Iface,
+        _ => Types.TKind.Enum,
+    }
+    if (d.ModIsStd && d.ModName == "Zevic.Intrinsics" && d.Name == "Buf") {
+        k = Types.TKind.Buf
+    }
+    let t: Types.Type = g.Tt.Named(k, d.Key(), qualifiedName(d), targs)
+    ensureMembers(g, t)
+    t
+}
+
+// Array<elem>: the class from Zevic.Core.
+fn arrayType(mut g: Gen, elem: Types.Type) -> Types.Type {
+    match (lookupInPrelude(g, "Array")) {
+        Some(d) => instantiate(g, d, [elem], d.Node.Pos),
+        None => {
+            g.Diag.Error(Token.Pos.New(0, 0, 0), "the standard library file Core.zev is missing (cannot find `Array`)")
+            g.Err
+        },
+    }
+}
+
+// Resolves the fields (struct, class) or variants (enum) of a type.
+fn ensureMembers(mut g: Gen, mut t: Types.Type) {
+    if (t.MembersDone) {
+        return
+    }
+    t.MembersDone = true
+    let d: Resolve.Decl = match (g.DeclByKey.Get(t.DeclName)) {
+        Some(x) => x,
+        None => return,
+    }
+    let n: Ast.Node = d.Node
+    mut env: Env = Env.New()
+    env.SelfT = Some(t)
+    mut i: I64 = 0
+    while (i < n.List2.Len()) {
+        env.Add(n.List2[i].Name, t.Args[i])
+        i += 1
+    }
+    let f: Resolve.FileInfo = d.FileInfo()
+    if (n.Kind == Ast.NK.DStruct || n.Kind == Ast.NK.DClass) {
+        for (m in n.List) {
+            if (m.Kind != Ast.NK.Field || m.Flag) {
+                continue
+            }
+            t.Fields.Push(Types.Field.New(m.Name, resolveType(g, f, env, unwrapNode(m.A))))
+        }
+    } else if (n.Kind == Ast.NK.DEnum) {
+        mut tag: I32 = 0
+        for (m in n.List) {
+            if (m.Kind != Ast.NK.Variant) {
+                continue
+            }
+            mut v: Types.Variant = Types.Variant.New(m.Name, tag)
+            tag += 1
+            v.Named = m.Flag
+            mut ptypes: Array<Types.Type> = []
+            if (m.Flag) {
+                for (fd in m.List2) {
+                    let ft: Types.Type = resolveType(g, f, env, unwrapNode(fd.A))
+                    v.Fields.Push(Types.Field.New(fd.Name, ft))
+                    ptypes.Push(ft)
+                }
+            } else {
+                mut k: I64 = 0
+                for (x in m.List) {
+                    let ft: Types.Type = resolveType(g, f, env, x)
+                    v.Fields.Push(Types.Field.New("${k}", ft))
+                    ptypes.Push(ft)
+                    k += 1
+                }
+            }
+            if (ptypes.Len() > 0) {
+                v.Payload = Some(g.Tt.Tuple(ptypes))
+            }
+            t.Variants.Push(v)
+        }
+    }
+    // TODO(port): check_conformance(t) when the type lists interfaces
+}
+
+fn unwrapNode(n: Option<Ast.Node>) -> Ast.Node {
+    match (n) {
+        Some(x) => x,
+        None => Panic("a syntax node is missing"),
+    }
+}
+
+fn resolveType(mut g: Gen, f: Resolve.FileInfo, env: Env, te: Ast.Node) -> Types.Type {
+    match (te.Kind) {
+        Ast.NK.TypeTuple => {
+            mut elems: Array<Types.Type> = []
+            for (x in te.List) {
+                elems.Push(resolveType(g, f, env, x))
+            }
+            g.Tt.Tuple(elems)
+        },
+        Ast.NK.TypeFn => {
+            mut ps: Array<Types.Type> = []
+            for (x in te.List) {
+                ps.Push(resolveType(g, f, env, x))
+            }
+            let ret: Types.Type = resolveType(g, f, env, unwrapNode(te.A))
+            g.Tt.Fn(ps, ret)
+        },
+        Ast.NK.TypePtr => {
+            let inner: Types.Type = resolveType(g, f, env, unwrapNode(te.A))
+            g.Tt.Ptr(inner)
+        },
+        Ast.NK.TypeUnion => {
+            mut ms: Array<Types.Type> = []
+            mut bad: Bool = false
+            for (x in te.List) {
+                let m: Types.Type = resolveType(g, f, env, x)
+                if (g.IsErr(m)) {
+                    bad = true
+                } else if (m.Id == g.Tt.Never.Id) {
+                    g.Diag.Error(x.Pos, "`Never` cannot be a member of a union")
+                    bad = true
+                } else {
+                    ms.Push(m)
+                }
+            }
+            if (bad) {
+                return g.Err
+            }
+            let u: Types.Type = g.Tt.Union(ms)
+            if (u.Kind != Types.TKind.Union) {
+                g.Diag.Error(te.Pos, "a union needs at least two different types (found only `${u.Name}`)")
+            }
+            u
+        },
+        Ast.NK.TypeName => resolveTypeName(g, f, env, te),
+        _ => {
+            g.Diag.Error(te.Pos, "expected a type")
+            g.Err
+        },
+    }
+}
+
+fn resolveTypeName(mut g: Gen, f: Resolve.FileInfo, env: Env, te: Ast.Node) -> Types.Type {
+    let segs: Array<String> = te.Path
+    let n: I64 = segs.Len()
+    if (n == 1) {
+        let name: String = segs[0]
+        match (env.Get(name)) {
+            Some(bound) => return bound,
+            None => {},
+        }
+        if (name == "Self") {
+            match (env.SelfT) {
+                Some(s) => return s,
+                None => {
+                    g.Diag.Error(te.Pos, "`Self` can only be used inside a type or interface")
+                    return g.Err
+                },
+            }
+        }
+        match (g.Tt.PrimByName(name)) {
+            Some(p) => {
+                if (te.List.Len() > 0) {
+                    g.Diag.Error(te.Pos, "type `${name}` takes no type arguments")
+                }
+                return p
+            },
+            None => {},
+        }
+        if (name == "Never") {
+            return g.Tt.Never
+        }
+        match (g.Tt.CByName(name)) {
+            Some(ct) => return ct,
+            None => {},
+        }
+    }
+    let (found, used): (Option<Resolve.Decl>, I64) = findDecl(g, f, segs, te.Pos)
+    if (used < 0) {
+        return g.Err
+    }
+    let d: Resolve.Decl = match (found) {
+        Some(x) => if (used == n) { x } else {
+            g.Diag.Error(te.Pos, "unknown type `${Ast.PathJoin(te.Path, ".")}`")
+            return g.Err
+        },
+        None => {
+            g.Diag.Error(te.Pos, "unknown type `${Ast.PathJoin(te.Path, ".")}`")
+            return g.Err
+        },
+    }
+    let k: Ast.NK = d.Node.Kind
+    if (k != Ast.NK.DStruct && k != Ast.NK.DClass && k != Ast.NK.DEnum && k != Ast.NK.DInterface) {
+        g.Diag.Error(te.Pos, "`${d.Name}` is not a type")
+        return g.Err
+    }
+    if (k == Ast.NK.DInterface && !g.AllowSelfyIface && ifaceUsesSelf(d.Node)) {
+        g.Diag.Error(te.Pos, "`${d.Name}` uses `Self`, so it can only be used as a constraint (`<T: ${d.Name}>`), not as the type of a value")
+        return g.Err
+    }
+    mut targs: Array<Types.Type> = []
+    for (x in te.List) {
+        targs.Push(resolveType(g, f, env, x))
+    }
+    instantiate(g, d, targs, te.Pos)
+}
+
+// ---- --dump-types (compared with zevic0) ----
+
+fn dumpType(mut g: Gen, t: Types.Type) {
+    if (g.IsErr(t)) {
+        Console.Println("<error>")
+        return
+    }
+    g.Tt.Layout(t)
+    Console.Println("${t.Name} | kind=${Types.KindNo(t.Kind)} size=${t.Size} align=${t.Align} ll=${t.Ll} words=${t.PayloadWords}")
+    for (f in t.Fields) {
+        Console.Println("  field ${f.Name}: ${f.T.Name}")
+    }
+    for (v in t.Variants) {
+        let pn: String = match (v.Payload) { Some(p) => p.Name, None => "-" }
+        Console.Println("  variant ${v.Name} tag=${v.Tag} named=${if (v.Named) { 1 } else { 0 }} payload=${pn}")
+        for (f in v.Fields) {
+            Console.Println("    ${f.Name}: ${f.T.Name}")
+        }
+    }
+}
+
+fn DumpTypes(mut g: Gen) {
+    let none: Token.Pos = Token.Pos.New(0, 0, 0)
+    for (m in g.Pg.Modules) {
+        for (info in m.Files) {
+            for (n in info.Sf.Decls) {
+                if (n.Kind != Ast.NK.DStruct && n.Kind != Ast.NK.DClass && n.Kind != Ast.NK.DEnum) {
+                    continue
+                }
+                if (n.List2.Len() > 0) {
+                    continue
+                }
+                match (m.Decls.Get(n.Name)) {
+                    Some(d) => dumpType(g, instantiate(g, d, [], none)),
+                    None => {},
+                }
+            }
+        }
+    }
+    let errT: Types.Type = match (lookupInPrelude(g, "Error")) {
+        Some(d) => instantiate(g, d, [], none),
+        None => g.Tt.I32,
+    }
+    match (lookupInPrelude(g, "Option")) {
+        Some(d) => dumpType(g, instantiate(g, d, [g.Tt.Str], none)),
+        None => {},
+    }
+    match (lookupInPrelude(g, "Result")) {
+        Some(d) => dumpType(g, instantiate(g, d, [g.Tt.I32, errT], none)),
+        None => {},
+    }
+    match (lookupInPrelude(g, "Map")) {
+        Some(d) => dumpType(g, instantiate(g, d, [g.Tt.Str, g.Tt.I64], none)),
+        None => {},
+    }
+    dumpType(g, arrayType(g, g.Tt.I32))
+    dumpType(g, arrayType(g, arrayType(g, g.Tt.Str)))
+}
