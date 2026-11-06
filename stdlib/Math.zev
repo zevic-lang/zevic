@@ -23,6 +23,13 @@ extern "C" {
     fn hypot(x: CDouble, y: CDouble) -> CDouble
 }
 
+extern "zevic" {
+    fn zevic_f64_bits(x: F64) -> U64
+}
+
+// The IEEE 754 bits of a number.
+fn F64Bits(x: F64) -> U64 { zevic_f64_bits(x) }
+
 let Pi: F64 = 3.141592653589793
 let E: F64 = 2.718281828459045
 

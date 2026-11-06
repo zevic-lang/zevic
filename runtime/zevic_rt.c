@@ -315,6 +315,12 @@ int32_t zevic_f64_valid(const char *p, int64_t n) {
     return i == n;
 }
 
+uint64_t zevic_f64_bits(double x) {
+    uint64_t u;
+    memcpy(&u, &x, sizeof u);
+    return u;
+}
+
 double zevic_f64_parse(const char *p, int64_t n) {
     char *buf = malloc((size_t)n + 1);
     if (!buf) exit(101);

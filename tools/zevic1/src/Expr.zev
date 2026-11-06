@@ -1,0 +1,271 @@
+module Zevic1.Expr
+
+// Literals and runtime helpers: a port of zevic0/gen.c from "Literals" on (the rest follows).
+
+import Zevic.Math
+import Zevic.Text
+import Zevic1.Ast as Ast
+import Zevic1.Ctx as Ctx
+import Zevic1.Gen as Gen
+import Zevic1.Token as Token
+import Zevic1.Types as Types
+
+// The type a number literal takes when a union is expected: its only integer (or decimal) member; otherwise the
+// default type (`I64`, `F64`), which then has to be a member.
+fn litMember(expect: Option<Types.Type>, isFloat: Bool) -> Option<Types.Type> {
+    let e: Types.Type = match (expect) {
+        Some(x) => x,
+        None => return None,
+    }
+    if (e.Kind != Types.TKind.Union) {
+        return expect
+    }
+    mut found: Option<Types.Type> = None
+    mut cnt: I32 = 0
+    for (m in e.Args) {
+        if (if (isFloat) { m.IsFloat() } else { m.IsInt() }) {
+            found = Some(m)
+            cnt += 1
+        }
+    }
+    if (cnt == 1) { found } else { None }
+}
+
+fn genIntLitRaw(mut F: Ctx.FnCtx, n: Ast.Node, expectIn: Option<Types.Type>, neg: Bool) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let expect: Option<Types.Type> = litMember(expectIn, false)
+    mut t: Types.Type = g.Tt.I64
+    if (n.Suffix != "") {
+        match (g.Tt.PrimByName(n.Suffix)) {
+            Some(x) => { t = x },
+            None => {},
+        }
+    } else {
+        match (expect) {
+            Some(e) => {
+                if (e.IsInt()) {
+                    t = e
+                } else if (e.IsFloat()) {
+                    g.Diag.Error(n.Pos, "expected `${e.Name}`, found an integer (write `${n.Ival}.0` for a decimal number)")
+                    return F.ErrVal()
+                }
+            },
+            None => {},
+        }
+    }
+    let bits: I32 = t.Bits()
+    let v: U64 = n.Ival
+    if (t.IsSigned()) {
+        let maxPos: U64 = (1_U64 << (bits - 1)) - 1_U64
+        let limit: U64 = maxPos + (if (neg) { 1_U64 } else { 0_U64 })
+        if (v > limit) {
+            let hi: I64 = maxPos.ToI64Wrap()
+            g.Diag.Error(n.Pos, "the number ${if (neg) { "-" } else { "" }}${v} does not fit in `${t.Name}` (range ${-hi - 1} to ${hi})")
+            return F.ErrVal()
+        }
+    } else {
+        if (neg && v != 0_U64) {
+            g.Diag.Error(n.Pos, "an unsigned type (`${t.Name}`) cannot hold a negative number")
+            return F.ErrVal()
+        }
+        let max: U64 = if (bits == 64) { 0xFFFFFFFFFFFFFFFF_U64 } else { (1_U64 << bits) - 1_U64 }
+        if (v > max) {
+            g.Diag.Error(n.Pos, "the number ${v} does not fit in `${t.Name}` (maximum ${max})")
+            return F.ErrVal()
+        }
+    }
+    let sv: I64 = if (neg) { (0_U64).WrapSub(v).ToI64Wrap() } else { v.ToI64Wrap() }
+    Ctx.Val.New(t, "${sv}")
+}
+
+fn doubleHex(d: F64) -> String { "0x${Gen.HexN(Math.F64Bits(d), 16)}" }
+
+fn genFloatLitRaw(mut F: Ctx.FnCtx, n: Ast.Node, expectIn: Option<Types.Type>, neg: Bool) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let expect: Option<Types.Type> = litMember(expectIn, true)
+    mut t: Types.Type = g.Tt.F64
+    if (n.Suffix != "") {
+        match (g.Tt.PrimByName(n.Suffix)) {
+            Some(x) => { t = x },
+            None => {},
+        }
+    } else {
+        match (expect) {
+            Some(e) => {
+                if (e.IsFloat()) {
+                    t = e
+                } else if (e.IsInt()) {
+                    g.Diag.Error(n.Pos, "expected `${e.Name}`, found a decimal number")
+                    return F.ErrVal()
+                }
+            },
+            None => {},
+        }
+    }
+    mut d: F64 = if (neg) { -n.Fval } else { n.Fval }
+    // f32 constants are written as doubles that are exactly representable
+    if (t.Id == g.Tt.F32.Id) {
+        d = d.ToF32().ToF64()
+    }
+    Ctx.Val.New(t, doubleHex(d))
+}
+
+// The Zevic type with the same representation as a C number type.
+fn cNative(g: Gen.Gen, t: Types.Type) -> Option<Types.Type> {
+    if (t.Kind != Types.TKind.CType) {
+        return None
+    }
+    if (t.Ll == "float") {
+        return Some(g.Tt.F32)
+    }
+    if (t.Ll == "double") {
+        return Some(g.Tt.F64)
+    }
+    if (t.Ll.ByteAt(0) != 105_U8 || t.Name == "CBool") {
+        return None
+    }
+    let sgn: Bool = t.PayloadWords == 1
+    match (t.Size) {
+        1 => Some(if (sgn) { g.Tt.I8 } else { g.Tt.U8 }),
+        2 => Some(if (sgn) { g.Tt.I16 } else { g.Tt.U16 }),
+        4 => Some(if (sgn) { g.Tt.I32 } else { g.Tt.U32 }),
+        _ => Some(if (sgn) { g.Tt.I64 } else { g.Tt.U64 }),
+    }
+}
+
+// An unsuffixed literal where a C number is expected becomes that C type.
+fn genIntLit(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>, neg: Bool) -> Ctx.Val {
+    match (expect) {
+        Some(e) => {
+            if (n.Suffix == "") {
+                match (cNative(F.G, e)) {
+                    Some(nat) => {
+                        if (nat.IsInt()) {
+                            let v: Ctx.Val = genIntLitRaw(F, n, Some(nat), neg)
+                            if (!F.G.IsErr(v.T)) {
+                                return Ctx.Val.New(e, v.V)
+                            }
+                            return v
+                        }
+                    },
+                    None => {},
+                }
+            }
+        },
+        None => {},
+    }
+    genIntLitRaw(F, n, expect, neg)
+}
+
+fn genFloatLit(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>, neg: Bool) -> Ctx.Val {
+    match (expect) {
+        Some(e) => {
+            if (n.Suffix == "") {
+                match (cNative(F.G, e)) {
+                    Some(nat) => {
+                        if (nat.IsFloat()) {
+                            let v: Ctx.Val = genFloatLitRaw(F, n, Some(nat), neg)
+                            if (!F.G.IsErr(v.T)) {
+                                return Ctx.Val.New(e, v.V)
+                            }
+                            return v
+                        }
+                    },
+                    None => {},
+                }
+            }
+        },
+        None => {},
+    }
+    genFloatLitRaw(F, n, expect, neg)
+}
+
+// ---- runtime helpers ----
+
+fn rtDecl(mut F: Ctx.FnCtx, name: String, line: String) {
+    mut g: Gen.Gen = F.G
+    Gen.Declare(g, name, line)
+}
+
+fn strVal(F: Ctx.FnCtx, constant: String) -> Ctx.Val { Ctx.Val.New(F.G.Tt.Str, constant) }
+
+// The pointer and the length of a string value, as operands.
+fn strParts(mut F: Ctx.FnCtx, s: Ctx.Val) -> (String, String) {
+    if (Text.StartsWith(s.V, "{ ptr ") && Text.Contains(s.V, "@")) {
+        // a constant: take the pieces apart textually
+        let comma: I64 = Text.IndexOf(s.V, ",").Unwrap()
+        let p: String = s.V.Slice(6, comma)
+        let lenAt: I64 = Text.IndexOf(s.V, "i64 ").Unwrap()
+        let n: String = s.V.Slice(lenAt + 4, s.V.Len() - 2)
+        return (p, n)
+    }
+    let p: String = F.Tmp()
+    let n: String = F.Tmp()
+    F.Emit("${p} = extractvalue { ptr, i64 } ${s.V}, 0")
+    F.Emit("${n} = extractvalue { ptr, i64 } ${s.V}, 1")
+    (p, n)
+}
+
+// Calls a runtime function that returns a String through an out pointer.
+fn callStrOut(mut F: Ctx.FnCtx, fnName: String, args: String) -> Ctx.Val {
+    let slot: String = F.NewSlot(F.G.Tt.Str)
+    F.Emit("call void @${fnName}(ptr ${slot}${if (args != "") { ", " } else { "" }}${args})")
+    let t: String = F.Tmp()
+    F.Emit("${t} = load { ptr, i64 }, ptr ${slot}")
+    Ctx.Val.New(F.G.Tt.Str, t)
+}
+
+// x.ToString() for the built-in types.
+fn genToString(mut F: Ctx.FnCtx, v: Ctx.Val, pos: Token.Pos) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let t: Types.Type = v.T
+    let nullStr: String = "{ ptr null, i64 0 }"
+    if (g.IsErr(t)) {
+        return strVal(F, nullStr)
+    }
+    if (t.Id == g.Tt.Str.Id) {
+        return v
+    }
+    if (t.IsInt()) {
+        let bits: I32 = t.Bits()
+        mut x: String = v.V
+        if (bits < 64) {
+            x = F.Tmp()
+            F.Emit("${x} = ${if (t.IsSigned()) { "sext" } else { "zext" }} i${bits} ${v.V} to i64")
+        }
+        if (t.IsSigned()) {
+            rtDecl(F, "zevic_i64_to_str", "declare void @zevic_i64_to_str(ptr, i64)")
+            return callStrOut(F, "zevic_i64_to_str", "i64 ${x}")
+        }
+        rtDecl(F, "zevic_u64_to_str", "declare void @zevic_u64_to_str(ptr, i64)")
+        return callStrOut(F, "zevic_u64_to_str", "i64 ${x}")
+    }
+    if (t.IsFloat()) {
+        mut x: String = v.V
+        if (t.Id == g.Tt.F32.Id) {
+            x = F.Tmp()
+            F.Emit("${x} = fpext float ${v.V} to double")
+        }
+        rtDecl(F, "zevic_f64_to_str", "declare void @zevic_f64_to_str(ptr, double)")
+        return callStrOut(F, "zevic_f64_to_str", "double ${x}")
+    }
+    if (t.Id == g.Tt.Bool.Id) {
+        let x: String = F.Tmp()
+        F.Emit("${x} = zext i1 ${v.V} to i32")
+        rtDecl(F, "zevic_bool_to_str", "declare void @zevic_bool_to_str(ptr, i32)")
+        return callStrOut(F, "zevic_bool_to_str", "i32 ${x}")
+    }
+    if (t.Id == g.Tt.Char.Id) {
+        rtDecl(F, "zevic_char_to_str", "declare void @zevic_char_to_str(ptr, i32)")
+        return callStrOut(F, "zevic_char_to_str", "i32 ${v.V}")
+    }
+    if (t.Id == g.Tt.Unit.Id) {
+        return strVal(F, Gen.StrConst(g, "()"))
+    }
+    if (F.Inst.D.ModName == "Zevic.Test") {
+        // the assertions show any value; types without a text form show their name
+        return strVal(F, Gen.StrConst(g, "<${t.Name}>"))
+    }
+    g.Diag.Error(pos, "`ToString` is not available for type `${t.Name}` yet")
+    strVal(F, nullStr)
+}

@@ -73,25 +73,14 @@ class Place {
     }
 }
 
-// Pieces of text that are joined at the end (cheaper than growing one string).
-class Sb {
-    Parts: Array<String> = []
-
-    mut fn Put(s: String) {
-        this.Parts.Push(s)
-    }
-
-    fn String() -> String { this.Parts.Join("") }
-}
-
 class FnCtx {
     G: Gen.Gen
     Inst: Gen.Inst
     File: Resolve.FileInfo
     Env: Gen.Env
-    Code: Sb = Sb.New()
-    Allocas: Sb = Sb.New()
-    Cold: Sb = Sb.New()
+    Code: Gen.Sb = Gen.Sb.New()
+    Allocas: Gen.Sb = Gen.Sb.New()
+    Cold: Gen.Sb = Gen.Sb.New()
     NTmp: I64 = 0
     NLbl: I64 = 0
     NSlot: I64 = 0

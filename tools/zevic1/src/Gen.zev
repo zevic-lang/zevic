@@ -34,6 +34,17 @@ class Env {
     }
 }
 
+// Pieces of text that are joined at the end (cheaper than growing one string).
+class Sb {
+    Parts: Array<String> = []
+
+    mut fn Put(s: String) {
+        this.Parts.Push(s)
+    }
+
+    fn String() -> String { this.Parts.Join("") }
+}
+
 class Gen {
     Pg: Resolve.Program
     Diag: Diag.Diag
@@ -52,6 +63,15 @@ class Gen {
     Worklist: Array<Inst> = []
     // the `export "C"` functions
     Exports: Array<Inst> = []
+    // string constants, `declare` lines and function definitions of the module
+    Globals: Sb = Sb.New()
+    Decls: Sb = Sb.New()
+    Funcs: Sb = Sb.New()
+    Declared: Map<String, Bool> = Map.New()
+    NStr: I64 = 0
+    StrConst: Map<String, String> = Map.New()
+    TestMode: Bool = false
+    LibMode: Bool = false
 
     fn Init(pg: Resolve.Program, diag: Diag.Diag, longBytes: I64) {
         this.Pg = pg
@@ -1062,4 +1082,68 @@ fn getInst(mut g: Gen, d: Resolve.Decl, self: Option<Types.Type>, targs: Option<
         g.Worklist.Push(inst)
     }
     inst
+}
+
+// ---- strings ----
+
+fn hexDigit(n: I64) -> String {
+    let digits: String = "0123456789ABCDEF"
+    digits.Slice(n, n + 1)
+}
+
+fn HexN(v: U64, width: I64) -> String {
+    mut out: String = ""
+    mut i: I64 = width - 1
+    while (i >= 0) {
+        let nib: I64 = ((v >> (i * 4).ToI32Wrap()) & 15_U64).ToI64Wrap()
+        out += hexDigit(nib)
+        i -= 1
+    }
+    out
+}
+
+// A string as the contents of an LLVM constant: printable ASCII as it is, the rest as \XX.
+fn llEscape(s: String) -> String {
+    mut out: String = ""
+    mut run: I64 = 0
+    mut i: I64 = 0
+    while (i < s.Len()) {
+        let c: I32 = s.ByteAt(i).ToI32Wrap()
+        if (c >= 32 && c < 127 && c != 34 && c != 92) {
+            i += 1
+            continue
+        }
+        out += s.Slice(run, i)
+        out += "\\${HexN(c.ToU64Wrap(), 2)}"
+        i += 1
+        run = i
+    }
+    out += s.Slice(run, s.Len())
+    out
+}
+
+// The LLVM constant for a string literal: `{ ptr @.str.N, i64 len }`.
+fn StrConst(mut g: Gen, s: String) -> String {
+    let n: I64 = s.Len()
+    // keys cannot contain NULs; make them unique through the length prefix
+    let key: String = "${n}:${s}"
+    let name: String = match (g.StrConst.Get(key)) {
+        Some(x) => x,
+        None => {
+            let nm: String = "@.str.${g.NStr}"
+            g.NStr += 1
+            g.StrConst.Set(key, nm)
+            g.Globals.Put("${nm} = private unnamed_addr constant [${n + 1} x i8] c\"${llEscape(s)}\\00\"\n")
+            nm
+        },
+    }
+    "{ ptr ${name}, i64 ${n} }"
+}
+
+fn Declare(mut g: Gen, name: String, line: String) {
+    if (g.Declared.Contains(name)) {
+        return
+    }
+    g.Declared.Set(name, true)
+    g.Decls.Put("${line}\n")
 }
