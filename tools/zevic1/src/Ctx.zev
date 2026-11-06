@@ -89,7 +89,8 @@ class FnCtx {
     WbName: String = ""
     Cur: String = ""
     Term: Bool = false
-    Ret: Types.Type
+    // None for a lambda whose result type is not known yet
+    Ret: Option<Types.Type>
     Scope: Option<Scope> = None
     Loops: Array<Loop> = []
     // inside a method
@@ -102,7 +103,7 @@ class FnCtx {
     // names of variables that a lambda may capture: they live in heap cells
     Heap: Map<String, Bool> = Map.New()
 
-    fn Init(g: Gen.Gen, inst: Gen.Inst, file: Resolve.FileInfo, ret: Types.Type) {
+    fn Init(g: Gen.Gen, inst: Gen.Inst, file: Resolve.FileInfo, ret: Option<Types.Type>) {
         this.G = g
         this.Inst = inst
         this.File = file
