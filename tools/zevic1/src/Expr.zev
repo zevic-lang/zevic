@@ -1838,10 +1838,14 @@ fn genStmt(mut F: Ctx.FnCtx, s: Ast.Node) {
 }
 
 // ---- not ported yet ----
+fn genConstruct(mut F: Ctx.FnCtx, call: Ast.Node, d: Resolve.Decl, t: Types.Type, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genConstruct") }
+fn genPrintf(mut F: Ctx.FnCtx, n: Ast.Node, toErr: Bool) -> Ctx.Val { Panic("not ported yet: genPrintf") }
+fn genPrimMethod(mut F: Ctx.FnCtx, call: Ast.Node, recv: Ctx.Val, name: String, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genPrimMethod") }
+fn genBufMethod(mut F: Ctx.FnCtx, call: Ast.Node, recv: Ctx.Val, name: String) -> Ctx.Val { Panic("not ported yet: genBufMethod") }
+fn genIfaceMethod(mut F: Ctx.FnCtx, call: Ast.Node, p: Ctx.Place, recvNode: Ast.Node, name: String, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genIfaceMethod") }
 
 fn fnValueOf(mut F: Ctx.FnCtx, d: Resolve.Decl, pos: Token.Pos) -> Ctx.Val { Panic("not ported yet: fnValueOf") }
 fn genLambda(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genLambda") }
-fn genCall(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genCall") }
 fn genMatch(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genMatch") }
 fn genTry(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genTry") }
 fn genForIter(mut F: Ctx.FnCtx, n: Ast.Node) { Panic("not ported yet: genForIter") }
@@ -3418,6 +3422,399 @@ fn genObjPtr(mut F: Ctx.FnCtx, call: Ast.Node, d: Resolve.Decl, last: Ast.Node) 
         return F.ErrVal()
     }
     Ctx.Val.New(t, p.V)
+}
+
+// ---- calling function values, methods and `Type.Function(...)` ----
+
+fn genCallValue(mut F: Ctx.FnCtx, call: Ast.Node, f: Ctx.Val, expect: Option<Types.Type>) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let ft: Types.Type = f.T
+    if (call.List.Len() != ft.Args.Len()) {
+        g.Diag.Error(call.Pos, "this function value takes ${ft.Args.Len()} argument(s), but ${call.List.Len()} were given")
+        for (a in call.List) {
+            let unused: Ctx.Val = genExpr(F, a, None)
+        }
+        return F.ErrVal()
+    }
+    mut args: String = ""
+    mut never: Bool = false
+    mut i: I64 = 0
+    while (i < ft.Args.Len()) {
+        let pt: Types.Type = ft.Args[i]
+        mut v: Ctx.Val = genExpr(F, call.List[i], Some(pt))
+        if (v.T.Id == g.Tt.Never.Id) {
+            never = true
+        } else {
+            v = coerce(F, call.List[i].Pos, v, pt, "argument ${i + 1} of a function value")
+            if (g.IsErr(v.T)) {
+                return F.ErrVal()
+            }
+            args = "${args}, ${F.LlOf(pt)} ${v.V}"
+        }
+        i += 1
+    }
+    if (never) {
+        return F.NeverVal(expect)
+    }
+    let fp: String = F.Tmp()
+    let env: String = F.Tmp()
+    F.Emit("${fp} = extractvalue { ptr, ptr } ${f.V}, 0")
+    F.Emit("${env} = extractvalue { ptr, ptr } ${f.V}, 1")
+    let ret: Types.Type = match (ft.Ret) {
+        Some(r) => r,
+        None => g.Tt.Unit,
+    }
+    if (ret.Id == g.Tt.Unit.Id || ret.Id == g.Tt.Never.Id) {
+        F.Emit("call void ${fp}(ptr ${env}${args})")
+        if (ret.Id == g.Tt.Never.Id) {
+            F.Emit("unreachable")
+            F.Term = true
+            return F.NeverVal(expect)
+        }
+        return F.UnitVal()
+    }
+    let r: String = F.Tmp()
+    F.Emit("${r} = call ${F.LlOf(ret)} ${fp}(ptr ${env}${args})")
+    Ctx.Val.New(ret, r)
+}
+
+fn genArgsForErrors(mut F: Ctx.FnCtx, call: Ast.Node) {
+    for (a in call.List) {
+        let unused: Ctx.Val = genExpr(F, a, None)
+    }
+}
+
+// `42.ToCInt()`: an unsuffixed literal receiver takes the C type's own width, so the conversion cannot fail.
+fn literalCTarget(mut g: Gen.Gen, recv: Ast.Node, name: String) -> Option<Types.Type> {
+    mut lit: Ast.Node = recv
+    if (lit.Kind == Ast.NK.Unary) {
+        match (lit.A) {
+            Some(x) => {
+                if (x.Kind == Ast.NK.Int) {
+                    lit = x
+                }
+            },
+            None => {},
+        }
+    }
+    if (lit.Kind != Ast.NK.Int && lit.Kind != Ast.NK.Float) {
+        return None
+    }
+    if (lit.Suffix != "") {
+        return None
+    }
+    if (!Text.StartsWith(name, "To")) {
+        return None
+    }
+    let c: Option<Types.Type> = g.Tt.CByName(name.Slice(2, name.Len()))
+    match (c) {
+        Some(ct) => cNative(g, ct),
+        None => None,
+    }
+}
+
+fn genUserMethod(mut F: Ctx.FnCtx, call: Ast.Node, p: Ctx.Place, recvNode: Ast.Node, name: String, expect: Option<Types.Type>) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let t: Types.Type = p.T
+    mut fnOpt: Option<Ast.Node> = Gen.FindMember(g, t, name)
+    mut dflt: Option<Resolve.Decl> = None
+    if (fnOpt.IsNone()) {
+        let (dm, conflict): (Option<Gen.IMethod>, Bool) = Gen.FindDefault(g, t, name)
+        match (dm) {
+            Some(m) => {
+                fnOpt = Some(m.Fn)
+                dflt = Some(Gen.DefaultDecl(g, t, m))
+            },
+            None => {},
+        }
+    }
+    if (fnOpt.IsNone() && call.Flag3) {
+        g.Diag.Error(call.Pos, "a value of type `${t.Name}` cannot be indexed with `[]`")
+        genArgsForErrors(F, call)
+        return F.ErrVal()
+    }
+    let fnNode: Ast.Node = match (fnOpt) {
+        Some(x) => x,
+        None => {
+            Gen.EnsureMembers(g, t)
+            let idx: I64 = if (t.Kind == Types.TKind.Struct || t.Kind == Types.TKind.Class) { findFieldIdx(t, name) } else { -1 }
+            if (idx >= 0 && t.Fields[idx].T.Kind == Types.TKind.Fn) {
+                mut fm: Ast.Node = Ast.Node.New(Ast.NK.Member, call.Pos)
+                fm.A = Some(recvNode)
+                fm.SetName(name)
+                let fv: Ctx.Val = genExpr(F, fm, None)
+                if (fv.T.Id == g.Tt.Never.Id) {
+                    return fv
+                }
+                if (g.IsErr(fv.T)) {
+                    return F.ErrVal()
+                }
+                return genCallValue(F, call, fv, expect)
+            }
+            if (idx >= 0) {
+                g.Diag.Error(call.Pos, "`${name}` is a field of `${t.Name}`, not a method")
+            } else {
+                g.Diag.Error(call.Pos, "type `${t.Name}` has no method `${name}`")
+            }
+            genArgsForErrors(F, call)
+            return F.ErrVal()
+        },
+    }
+    let tname: String = match (Gen.DeclOfType(g, t)) {
+        Some(dd) => dd.Name,
+        None => t.Name,
+    }
+    if (name == "Init") {
+        g.Diag.Error(call.Pos, "`Init` cannot be called directly; create values with `${tname}.New(...)`")
+        return F.ErrVal()
+    }
+    if (!checkVis(F, t, name, call.Pos, "method")) {
+        return F.ErrVal()
+    }
+    if (fnNode.IsStatic) {
+        g.Diag.Error(call.Pos, "`${name}` is a static function; call it as `${tname}.${name}(...)`")
+        return F.ErrVal()
+    }
+    if (fnNode.IsMutFn && !p.Mut && call.Flag3) {
+        g.Diag.Error(call.Pos, "cannot assign to an element of `${rootName(recvNode)}` because it is not `mut`")
+        g.Diag.Note("declare it with `mut ${rootName(recvNode)}: ${t.Name} = ...` to allow changes")
+        return F.ErrVal()
+    }
+    if (fnNode.IsMutFn && !p.Mut) {
+        if (recvNode.Kind == Ast.NK.This) {
+            g.Diag.Error(call.Pos, "`mut fn ${name}` cannot be called here: `this` can only be changed inside a `mut fn` (or `Init`)")
+        } else {
+            g.Diag.Error(call.Pos, "cannot call `mut fn ${name}` because `${rootName(recvNode)}` is not `mut`")
+        }
+        return F.ErrVal()
+    }
+    mut recvV: String = p.Ptr
+    if (t.Kind == Types.TKind.Class) {
+        let o: String = F.Tmp()
+        F.Emit("${o} = load ptr, ptr ${p.Ptr}")
+        recvV = o
+    }
+    let recv: Ctx.Val = Ctx.Val.New(g.Tt.Ptr(g.Tt.U8), recvV)
+    let md: Resolve.Decl = match (dflt) {
+        Some(x) => x,
+        None => Gen.MethodDecl(g, t, fnNode),
+    }
+    let explicit: Array<Ast.Node> = match (call.A) {
+        Some(c) => c.List2,
+        None => [],
+    }
+    genCallDecl(F, call, md, Some(t), Some(explicit), expect, Some(recv))
+}
+
+fn genMethodCall(mut F: Ctx.FnCtx, call: Ast.Node, recvNode: Ast.Node, name: String, expect: Option<Types.Type>) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    match (literalCTarget(g, recvNode, name)) {
+        Some(litT) => {
+            let v: Ctx.Val = genExpr(F, recvNode, Some(litT))
+            if (v.T.Id == g.Tt.Never.Id || g.IsErr(v.T)) {
+                return v
+            }
+            return genPrimMethod(F, call, v, name, expect)
+        },
+        None => {},
+    }
+    let p: Ctx.Place = genPlace(F, recvNode)
+    if (p.T.Id == g.Tt.Never.Id) {
+        return F.NeverVal(expect)
+    }
+    if (g.IsErr(p.T)) {
+        genArgsForErrors(F, call)
+        return F.ErrVal()
+    }
+    if (p.T.Kind == Types.TKind.Iface) {
+        return genIfaceMethod(F, call, p, recvNode, name, expect)
+    }
+    if (Gen.IsUserType(p.T)) {
+        return genUserMethod(F, call, p, recvNode, name, expect)
+    }
+    let recv: Ctx.Val = loadPlace(F, p)
+    if (recv.T.Kind == Types.TKind.Buf) {
+        return genBufMethod(F, call, recv, name)
+    }
+    if (call.Flag3) {
+        g.Diag.Error(call.Pos, "a value of type `${recv.T.Name}` cannot be indexed with `[]`")
+        genArgsForErrors(F, call)
+        return F.ErrVal()
+    }
+    genPrimMethod(F, call, recv, name, expect)
+}
+
+// Foo(...), Module.Foo(...), Type.Static(...), Type.New(...), Shape.Circle(...), and calls on values.
+fn genCall(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let callee: Ast.Node = nn(n.A)
+    if (callee.Kind == Ast.NK.Ident) {
+        match (F.FindLocal(callee.Name)) {
+            Some(fl) => {
+                if (fl.T.Kind == Types.TKind.Fn) {
+                    return genCallValue(F, n, F.LoadLocal(fl), expect)
+                }
+            },
+            None => {},
+        }
+    }
+    mut segs: Array<String> = []
+    mut nodes: Array<Ast.Node> = []
+    if (flattenPath(callee, segs, nodes)) {
+        let head: String = segs[0]
+        let valueHead: Bool = F.FindLocal(head).IsSome()
+        if (!valueHead) {
+            mut used: I64 = 0
+            mut dOpt: Option<Resolve.Decl> = None
+            let selfDecl: Option<Resolve.Decl> = match (F.Env.SelfT) {
+                Some(st) => Gen.DeclOfType(g, st),
+                None => None,
+            }
+            if (head == "Self" && selfDecl.IsSome()) {
+                dOpt = selfDecl
+                used = 1
+            } else {
+                let (x, u): (Option<Resolve.Decl>, I64) = Gen.FindDecl(g, F.File, segs, callee.Pos)
+                dOpt = x
+                used = u
+            }
+            if (used < 0) {
+                return F.ErrVal()
+            }
+            match (dOpt) {
+                Some(d) => {
+                    let k: Ast.NK = d.Node.Kind
+                    if ((k == Ast.NK.DStruct || k == Ast.NK.DClass || k == Ast.NK.DEnum) && used == segs.Len() - 1) {
+                        let member: String = segs[used]
+                        let tnode: Ast.Node = nodes[used - 1]
+                        let lastn: Ast.Node = nodes[nodes.Len() - 1]
+                        mut t: Option<Types.Type> = if (head == "Self") { F.Env.SelfT } else { staticType(F, d, Some(tnode), expect) }
+                        if (t.IsNone() && d.Name == "Handle" && d.ModIsStd && member == "Get" && lastn.List2.Len() == 1) {
+                            // Handle.Get<T>(id): the type argument written after `Get` is the class's
+                            let ht: Types.Type = Gen.Instantiate(g, d, [Gen.ResolveType(g, F.File, F.Env, lastn.List2[0])], n.Pos)
+                            match (Gen.FindMember(g, ht, "Get")) {
+                                Some(gfn) => {
+                                    if (g.IsErr(ht)) {
+                                        return F.ErrVal()
+                                    }
+                                    return genCallDecl(F, n, Gen.MethodDecl(g, ht, gfn), Some(ht), None, expect, None)
+                                },
+                                None => return F.ErrVal(),
+                            }
+                        }
+                        if (k == Ast.NK.DEnum && findVariantNode(d.Node, member).IsSome()) {
+                            return genVariant(F, Some(n), n.Pos, d, t, member, expect)
+                        }
+                        if (member == "New") {
+                            match (t) {
+                                Some(tt) => return genConstruct(F, n, d, tt, expect),
+                                None => {
+                                    g.Diag.Error(n.Pos, "cannot infer the type arguments of `${d.Name}` (write `${d.Name}<...>.New(...)` or give the variable a type)")
+                                    return F.ErrVal()
+                                },
+                            }
+                        }
+                        let fnOpt: Option<Ast.Node> = match (t) {
+                            Some(tt) => Gen.FindMember(g, tt, member),
+                            None => None,
+                        }
+                        match (fnOpt) {
+                            Some(fnNode) => {
+                                let tt: Types.Type = nnT(t)
+                                if (fnNode.IsStatic) {
+                                    if (!checkVis(F, tt, member, n.Pos, "function")) {
+                                        return F.ErrVal()
+                                    }
+                                    return genCallDecl(F, n, Gen.MethodDecl(g, tt, fnNode), Some(tt), Some(lastn.List2), expect, None)
+                                }
+                                g.Diag.Error(n.Pos, "`${member}` is a method; call it on a value, like `value.${member}(...)`")
+                                return F.ErrVal()
+                            },
+                            None => {},
+                        }
+                        if (t.IsNone()) {
+                            g.Diag.Error(n.Pos, "cannot infer the type arguments of `${d.Name}`; write them like `${d.Name}<I32>.${member}(...)`")
+                            return F.ErrVal()
+                        }
+                        g.Diag.Error(n.Pos, "type `${d.Name}` has no function `${member}`")
+                        return F.ErrVal()
+                    }
+                    if (k == Ast.NK.DFn && used == segs.Len()) {
+                        let last: Ast.Node = nodes[nodes.Len() - 1]
+                        if (d.Abi == "intrinsic") {
+                            if (d.Name == "Printf") {
+                                return genPrintf(F, n, false)
+                            }
+                            if (d.Name == "Eprintf") {
+                                return genPrintf(F, n, true)
+                            }
+                            if (d.Name == "ObjPtr" || d.Name == "PtrObj") {
+                                return genObjPtr(F, n, d, last)
+                            }
+                            g.Diag.Error(n.Pos, "unknown intrinsic `${d.Name}`")
+                            return F.ErrVal()
+                        }
+                        return genCallDecl(F, n, d, None, Some(last.List2), expect, None)
+                    }
+                    if (k == Ast.NK.DFn) {
+                        g.Diag.Error(callee.Pos, "function `${d.Name}` has no member `${segs[used]}`")
+                        return F.ErrVal()
+                    }
+                    if (k == Ast.NK.DInterface || k == Ast.NK.DExtern) {
+                        g.Diag.Error(callee.Pos, "calling `${Ast.PathJoin(segs, ".")}` this way is not supported yet")
+                        return F.ErrVal()
+                    }
+                },
+                None => {
+                    if (segs.Len() == 2 && head == "String" && (segs[1] == "FromC" || segs[1] == "FromCLossy")) {
+                        return genStringFromC(F, n, segs[1] == "FromCLossy")
+                    }
+                    if (segs.Len() == 1) {
+                        match (preludeVariantOwner(F, head)) {
+                            Some(owner) => return genVariant(F, Some(n), n.Pos, owner, staticType(F, owner, None, expect), head, expect),
+                            None => {},
+                        }
+                        if (head == "NewString") {
+                            return genNewString(F, n)
+                        }
+                        if (head == "Free") {
+                            return genFree(F, n)
+                        }
+                        if (head == "Panic") {
+                            return genPanicBuiltin(F, n)
+                        }
+                        if (head == "Assert") {
+                            return genAssertBuiltin(F, n)
+                        }
+                    }
+                    // a type or constant followed by more names is a method call on a value; a lone name is unknown
+                    if (callee.Kind == Ast.NK.Ident) {
+                        g.Diag.Error(callee.Pos, "unknown function `${head}`")
+                        return F.ErrVal()
+                    }
+                },
+            }
+        }
+    }
+    if (callee.Kind == Ast.NK.Member) {
+        return genMethodCall(F, n, nn(callee.A), callee.Name, expect)
+    }
+    if (callee.Kind == Ast.NK.Call || callee.Kind == Ast.NK.Index || callee.Kind == Ast.NK.Lambda) {
+        let f: Ctx.Val = genExpr(F, callee, None)
+        if (f.T.Id == g.Tt.Never.Id) {
+            return f
+        }
+        if (g.IsErr(f.T)) {
+            return F.ErrVal()
+        }
+        if (f.T.Kind == Types.TKind.Fn) {
+            return genCallValue(F, n, f, expect)
+        }
+        g.Diag.Error(callee.Pos, "a value of type `${f.T.Name}` cannot be called")
+        return F.ErrVal()
+    }
+    g.Diag.Error(callee.Pos, "this expression cannot be called")
+    F.ErrVal()
 }
 
 fn mkIdent(pos: Token.Pos, name: String) -> Ast.Node {
