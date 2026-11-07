@@ -1,0 +1,1885 @@
+module Zevic1.Expr
+
+// Literals and runtime helpers: a port of zevic0/gen.c from "Literals" on (the rest follows).
+
+import Zevic.Math
+import Zevic.Text
+import Zevic1.Ast as Ast
+import Zevic1.Ctx as Ctx
+import Zevic1.Gen as Gen
+import Zevic1.Resolve as Resolve
+import Zevic1.Token as Token
+import Zevic1.Types as Types
+
+// The type a number literal takes when a union is expected: its only integer (or decimal) member; otherwise the
+// default type (`I64`, `F64`), which then has to be a member.
+fn litMember(expect: Option<Types.Type>, isFloat: Bool) -> Option<Types.Type> {
+    let e: Types.Type = match (expect) {
+        Some(x) => x,
+        None => return None,
+    }
+    if (e.Kind != Types.TKind.Union) {
+        return expect
+    }
+    mut found: Option<Types.Type> = None
+    mut cnt: I32 = 0
+    for (m in e.Args) {
+        if (if (isFloat) { m.IsFloat() } else { m.IsInt() }) {
+            found = Some(m)
+            cnt += 1
+        }
+    }
+    if (cnt == 1) { found } else { None }
+}
+
+fn genIntLitRaw(mut F: Ctx.FnCtx, n: Ast.Node, expectIn: Option<Types.Type>, neg: Bool) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let expect: Option<Types.Type> = litMember(expectIn, false)
+    mut t: Types.Type = g.Tt.I64
+    if (n.Suffix != "") {
+        match (g.Tt.PrimByName(n.Suffix)) {
+            Some(x) => { t = x },
+            None => {},
+        }
+    } else {
+        match (expect) {
+            Some(e) => {
+                if (e.IsInt()) {
+                    t = e
+                } else if (e.IsFloat()) {
+                    g.Diag.Error(n.Pos, "expected `${e.Name}`, found an integer (write `${n.Ival}.0` for a decimal number)")
+                    return F.ErrVal()
+                }
+            },
+            None => {},
+        }
+    }
+    let bits: I32 = t.Bits()
+    let v: U64 = n.Ival
+    if (t.IsSigned()) {
+        let maxPos: U64 = (1_U64 << (bits - 1)) - 1_U64
+        let limit: U64 = maxPos + (if (neg) { 1_U64 } else { 0_U64 })
+        if (v > limit) {
+            let hi: I64 = maxPos.ToI64Wrap()
+            g.Diag.Error(n.Pos, "the number ${if (neg) { "-" } else { "" }}${v} does not fit in `${t.Name}` (range ${-hi - 1} to ${hi})")
+            return F.ErrVal()
+        }
+    } else {
+        if (neg && v != 0_U64) {
+            g.Diag.Error(n.Pos, "an unsigned type (`${t.Name}`) cannot hold a negative number")
+            return F.ErrVal()
+        }
+        let max: U64 = if (bits == 64) { 0xFFFFFFFFFFFFFFFF_U64 } else { (1_U64 << bits) - 1_U64 }
+        if (v > max) {
+            g.Diag.Error(n.Pos, "the number ${v} does not fit in `${t.Name}` (maximum ${max})")
+            return F.ErrVal()
+        }
+    }
+    let sv: I64 = if (neg) { (0_U64).WrapSub(v).ToI64Wrap() } else { v.ToI64Wrap() }
+    Ctx.Val.New(t, "${sv}")
+}
+
+fn doubleHex(d: F64) -> String { "0x${Gen.HexN(Math.F64Bits(d), 16)}" }
+
+fn genFloatLitRaw(mut F: Ctx.FnCtx, n: Ast.Node, expectIn: Option<Types.Type>, neg: Bool) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let expect: Option<Types.Type> = litMember(expectIn, true)
+    mut t: Types.Type = g.Tt.F64
+    if (n.Suffix != "") {
+        match (g.Tt.PrimByName(n.Suffix)) {
+            Some(x) => { t = x },
+            None => {},
+        }
+    } else {
+        match (expect) {
+            Some(e) => {
+                if (e.IsFloat()) {
+                    t = e
+                } else if (e.IsInt()) {
+                    g.Diag.Error(n.Pos, "expected `${e.Name}`, found a decimal number")
+                    return F.ErrVal()
+                }
+            },
+            None => {},
+        }
+    }
+    mut d: F64 = if (neg) { -n.Fval } else { n.Fval }
+    // f32 constants are written as doubles that are exactly representable
+    if (t.Id == g.Tt.F32.Id) {
+        d = d.ToF32().ToF64()
+    }
+    Ctx.Val.New(t, doubleHex(d))
+}
+
+// The Zevic type with the same representation as a C number type.
+fn cNative(g: Gen.Gen, t: Types.Type) -> Option<Types.Type> {
+    if (t.Kind != Types.TKind.CType) {
+        return None
+    }
+    if (t.Ll == "float") {
+        return Some(g.Tt.F32)
+    }
+    if (t.Ll == "double") {
+        return Some(g.Tt.F64)
+    }
+    if (t.Ll.ByteAt(0) != 105_U8 || t.Name == "CBool") {
+        return None
+    }
+    let sgn: Bool = t.PayloadWords == 1
+    match (t.Size) {
+        1 => Some(if (sgn) { g.Tt.I8 } else { g.Tt.U8 }),
+        2 => Some(if (sgn) { g.Tt.I16 } else { g.Tt.U16 }),
+        4 => Some(if (sgn) { g.Tt.I32 } else { g.Tt.U32 }),
+        _ => Some(if (sgn) { g.Tt.I64 } else { g.Tt.U64 }),
+    }
+}
+
+// An unsuffixed literal where a C number is expected becomes that C type.
+fn genIntLit(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>, neg: Bool) -> Ctx.Val {
+    match (expect) {
+        Some(e) => {
+            if (n.Suffix == "") {
+                match (cNative(F.G, e)) {
+                    Some(nat) => {
+                        if (nat.IsInt()) {
+                            let v: Ctx.Val = genIntLitRaw(F, n, Some(nat), neg)
+                            if (!F.G.IsErr(v.T)) {
+                                return Ctx.Val.New(e, v.V)
+                            }
+                            return v
+                        }
+                    },
+                    None => {},
+                }
+            }
+        },
+        None => {},
+    }
+    genIntLitRaw(F, n, expect, neg)
+}
+
+fn genFloatLit(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>, neg: Bool) -> Ctx.Val {
+    match (expect) {
+        Some(e) => {
+            if (n.Suffix == "") {
+                match (cNative(F.G, e)) {
+                    Some(nat) => {
+                        if (nat.IsFloat()) {
+                            let v: Ctx.Val = genFloatLitRaw(F, n, Some(nat), neg)
+                            if (!F.G.IsErr(v.T)) {
+                                return Ctx.Val.New(e, v.V)
+                            }
+                            return v
+                        }
+                    },
+                    None => {},
+                }
+            }
+        },
+        None => {},
+    }
+    genFloatLitRaw(F, n, expect, neg)
+}
+
+// ---- runtime helpers ----
+
+fn rtDecl(mut F: Ctx.FnCtx, name: String, line: String) {
+    mut g: Gen.Gen = F.G
+    Gen.Declare(g, name, line)
+}
+
+fn strVal(F: Ctx.FnCtx, constant: String) -> Ctx.Val { Ctx.Val.New(F.G.Tt.Str, constant) }
+
+// The pointer and the length of a string value, as operands.
+fn strParts(mut F: Ctx.FnCtx, s: Ctx.Val) -> (String, String) {
+    if (Text.StartsWith(s.V, "{ ptr ") && Text.Contains(s.V, "@")) {
+        // a constant: take the pieces apart textually
+        let comma: I64 = Text.IndexOf(s.V, ",").Unwrap()
+        let p: String = s.V.Slice(6, comma)
+        let lenAt: I64 = Text.IndexOf(s.V, "i64 ").Unwrap()
+        let n: String = s.V.Slice(lenAt + 4, s.V.Len() - 2)
+        return (p, n)
+    }
+    let p: String = F.Tmp()
+    let n: String = F.Tmp()
+    F.Emit("${p} = extractvalue { ptr, i64 } ${s.V}, 0")
+    F.Emit("${n} = extractvalue { ptr, i64 } ${s.V}, 1")
+    (p, n)
+}
+
+// Calls a runtime function that returns a String through an out pointer.
+fn callStrOut(mut F: Ctx.FnCtx, fnName: String, args: String) -> Ctx.Val {
+    let slot: String = F.NewSlot(F.G.Tt.Str)
+    F.Emit("call void @${fnName}(ptr ${slot}${if (args != "") { ", " } else { "" }}${args})")
+    let t: String = F.Tmp()
+    F.Emit("${t} = load { ptr, i64 }, ptr ${slot}")
+    Ctx.Val.New(F.G.Tt.Str, t)
+}
+
+// x.ToString() for the built-in types.
+fn genToString(mut F: Ctx.FnCtx, v: Ctx.Val, pos: Token.Pos) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let t: Types.Type = v.T
+    let nullStr: String = "{ ptr null, i64 0 }"
+    if (g.IsErr(t)) {
+        return strVal(F, nullStr)
+    }
+    if (t.Id == g.Tt.Str.Id) {
+        return v
+    }
+    if (t.IsInt()) {
+        let bits: I32 = t.Bits()
+        mut x: String = v.V
+        if (bits < 64) {
+            x = F.Tmp()
+            F.Emit("${x} = ${if (t.IsSigned()) { "sext" } else { "zext" }} i${bits} ${v.V} to i64")
+        }
+        if (t.IsSigned()) {
+            rtDecl(F, "zevic_i64_to_str", "declare void @zevic_i64_to_str(ptr, i64)")
+            return callStrOut(F, "zevic_i64_to_str", "i64 ${x}")
+        }
+        rtDecl(F, "zevic_u64_to_str", "declare void @zevic_u64_to_str(ptr, i64)")
+        return callStrOut(F, "zevic_u64_to_str", "i64 ${x}")
+    }
+    if (t.IsFloat()) {
+        mut x: String = v.V
+        if (t.Id == g.Tt.F32.Id) {
+            x = F.Tmp()
+            F.Emit("${x} = fpext float ${v.V} to double")
+        }
+        rtDecl(F, "zevic_f64_to_str", "declare void @zevic_f64_to_str(ptr, double)")
+        return callStrOut(F, "zevic_f64_to_str", "double ${x}")
+    }
+    if (t.Id == g.Tt.Bool.Id) {
+        let x: String = F.Tmp()
+        F.Emit("${x} = zext i1 ${v.V} to i32")
+        rtDecl(F, "zevic_bool_to_str", "declare void @zevic_bool_to_str(ptr, i32)")
+        return callStrOut(F, "zevic_bool_to_str", "i32 ${x}")
+    }
+    if (t.Id == g.Tt.Char.Id) {
+        rtDecl(F, "zevic_char_to_str", "declare void @zevic_char_to_str(ptr, i32)")
+        return callStrOut(F, "zevic_char_to_str", "i32 ${v.V}")
+    }
+    if (t.Id == g.Tt.Unit.Id) {
+        return strVal(F, Gen.StrConst(g, "()"))
+    }
+    if (F.Inst.D.ModName == "Zevic.Test") {
+        // the assertions show any value; types without a text form show their name
+        return strVal(F, Gen.StrConst(g, "<${t.Name}>"))
+    }
+    g.Diag.Error(pos, "`ToString` is not available for type `${t.Name}` yet")
+    strVal(F, nullStr)
+}
+
+// ---- errors, panics and conversions ----
+
+fn isUntypedLit(n: Ast.Node) -> Bool {
+    if (n.Kind == Ast.NK.Unary && n.Op == Token.Tk.Minus) {
+        return match (n.A) {
+            Some(x) => isUntypedLit(x),
+            None => false,
+        }
+    }
+    (n.Kind == Ast.NK.Int || n.Kind == Ast.NK.Float) && n.Suffix == ""
+}
+
+// A runtime call that panics, in the cold section; returns the label to branch to.
+fn coldPanic(mut F: Ctx.FnCtx, msg: String, pos: Token.Pos) -> String {
+    mut g: Gen.Gen = F.G
+    Gen.Declare(g, "zevic_panic", "declare void @zevic_panic(ptr, i64, ptr, i32) noreturn")
+    let label: String = F.NewLabel("panic")
+    let file: String = g.Diag.Name(pos.File)
+    let m: String = Gen.StrConst(g, msg)
+    let fl: String = Gen.StrConst(g, file)
+    // the constants are `{ ptr @x, i64 n }`; the runtime takes the pieces
+    let mp: String = m.Slice(6, Text.IndexOf(m, ",").Unwrap())
+    let fp: String = fl.Slice(6, Text.IndexOf(fl, ",").Unwrap())
+    F.Cold.Put("${label}:\n  call void @zevic_panic(ptr ${mp}, i64 ${msg.Len()}, ptr ${fp}, i32 ${pos.Line})\n  unreachable\n")
+    label
+}
+
+fn unionIndex(u: Types.Type, m: Types.Type) -> I64 {
+    mut i: I64 = 0
+    while (i < u.Args.Len()) {
+        if (u.Args[i].Id == m.Id) {
+            return i
+        }
+        i += 1
+    }
+    -1
+}
+
+// TODO(port): the interface part of gen.c (`to_iface`) is ported with the calls.
+fn toIface(mut F: Ctx.FnCtx, pos: Token.Pos, v: Ctx.Val, it: Types.Type, what: String) -> Ctx.Val {
+    Panic("not ported yet: conversion to an interface value")
+}
+
+// Checks that `v` has type `want`; a value of type Never fits everywhere.
+fn coerce(mut F: Ctx.FnCtx, pos: Token.Pos, v: Ctx.Val, want: Types.Type, what: String) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    if (v.T.Id == want.Id || g.IsErr(v.T) || g.IsErr(want)) {
+        return v
+    }
+    if (v.T.Id == g.Tt.Never.Id) {
+        return F.NeverVal(Some(want))
+    }
+    if (want.Kind == Types.TKind.Iface && Gen.IsUserType(v.T)) {
+        return toIface(F, pos, v, want, what)
+    }
+    if (want.Kind == Types.TKind.Union) {
+        return unionCoerce(F, pos, v, want, what)
+    }
+    // like C, any pointer converts to `*CVoid`
+    if (v.T.Kind == Types.TKind.Ptr && want.Kind == Types.TKind.Ptr && want.Args.Len() > 0) {
+        match (g.Tt.CByName("CVoid")) {
+            Some(cv) => {
+                if (want.Args[0].Id == cv.Id) {
+                    return Ctx.Val.New(want, v.V)
+                }
+            },
+            None => {},
+        }
+    }
+    F.TypeError(pos, want, v.T, what)
+    F.ErrVal()
+}
+
+// ---- unions ----
+
+fn tagPtr(mut F: Ctx.FnCtx, et: Types.Type, slot: String) -> String {
+    let p: String = F.Tmp()
+    F.Emit("${p} = getelementptr inbounds ${F.LlOf(et)}, ptr ${slot}, i32 0, i32 0")
+    p
+}
+
+fn payloadPtr(mut F: Ctx.FnCtx, et: Types.Type, slot: String) -> String {
+    // every payload is empty (like Option<Unit>): the layout has no payload part
+    if (et.PayloadWords == 0) {
+        return slot
+    }
+    let p: String = F.Tmp()
+    F.Emit("${p} = getelementptr inbounds ${F.LlOf(et)}, ptr ${slot}, i32 0, i32 1")
+    p
+}
+
+// The same value in another union: every member of `from` that `to` has keeps its payload (members `to` lacks
+// never reach here at run time, their tag becomes 0).
+fn unionRemap(mut F: Ctx.FnCtx, v: Ctx.Val, from: Types.Type, to: Types.Type) -> Ctx.Val {
+    let src: String = F.NewSlot(from)
+    F.Emit("store ${F.LlOf(from)} ${v.V}, ptr ${src}")
+    let tg: String = F.Tmp()
+    F.Emit("${tg} = load i32, ptr ${tagPtr(F, from, src)}")
+    let dst: String = F.NewSlot(to)
+    mut base: String = tg
+    mut i: I64 = 0
+    while (i < from.Args.Len()) {
+        mut di: I64 = unionIndex(to, from.Args[i])
+        if (di < 0) {
+            di = 0
+        }
+        if (di != i) {
+            let c: String = F.Tmp()
+            F.Emit("${c} = icmp eq i32 ${tg}, ${i}")
+            let nx: String = F.Tmp()
+            F.Emit("${nx} = select i1 ${c}, i32 ${di}, i32 ${base}")
+            base = nx
+        }
+        i += 1
+    }
+    F.Emit("store i32 ${base}, ptr ${tagPtr(F, to, dst)}")
+    let words: I32 = if (from.PayloadWords < to.PayloadWords) { from.PayloadWords } else { to.PayloadWords }
+    if (words > 0) {
+        let pv: String = F.Tmp()
+        F.Emit("${pv} = load [${words} x i64], ptr ${payloadPtr(F, from, src)}")
+        F.Emit("store [${words} x i64] ${pv}, ptr ${payloadPtr(F, to, dst)}")
+    }
+    let r: String = F.Tmp()
+    F.Emit("${r} = load ${F.LlOf(to)}, ptr ${dst}")
+    Ctx.Val.New(to, r)
+}
+
+// The member `m` of a union value.
+fn unionExtract(mut F: Ctx.FnCtx, v: Ctx.Val, m: Types.Type) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    if (g.Tt.SizeOf(m) == 0) {
+        return Ctx.Val.New(m, "zeroinitializer")
+    }
+    let slot: String = F.NewSlot(v.T)
+    F.Emit("store ${F.LlOf(v.T)} ${v.V}, ptr ${slot}")
+    let r: String = F.Tmp()
+    F.Emit("${r} = load ${F.LlOf(m)}, ptr ${payloadPtr(F, v.T, slot)}")
+    Ctx.Val.New(m, r)
+}
+
+// A member value becomes a union value, or a union value becomes a wider union (a subset of its members).
+fn unionCoerce(mut F: Ctx.FnCtx, pos: Token.Pos, v: Ctx.Val, want: Types.Type, what: String) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    if (v.T.Kind == Types.TKind.Union) {
+        for (m in v.T.Args) {
+            if (unionIndex(want, m) < 0) {
+                F.TypeError(pos, want, v.T, what)
+                g.Diag.Note("`${m.Name}` is not a member of `${want.Name}`")
+                return F.ErrVal()
+            }
+        }
+        return unionRemap(F, v, v.T, want)
+    }
+    let idx: I64 = unionIndex(want, v.T)
+    if (idx < 0) {
+        F.TypeError(pos, want, v.T, what)
+        g.Diag.Note("`${v.T.Name}` is not a member of `${want.Name}`")
+        return F.ErrVal()
+    }
+    let slot: String = F.NewSlot(want)
+    F.Emit("store i32 ${idx}, ptr ${tagPtr(F, want, slot)}")
+    if (g.Tt.SizeOf(v.T) > 0) {
+        F.Emit("store ${F.LlOf(v.T)} ${v.V}, ptr ${payloadPtr(F, want, slot)}")
+    }
+    let r: String = F.Tmp()
+    F.Emit("${r} = load ${F.LlOf(want)}, ptr ${slot}")
+    Ctx.Val.New(want, r)
+}
+
+// ---- operators ----
+
+fn intIntrinsic(mut F: Ctx.FnCtx, op: String, t: Types.Type) -> String {
+    mut g: Gen.Gen = F.G
+    let bits: I32 = t.Bits()
+    let name: String = "llvm.${op}.with.overflow.i${bits}"
+    Gen.Declare(g, name, "declare { i${bits}, i1 } @${name}(i${bits}, i${bits})")
+    name
+}
+
+fn genIntArith(mut F: Ctx.FnCtx, op: Token.Tk, a: Ctx.Val, b: Ctx.Val, pos: Token.Pos) -> Ctx.Val {
+    let t: Types.Type = a.T
+    let bits: I32 = t.Bits()
+    let sgn: Bool = t.IsSigned()
+    let ll: String = F.LlOf(t)
+    if (op == Token.Tk.Plus || op == Token.Tk.Minus || op == Token.Tk.Star) {
+        let nm: String = match (op) {
+            Token.Tk.Plus => if (sgn) { "sadd" } else { "uadd" },
+            Token.Tk.Minus => if (sgn) { "ssub" } else { "usub" },
+            _ => if (sgn) { "smul" } else { "umul" },
+        }
+        let fnName: String = intIntrinsic(F, nm, t)
+        let r: String = F.Tmp()
+        let v: String = F.Tmp()
+        let o: String = F.Tmp()
+        F.Emit("${r} = call { ${ll}, i1 } @${fnName}(${ll} ${a.V}, ${ll} ${b.V})")
+        F.Emit("${v} = extractvalue { ${ll}, i1 } ${r}, 0")
+        F.Emit("${o} = extractvalue { ${ll}, i1 } ${r}, 1")
+        let ok: String = F.NewLabel("ok")
+        let panicL: String = coldPanic(F, "integer overflow", pos)
+        F.CondBr(o, panicL, ok)
+        F.StartBlock(ok)
+        return Ctx.Val.New(t, v)
+    }
+    if (op == Token.Tk.Slash || op == Token.Tk.Percent) {
+        let z: String = F.Tmp()
+        F.Emit("${z} = icmp eq ${ll} ${b.V}, 0")
+        let ok: String = F.NewLabel("ok")
+        let panicL: String = coldPanic(F, if (op == Token.Tk.Slash) { "division by zero" } else { "remainder by zero" }, pos)
+        F.CondBr(z, panicL, ok)
+        F.StartBlock(ok)
+        if (sgn) {
+            // MIN / -1 overflows
+            let min: String = if (bits == 64) { "-9223372036854775808" } else { "${-(1_I64 << (bits - 1))}" }
+            let c1: String = F.Tmp()
+            let c2: String = F.Tmp()
+            let both: String = F.Tmp()
+            F.Emit("${c1} = icmp eq ${ll} ${a.V}, ${min}")
+            F.Emit("${c2} = icmp eq ${ll} ${b.V}, -1")
+            F.Emit("${both} = and i1 ${c1}, ${c2}")
+            let ok2: String = F.NewLabel("ok")
+            let panic2: String = coldPanic(F, "integer overflow", pos)
+            F.CondBr(both, panic2, ok2)
+            F.StartBlock(ok2)
+        }
+        let r: String = F.Tmp()
+        let ins: String = if (op == Token.Tk.Slash) { if (sgn) { "sdiv" } else { "udiv" } } else { if (sgn) { "srem" } else { "urem" } }
+        F.Emit("${r} = ${ins} ${ll} ${a.V}, ${b.V}")
+        return Ctx.Val.New(t, r)
+    }
+    let ins: String = match (op) {
+        Token.Tk.Amp => "and",
+        Token.Tk.Pipe => "or",
+        _ => "xor",
+    }
+    let r: String = F.Tmp()
+    F.Emit("${r} = ${ins} ${ll} ${a.V}, ${b.V}")
+    Ctx.Val.New(t, r)
+}
+
+// a << n and a >> n: the amount is an I32 and must be below the width.
+fn genShift(mut F: Ctx.FnCtx, op: Token.Tk, a: Ctx.Val, amt: Ctx.Val, pos: Token.Pos) -> Ctx.Val {
+    let t: Types.Type = a.T
+    let bits: I32 = t.Bits()
+    let ll: String = F.LlOf(t)
+    let bad: String = F.Tmp()
+    F.Emit("${bad} = icmp uge i32 ${amt.V}, ${bits}")
+    let ok: String = F.NewLabel("ok")
+    let panicL: String = coldPanic(F, "shift amount is out of range", pos)
+    F.CondBr(bad, panicL, ok)
+    F.StartBlock(ok)
+    mut x: String = amt.V
+    if (bits != 32) {
+        x = F.Tmp()
+        F.Emit("${x} = ${if (bits < 32) { "trunc" } else { "zext" }} i32 ${amt.V} to ${ll}")
+    }
+    let r: String = F.Tmp()
+    let ins: String = if (op == Token.Tk.Shl) { "shl" } else { if (t.IsSigned()) { "ashr" } else { "lshr" } }
+    F.Emit("${r} = ${ins} ${ll} ${a.V}, ${x}")
+    Ctx.Val.New(t, r)
+}
+
+fn genFloatArith(mut F: Ctx.FnCtx, op: Token.Tk, a: Ctx.Val, b: Ctx.Val) -> Ctx.Val {
+    let ins: String = match (op) {
+        Token.Tk.Plus => "fadd",
+        Token.Tk.Minus => "fsub",
+        Token.Tk.Star => "fmul",
+        Token.Tk.Slash => "fdiv",
+        _ => "frem",
+    }
+    let r: String = F.Tmp()
+    F.Emit("${r} = ${ins} ${F.LlOf(a.T)} ${a.V}, ${b.V}")
+    Ctx.Val.New(a.T, r)
+}
+
+// TODO(port): equality of structs, tuples, enums and classes comes with the equality part of gen.c.
+fn genEq(mut F: Ctx.FnCtx, a: Ctx.Val, b: Ctx.Val, pos: Token.Pos) -> Ctx.Val {
+    Panic("not ported yet: equality of aggregates")
+}
+
+fn icmpPred(op: Token.Tk, sgn: Bool) -> String {
+    match (op) {
+        Token.Tk.EqEq => "eq",
+        Token.Tk.Neq => "ne",
+        Token.Tk.Lt => if (sgn) { "slt" } else { "ult" },
+        Token.Tk.Le => if (sgn) { "sle" } else { "ule" },
+        Token.Tk.Gt => if (sgn) { "sgt" } else { "ugt" },
+        _ => if (sgn) { "sge" } else { "uge" },
+    }
+}
+
+fn fcmpPred(op: Token.Tk) -> String {
+    match (op) {
+        Token.Tk.EqEq => "oeq",
+        Token.Tk.Neq => "une",
+        Token.Tk.Lt => "olt",
+        Token.Tk.Le => "ole",
+        Token.Tk.Gt => "ogt",
+        _ => "oge",
+    }
+}
+
+fn genCompare(mut F: Ctx.FnCtx, op: Token.Tk, a: Ctx.Val, b: Ctx.Val, pos: Token.Pos) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let t: Types.Type = a.T
+    let r: String = F.Tmp()
+    let res: Ctx.Val = Ctx.Val.New(g.Tt.Bool, r)
+    if (t.IsInt() || t.Kind == Types.TKind.Char || t.Kind == Types.TKind.Bool) {
+        F.Emit("${r} = icmp ${icmpPred(op, t.IsSigned())} ${F.LlOf(t)} ${a.V}, ${b.V}")
+        return res
+    }
+    if (t.Kind == Types.TKind.CType && t.Name != "CVoid") {
+        let isF: Bool = t.Ll == "float" || t.Ll == "double"
+        let isP: Bool = t.Ll == "ptr"
+        if (isF) {
+            F.Emit("${r} = fcmp ${fcmpPred(op)} ${t.Ll} ${a.V}, ${b.V}")
+            return res
+        }
+        if (isP && op != Token.Tk.EqEq && op != Token.Tk.Neq) {
+            g.Diag.Error(pos, "`CString` values can only be compared with `==` and `!=`")
+            return F.ErrVal()
+        }
+        F.Emit("${r} = icmp ${icmpPred(op, t.PayloadWords == 1)} ${t.Ll} ${a.V}, ${b.V}")
+        return res
+    }
+    if (t.IsFloat()) {
+        F.Emit("${r} = fcmp ${fcmpPred(op)} ${F.LlOf(t)} ${a.V}, ${b.V}")
+        return res
+    }
+    if (t.Kind == Types.TKind.Str) {
+        let (ap, an): (String, String) = strParts(F, a)
+        let (bp, bn): (String, String) = strParts(F, b)
+        let c: String = F.Tmp()
+        if (op == Token.Tk.EqEq || op == Token.Tk.Neq) {
+            rtDecl(F, "zevic_str_eq", "declare i32 @zevic_str_eq(ptr, i64, ptr, i64)")
+            F.Emit("${c} = call i32 @zevic_str_eq(ptr ${ap}, i64 ${an}, ptr ${bp}, i64 ${bn})")
+            F.Emit("${r} = icmp ${if (op == Token.Tk.EqEq) { "ne" } else { "eq" }} i32 ${c}, 0")
+        } else {
+            rtDecl(F, "zevic_str_cmp", "declare i32 @zevic_str_cmp(ptr, i64, ptr, i64)")
+            F.Emit("${c} = call i32 @zevic_str_cmp(ptr ${ap}, i64 ${an}, ptr ${bp}, i64 ${bn})")
+            let p: String = match (op) {
+                Token.Tk.Lt => "slt",
+                Token.Tk.Le => "sle",
+                Token.Tk.Gt => "sgt",
+                _ => "sge",
+            }
+            F.Emit("${r} = icmp ${p} i32 ${c}, 0")
+        }
+        return res
+    }
+    if (t.Kind == Types.TKind.Unit) {
+        return Ctx.Val.New(g.Tt.Bool, if (op == Token.Tk.EqEq) { "true" } else { "false" })
+    }
+    if ((op == Token.Tk.EqEq || op == Token.Tk.Neq) && (t.Kind == Types.TKind.Struct || t.Kind == Types.TKind.Enum || t.Kind == Types.TKind.Tuple || t.Kind == Types.TKind.Class || t.Kind == Types.TKind.Ptr)) {
+        let e: Ctx.Val = genEq(F, a, b, pos)
+        if (g.IsErr(e.T) || op == Token.Tk.EqEq) {
+            return e
+        }
+        let n: String = F.Tmp()
+        F.Emit("${n} = xor i1 ${e.V}, true")
+        return Ctx.Val.New(g.Tt.Bool, n)
+    }
+    if (op == Token.Tk.EqEq || op == Token.Tk.Neq) {
+        g.Diag.Error(pos, "values of type `${t.Name}` cannot be compared with `${op.Name()}`")
+    } else {
+        g.Diag.Error(pos, "values of type `${t.Name}` cannot be ordered with `${op.Name()}`")
+    }
+    F.ErrVal()
+}
+
+// ---- scopes and locals ----
+
+fn nn(o: Option<Ast.Node>) -> Ast.Node {
+    match (o) {
+        Some(x) => x,
+        None => Panic("syntax node is missing"),
+    }
+}
+
+fn curScope(F: Ctx.FnCtx) -> Ctx.Scope {
+    match (F.Scope) {
+        Some(s) => s,
+        None => Panic("no scope"),
+    }
+}
+
+fn collectIdents(n: Option<Ast.Node>, mut out: Map<String, Bool>) -> Bool {
+    // returns true when `this` appears
+    let x: Ast.Node = match (n) {
+        Some(v) => v,
+        None => return false,
+    }
+    mut usesThis: Bool = false
+    if (x.Kind == Ast.NK.Ident && x.HasName) {
+        out.Set(x.Name, true)
+    }
+    if (x.Kind == Ast.NK.This) {
+        usesThis = true
+    }
+    if (collectIdents(x.A, out)) { usesThis = true }
+    if (collectIdents(x.B, out)) { usesThis = true }
+    if (collectIdents(x.C, out)) { usesThis = true }
+    if (collectIdents(x.D, out)) { usesThis = true }
+    for (c in x.List) { if (collectIdents(Some(c), out)) { usesThis = true } }
+    for (c in x.List2) { if (collectIdents(Some(c), out)) { usesThis = true } }
+    for (c in x.List3) { if (collectIdents(Some(c), out)) { usesThis = true } }
+    usesThis
+}
+
+// The names a lambda below `n` may capture. A variable with such a name is allocated on the heap when it is declared.
+fn collectLambdaNames(n: Option<Ast.Node>, mut heap: Map<String, Bool>) {
+    let x: Ast.Node = match (n) {
+        Some(v) => v,
+        None => return,
+    }
+    if (x.Kind == Ast.NK.Lambda || x.Kind == Ast.NK.Async) {
+        collectIdents(n, heap)
+        return
+    }
+    collectLambdaNames(x.A, heap)
+    collectLambdaNames(x.B, heap)
+    collectLambdaNames(x.C, heap)
+    collectLambdaNames(x.D, heap)
+    for (c in x.List) { collectLambdaNames(Some(c), heap) }
+    for (c in x.List2) { collectLambdaNames(Some(c), heap) }
+    for (c in x.List3) { collectLambdaNames(Some(c), heap) }
+}
+
+fn declareLocal(mut F: Ctx.FnCtx, name: String, t: Types.Type, isMut: Bool, pos: Token.Pos) -> Ctx.Local {
+    mut g: Gen.Gen = F.G
+    let sc: Ctx.Scope = curScope(F)
+    for (o in sc.Locals) {
+        if (o.Name == name) {
+            g.Diag.Error(pos, "`${name}` is already declared in this scope")
+            g.Diag.Note("the first declaration is at line ${o.Pos.Line}")
+            break
+        }
+    }
+    mut ptr: String = ""
+    let size: I64 = g.Tt.SizeOf(t)
+    if (F.Heap.Contains(name) && size > 0) {
+        // a lambda may capture this variable: give it a cell on the heap that outlives the call
+        rtDecl(F, "zevic_alloc", "declare ptr @zevic_alloc(i64)")
+        ptr = F.Tmp()
+        F.Emit("${ptr} = call ptr @zevic_alloc(i64 ${size})")
+    } else {
+        ptr = F.NewSlot(t)
+    }
+    let l: Ctx.Local = Ctx.Local.New(name, t, isMut, ptr, pos)
+    mut s2: Ctx.Scope = sc
+    s2.Locals.Push(l)
+    l
+}
+
+// Leave the innermost scope on the normal path.
+fn popScope(mut F: Ctx.FnCtx) {
+    let s: Ctx.Scope = curScope(F)
+    if (!F.Term) {
+        runDefersIn(F, s)
+    }
+    F.Scope = s.Up
+}
+
+// ---- `is` and smart casts ----
+
+class Narrow {
+    Name: String
+    T: Types.Type
+
+    fn Init(name: String, t: Types.Type) {
+        this.Name = name
+        this.T = t
+    }
+}
+
+fn narrowable(F: Ctx.FnCtx, x: Ast.Node) -> Option<Ctx.Local> {
+    if (x.Kind != Ast.NK.Ident) {
+        return None
+    }
+    match (F.FindLocal(x.Name)) {
+        Some(l) => {
+            if (l.Mut || l.T.Kind != Types.TKind.Union) { None } else { Some(l) }
+        },
+        None => None,
+    }
+}
+
+// The type of a union value once it is known to be (truth) or not to be (!truth) `t`.
+fn narrowedType(mut g: Gen.Gen, u: Types.Type, t: Types.Type, truth: Bool) -> Option<Types.Type> {
+    if (unionIndex(u, t) < 0) {
+        return None
+    }
+    if (truth) {
+        return Some(t)
+    }
+    mut rest: Array<Types.Type> = []
+    for (m in u.Args) {
+        if (m.Id != t.Id) {
+            rest.Push(m)
+        }
+    }
+    Some(g.Tt.Union(rest))
+}
+
+// What the condition `c` tells about variables when it is true (truth) or false (!truth).
+fn collectNarrow(mut F: Ctx.FnCtx, c: Ast.Node, truth: Bool, mut out: Array<Narrow>) {
+    mut g: Gen.Gen = F.G
+    if (c.Kind == Ast.NK.Is) {
+        let l: Ctx.Local = match (narrowable(F, nn(c.A))) {
+            Some(x) => x,
+            None => return,
+        }
+        let t: Types.Type = Gen.ResolveType(g, F.File, F.Env, nn(c.B))
+        if (g.IsErr(t)) {
+            return
+        }
+        match (narrowedType(g, l.T, t, truth != c.Flag)) {
+            Some(nt) => out.Push(Narrow.New(l.Name, nt)),
+            None => {},
+        }
+    } else if (c.Kind == Ast.NK.Unary && c.Op == Token.Tk.Bang) {
+        collectNarrow(F, nn(c.A), !truth, out)
+    } else if (c.Kind == Ast.NK.Binary && ((c.Op == Token.Tk.AndAnd && truth) || (c.Op == Token.Tk.OrOr && !truth))) {
+        collectNarrow(F, nn(c.A), truth, out)
+        collectNarrow(F, nn(c.B), truth, out)
+    }
+}
+
+// Open a scope in which the variables are known to have narrower types. Returns how many scopes were opened.
+fn pushNarrow(mut F: Ctx.FnCtx, cond: Ast.Node, truth: Bool, errs: I64) -> I64 {
+    mut g: Gen.Gen = F.G
+    if (g.Diag.Errors != errs) {
+        return 0
+    }
+    mut scopes: I64 = 0
+    mut ns: Array<Narrow> = []
+    collectNarrow(F, cond, truth, ns)
+    for (nr in ns) {
+        let l: Ctx.Local = match (F.FindLocal(nr.Name)) {
+            Some(x) => x,
+            None => continue,
+        }
+        if (l.T.Kind != Types.TKind.Union) {
+            continue
+        }
+        if (unionIndex(l.T, if (nr.T.Kind == Types.TKind.Union) { nr.T.Args[0] } else { nr.T }) < 0) {
+            continue
+        }
+        F.PushScope() // one scope for each name, so that a name can be narrowed again
+        scopes += 1
+        let cur: Ctx.Val = F.LoadLocal(l)
+        let nv: Ctx.Val = if (nr.T.Kind == Types.TKind.Union) { unionRemap(F, cur, l.T, nr.T) } else { unionExtract(F, cur, nr.T) }
+        let nl: Ctx.Local = declareLocal(F, nr.Name, nr.T, false, l.Pos)
+        if (g.Tt.SizeOf(nr.T) > 0) {
+            F.Emit("store ${F.LlOf(nr.T)} ${nv.V}, ptr ${nl.Ptr}")
+        }
+    }
+    scopes
+}
+
+fn genIs(mut F: Ctx.FnCtx, n: Ast.Node) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let v: Ctx.Val = genExpr(F, nn(n.A), None)
+    if (g.IsErr(v.T) || v.T.Id == g.Tt.Never.Id) {
+        return if (g.IsErr(v.T)) { F.ErrVal() } else { F.NeverVal(Some(g.Tt.Bool)) }
+    }
+    let t: Types.Type = Gen.ResolveType(g, F.File, F.Env, nn(n.B))
+    if (g.IsErr(t)) {
+        return F.ErrVal()
+    }
+    if (v.T.Kind != Types.TKind.Union) {
+        g.Diag.Error(n.Pos, "`is` needs a union on the left, but this is `${v.T.Name}`")
+        return F.ErrVal()
+    }
+    let idx: I64 = unionIndex(v.T, t)
+    if (idx < 0) {
+        g.Diag.Error(nn(n.B).Pos, "`${t.Name}` is not a member of `${v.T.Name}`")
+        return F.ErrVal()
+    }
+    let slot: String = F.NewSlot(v.T)
+    F.Emit("store ${F.LlOf(v.T)} ${v.V}, ptr ${slot}")
+    let tg: String = F.Tmp()
+    F.Emit("${tg} = load i32, ptr ${tagPtr(F, v.T, slot)}")
+    let r: String = F.Tmp()
+    F.Emit("${r} = icmp ${if (n.Flag) { "ne" } else { "eq" }} i32 ${tg}, ${idx}")
+    Ctx.Val.New(g.Tt.Bool, r)
+}
+
+fn genLogic(mut F: Ctx.FnCtx, n: Ast.Node) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let isAnd: Bool = n.Op == Token.Tk.AndAnd
+    let errs: I64 = g.Diag.Errors
+    mut a: Ctx.Val = genExpr(F, nn(n.A), Some(g.Tt.Bool))
+    a = coerce(F, nn(n.A).Pos, a, g.Tt.Bool, "the operand of a logical operator")
+    if (a.T.Id == g.Tt.Never.Id) {
+        return F.NeverVal(Some(g.Tt.Bool))
+    }
+    let from: String = F.Cur
+    let rhs: String = F.NewLabel(if (isAnd) { "and.rhs" } else { "or.rhs" })
+    let end: String = F.NewLabel(if (isAnd) { "and.end" } else { "or.end" })
+    if (isAnd) { F.CondBr(a.V, rhs, end) } else { F.CondBr(a.V, end, rhs) }
+    F.StartBlock(rhs)
+    mut nsc: I64 = pushNarrow(F, nn(n.A), isAnd, errs)
+    mut b: Ctx.Val = genExpr(F, nn(n.B), Some(g.Tt.Bool))
+    b = coerce(F, nn(n.B).Pos, b, g.Tt.Bool, "the operand of a logical operator")
+    while (nsc > 0) {
+        popScope(F)
+        nsc -= 1
+    }
+    let from2: String = F.Cur
+    let bLive: Bool = !F.Term
+    if (bLive) {
+        F.Br(end)
+    }
+    F.StartBlock(end)
+    let r: String = F.Tmp()
+    let shortV: String = if (isAnd) { "false" } else { "true" }
+    if (bLive) {
+        F.Emit("${r} = phi i1 [ ${shortV}, %${from} ], [ ${b.V}, %${from2} ]")
+    } else {
+        F.Emit("${r} = phi i1 [ ${shortV}, %${from} ]")
+    }
+    Ctx.Val.New(g.Tt.Bool, r)
+}
+
+fn genPair(mut F: Ctx.FnCtx, na: Ast.Node, nb: Ast.Node, hint: Option<Types.Type>) -> (Ctx.Val, Ctx.Val) {
+    mut g: Gen.Gen = F.G
+    if (isUntypedLit(na) && !isUntypedLit(nb)) {
+        let vb: Ctx.Val = genExpr(F, nb, hint)
+        let va: Ctx.Val = genExpr(F, na, if (g.IsErr(vb.T) || vb.T.Id == g.Tt.Never.Id) { hint } else { Some(vb.T) })
+        (va, vb)
+    } else {
+        let va: Ctx.Val = genExpr(F, na, hint)
+        let vb: Ctx.Val = genExpr(F, nb, if (g.IsErr(va.T) || va.T.Id == g.Tt.Never.Id) { hint } else { Some(va.T) })
+        (va, vb)
+    }
+}
+
+fn genBinary(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let op: Token.Tk = n.Op
+    if (op == Token.Tk.AndAnd || op == Token.Tk.OrOr) {
+        return genLogic(F, n)
+    }
+    let cmp: Bool = op == Token.Tk.EqEq || op == Token.Tk.Neq || op == Token.Tk.Lt || op == Token.Tk.Gt || op == Token.Tk.Le || op == Token.Tk.Ge
+    let shift: Bool = op == Token.Tk.Shl || op == Token.Tk.Shr
+    mut a: Ctx.Val = F.ErrVal()
+    mut b: Ctx.Val = F.ErrVal()
+    if (shift) {
+        a = genExpr(F, nn(n.A), expect)
+        b = genExpr(F, nn(n.B), Some(g.Tt.I32))
+    } else {
+        let (pa, pb): (Ctx.Val, Ctx.Val) = genPair(F, nn(n.A), nn(n.B), if (cmp) { None } else { expect })
+        a = pa
+        b = pb
+    }
+    if (a.T.Id == g.Tt.Never.Id || b.T.Id == g.Tt.Never.Id) {
+        return F.NeverVal(if (cmp) { Some(g.Tt.Bool) } else { expect })
+    }
+    if (g.IsErr(a.T) || g.IsErr(b.T)) {
+        return F.ErrVal()
+    }
+    if (shift) {
+        if (!a.T.IsInt()) {
+            g.Diag.Error(n.Pos, "`${op.Name()}` needs an integer on the left, found `${a.T.Name}`")
+            return F.ErrVal()
+        }
+        if (b.T.Id != g.Tt.I32.Id) {
+            g.Diag.Error(nn(n.B).Pos, "the shift amount must be `I32`, found `${b.T.Name}`")
+            return F.ErrVal()
+        }
+        return genShift(F, op, a, b, n.Pos)
+    }
+    if (a.T.Id != b.T.Id) {
+        g.Diag.Error(n.Pos, "the operands of `${op.Name()}` have different types: `${a.T.Name}` and `${b.T.Name}` (convert one explicitly, e.g. with `ToI64()`)")
+        return F.ErrVal()
+    }
+    if (cmp) {
+        return genCompare(F, op, a, b, n.Pos)
+    }
+    let t: Types.Type = a.T
+    if (t.Id == g.Tt.Str.Id && op == Token.Tk.Plus) {
+        let (ap, an): (String, String) = strParts(F, a)
+        let (bp, bn): (String, String) = strParts(F, b)
+        rtDecl(F, "zevic_str_concat", "declare void @zevic_str_concat(ptr, ptr, i64, ptr, i64)")
+        return callStrOut(F, "zevic_str_concat", "ptr ${ap}, i64 ${an}, ptr ${bp}, i64 ${bn}")
+    }
+    if (t.IsFloat()) {
+        if (op == Token.Tk.Plus || op == Token.Tk.Minus || op == Token.Tk.Star || op == Token.Tk.Slash || op == Token.Tk.Percent) {
+            return genFloatArith(F, op, a, b)
+        }
+        g.Diag.Error(n.Pos, "`${op.Name()}` is only for integers, found `${t.Name}`")
+        return F.ErrVal()
+    }
+    if (t.IsInt()) {
+        return genIntArith(F, op, a, b, n.Pos)
+    }
+    g.Diag.Error(n.Pos, "`${op.Name()}` cannot be used with values of type `${t.Name}`")
+    F.ErrVal()
+}
+
+fn genUnary(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    if (n.Op == Token.Tk.Minus) {
+        let x: Ast.Node = nn(n.A)
+        if (x.Kind == Ast.NK.Int) {
+            return genIntLit(F, x, expect, true)
+        }
+        if (x.Kind == Ast.NK.Float) {
+            return genFloatLit(F, x, expect, true)
+        }
+    }
+    if (n.Op == Token.Tk.Amp) {
+        // &x: the address of a `mut` variable, to hand to a C function
+        let x: Ast.Node = nn(n.A)
+        if (x.Kind != Ast.NK.Ident && x.Kind != Ast.NK.Member) {
+            g.Diag.Error(n.Pos, "`&` can only be applied to a variable or a field")
+            return F.ErrVal()
+        }
+        let p: Ctx.Place = genPlace(F, x)
+        if (p.T.Id == g.Tt.Never.Id) {
+            return F.NeverVal(expect)
+        }
+        if (g.IsErr(p.T)) {
+            return F.ErrVal()
+        }
+        if (!p.Mut) {
+            g.Diag.Error(n.Pos, "cannot take the address of `${rootName(x)}` because it is not `mut`")
+            g.Diag.Note("declare it with `mut ${rootName(x)}: ${p.T.Name} = ...`")
+            return F.ErrVal()
+        }
+        return Ctx.Val.New(g.Tt.Ptr(p.T), p.Ptr)
+    }
+    let v: Ctx.Val = genExpr(F, nn(n.A), if (n.Op == Token.Tk.Bang) { Some(g.Tt.Bool) } else { expect })
+    if (v.T.Id == g.Tt.Never.Id || g.IsErr(v.T)) {
+        return v
+    }
+    let t: Types.Type = v.T
+    let r: String = F.Tmp()
+    let res: Ctx.Val = Ctx.Val.New(t, r)
+    match (n.Op) {
+        Token.Tk.Minus => {
+            if (t.IsFloat()) {
+                F.Emit("${r} = fneg ${F.LlOf(t)} ${v.V}")
+                return res
+            }
+            if (t.IsSigned()) {
+                return genIntArith(F, Token.Tk.Minus, Ctx.Val.New(t, "0"), v, n.Pos)
+            }
+            g.Diag.Error(n.Pos, "cannot negate a value of type `${t.Name}`")
+            F.ErrVal()
+        },
+        Token.Tk.Bang => {
+            if (t.Id != g.Tt.Bool.Id) {
+                g.Diag.Error(n.Pos, "`!` needs a `Bool`, found `${t.Name}`")
+                return F.ErrVal()
+            }
+            F.Emit("${r} = xor i1 ${v.V}, true")
+            res
+        },
+        Token.Tk.Tilde => {
+            if (!t.IsInt()) {
+                g.Diag.Error(n.Pos, "`~` needs an integer, found `${t.Name}`")
+                return F.ErrVal()
+            }
+            F.Emit("${r} = xor ${F.LlOf(t)} ${v.V}, -1")
+            res
+        },
+        _ => F.ErrVal(),
+    }
+}
+
+// ---- names, tuples, if, blocks ----
+
+fn genIdent(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    match (F.FindLocal(n.Name)) {
+        Some(l) => return F.LoadLocal(l),
+        None => {},
+    }
+    // a constant
+    let (dOpt, used): (Option<Resolve.Decl>, I64) = Gen.FindDecl(g, F.File, [n.Name], n.Pos)
+    if (used < 0) {
+        return F.ErrVal()
+    }
+    if (dOpt.IsNone() && n.Name == "Null") {
+        match (expect) {
+            Some(e) => {
+                if (e.Kind == Types.TKind.Ptr || (e.Kind == Types.TKind.CType && e.Ll == "ptr")) {
+                    return Ctx.Val.New(e, "null")
+                }
+            },
+            None => {},
+        }
+        g.Diag.Error(n.Pos, "`Null` is a pointer value; use it where a pointer type (`*T` or `CString`) is expected")
+        return F.ErrVal()
+    }
+    match (dOpt) {
+        Some(d) => {
+            if (d.Node.Kind == Ast.NK.DConst) {
+                let t: Types.Type = Gen.ResolveType(g, d.FileInfo(), Gen.MakeEnv(g, d, None, None), nn(d.Node.A))
+                let v: Ctx.Val = genExpr(F, nn(d.Node.B), Some(t))
+                return coerce(F, nn(d.Node.B).Pos, v, t, "a constant")
+            }
+            if (d.Node.Kind == Ast.NK.DFn && used == 1) {
+                return fnValueOf(F, d, n.Pos)
+            }
+        },
+        None => {
+            match (preludeVariantOwner(F, n.Name)) {
+                Some(owner) => return genVariant(F, None, n.Pos, owner, staticType(F, owner, None, expect), n.Name, expect),
+                None => {},
+            }
+        },
+    }
+    g.Diag.Error(n.Pos, "unknown name `${n.Name}`")
+    F.ErrVal()
+}
+
+fn genTuple(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    mut vals: Array<Ctx.Val> = []
+    mut tys: Array<Types.Type> = []
+    mut i: I64 = 0
+    while (i < n.List.Len()) {
+        mut e: Option<Types.Type> = None
+        match (expect) {
+            Some(x) => {
+                if (x.Kind == Types.TKind.Tuple && i < x.Args.Len()) {
+                    e = Some(x.Args[i])
+                }
+            },
+            None => {},
+        }
+        let v: Ctx.Val = genExpr(F, n.List[i], e)
+        if (v.T.Id == g.Tt.Never.Id) {
+            return F.NeverVal(expect)
+        }
+        vals.Push(v)
+        tys.Push(v.T)
+        i += 1
+    }
+    for (t in tys) {
+        if (g.IsErr(t)) {
+            return F.ErrVal()
+        }
+    }
+    let tt: Types.Type = g.Tt.Tuple(tys)
+    mut acc: String = "undef"
+    mut k: I64 = 0
+    while (k < vals.Len()) {
+        let v: Ctx.Val = vals[k]
+        let r: String = F.Tmp()
+        F.Emit("${r} = insertvalue ${F.LlOf(tt)} ${acc}, ${F.LlOf(v.T)} ${v.V}, ${k}")
+        acc = r
+        k += 1
+    }
+    Ctx.Val.New(tt, acc)
+}
+
+fn isUnionNotType(g: Gen.Gen, want: Option<Types.Type>, v: Ctx.Val) -> Bool {
+    match (want) {
+        Some(w) => w.Kind == Types.TKind.Union && v.T.Id != w.Id && v.T.Id != g.Tt.Never.Id && !g.IsErr(v.T),
+        None => false,
+    }
+}
+
+fn genIf(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let errs: I64 = g.Diag.Errors
+    mut c: Ctx.Val = genExpr(F, nn(n.A), Some(g.Tt.Bool))
+    c = coerce(F, nn(n.A).Pos, c, g.Tt.Bool, "an `if` condition")
+    if (c.T.Id == g.Tt.Never.Id) {
+        return F.NeverVal(expect)
+    }
+    let thenL: String = F.NewLabel("then")
+    let elseL: String = F.NewLabel("else")
+    let endL: String = F.NewLabel("endif")
+    let hasElse: Bool = n.C.IsSome()
+    F.CondBr(c.V, thenL, if (hasElse) { elseL } else { endL })
+    F.StartBlock(thenL)
+    mut want: Option<Types.Type> = None
+    match (expect) {
+        Some(e) => {
+            if (e.Id != g.Tt.Unit.Id) {
+                want = Some(e)
+            }
+        },
+        None => {},
+    }
+    mut ns1: I64 = pushNarrow(F, nn(n.A), true, errs)
+    mut v1: Ctx.Val = genBlock(F, nn(n.B), if (hasElse) { want } else { Some(g.Tt.Unit) })
+    if (isUnionNotType(g, want, v1)) {
+        v1 = coerce(F, nn(n.B).Pos, v1, want.Unwrap(), "an `if` branch")
+    }
+    while (ns1 > 0) {
+        popScope(F)
+        ns1 -= 1
+    }
+    let pred1: String = F.Cur
+    let live1: Bool = !F.Term
+    if (live1) {
+        F.Br(endL)
+    }
+    if (!hasElse) {
+        F.StartBlock(endL)
+        return F.UnitVal()
+    }
+    let elseN: Ast.Node = nn(n.C)
+    F.StartBlock(elseL)
+    let t1: Option<Types.Type> = if (v1.T.Id == g.Tt.Never.Id) { want } else { Some(v1.T) }
+    mut ns2: I64 = pushNarrow(F, nn(n.A), false, errs)
+    mut v2: Ctx.Val = if (elseN.Kind == Ast.NK.If) { genIf(F, elseN, t1) } else { genBlock(F, elseN, t1) }
+    if (isUnionNotType(g, t1, v2)) {
+        v2 = coerce(F, elseN.Pos, v2, t1.Unwrap(), "an `if` branch")
+    }
+    while (ns2 > 0) {
+        popScope(F)
+        ns2 -= 1
+    }
+    let pred2: String = F.Cur
+    let live2: Bool = !F.Term
+    if (live2) {
+        F.Br(endL)
+    }
+    F.StartBlock(endL)
+    if (!live1 && !live2) {
+        F.Emit("unreachable")
+        F.Term = true
+        return F.NeverVal(want)
+    }
+    let rt: Types.Type = if (live1) { v1.T } else { v2.T }
+    if (live1 && live2 && v1.T.Id != v2.T.Id && !g.IsErr(v1.T) && !g.IsErr(v2.T)) {
+        g.Diag.Error(elseN.Pos, "the branches of this `if` have different types: `${v1.T.Name}` and `${v2.T.Name}`")
+        return F.ErrVal()
+    }
+    if (g.IsErr(rt)) {
+        return F.ErrVal()
+    }
+    if (rt.Id == g.Tt.Unit.Id) {
+        return F.UnitVal()
+    }
+    let r: String = F.Tmp()
+    if (live1 && live2) {
+        F.Emit("${r} = phi ${F.LlOf(rt)} [ ${v1.V}, %${pred1} ], [ ${v2.V}, %${pred2} ]")
+    } else if (live1) {
+        F.Emit("${r} = phi ${F.LlOf(rt)} [ ${v1.V}, %${pred1} ]")
+    } else {
+        F.Emit("${r} = phi ${F.LlOf(rt)} [ ${v2.V}, %${pred2} ]")
+    }
+    Ctx.Val.New(rt, r)
+}
+
+// Does this block always leave (return, break, continue)? Decided from the syntax only.
+fn blockLeaves(b: Option<Ast.Node>) -> Bool {
+    let blk: Ast.Node = match (b) {
+        Some(x) => x,
+        None => return false,
+    }
+    if (blk.Kind != Ast.NK.Block) {
+        return false
+    }
+    mut last: Option<Ast.Node> = blk.A
+    if (last.IsNone() && !blk.List.IsEmpty()) {
+        last = Some(blk.List[blk.List.Len() - 1])
+    }
+    mut l: Ast.Node = match (last) {
+        Some(x) => x,
+        None => return false,
+    }
+    if (l.Kind == Ast.NK.ExprStmt) {
+        l = nn(l.A)
+    }
+    l.Kind == Ast.NK.Return || l.Kind == Ast.NK.Break || l.Kind == Ast.NK.Continue
+}
+
+fn genBlock(mut F: Ctx.FnCtx, blk: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    F.PushScope()
+    mut extra: I64 = 0
+    for (st in blk.List) {
+        let errs: I64 = g.Diag.Errors
+        genStmt(F, st)
+        // `if (x is E) { return ... }`: afterwards x is known not to be an E
+        let e: Ast.Node = if (st.Kind == Ast.NK.ExprStmt) { nn(st.A) } else { st }
+        if (e.Kind == Ast.NK.If && e.C.IsNone() && blockLeaves(e.B)) {
+            extra += pushNarrow(F, nn(e.A), false, errs)
+        }
+    }
+    mut v: Ctx.Val = F.UnitVal()
+    let isUnitExpect: Bool = match (expect) {
+        Some(e) => e.Id == g.Tt.Unit.Id,
+        None => false,
+    }
+    match (blk.A) {
+        Some(tail) => {
+            v = genExpr(F, tail, if (isUnitExpect) { None } else { expect })
+            if (isUnitExpect && v.T.Id != g.Tt.Never.Id) {
+                v = F.UnitVal()
+            }
+        },
+        None => {},
+    }
+    mut i: I64 = 0
+    while (i < extra) {
+        popScope(F)
+        i += 1
+    }
+    popScope(F)
+    if (F.Term && v.T.Id != g.Tt.Never.Id) {
+        return F.NeverVal(Some(match (expect) { Some(e) => e, None => v.T }))
+    }
+    v
+}
+
+fn genExpr(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    match (n.Kind) {
+        Ast.NK.Int => genIntLit(F, n, expect, false),
+        Ast.NK.Float => genFloatLit(F, n, expect, false),
+        Ast.NK.Bool => Ctx.Val.New(g.Tt.Bool, if (n.Ival != 0_U64) { "true" } else { "false" }),
+        Ast.NK.Char => Ctx.Val.New(g.Tt.Char, "${n.Ival}"),
+        Ast.NK.Byte => Ctx.Val.New(g.Tt.U8, "${n.Ival}"),
+        Ast.NK.Str => genStringLit(F, n),
+        Ast.NK.Unit => F.UnitVal(),
+        Ast.NK.Ident => genIdent(F, n, expect),
+        Ast.NK.Tuple => genTuple(F, n, expect),
+        Ast.NK.Index => genIndexRead(F, n, expect),
+        Ast.NK.Array => genArrayLit(F, n, expect),
+        Ast.NK.StructLit => genStructLit(F, n, expect),
+        Ast.NK.Unary => genUnary(F, n, expect),
+        Ast.NK.Lambda => genLambda(F, n, expect),
+        Ast.NK.Async => {
+            // async { b }  ->  Zevic.Async.Spawn(() => { b })
+            let sp: Option<Resolve.Decl> = match (g.Pg.FindModule("Zevic.Async")) {
+                Some(am) => am.Decls.Get("Spawn"),
+                None => None,
+            }
+            match (sp) {
+                Some(d) => {
+                    mut lam: Ast.Node = Ast.Node.New(Ast.NK.Lambda, n.Pos)
+                    lam.B = n.B
+                    lam.Flag = true
+                    mut call: Ast.Node = Ast.Node.New(Ast.NK.Call, n.Pos)
+                    call.A = Some(mkIdent(n.Pos, "Spawn"))
+                    call.List.Push(lam)
+                    genCallDecl(F, call, d, None, None, expect, None)
+                },
+                None => {
+                    g.Diag.Error(n.Pos, "internal error: `Zevic.Async.Spawn` is missing from the standard library")
+                    F.ErrVal()
+                },
+            }
+        },
+        Ast.NK.Await => genExpr(F, mkMethodCall(nn(n.A), "Await", n.Pos, None, None), expect),
+        Ast.NK.Binary => genBinary(F, n, expect),
+        Ast.NK.Is => genIs(F, n),
+        Ast.NK.If => genIf(F, n, expect),
+        Ast.NK.Block => genBlock(F, n, expect),
+        Ast.NK.Call => genCall(F, n, expect),
+        Ast.NK.Member => genMember(F, n, expect),
+        Ast.NK.Match => genMatch(F, n, expect),
+        Ast.NK.Try => genTry(F, n, expect),
+        Ast.NK.This => {
+            let p: Ctx.Place = genPlace(F, n)
+            if (g.IsErr(p.T)) { F.ErrVal() } else { loadPlace(F, p) }
+        },
+        Ast.NK.Return => genReturn(F, n, expect),
+        Ast.NK.Break | Ast.NK.Continue => genBreakContinue(F, n, expect),
+        _ => {
+            g.Diag.Error(n.Pos, "this kind of expression is not supported yet (${n.Kind.Name()})")
+            F.ErrVal()
+        },
+    }
+}
+
+fn runAllDefers(mut F: Ctx.FnCtx, stop: Option<Ctx.Scope>) {
+    mut cur: Option<Ctx.Scope> = F.Scope
+    loop {
+        let s: Ctx.Scope = match (cur) {
+            Some(x) => x,
+            None => break,
+        }
+        match (stop) {
+            Some(st) => {
+                if (s == st) {
+                    break
+                }
+            },
+            None => {},
+        }
+        runDefersIn(F, s)
+        cur = s.Up
+    }
+}
+
+fn genReturn(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    mut v: Ctx.Val = F.UnitVal()
+    match (F.Ret) {
+        None => {
+            // a lambda whose result type is not known yet takes the type of its first `return`
+            match (n.A) {
+                Some(a) => {
+                    v = genExpr(F, a, None)
+                    if (v.T.Id == g.Tt.Never.Id || g.IsErr(v.T)) {
+                        return v
+                    }
+                    F.Ret = Some(v.T)
+                },
+                None => { F.Ret = Some(g.Tt.Unit) },
+            }
+        },
+        Some(rt) => {
+            match (n.A) {
+                Some(a) => {
+                    v = genExpr(F, a, Some(rt))
+                    v = coerce(F, a.Pos, v, rt, "a `return` value")
+                    if (v.T.Id == g.Tt.Never.Id) {
+                        return v
+                    }
+                },
+                None => {
+                    if (rt.Id != g.Tt.Unit.Id && !g.IsErr(rt)) {
+                        g.Diag.Error(n.Pos, "this function returns `${rt.Name}`, so `return` needs a value")
+                    }
+                },
+            }
+        },
+    }
+    runAllDefers(F, None)
+    let rt: Types.Type = F.Ret.Unwrap()
+    if (rt.Id == g.Tt.Unit.Id || rt.Id == g.Tt.Never.Id) {
+        F.Emit("ret void")
+    } else {
+        F.Emit("ret ${F.LlOf(rt)} ${v.V}")
+    }
+    F.Term = true
+    F.NeverVal(expect)
+}
+
+fn genBreakContinue(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let isBreak: Bool = n.Kind == Ast.NK.Break
+    let word: String = if (isBreak) { "break" } else { "continue" }
+    if (F.Loops.IsEmpty()) {
+        g.Diag.Error(n.Pos, "`${word}` can only be used inside a loop")
+        return F.ErrVal()
+    }
+    mut lp: Option<Ctx.Loop> = F.Loops.Last()
+    if (n.HasName) {
+        lp = None
+        mut i: I64 = F.Loops.Len() - 1
+        while (i >= 0) {
+            let c: Ctx.Loop = F.Loops[i]
+            match (c.Label) {
+                Some(lb) => {
+                    if (lb == n.Name) {
+                        lp = Some(c)
+                        break
+                    }
+                },
+                None => {},
+            }
+            i -= 1
+        }
+        if (lp.IsNone()) {
+            g.Diag.Error(n.Pos, "there is no loop labeled `${n.Name}` around this `${word}` (write `${n.Name}@ for (...) { ... }` on the loop)")
+            return F.ErrVal()
+        }
+    }
+    mut target: Ctx.Loop = lp.Unwrap()
+    runAllDefers(F, Some(target.Scope))
+    if (isBreak) {
+        target.BrkUsed = true
+    }
+    F.Br(if (isBreak) { target.Brk } else { target.Cont })
+    F.NeverVal(expect)
+}
+
+// ---- statements ----
+
+fn runDefersIn(mut F: Ctx.FnCtx, s: Ctx.Scope) {
+    mut i: I64 = s.Defers.Len() - 1
+    while (i >= 0) {
+        let saved: Option<Ctx.Scope> = F.Scope
+        mut t: Ctx.Scope = Ctx.Scope.New()
+        t.Up = Some(s)
+        F.Scope = Some(t)
+        let d: Ast.Node = s.Defers[i]
+        if (d.Kind == Ast.NK.Block) {
+            let unused: Ctx.Val = genBlock(F, d, Some(F.G.Tt.Unit))
+        } else {
+            genStmt(F, d)
+        }
+        F.Scope = saved
+        i -= 1
+    }
+}
+
+// Bind an irrefutable pattern to a value.
+fn bindPattern(mut F: Ctx.FnCtx, pat: Ast.Node, v: Ctx.Val, isMut: Bool) {
+    mut g: Gen.Gen = F.G
+    match (pat.Kind) {
+        Ast.NK.PWild => {},
+        Ast.NK.PBind => {
+            if (g.IsErr(v.T)) {
+                declareLocal(F, pat.Name, g.Err, isMut, pat.Pos)
+                return
+            }
+            let l: Ctx.Local = declareLocal(F, pat.Name, v.T, isMut, pat.Pos)
+            if (v.T.Id != g.Tt.Unit.Id) {
+                F.StoreTo(v.T, v, l.Ptr)
+            }
+        },
+        Ast.NK.PTuple => {
+            if (v.T.Kind != Types.TKind.Tuple) {
+                if (!g.IsErr(v.T)) {
+                    g.Diag.Error(pat.Pos, "cannot destructure a value of type `${v.T.Name}` as a tuple")
+                }
+                return
+            }
+            if (v.T.Args.Len() != pat.List.Len()) {
+                g.Diag.Error(pat.Pos, "the tuple pattern has ${pat.List.Len()} element(s), but the value has ${v.T.Args.Len()}")
+                return
+            }
+            mut i: I64 = 0
+            while (i < pat.List.Len()) {
+                let et: Types.Type = v.T.Args[i]
+                let r: String = F.Tmp()
+                F.Emit("${r} = extractvalue ${F.LlOf(v.T)} ${v.V}, ${i}")
+                bindPattern(F, pat.List[i], Ctx.Val.New(et, r), isMut)
+                i += 1
+            }
+        },
+        _ => g.Diag.Error(pat.Pos, "this pattern can fail to match; only `_`, names and tuples can be used here"),
+    }
+}
+
+fn baseOp(k: Token.Tk) -> Token.Tk {
+    match (k) {
+        Token.Tk.PlusEq => Token.Tk.Plus,
+        Token.Tk.MinusEq => Token.Tk.Minus,
+        Token.Tk.StarEq => Token.Tk.Star,
+        Token.Tk.SlashEq => Token.Tk.Slash,
+        Token.Tk.PercentEq => Token.Tk.Percent,
+        Token.Tk.AmpEq => Token.Tk.Amp,
+        Token.Tk.PipeEq => Token.Tk.Pipe,
+        Token.Tk.CaretEq => Token.Tk.Caret,
+        Token.Tk.ShlEq => Token.Tk.Shl,
+        Token.Tk.ShrEq => Token.Tk.Shr,
+        _ => Token.Tk.Assign,
+    }
+}
+
+// The address of an assignable place and its type; None after an error.
+fn genLvalue(mut F: Ctx.FnCtx, n: Ast.Node) -> Option<(String, Types.Type)> {
+    mut g: Gen.Gen = F.G
+    if (n.Kind == Ast.NK.Ident) {
+        let l: Ctx.Local = match (F.FindLocal(n.Name)) {
+            Some(x) => x,
+            None => {
+                g.Diag.Error(n.Pos, "cannot assign to `${n.Name}`: it is not a variable")
+                return None
+            },
+        }
+        if (!l.Mut) {
+            g.Diag.Error(n.Pos, "cannot assign to `${n.Name}` because it is not `mut`")
+            g.Diag.Note("declare it with `mut ${n.Name}: ${l.T.Name} = ...` to allow changes")
+            return None
+        }
+        return Some((l.Ptr, l.T))
+    }
+    if (n.Kind == Ast.NK.Member && !isStaticPath(F, n)) {
+        let p: Ctx.Place = genPlace(F, n)
+        if (g.IsErr(p.T) || p.T.Id == g.Tt.Never.Id || p.Ptr == "") {
+            return None
+        }
+        if (!p.Mut) {
+            if (nn(n.A).Kind == Ast.NK.This) {
+                g.Diag.Error(n.Pos, "cannot assign to field `${n.Name}` here: `this` can only be changed inside a `mut fn` (or `Init`)")
+            } else {
+                g.Diag.Error(n.Pos, "cannot assign to field `${n.Name}` because `${rootName(n)}` is not `mut`")
+            }
+            return None
+        }
+        return Some((p.Ptr, p.T))
+    }
+    g.Diag.Error(n.Pos, "this expression cannot be assigned to")
+    None
+}
+
+// After changing a field of a struct element (`xs[i].F = v`), the changed copy goes back into the array.
+fn genAssign(mut F: Ctx.FnCtx, n: Ast.Node) {
+    mut g: Gen.Gen = F.G
+    if (nn(n.A).Kind == Ast.NK.Index) {
+        genIndexAssign(F, n)
+        return
+    }
+    let (el, name): (Option<Ast.Node>, String) = genAssignPlace(F, n)
+    match (el) {
+        Some(e) => {
+            if (!isPureExpr(nn(e.A)) || !isPureExpr(nn(e.B))) {
+                g.Diag.Error(n.Pos, "changing a field of an array element needs a simple array and index (put them in variables first)")
+                return
+            }
+            mut call: Ast.Node = mkMethodCall(nn(e.A), "SetIndex", n.Pos, e.B, Some(mkIdent(n.Pos, name)))
+            call.Flag3 = true
+            let unused: Ctx.Val = genExpr(F, call, None)
+        },
+        None => {},
+    }
+}
+
+fn genAssignPlace(mut F: Ctx.FnCtx, n: Ast.Node) -> (Option<Ast.Node>, String) {
+    mut g: Gen.Gen = F.G
+    F.WbElem = None
+    let lv: Option<(String, Types.Type)> = genLvalue(F, nn(n.A))
+    // the right-hand side may read elements too, so the write-back is noted now
+    let wbElem: Option<Ast.Node> = F.WbElem
+    let wbName: String = F.WbName
+    F.WbElem = None
+    let (ptr, t): (String, Types.Type) = match (lv) {
+        Some(x) => x,
+        None => {
+            genExpr(F, nn(n.B), None)
+            return (wbElem, wbName)
+        },
+    }
+    if (n.Op == Token.Tk.Assign) {
+        mut v: Ctx.Val = genExpr(F, nn(n.B), Some(t))
+        v = coerce(F, nn(n.B).Pos, v, t, "an assignment")
+        if (v.T.Id == g.Tt.Never.Id || g.IsErr(v.T)) {
+            return (wbElem, wbName)
+        }
+        F.StoreTo(t, v, ptr)
+        return (wbElem, wbName)
+    }
+    let op: Token.Tk = baseOp(n.Op)
+    let cur: String = F.Tmp()
+    F.Emit("${cur} = load ${F.LlOf(t)}, ptr ${ptr}")
+    let a: Ctx.Val = Ctx.Val.New(t, cur)
+    let shift: Bool = op == Token.Tk.Shl || op == Token.Tk.Shr
+    mut b: Ctx.Val = genExpr(F, nn(n.B), if (shift) { Some(g.Tt.I32) } else { Some(t) })
+    if (b.T.Id == g.Tt.Never.Id || g.IsErr(b.T) || g.IsErr(t)) {
+        return (wbElem, wbName)
+    }
+    mut r: Ctx.Val = F.ErrVal()
+    if (shift) {
+        if (!t.IsInt() || b.T.Id != g.Tt.I32.Id) {
+            g.Diag.Error(n.Pos, "`${n.Op.Name()}` needs an integer variable and an `I32` amount")
+            return (wbElem, wbName)
+        }
+        r = genShift(F, op, a, b, n.Pos)
+    } else {
+        b = coerce(F, nn(n.B).Pos, b, t, "a compound assignment")
+        if (g.IsErr(b.T)) {
+            return (wbElem, wbName)
+        }
+        if (t.Id == g.Tt.Str.Id && op == Token.Tk.Plus) {
+            let (ap, an): (String, String) = strParts(F, a)
+            let (bp, bn): (String, String) = strParts(F, b)
+            rtDecl(F, "zevic_str_concat", "declare void @zevic_str_concat(ptr, ptr, i64, ptr, i64)")
+            r = callStrOut(F, "zevic_str_concat", "ptr ${ap}, i64 ${an}, ptr ${bp}, i64 ${bn}")
+        } else if (t.IsFloat() && op != Token.Tk.Amp && op != Token.Tk.Pipe && op != Token.Tk.Caret) {
+            r = genFloatArith(F, op, a, b)
+        } else if (t.IsInt()) {
+            r = genIntArith(F, op, a, b, n.Pos)
+        } else {
+            g.Diag.Error(n.Pos, "`${n.Op.Name()}` cannot be used with values of type `${t.Name}`")
+            return (wbElem, wbName)
+        }
+    }
+    F.StoreTo(t, r, ptr)
+    (wbElem, wbName)
+}
+
+fn genWhile(mut F: Ctx.FnCtx, n: Ast.Node) {
+    mut g: Gen.Gen = F.G
+    let head: String = F.NewLabel("while.cond")
+    let body: String = F.NewLabel("while.body")
+    let end: String = F.NewLabel("while.end")
+    F.GotoBlock(head)
+    mut c: Ctx.Val = genExpr(F, nn(n.A), Some(g.Tt.Bool))
+    c = coerce(F, nn(n.A).Pos, c, g.Tt.Bool, "a `while` condition")
+    if (c.T.Id != g.Tt.Never.Id) {
+        F.CondBr(c.V, body, end)
+    }
+    F.StartBlock(body)
+    mut lp: Ctx.Loop = Ctx.Loop.New(end, head, curScope(F))
+    if (n.HasName) {
+        lp.Label = Some(n.Name)
+    }
+    F.Loops.Push(lp)
+    genBlock(F, nn(n.B), Some(g.Tt.Unit))
+    F.Loops.Pop()
+    if (!F.Term) {
+        F.Br(head)
+    }
+    F.StartBlock(end)
+}
+
+fn genLoop(mut F: Ctx.FnCtx, n: Ast.Node) {
+    mut g: Gen.Gen = F.G
+    let body: String = F.NewLabel("loop.body")
+    let end: String = F.NewLabel("loop.end")
+    F.GotoBlock(body)
+    mut lp: Ctx.Loop = Ctx.Loop.New(end, body, curScope(F))
+    if (n.HasName) {
+        lp.Label = Some(n.Name)
+    }
+    F.Loops.Push(lp)
+    genBlock(F, nn(n.B), Some(g.Tt.Unit))
+    F.Loops.Pop()
+    if (!F.Term) {
+        F.Br(body)
+    }
+    F.StartBlock(end)
+    if (!lp.BrkUsed) {
+        // a `loop` with no `break` never finishes, so what follows it is unreachable
+        F.Emit("unreachable")
+        F.Term = true
+    }
+}
+
+fn genForRange(mut F: Ctx.FnCtx, n: Ast.Node) {
+    mut g: Gen.Gen = F.G
+    let r: Ast.Node = nn(n.D)
+    let (a, b): (Ctx.Val, Ctx.Val) = genPair(F, nn(r.A), nn(r.B), None)
+    if (a.T.Id == g.Tt.Never.Id || b.T.Id == g.Tt.Never.Id || g.IsErr(a.T) || g.IsErr(b.T)) {
+        return
+    }
+    if (!a.T.IsInt() || a.T.Id != b.T.Id) {
+        g.Diag.Error(r.Pos, "the bounds of a range must be integers of the same type, found `${a.T.Name}` and `${b.T.Name}`")
+        return
+    }
+    let t: Types.Type = a.T
+    let ll: String = F.LlOf(t)
+    let sgn: Bool = t.IsSigned()
+    F.PushScope()
+    let ctr: String = F.NewSlot(t)
+    F.StoreTo(t, a, ctr)
+    let head: String = F.NewLabel("for.cond")
+    let body: String = F.NewLabel("for.body")
+    let cont: String = F.NewLabel("for.next")
+    let end: String = F.NewLabel("for.end")
+    F.GotoBlock(head)
+    let cur: String = F.Tmp()
+    let c: String = F.Tmp()
+    F.Emit("${cur} = load ${ll}, ptr ${ctr}")
+    let pred: String = if (r.Flag) { if (sgn) { "sle" } else { "ule" } } else { if (sgn) { "slt" } else { "ult" } }
+    F.Emit("${c} = icmp ${pred} ${ll} ${cur}, ${b.V}")
+    F.CondBr(c, body, end)
+    F.StartBlock(body)
+    // the loop variable is an immutable alias of the counter
+    let pat: Ast.Node = nn(n.A)
+    if (pat.Kind == Ast.NK.PBind && F.Heap.Contains(pat.Name)) {
+        // a lambda may capture it: every iteration gets its own cell
+        let l: Ctx.Local = declareLocal(F, pat.Name, t, false, pat.Pos)
+        F.StoreTo(t, Ctx.Val.New(t, cur), l.Ptr)
+    } else if (pat.Kind == Ast.NK.PBind) {
+        let l: Ctx.Local = Ctx.Local.New(pat.Name, t, false, ctr, pat.Pos)
+        mut sc: Ctx.Scope = curScope(F)
+        sc.Locals.Push(l)
+    } else if (pat.Kind != Ast.NK.PWild) {
+        g.Diag.Error(pat.Pos, "a range loop variable must be a name or `_`")
+    }
+    match (n.C) {
+        Some(ix) => g.Diag.Error(ix.Pos, "a range has no index; use a single loop variable"),
+        None => {},
+    }
+    mut lp: Ctx.Loop = Ctx.Loop.New(end, cont, match (curScope(F).Up) { Some(u) => u, None => curScope(F) })
+    if (n.HasName) {
+        lp.Label = Some(n.Name)
+    }
+    F.Loops.Push(lp)
+    genBlock(F, nn(n.B), Some(g.Tt.Unit))
+    F.Loops.Pop()
+    if (!F.Term) {
+        F.Br(cont)
+    }
+    F.StartBlock(cont)
+    let cur2: String = F.Tmp()
+    F.Emit("${cur2} = load ${ll}, ptr ${ctr}")
+    if (r.Flag) {
+        // inclusive: stop after the upper bound without overflowing
+        let last: String = F.Tmp()
+        let step: String = F.NewLabel("for.step")
+        F.Emit("${last} = icmp eq ${ll} ${cur2}, ${b.V}")
+        F.CondBr(last, end, step)
+        F.StartBlock(step)
+    }
+    let nx: String = F.Tmp()
+    F.Emit("${nx} = add ${ll} ${cur2}, 1")
+    F.StoreTo(t, Ctx.Val.New(t, nx), ctr)
+    F.Br(head)
+    F.StartBlock(end)
+    popScope(F)
+}
+
+fn genFor(mut F: Ctx.FnCtx, n: Ast.Node) {
+    if (nn(n.D).Kind == Ast.NK.Range) {
+        genForRange(F, n)
+        return
+    }
+    genForIter(F, n)
+}
+
+fn genLet(mut F: Ctx.FnCtx, n: Ast.Node) {
+    mut g: Gen.Gen = F.G
+    // `n.B` is empty only for lets the compiler writes itself: the type comes from the value
+    let t0: Option<Types.Type> = match (n.B) {
+        Some(te) => Some(Gen.ResolveType(g, F.File, F.Env, te)),
+        None => None,
+    }
+    let v0: Ctx.Val = genExpr(F, nn(n.C), t0)
+    let t: Types.Type = match (t0) {
+        Some(x) => x,
+        None => if (v0.T.Id == g.Tt.Never.Id || g.IsErr(v0.T)) { g.Err } else { v0.T },
+    }
+    mut v: Ctx.Val = coerce(F, nn(n.C).Pos, v0, t, "a variable declaration")
+    if (v.T.Id == g.Tt.Never.Id) {
+        // the initialiser never completes; still declare the names so later code can be checked
+        v = Ctx.Val.New(t, "undef")
+    }
+    if (g.IsErr(v.T)) {
+        v = Ctx.Val.New(t, "undef")
+    }
+    bindPattern(F, nn(n.A), v, n.Flag)
+}
+
+fn checkLoopLabel(mut F: Ctx.FnCtx, s: Ast.Node) {
+    if (!s.HasName) {
+        return
+    }
+    mut g: Gen.Gen = F.G
+    for (c in F.Loops) {
+        match (c.Label) {
+            Some(lb) => {
+                if (lb == s.Name) {
+                    g.Diag.Error(s.Pos, "the label `${s.Name}` is already used by a loop around this one")
+                }
+            },
+            None => {},
+        }
+    }
+}
+
+fn genStmt(mut F: Ctx.FnCtx, s: Ast.Node) {
+    if (s.Kind == Ast.NK.While || s.Kind == Ast.NK.Loop || s.Kind == Ast.NK.For) {
+        checkLoopLabel(F, s)
+    }
+    match (s.Kind) {
+        Ast.NK.Let => genLet(F, s),
+        Ast.NK.Assign => genAssign(F, s),
+        Ast.NK.ExprStmt => { genExpr(F, nn(s.A), None) },
+        Ast.NK.While => genWhile(F, s),
+        Ast.NK.Loop => genLoop(F, s),
+        Ast.NK.For => genFor(F, s),
+        Ast.NK.Defer => {
+            mut sc: Ctx.Scope = curScope(F)
+            sc.Defers.Push(nn(s.A))
+        },
+        _ => { genExpr(F, s, None) },
+    }
+}
+
+// ---- not ported yet ----
+
+fn rootName(n: Ast.Node) -> String { Panic("not ported yet: rootName") }
+fn isStaticPath(F: Ctx.FnCtx, n: Ast.Node) -> Bool { Panic("not ported yet: isStaticPath") }
+fn genPlace(mut F: Ctx.FnCtx, n: Ast.Node) -> Ctx.Place { Panic("not ported yet: genPlace") }
+fn loadPlace(mut F: Ctx.FnCtx, p: Ctx.Place) -> Ctx.Val { Panic("not ported yet: loadPlace") }
+fn fnValueOf(mut F: Ctx.FnCtx, d: Resolve.Decl, pos: Token.Pos) -> Ctx.Val { Panic("not ported yet: fnValueOf") }
+fn preludeVariantOwner(F: Ctx.FnCtx, name: String) -> Option<Resolve.Decl> { Panic("not ported yet: preludeVariantOwner") }
+fn staticType(mut F: Ctx.FnCtx, d: Resolve.Decl, tnode: Option<Ast.Node>, expect: Option<Types.Type>) -> Option<Types.Type> { Panic("not ported yet: staticType") }
+fn genVariant(mut F: Ctx.FnCtx, call: Option<Ast.Node>, pos: Token.Pos, d: Resolve.Decl, et: Option<Types.Type>, vname: String, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genVariant") }
+fn genStringLit(mut F: Ctx.FnCtx, n: Ast.Node) -> Ctx.Val { Panic("not ported yet: genStringLit") }
+fn genIndexRead(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genIndexRead") }
+fn genArrayLit(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genArrayLit") }
+fn genStructLit(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genStructLit") }
+fn genLambda(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genLambda") }
+fn genCall(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genCall") }
+fn genMember(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genMember") }
+fn genMatch(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genMatch") }
+fn genTry(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genTry") }
+fn genCallDecl(mut F: Ctx.FnCtx, call: Ast.Node, d: Resolve.Decl, self: Option<Types.Type>, explicit: Option<Array<Types.Type>>, expect: Option<Types.Type>, recv: Option<Ctx.Val>) -> Ctx.Val { Panic("not ported yet: genCallDecl") }
+fn genIndexAssign(mut F: Ctx.FnCtx, n: Ast.Node) { Panic("not ported yet: genIndexAssign") }
+fn genForIter(mut F: Ctx.FnCtx, n: Ast.Node) { Panic("not ported yet: genForIter") }
+fn isPureExpr(n: Ast.Node) -> Bool { Panic("not ported yet: isPureExpr") }
+
+fn mkIdent(pos: Token.Pos, name: String) -> Ast.Node {
+    mut n: Ast.Node = Ast.Node.New(Ast.NK.Ident, pos)
+    n.SetName(name)
+    n
+}
+
+fn mkMethodCall(recv: Ast.Node, method: String, pos: Token.Pos, a1: Option<Ast.Node>, a2: Option<Ast.Node>) -> Ast.Node {
+    mut m: Ast.Node = Ast.Node.New(Ast.NK.Member, pos)
+    m.A = Some(recv)
+    m.SetName(method)
+    mut c: Ast.Node = Ast.Node.New(Ast.NK.Call, pos)
+    c.A = Some(m)
+    match (a1) {
+        Some(x) => c.List.Push(x),
+        None => {},
+    }
+    match (a2) {
+        Some(x) => c.List.Push(x),
+        None => {},
+    }
+    c
+}
