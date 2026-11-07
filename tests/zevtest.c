@@ -11,9 +11,15 @@
  *              ZEVIC_TEST_TIMEOUT (seconds per command, default 180), CC (C compiler for the library test).
  * Exit code: 0 when everything passed, 1 otherwise. */
 
+#ifdef __APPLE__
+#define _DARWIN_C_SOURCE
+#else
 #define _POSIX_C_SOURCE 200809L
 #define _DEFAULT_SOURCE
 #define _XOPEN_SOURCE 700
+#endif
+#define _CRT_SECURE_NO_WARNINGS
+#define _CRT_NONSTDC_NO_WARNINGS
 
 #include <ctype.h>
 #include <errno.h>
@@ -943,6 +949,7 @@ static void test_zevfmt(void) {
             report(path, false, fmt("zevfmt failed\n%s", f.err));
             continue;
         }
+        f.out = no_cr(f.out); /* standard output is in text mode on Windows: CRLF */
         spit(once, f.out);
         Run a0 = run_cwd(NULL, g_zevic, "--dump-ast", path, NULL);
         Run a1 = run_cwd(NULL, g_zevic, "--dump-ast", once, NULL);
@@ -951,7 +958,7 @@ static void test_zevfmt(void) {
             continue;
         }
         Run f2 = run_cwd(NULL, g_zevfmt, once, NULL);
-        if (f2.code != 0 || strcmp(f2.out, f.out) != 0) {
+        if (f2.code != 0 || strcmp(no_cr(f2.out), f.out) != 0) {
             report(path, false, "formatting is not idempotent");
             continue;
         }
