@@ -1840,9 +1840,6 @@ fn genStmt(mut F: Ctx.FnCtx, s: Ast.Node) {
 // ---- not ported yet ----
 
 fn fnValueOf(mut F: Ctx.FnCtx, d: Resolve.Decl, pos: Token.Pos) -> Ctx.Val { Panic("not ported yet: fnValueOf") }
-fn preludeVariantOwner(F: Ctx.FnCtx, name: String) -> Option<Resolve.Decl> { Panic("not ported yet: preludeVariantOwner") }
-fn staticType(mut F: Ctx.FnCtx, d: Resolve.Decl, tnode: Option<Ast.Node>, expect: Option<Types.Type>) -> Option<Types.Type> { Panic("not ported yet: staticType") }
-fn genVariant(mut F: Ctx.FnCtx, call: Option<Ast.Node>, pos: Token.Pos, d: Resolve.Decl, et: Option<Types.Type>, vname: String, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genVariant") }
 fn genIndexRead(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genIndexRead") }
 fn genArrayLit(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genArrayLit") }
 fn genStructLit(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genStructLit") }
@@ -2115,6 +2112,321 @@ fn fileModName(F: Ctx.FnCtx) -> String {
         Some(m) => m.Name,
         None => "",
     }
+}
+
+// ---- enum variants ----
+
+// `Some` and `None` belong to Option, `Ok` and `Err` to Result (both live in Zevic.Core).
+fn preludeVariantOwner(F: Ctx.FnCtx, name: String) -> Option<Resolve.Decl> {
+    if (name == "Some" || name == "None") {
+        return Gen.LookupInPrelude(F.G, "Option")
+    }
+    if (name == "Ok" || name == "Err") {
+        return Gen.LookupInPrelude(F.G, "Result")
+    }
+    None
+}
+
+fn findVariantNode(enumDecl: Ast.Node, name: String) -> Option<Ast.Node> {
+    for (m in enumDecl.List) {
+        if (m.Kind == Ast.NK.Variant && m.Name == name) {
+            return Some(m)
+        }
+    }
+    None
+}
+
+fn findVariant(t: Types.Type, name: String) -> Option<Types.Variant> {
+    for (v in t.Variants) {
+        if (v.Name == name) {
+            return Some(v)
+        }
+    }
+    None
+}
+
+fn sameDecl(g: Gen.Gen, t: Types.Type, d: Resolve.Decl) -> Bool {
+    match (Gen.DeclOfType(g, t)) {
+        Some(x) => x.Key() == d.Key(),
+        None => false,
+    }
+}
+
+// The type of a generic type's instance when it is known without looking at the arguments.
+fn staticType(mut F: Ctx.FnCtx, d: Resolve.Decl, tnode: Option<Ast.Node>, expect: Option<Types.Type>) -> Option<Types.Type> {
+    mut g: Gen.Gen = F.G
+    let td: Ast.Node = d.Node
+    if (td.List2.Len() == 0) {
+        return Some(Gen.Instantiate(g, d, [], td.Pos))
+    }
+    match (tnode) {
+        Some(tn) => {
+            if (tn.List2.Len() > 0) {
+                mut targs: Array<Types.Type> = []
+                for (a in tn.List2) {
+                    targs.Push(Gen.ResolveType(g, F.File, F.Env, a))
+                }
+                return Some(Gen.Instantiate(g, d, targs, tn.Pos))
+            }
+        },
+        None => {},
+    }
+    match (expect) {
+        Some(e) => {
+            if (sameDecl(g, e, d)) {
+                return Some(e)
+            }
+        },
+        None => {},
+    }
+    None
+}
+
+fn isFnTParam(fnNode: Ast.Node, name: String) -> Bool {
+    for (tp in fnNode.List2) {
+        if (tp.Name == name) {
+            return true
+        }
+    }
+    false
+}
+
+// Does this type syntax mention a type parameter of `fn` that is not bound yet?
+fn syntaxUsesUnbound(te: Ast.Node, fnNode: Ast.Node, env: Gen.Env) -> Bool {
+    match (te.Kind) {
+        Ast.NK.TypeName => {
+            if (te.Path.Len() == 1 && isFnTParam(fnNode, te.Path[0]) && env.Get(te.Path[0]).IsNone()) {
+                return true
+            }
+            for (a in te.List) {
+                if (syntaxUsesUnbound(a, fnNode, env)) {
+                    return true
+                }
+            }
+            false
+        },
+        Ast.NK.TypeTuple | Ast.NK.TypeUnion => {
+            for (a in te.List) {
+                if (syntaxUsesUnbound(a, fnNode, env)) {
+                    return true
+                }
+            }
+            false
+        },
+        Ast.NK.TypeFn => {
+            for (a in te.List) {
+                if (syntaxUsesUnbound(a, fnNode, env)) {
+                    return true
+                }
+            }
+            syntaxUsesUnbound(nn(te.A), fnNode, env)
+        },
+        Ast.NK.TypePtr => syntaxUsesUnbound(nn(te.A), fnNode, env),
+        _ => false,
+    }
+}
+
+// Bind the type parameters in `te` by matching it against `actual`.
+fn unify(g: Gen.Gen, te: Ast.Node, actual: Types.Type, fnNode: Ast.Node, mut env: Gen.Env) {
+    if (g.IsErr(actual) || actual.Id == g.Tt.Never.Id) {
+        return
+    }
+    match (te.Kind) {
+        Ast.NK.TypeName => {
+            if (te.Path.Len() == 1 && isFnTParam(fnNode, te.Path[0])) {
+                if (env.Get(te.Path[0]).IsNone()) {
+                    env.Add(te.Path[0], actual)
+                }
+                return
+            }
+            if (Gen.DeclOfType(g, actual).IsSome() && te.List.Len() == actual.Args.Len()) {
+                mut i: I64 = 0
+                while (i < te.List.Len()) {
+                    unify(g, te.List[i], actual.Args[i], fnNode, env)
+                    i += 1
+                }
+            }
+        },
+        Ast.NK.TypeTuple => {
+            if (actual.Kind == Types.TKind.Tuple && actual.Args.Len() == te.List.Len()) {
+                mut i: I64 = 0
+                while (i < te.List.Len()) {
+                    unify(g, te.List[i], actual.Args[i], fnNode, env)
+                    i += 1
+                }
+            }
+        },
+        Ast.NK.TypeFn => {
+            if (actual.Kind == Types.TKind.Fn && actual.Args.Len() == te.List.Len()) {
+                mut i: I64 = 0
+                while (i < te.List.Len()) {
+                    unify(g, te.List[i], actual.Args[i], fnNode, env)
+                    i += 1
+                }
+                match (actual.Ret) {
+                    Some(r) => unify(g, nn(te.A), r, fnNode, env),
+                    None => {},
+                }
+            }
+        },
+        Ast.NK.TypePtr => {
+            if (actual.Kind == Types.TKind.Ptr) {
+                unify(g, nn(te.A), actual.Args[0], fnNode, env)
+            }
+        },
+        _ => {},
+    }
+}
+
+// Build an aggregate value from already generated parts.
+fn makeAggregate(mut F: Ctx.FnCtx, tt: Types.Type, vals: Array<Ctx.Val>) -> Ctx.Val {
+    if (vals.Len() == 0) {
+        return Ctx.Val.New(tt, "zeroinitializer")
+    }
+    mut acc: String = "undef"
+    mut i: I64 = 0
+    while (i < vals.Len()) {
+        let v: Ctx.Val = vals[i]
+        let r: String = F.Tmp()
+        F.Emit("${r} = insertvalue ${F.LlOf(tt)} ${acc}, ${F.LlOf(v.T)} ${v.V}, ${i}")
+        acc = r
+        i += 1
+    }
+    Ctx.Val.New(tt, acc)
+}
+
+fn buildVariant(mut F: Ctx.FnCtx, et: Types.Type, v: Types.Variant, vals: Array<Ctx.Val>) -> Ctx.Val {
+    let slot: String = F.NewSlot(et)
+    F.Emit("store i32 ${v.Tag}, ptr ${tagPtr(F, et, slot)}")
+    match (v.Payload) {
+        Some(pl) => {
+            if (vals.Len() > 0) {
+                let pv: Ctx.Val = makeAggregate(F, pl, vals)
+                F.Emit("store ${F.LlOf(pl)} ${pv.V}, ptr ${payloadPtr(F, et, slot)}")
+            }
+        },
+        None => {},
+    }
+    let t: String = F.Tmp()
+    F.Emit("${t} = load ${F.LlOf(et)}, ptr ${slot}")
+    Ctx.Val.New(et, t)
+}
+
+// Shape.Circle(1.0), Some(x), None ... `call` is None for a variant without data.
+fn genVariant(mut F: Ctx.FnCtx, call: Option<Ast.Node>, pos: Token.Pos, d: Resolve.Decl, etIn: Option<Types.Type>, vname: String, expect: Option<Types.Type>) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let vn: Ast.Node = match (findVariantNode(d.Node, vname)) {
+        Some(x) => x,
+        None => {
+            g.Diag.Error(pos, "enum `${d.Name}` has no variant `${vname}`")
+            return F.ErrVal()
+        },
+    }
+    let nf: I64 = if (vn.Flag) { vn.List2.Len() } else { vn.List.Len() }
+    mut args: Array<Ast.Node> = []
+    mut named: Bool = false
+    match (call) {
+        Some(c) => {
+            args = c.List
+            named = c.Flag2
+        },
+        None => {},
+    }
+    let nargs: I64 = args.Len()
+    if (nf != nargs) {
+        if (nf == 0) {
+            g.Diag.Error(pos, "variant `${d.Name}.${vname}` has no data, so it is written without `(...)`")
+        } else if (call.IsNone()) {
+            g.Diag.Error(pos, "variant `${d.Name}.${vname}` needs ${nf} value(s): write `${d.Name}.${vname}(...)`")
+        } else {
+            g.Diag.Error(pos, "variant `${d.Name}.${vname}` takes ${nf} value(s), but ${nargs} were given")
+        }
+        return F.ErrVal()
+    }
+    if (vn.Flag && !(call.IsSome() && named)) {
+        let first: String = if (vn.List2.Len() > 0) { vn.List2[0].Name } else { "Field" }
+        g.Diag.Error(pos, "variant `${d.Name}.${vname}` has named fields: write `${d.Name}.${vname} { ${first}: ... }`")
+        return F.ErrVal()
+    }
+    mut vals: Array<Ctx.Val> = []
+    mut et: Types.Type = g.Err
+    match (etIn) {
+        None => {
+            mut env: Gen.Env = Gen.Env.New()
+            mut i: I64 = 0
+            while (i < nargs) {
+                let fte: Ast.Node = if (vn.Flag) { nn(vn.List2[i].A) } else { vn.List[i] }
+                let pexp: Option<Types.Type> = if (syntaxUsesUnbound(fte, d.Node, env)) { None } else { Some(Gen.ResolveType(g, d.FileInfo(), env, fte)) }
+                let v: Ctx.Val = genExpr(F, args[i], pexp)
+                if (v.T.Id == g.Tt.Never.Id) {
+                    return F.NeverVal(expect)
+                }
+                if (pexp.IsNone()) {
+                    unify(g, fte, v.T, d.Node, env)
+                }
+                vals.Push(v)
+                i += 1
+            }
+            mut targs: Array<Types.Type> = []
+            mut k: I64 = 0
+            while (k < d.Node.List2.Len()) {
+                let tp: Ast.Node = d.Node.List2[k]
+                mut t: Option<Types.Type> = env.Get(tp.Name)
+                if (t.IsNone()) {
+                    match (expect) {
+                        Some(e) => {
+                            if (sameDecl(g, e, d)) {
+                                t = Some(e.Args[k])
+                            }
+                        },
+                        None => {},
+                    }
+                }
+                match (t) {
+                    Some(x) => targs.Push(x),
+                    None => {
+                        g.Diag.Error(pos, "cannot infer the type parameter `${tp.Name}` of `${d.Name}` (add a type annotation)")
+                        return F.ErrVal()
+                    },
+                }
+                k += 1
+            }
+            et = Gen.Instantiate(g, d, targs, pos)
+        },
+        Some(e) => {
+            et = e
+            match (findVariant(e, vname)) {
+                Some(v0) => {
+                    mut i: I64 = 0
+                    while (i < nargs) {
+                        let v: Ctx.Val = genExpr(F, args[i], Some(v0.Fields[i].T))
+                        if (v.T.Id == g.Tt.Never.Id) {
+                            return F.NeverVal(expect)
+                        }
+                        vals.Push(v)
+                        i += 1
+                    }
+                },
+                None => {},
+            }
+        },
+    }
+    let var: Types.Variant = match (findVariant(et, vname)) {
+        Some(x) => x,
+        None => return F.ErrVal(),
+    }
+    mut i: I64 = 0
+    while (i < nargs) {
+        let f: Types.Field = var.Fields[i]
+        let what: String = if (named) { "field `${f.Name}` of `${d.Name}.${vname}`" } else { "argument ${i + 1} of `${d.Name}.${vname}`" }
+        let cv: Ctx.Val = coerce(F, args[i].Pos, vals[i], f.T, what)
+        if (g.IsErr(cv.T)) {
+            return F.ErrVal()
+        }
+        vals[i] = cv
+        i += 1
+    }
+    buildVariant(F, et, var, vals)
 }
 
 fn mkIdent(pos: Token.Pos, name: String) -> Ast.Node {
