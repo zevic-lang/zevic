@@ -3230,6 +3230,196 @@ fn nnT(t: Option<Types.Type>) -> Types.Type {
     }
 }
 
+// ---- built-in functions: Panic, Assert, NewString, Free, ObjPtr, String.FromC ----
+
+fn emitPanicCall(mut F: Ctx.FnCtx, msg: Ctx.Val, pos: Token.Pos) {
+    mut g: Gen.Gen = F.G
+    Gen.Declare(g, "zevic_panic", "declare void @zevic_panic(ptr, i64, ptr, i32) noreturn")
+    let (p, n): (String, String) = strParts(F, msg)
+    let fc: String = Gen.StrConst(g, g.Diag.Name(pos.File))
+    F.Emit("call void @zevic_panic(ptr ${p}, i64 ${n}, ptr ${constPtr(fc)}, i32 ${pos.Line})")
+    F.Emit("unreachable")
+    F.Term = true
+}
+
+fn genPanicBuiltin(mut F: Ctx.FnCtx, n: Ast.Node) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    if (n.List.Len() != 1) {
+        g.Diag.Error(n.Pos, "`Panic` takes one argument, the message")
+        return F.ErrVal()
+    }
+    mut m: Ctx.Val = genExpr(F, n.List[0], Some(g.Tt.Str))
+    m = coerce(F, n.List[0].Pos, m, g.Tt.Str, "the message of `Panic`")
+    if (m.T.Id == g.Tt.Never.Id) {
+        return m
+    }
+    if (g.IsErr(m.T)) {
+        return F.ErrVal()
+    }
+    emitPanicCall(F, m, n.Pos)
+    F.NeverVal(None)
+}
+
+fn genAssertBuiltin(mut F: Ctx.FnCtx, n: Ast.Node) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    if (n.List.Len() != 2) {
+        g.Diag.Error(n.Pos, "`Assert` takes two arguments: the condition and the message")
+        return F.ErrVal()
+    }
+    mut c: Ctx.Val = genExpr(F, n.List[0], Some(g.Tt.Bool))
+    c = coerce(F, n.List[0].Pos, c, g.Tt.Bool, "the condition of `Assert`")
+    if (c.T.Id == g.Tt.Never.Id) {
+        return c
+    }
+    if (g.IsErr(c.T)) {
+        return F.ErrVal()
+    }
+    let fail: String = F.NewLabel("assert.fail")
+    let ok: String = F.NewLabel("assert.ok")
+    F.CondBr(c.V, ok, fail)
+    F.StartBlock(fail)
+    mut m: Ctx.Val = genExpr(F, n.List[1], Some(g.Tt.Str))
+    m = coerce(F, n.List[1].Pos, m, g.Tt.Str, "the message of `Assert`")
+    if (m.T.Id != g.Tt.Never.Id && !g.IsErr(m.T)) {
+        emitPanicCall(F, m, n.Pos)
+    } else if (!F.Term) {
+        F.Emit("unreachable")
+        F.Term = true
+    }
+    F.StartBlock(ok)
+    F.UnitVal()
+}
+
+fn genStringFromC(mut F: Ctx.FnCtx, call: Ast.Node, lossy: Bool) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let fname: String = if (lossy) { "FromCLossy" } else { "FromC" }
+    if (call.List.Len() != 1) {
+        g.Diag.Error(call.Pos, "`String.${fname}` takes one argument (a `CString`)")
+        return F.ErrVal()
+    }
+    let cs: Types.Type = nnT(g.Tt.CByName("CString"))
+    mut c: Ctx.Val = genExpr(F, call.List[0], Some(cs))
+    if (c.T.Id == g.Tt.Never.Id) {
+        return c
+    }
+    if (g.IsErr(c.T)) {
+        return F.ErrVal()
+    }
+    c = coerce(F, call.List[0].Pos, c, cs, "the argument")
+    if (g.IsErr(c.T)) {
+        return F.ErrVal()
+    }
+    Gen.Declare(g, "zevic_str_from_c", "declare i32 @zevic_str_from_c(ptr, ptr, i32)")
+    let slot: String = F.NewSlot(g.Tt.Str)
+    let ok: String = F.Tmp()
+    F.Emit("${ok} = call i32 @zevic_str_from_c(ptr ${slot}, ptr ${c.V}, i32 ${if (lossy) { 1 } else { 0 }})")
+    if (!lossy) {
+        let bad: String = F.Tmp()
+        let lb: String = F.NewLabel("fromc.bad")
+        let lg: String = F.NewLabel("fromc.ok")
+        F.Emit("${bad} = icmp eq i32 ${ok}, 0")
+        F.Emit("br i1 ${bad}, label %${lb}, label %${lg}")
+        F.StartBlock(lb)
+        let msg: Ctx.Val = strVal(F, Gen.StrConst(g, "String.FromC: the C string is not valid UTF-8 (use String.FromCLossy)"))
+        emitPanicCall(F, msg, call.Pos)
+        F.StartBlock(lg)
+    }
+    let r: String = F.Tmp()
+    F.Emit("${r} = load { ptr, i64 }, ptr ${slot}")
+    Ctx.Val.New(g.Tt.Str, r)
+}
+
+// NewString(s): a copy of `s` in malloc'd memory that C may keep (and must free).
+fn genNewString(mut F: Ctx.FnCtx, call: Ast.Node) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    if (call.List.Len() != 1) {
+        g.Diag.Error(call.Pos, "`NewString` takes one argument (a `String`)")
+        return F.ErrVal()
+    }
+    mut s: Ctx.Val = genExpr(F, call.List[0], Some(g.Tt.Str))
+    s = coerce(F, call.List[0].Pos, s, g.Tt.Str, "the argument of `NewString`")
+    if (s.T.Id == g.Tt.Never.Id) {
+        return s
+    }
+    if (g.IsErr(s.T)) {
+        return F.ErrVal()
+    }
+    Gen.Declare(g, "zevic_new_cstring", "declare ptr @zevic_new_cstring(ptr, i64)")
+    let (p, n): (String, String) = strParts(F, s)
+    let r: String = F.Tmp()
+    F.Emit("${r} = call ptr @zevic_new_cstring(ptr ${p}, i64 ${n})")
+    Ctx.Val.New(nnT(g.Tt.CByName("CString")), r)
+}
+
+// Free(p): C's free, for memory from C or from NewString.
+fn genFree(mut F: Ctx.FnCtx, call: Ast.Node) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    if (call.List.Len() != 1) {
+        g.Diag.Error(call.Pos, "`Free` takes one argument (a pointer or a `CString`)")
+        return F.ErrVal()
+    }
+    let p: Ctx.Val = genExpr(F, call.List[0], None)
+    if (p.T.Id == g.Tt.Never.Id) {
+        return p
+    }
+    if (g.IsErr(p.T)) {
+        return F.ErrVal()
+    }
+    if (p.T.Kind != Types.TKind.Ptr && p.T.Id != nnT(g.Tt.CByName("CString")).Id) {
+        g.Diag.Error(call.List[0].Pos, "`Free` needs a pointer or a `CString`, found `${p.T.Name}`")
+        return F.ErrVal()
+    }
+    Gen.Declare(g, "free", "declare void @free(ptr)")
+    F.Emit("call void @free(ptr ${p.V})")
+    F.UnitVal()
+}
+
+// ObjPtr(x) turns a class object into a C `void*`; PtrObj<T>(p) turns it back.
+fn genObjPtr(mut F: Ctx.FnCtx, call: Ast.Node, d: Resolve.Decl, last: Ast.Node) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let toPtr: Bool = d.Name == "ObjPtr"
+    if (call.List.Len() != 1) {
+        g.Diag.Error(call.Pos, "`${d.Name}` takes one argument")
+        return F.ErrVal()
+    }
+    let voidp: Types.Type = g.Tt.Ptr(nnT(g.Tt.CByName("CVoid")))
+    if (toPtr) {
+        let x: Ctx.Val = genExpr(F, call.List[0], None)
+        if (x.T.Id == g.Tt.Never.Id) {
+            return x
+        }
+        if (g.IsErr(x.T)) {
+            return F.ErrVal()
+        }
+        if (x.T.Kind != Types.TKind.Class) {
+            g.Diag.Error(call.Pos, "`ObjPtr` needs a class value, found `${x.T.Name}`")
+            return F.ErrVal()
+        }
+        return Ctx.Val.New(voidp, x.V)
+    }
+    mut p: Ctx.Val = genExpr(F, call.List[0], Some(voidp))
+    p = coerce(F, call.List[0].Pos, p, voidp, "the argument of `PtrObj`")
+    if (p.T.Id == g.Tt.Never.Id) {
+        return p
+    }
+    if (g.IsErr(p.T)) {
+        return F.ErrVal()
+    }
+    if (last.List2.Len() != 1) {
+        g.Diag.Error(call.Pos, "`PtrObj` needs its type: `PtrObj<T>(p)`")
+        return F.ErrVal()
+    }
+    let t: Types.Type = Gen.ResolveType(g, F.File, F.Env, last.List2[0])
+    if (g.IsErr(t)) {
+        return F.ErrVal()
+    }
+    if (t.Kind != Types.TKind.Class) {
+        g.Diag.Error(call.Pos, "`PtrObj` can only produce a class, not `${t.Name}`")
+        return F.ErrVal()
+    }
+    Ctx.Val.New(t, p.V)
+}
+
 fn mkIdent(pos: Token.Pos, name: String) -> Ast.Node {
     mut n: Ast.Node = Ast.Node.New(Ast.NK.Ident, pos)
     n.SetName(name)
