@@ -1844,7 +1844,6 @@ fn genLambda(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.V
 fn genCall(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genCall") }
 fn genMatch(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genMatch") }
 fn genTry(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genTry") }
-fn genCallDecl(mut F: Ctx.FnCtx, call: Ast.Node, d: Resolve.Decl, self: Option<Types.Type>, explicit: Option<Array<Types.Type>>, expect: Option<Types.Type>, recv: Option<Ctx.Val>) -> Ctx.Val { Panic("not ported yet: genCallDecl") }
 fn genForIter(mut F: Ctx.FnCtx, n: Ast.Node) { Panic("not ported yet: genForIter") }
 
 // ---- places, paths and string literals ----
@@ -2808,6 +2807,427 @@ fn genMember(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.V
         return F.NeverVal(expect)
     }
     loadPlace(F, p)
+}
+
+// ---- calls of declared functions ----
+
+// The pointer part of a string constant `{ ptr @x, i64 n }`.
+fn constPtr(c: String) -> String { c.Slice(6, Text.IndexOf(c, ",").Unwrap()) }
+
+// Attribute that makes a narrow C integer cross the call boundary the way a C compiler would.
+fn cExtAttr(t: Types.Type) -> String {
+    if (t.Kind != Types.TKind.CType || !Text.StartsWith(t.Ll, "i")) {
+        return ""
+    }
+    if (t.Size >= 4) {
+        return ""
+    }
+    if (t.Name == "CBool") {
+        return " zeroext"
+    }
+    if (t.PayloadWords == 1) { " signext" } else { " zeroext" }
+}
+
+// A Zevic function value as a C function pointer: a wrapper with the plain C signature that calls the function
+// with a null environment. Only a named function or a lambda that captures nothing can be passed.
+fn cCallback(mut F: Ctx.FnCtx, v: Ctx.Val) -> Option<String> {
+    mut g: Gen.Gen = F.G
+    mut target: Option<String> = None
+    let pre: String = "{ ptr @\"thunk."
+    let post: String = "\", ptr null }"
+    if (Text.StartsWith(v.V, pre) && Text.IndexOf(v.V, post).IsSome()) {
+        target = Some(v.V.Slice(8, Text.IndexOf(v.V, post).Unwrap()))
+    } else {
+        target = g.Noenv.Get("${F.Inst.Name}:${v.V}")
+    }
+    let tg: String = match (target) {
+        Some(x) => x,
+        None => {
+            g.Diag.Error(g.CallPos, "only a named function, or a lambda that captures nothing, can be passed to C as a callback")
+            g.Diag.Note("wrap the data a callback needs in a `Handle` and pass its number instead")
+            return None
+        },
+    }
+    let wrapper: String = "cb.${tg}"
+    if (g.Thunks.Get(wrapper).IsNone()) {
+        g.Thunks.Set(wrapper, tg)
+        let ft: Types.Type = v.T
+        mut ps: String = ""
+        mut cargs: String = ""
+        mut i: I64 = 0
+        while (i < ft.Args.Len()) {
+            let pt: Types.Type = ft.Args[i]
+            ps = "${ps}${if (i > 0) { ", " } else { "" }}${pt.Ll}${cExtAttr(pt)} %p${i}"
+            cargs = "${cargs}, ${pt.Ll} %p${i}"
+            i += 1
+        }
+        let r: Types.Type = match (ft.Ret) {
+            Some(x) => x,
+            None => g.Tt.Unit,
+        }
+        let isVoid: Bool = r.Id == g.Tt.Unit.Id || r.Id == g.Tt.Never.Id || (r.Kind == Types.TKind.CType && r.Name == "CVoid")
+        let rl: String = if (isVoid) { "void" } else { r.Ll }
+        let ra: String = if (isVoid) { "" } else { cExtAttr(r) }
+        if (isVoid) {
+            g.Funcs.Put("define void @\"${wrapper}\"(${ps}) {\nentry:\n  call void @\"${tg}\"(ptr null${cargs})\n  ret void\n}\n\n")
+        } else {
+            g.Funcs.Put("define${ra} ${rl} @\"${wrapper}\"(${ps}) {\nentry:\n  %r = call ${rl} @\"${tg}\"(ptr null${cargs})\n  ret ${rl} %r\n}\n\n")
+        }
+    }
+    Some("@\"${wrapper}\"")
+}
+
+// A call to an `extern "C"` function.
+fn emitCCall(mut F: Ctx.FnCtx, inst: Gen.Inst, args: Array<Ctx.Val>) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    mut a: String = ""
+    mut ptypes: String = ""
+    let ret: Types.Type = inst.Ret
+    mut variadic: Bool = false
+    for (p in inst.D.Node.List) {
+        if (p.Flag3) {
+            variadic = true
+        }
+    }
+    mut i: I64 = 0
+    while (i < args.Len()) {
+        let v: Ctx.Val = args[i]
+        if (i > 0) {
+            a = "${a}, "
+        }
+        let attr: String = cExtAttr(v.T)
+        mut ll: String = F.LlOf(v.T)
+        mut vv: String = v.V
+        if (v.T.Kind == Types.TKind.Fn) {
+            match (cCallback(F, v)) {
+                Some(cb) => {
+                    vv = cb
+                    ll = "ptr"
+                },
+                None => return F.ErrVal(),
+            }
+        }
+        a = "${a}${ll}${attr} ${vv}"
+        if (i < inst.Ptypes.Len()) {
+            if (i > 0) {
+                ptypes = "${ptypes}, "
+            }
+            ptypes = "${ptypes}${ll}${attr}"
+        }
+        i += 1
+    }
+    if (variadic) {
+        ptypes = if (ptypes.Len() > 0) { "${ptypes}, ..." } else { "..." }
+    }
+    let isVoid: Bool = ret.Id == g.Tt.Unit.Id || ret.Id == g.Tt.Never.Id
+    let rl: String = if (isVoid) { "void" } else { F.LlOf(ret) }
+    let rattr: String = if (isVoid) { "" } else { cExtAttr(ret) }
+    Gen.Declare(g, inst.Name, "declare${rattr} ${rl} @${inst.Name}(${ptypes})")
+    // a variadic callee is called through its full function type
+    let fty: String = if (variadic) { " ${rl} (${ptypes})" } else { " ${rl}" }
+    if (isVoid) {
+        F.Emit("call${fty} @${inst.Name}(${a})")
+        return F.UnitVal()
+    }
+    let t: String = F.Tmp()
+    F.Emit("${t} = call${rattr}${fty} @${inst.Name}(${a})")
+    Ctx.Val.New(ret, t)
+}
+
+// Emit a direct call to a function instance.
+fn emitCall(mut F: Ctx.FnCtx, inst: Gen.Inst, args: Array<Ctx.Val>) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let ret: Types.Type = inst.Ret
+    let abi: String = inst.D.Abi
+    let zevicAbi: Bool = inst.IsExtern && abi == "zevic"
+    let cAbi: Bool = inst.IsExtern && abi == "C"
+    if (cAbi) {
+        return emitCCall(F, inst, args)
+    }
+    if (!inst.IsExtern && inst.D.ModName == "Zevic.Test" && F.Inst.D.ModName != "Zevic.Test") {
+        // an assertion reports the line of the call, not a line inside the library
+        rtDecl(F, "zevic_test_at", "declare void @zevic_test_at(ptr, i32)")
+        let fc: String = Gen.StrConst(g, g.Diag.Name(g.CallPos.File))
+        F.Emit("call void @zevic_test_at(ptr ${constPtr(fc)}, i32 ${g.CallPos.Line})")
+    }
+    if (inst.IsExtern && !zevicAbi) {
+        g.Diag.Error(inst.D.Node.Pos, "`extern \"${abi}\"` functions are not supported yet")
+        return F.ErrVal()
+    }
+    let isStr: Bool = ret.Id == g.Tt.Str.Id
+    let noValue: Bool = isStr || ret.Id == g.Tt.Unit.Id || ret.Id == g.Tt.Never.Id
+    mut a: String = ""
+    if (zevicAbi) {
+        mut ptypes: String = ""
+        mut slot: String = ""
+        if (isStr) {
+            slot = F.NewSlot(g.Tt.Str)
+            a = "ptr ${slot}"
+            ptypes = "ptr"
+        }
+        for (v in args) {
+            if (v.T.Id == g.Tt.Unit.Id) {
+                continue
+            }
+            if (a.Len() > 0) {
+                a = "${a}, "
+            }
+            if (ptypes.Len() > 0) {
+                ptypes = "${ptypes}, "
+            }
+            if (v.T.Id == g.Tt.Str.Id) {
+                let (p, n): (String, String) = strParts(F, v)
+                a = "${a}ptr ${p}, i64 ${n}"
+                ptypes = "${ptypes}ptr, i64"
+            } else {
+                a = "${a}${F.LlOf(v.T)} ${v.V}"
+                ptypes = "${ptypes}${F.LlOf(v.T)}"
+            }
+        }
+        let rl: String = if (noValue) { "void" } else { F.LlOf(ret) }
+        Gen.Declare(g, inst.Name, "declare ${rl} @${inst.Name}(${ptypes})")
+        if (noValue) {
+            F.Emit("call void @${inst.Name}(${a})")
+            if (ret.Id == g.Tt.Never.Id) {
+                F.Emit("unreachable")
+                F.Term = true
+                return F.NeverVal(None)
+            }
+            if (ret.Id == g.Tt.Unit.Id) {
+                return F.UnitVal()
+            }
+            let t: String = F.Tmp()
+            F.Emit("${t} = load { ptr, i64 }, ptr ${slot}")
+            return Ctx.Val.New(g.Tt.Str, t)
+        }
+        let t: String = F.Tmp()
+        F.Emit("${t} = call ${F.LlOf(ret)} @${inst.Name}(${a})")
+        return Ctx.Val.New(ret, t)
+    }
+    mut i: I64 = 0
+    while (i < args.Len()) {
+        if (i > 0) {
+            a = "${a}, "
+        }
+        a = "${a}${F.LlOf(args[i].T)} ${args[i].V}"
+        i += 1
+    }
+    if (ret.Id == g.Tt.Unit.Id || ret.Id == g.Tt.Never.Id) {
+        F.Emit("call void @\"${inst.Name}\"(${a})")
+        if (ret.Id == g.Tt.Never.Id) {
+            F.Emit("unreachable")
+            F.Term = true
+            return F.NeverVal(None)
+        }
+        return F.UnitVal()
+    }
+    let t: String = F.Tmp()
+    F.Emit("${t} = call ${F.LlOf(ret)} @\"${inst.Name}\"(${a})")
+    Ctx.Val.New(ret, t)
+}
+
+// Call function `d` with the arguments of `call`, inferring generic arguments.
+fn genCallDecl(mut F: Ctx.FnCtx, callIn: Ast.Node, d: Resolve.Decl, self: Option<Types.Type>, explicit: Option<Array<Ast.Node>>, expect: Option<Types.Type>, recv: Option<Ctx.Val>) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let fnNode: Ast.Node = d.Node
+    mut call: Ast.Node = callIn
+    let ntp: I64 = fnNode.List2.Len()
+    mut env: Gen.Env = Gen.MakeEnv(g, d, self, None)
+    match (explicit) {
+        Some(ex) => {
+            if (ex.Len() > 0) {
+                if (ex.Len() != ntp) {
+                    g.Diag.Error(call.Pos, "`${fnNode.Name}` takes ${ntp} type argument(s), found ${ex.Len()}")
+                    return F.ErrVal()
+                }
+                mut i: I64 = 0
+                while (i < ntp) {
+                    env.Add(fnNode.List2[i].Name, Gen.ResolveType(g, F.File, F.Env, ex[i]))
+                    i += 1
+                }
+            }
+        },
+        None => {},
+    }
+    // `params xs: Array<T>`: the values at the end of the call are collected into an array
+    mut pi: I64 = 0
+    while (pi < fnNode.List.Len()) {
+        let pm: Ast.Node = fnNode.List[pi]
+        if (pm.Flag2 && pi != fnNode.List.Len() - 1) {
+            g.Diag.Error(pm.Pos, "only the last parameter can be `params`")
+            return F.ErrVal()
+        }
+        pi += 1
+    }
+    if (fnNode.List.Len() > 0 && fnNode.List[fnNode.List.Len() - 1].Flag2) {
+        let fixed: I64 = fnNode.List.Len() - 1
+        if (call.List.Len() < fixed) {
+            g.Diag.Error(call.Pos, "`${fnNode.Name}` takes at least ${fixed} argument(s), but ${call.List.Len()} were given")
+            return F.ErrVal()
+        }
+        mut packed: Ast.Node = call.Copy()
+        packed.List = []
+        mut arr: Ast.Node = Ast.Node.New(Ast.NK.Array, call.Pos)
+        mut i: I64 = 0
+        while (i < call.List.Len()) {
+            if (i < fixed) {
+                packed.List.Push(call.List[i])
+            } else {
+                arr.List.Push(call.List[i])
+            }
+            i += 1
+        }
+        packed.List.Push(arr)
+        call = packed
+    }
+    mut nparams: I64 = 0
+    for (pm in fnNode.List) {
+        if (!pm.Flag3) {
+            nparams += 1
+        }
+    }
+    let variadic: Bool = nparams < fnNode.List.Len()
+    if (if (variadic) { call.List.Len() < nparams } else { call.List.Len() != nparams }) {
+        g.Diag.Error(call.Pos, "`${fnNode.Name}` takes ${if (variadic) { "at least " } else { "" }}${nparams} argument(s), but ${call.List.Len()} were given")
+        return F.ErrVal()
+    }
+    mut vals: Array<Ctx.Val> = []
+    mut postponed: Array<Bool> = []
+    mut k: I64 = 0
+    while (k < nparams) {
+        vals.Push(F.ErrVal())
+        postponed.Push(false)
+        k += 1
+    }
+    mut never: Bool = false
+    // a bare number literal for a parameter whose type is still unknown (`Reduce(0, f)`) waits until the other
+    // arguments have fixed the type parameters; it has no side effects, so the order does not matter
+    mut pass: I64 = 0
+    while (pass < 2) {
+        mut i: I64 = 0
+        while (i < nparams) {
+            let pn: Ast.Node = fnNode.List[i]
+            let an: Ast.Node = call.List[i]
+            let unbound: Bool = syntaxUsesUnbound(nn(pn.A), fnNode, env)
+            if (pass == 0 && unbound && isUntypedLit(an)) {
+                postponed[i] = true
+            } else if (pass == 1 && !postponed[i]) {
+            } else {
+                let pexp: Option<Types.Type> = if (unbound) { None } else { Some(Gen.ResolveType(g, d.FileInfo(), env, nn(pn.A))) }
+                let v: Ctx.Val = genExpr(F, an, pexp)
+                vals[i] = v
+                if (v.T.Id == g.Tt.Never.Id) {
+                    never = true
+                } else if (pexp.IsNone()) {
+                    unify(g, nn(pn.A), v.T, fnNode, env)
+                }
+            }
+            i += 1
+        }
+        pass += 1
+    }
+    if (never) {
+        return F.NeverVal(expect)
+    }
+    mut targs: Array<Types.Type> = []
+    mut ti: I64 = 0
+    while (ti < ntp) {
+        let tp: Ast.Node = fnNode.List2[ti]
+        mut t: Option<Types.Type> = env.Get(tp.Name)
+        if (t.IsNone()) {
+            match (expect) {
+                Some(e) => {
+                    match (fnNode.A) {
+                        Some(ra) => {
+                            unify(g, ra, e, fnNode, env)
+                            t = env.Get(tp.Name)
+                        },
+                        None => {},
+                    }
+                },
+                None => {},
+            }
+        }
+        match (t) {
+            Some(x) => targs.Push(x),
+            None => {
+                g.Diag.Error(call.Pos, "cannot infer the type parameter `${tp.Name}` of `${fnNode.Name}` (write it explicitly, like `${fnNode.Name}<I32>(...)`)")
+                return F.ErrVal()
+            },
+        }
+        ti += 1
+    }
+    if (ntp > 0) {
+        Gen.CheckBounds(g, d.FileInfo(), fnNode, targs, Some(env), fnNode.Name, call.Pos)
+    }
+    let inst: Gen.Inst = Gen.GetInst(g, d, self, Some(targs))
+    mut i: I64 = 0
+    while (i < nparams) {
+        mut what: String = "argument ${i + 1} of `${fnNode.Name}`"
+        if (call.Flag3) {
+            // written as `a[i]` or `a[i] = v`
+            what = if (fnNode.Name == "SetIndex" && i == 1) { "an assignment" } else { "an index" }
+        }
+        let cv: Ctx.Val = coerce(F, call.List[i].Pos, vals[i], inst.Ptypes[i], what)
+        vals[i] = cv
+        if (g.IsErr(cv.T)) {
+            return F.ErrVal()
+        }
+        i += 1
+    }
+    let mut_i0: I64 = nparams
+    mut j: I64 = mut_i0
+    while (j < call.List.Len()) {
+        // the `...` part: C types and pointers, promoted the way C does
+        let an: Ast.Node = call.List[j]
+        mut v: Ctx.Val = genExpr(F, an, None)
+        if (v.T.Id == g.Tt.Never.Id) {
+            return F.NeverVal(expect)
+        }
+        if (g.IsErr(v.T)) {
+            return F.ErrVal()
+        }
+        if (!Gen.IsCValueType(v.T)) {
+            g.Diag.Error(an.Pos, "argument ${j + 1} of `${fnNode.Name}` has type `${v.T.Name}`; the `...` part of a C function takes only C types and pointers")
+            if (v.T.IsNumeric()) {
+                g.Diag.Note("convert it with a method such as `.ToCInt()` or `.ToCDouble()`")
+            } else if (v.T.Id == g.Tt.Str.Id) {
+                g.Diag.Note("convert a String with `.ToC()`")
+            }
+            return F.ErrVal()
+        }
+        if (v.T.Kind == Types.TKind.CType && v.T.Ll == "float") {
+            let r: String = F.Tmp()
+            F.Emit("${r} = fpext float ${v.V} to double")
+            v = Ctx.Val.New(nnT(g.Tt.CByName("CDouble")), r)
+        } else if (v.T.Kind == Types.TKind.CType && Text.StartsWith(v.T.Ll, "i") && v.T.Size < 4) {
+            let r: String = F.Tmp()
+            let sgn: Bool = v.T.PayloadWords == 1 && v.T.Name != "CBool"
+            F.Emit("${r} = ${if (sgn) { "sext" } else { "zext" }} ${v.T.Ll} ${v.V} to i32")
+            v = Ctx.Val.New(nnT(g.Tt.CByName(if (sgn) { "CInt" } else { "CUInt" })), r)
+        }
+        vals.Push(v)
+        j += 1
+    }
+    g.CallPos = call.Pos
+    match (recv) {
+        Some(r) => {
+            // the receiver goes first
+            mut all: Array<Ctx.Val> = [r]
+            for (v in vals) {
+                all.Push(v)
+            }
+            emitCall(F, inst, all)
+        },
+        None => emitCall(F, inst, vals),
+    }
+}
+
+fn nnT(t: Option<Types.Type>) -> Types.Type {
+    match (t) {
+        Some(x) => x,
+        None => Panic("type is missing"),
+    }
 }
 
 fn mkIdent(pos: Token.Pos, name: String) -> Ast.Node {

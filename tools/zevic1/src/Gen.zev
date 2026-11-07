@@ -72,6 +72,12 @@ class Gen {
     StrConst: Map<String, String> = Map.New()
     TestMode: Bool = false
     LibMode: Bool = false
+    // wrapper functions already written (thunks and C callbacks), by name
+    Thunks: Map<String, String> = Map.New()
+    // "<function symbol>:%tN" -> symbol of a lambda that captures nothing (so it can go to C as a callback)
+    Noenv: Map<String, String> = Map.New()
+    // the call being generated, for errors found while emitting it
+    CallPos: Token.Pos = Token.Pos.New(0, 0, 0)
 
     fn Init(pg: Resolve.Program, diag: Diag.Diag, longBytes: I64) {
         this.Pg = pg

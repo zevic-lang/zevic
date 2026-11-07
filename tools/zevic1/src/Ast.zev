@@ -192,6 +192,33 @@ class Node {
         this.Name = name
         this.HasName = true
     }
+
+    // a shallow copy: the children are shared
+    fn Copy() -> Node {
+        mut n: Node = Node.New(this.Kind, this.Pos)
+        n.Name = this.Name
+        n.HasName = this.HasName
+        n.Name2 = this.Name2
+        n.Op = this.Op
+        n.Ival = this.Ival
+        n.Fval = this.Fval
+        n.Suffix = this.Suffix
+        n.Flag = this.Flag
+        n.Flag2 = this.Flag2
+        n.Flag3 = this.Flag3
+        n.IsStatic = this.IsStatic
+        n.IsMutFn = this.IsMutFn
+        n.IsExport = this.IsExport
+        n.A = this.A
+        n.B = this.B
+        n.C = this.C
+        n.D = this.D
+        n.List = this.List
+        n.List2 = this.List2
+        n.List3 = this.List3
+        n.Path = this.Path
+        n
+    }
 }
 
 class SourceFile {
