@@ -1840,16 +1840,12 @@ fn genStmt(mut F: Ctx.FnCtx, s: Ast.Node) {
 // ---- not ported yet ----
 
 fn fnValueOf(mut F: Ctx.FnCtx, d: Resolve.Decl, pos: Token.Pos) -> Ctx.Val { Panic("not ported yet: fnValueOf") }
-fn genIndexRead(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genIndexRead") }
-fn genArrayLit(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genArrayLit") }
-fn genStructLit(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genStructLit") }
 fn genLambda(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genLambda") }
 fn genCall(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genCall") }
 fn genMember(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genMember") }
 fn genMatch(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genMatch") }
 fn genTry(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genTry") }
 fn genCallDecl(mut F: Ctx.FnCtx, call: Ast.Node, d: Resolve.Decl, self: Option<Types.Type>, explicit: Option<Array<Types.Type>>, expect: Option<Types.Type>, recv: Option<Ctx.Val>) -> Ctx.Val { Panic("not ported yet: genCallDecl") }
-fn genIndexAssign(mut F: Ctx.FnCtx, n: Ast.Node) { Panic("not ported yet: genIndexAssign") }
 fn genForIter(mut F: Ctx.FnCtx, n: Ast.Node) { Panic("not ported yet: genForIter") }
 
 // ---- places, paths and string literals ----
@@ -2427,6 +2423,275 @@ fn genVariant(mut F: Ctx.FnCtx, call: Option<Ast.Node>, pos: Token.Pos, d: Resol
         i += 1
     }
     buildVariant(F, et, var, vals)
+}
+
+// ---- arrays and struct literals ----
+
+fn isArrayType(F: Ctx.FnCtx, t: Types.Type) -> Bool {
+    if (t.Kind != Types.TKind.Class) {
+        return false
+    }
+    match (Gen.LookupInPrelude(F.G, "Array")) {
+        Some(d) => sameDecl(F.G, t, d),
+        None => false,
+    }
+}
+
+fn mkInt(pos: Token.Pos, v: U64) -> Ast.Node {
+    mut n: Ast.Node = Ast.Node.New(Ast.NK.Int, pos)
+    n.Ival = v
+    n
+}
+
+// Call function `fname` of standard library module `module` with values that are already computed.
+// They are parked in hidden variables so that the ordinary call code can be reused.
+fn callStd(mut F: Ctx.FnCtx, modName: String, fname: String, pos: Token.Pos, args: Array<Ctx.Val>, expect: Option<Types.Type>) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let d: Option<Resolve.Decl> = match (g.Pg.FindModule(modName)) {
+        Some(m) => m.Decls.Get(fname),
+        None => None,
+    }
+    match (d) {
+        Some(dd) => {
+            mut call: Ast.Node = Ast.Node.New(Ast.NK.Call, pos)
+            call.A = Some(mkIdent(pos, fname))
+            for (a in args) {
+                let name: String = "$c${F.NTmp}"
+                F.NTmp += 1
+                let l: Ctx.Local = declareLocal(F, name, a.T, false, pos)
+                if (a.T.Id != g.Tt.Unit.Id) {
+                    F.StoreTo(a.T, a, l.Ptr)
+                }
+                call.List.Push(mkIdent(pos, name))
+            }
+            genCallDecl(F, call, dd, None, None, expect, None)
+        },
+        None => {
+            g.Diag.Error(pos, "internal error: `${modName}.${fname}` is missing from the standard library")
+            F.ErrVal()
+        },
+    }
+}
+
+// a[i]  ->  a.Index(i)
+fn genIndexRead(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val {
+    mut call: Ast.Node = mkMethodCall(nn(n.A), "Index", n.Pos, n.B, None)
+    call.Flag3 = true
+    genExpr(F, call, expect)
+}
+
+// a[i] = v  ->  a.SetIndex(i, v);   a[i] += v  ->  a.SetIndex(i, a[i] + v)
+fn genIndexAssign(mut F: Ctx.FnCtx, n: Ast.Node) {
+    let target: Ast.Node = nn(n.A)
+    mut value: Ast.Node = nn(n.B)
+    if (n.Op != Token.Tk.Assign) {
+        if (!isPureExpr(nn(target.A)) || !isPureExpr(nn(target.B))) {
+            F.G.Diag.Error(n.Pos, "`${n.Op.Name()}` on an element needs a simple array and index (put them in variables first)")
+            return
+        }
+        mut bin: Ast.Node = Ast.Node.New(Ast.NK.Binary, n.Pos)
+        bin.Op = baseOp(n.Op)
+        bin.A = Some(target)
+        bin.B = n.B
+        value = bin
+    }
+    mut call: Ast.Node = mkMethodCall(nn(target.A), "SetIndex", n.Pos, target.B, Some(value))
+    call.Flag3 = true
+    let unused: Ctx.Val = genExpr(F, call, None)
+}
+
+fn elemSize(mut F: Ctx.FnCtx, et: Types.Type) -> String {
+    let g1: String = F.Tmp()
+    let sz: String = F.Tmp()
+    F.Emit("${g1} = getelementptr ${F.LlOf(et)}, ptr null, i32 1")
+    F.Emit("${sz} = ptrtoint ptr ${g1} to i64")
+    sz
+}
+
+fn elemPtr(mut F: Ctx.FnCtx, et: Types.Type, base: String, idx: String) -> String {
+    let p: String = F.Tmp()
+    F.Emit("${p} = getelementptr inbounds ${F.LlOf(et)}, ptr ${base}, i64 ${idx}")
+    p
+}
+
+// [a, b, c]: fill a new buffer and wrap it in an Array object.
+fn genArrayLit(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let cnt: I64 = n.List.Len()
+    mut at: Types.Type = g.Err
+    mut et: Types.Type = g.Err
+    mut first: Option<Ctx.Val> = None
+    mut fromExpect: Bool = false
+    match (expect) {
+        Some(e) => {
+            if (isArrayType(F, e)) {
+                at = e
+                et = e.Args[0]
+                fromExpect = true
+            }
+        },
+        None => {},
+    }
+    if (!fromExpect) {
+        if (cnt == 0) {
+            g.Diag.Error(n.Pos, "an empty array `[]` needs a type from its context (write `let a: Array<I32> = []`)")
+            return F.ErrVal()
+        }
+        let f0: Ctx.Val = genExpr(F, n.List[0], None)
+        if (f0.T.Id == g.Tt.Never.Id) {
+            return f0
+        }
+        if (g.IsErr(f0.T)) {
+            mut i: I64 = 1
+            while (i < cnt) {
+                let unused: Ctx.Val = genExpr(F, n.List[i], None)
+                i += 1
+            }
+            return F.ErrVal()
+        }
+        first = Some(f0)
+        et = f0.T
+        at = Gen.ArrayType(g, et)
+        if (g.IsErr(at)) {
+            return F.ErrVal()
+        }
+    }
+    rtDecl(F, "zevic_alloc", "declare ptr @zevic_alloc(i64)")
+    let bytes: String = F.Tmp()
+    let buf: String = F.Tmp()
+    F.Emit("${bytes} = mul i64 ${cnt}, ${elemSize(F, et)}")
+    F.Emit("${buf} = call ptr @zevic_alloc(i64 ${bytes})")
+    mut failed: Bool = false
+    mut i: I64 = 0
+    while (i < cnt) {
+        let en: Ast.Node = n.List[i]
+        mut v: Ctx.Val = F.ErrVal()
+        match (first) {
+            Some(f0) => {
+                if (i == 0) {
+                    v = f0
+                } else {
+                    v = genExpr(F, en, Some(et))
+                }
+            },
+            None => { v = genExpr(F, en, Some(et)) },
+        }
+        v = coerce(F, en.Pos, v, et, "an array element")
+        if (v.T.Id == g.Tt.Never.Id) {
+            return F.NeverVal(Some(at))
+        }
+        if (g.IsErr(v.T)) {
+            failed = true
+        } else if (et.Id != g.Tt.Unit.Id) {
+            F.StoreTo(et, v, elemPtr(F, et, buf, "${i}"))
+        }
+        i += 1
+    }
+    if (failed) {
+        return F.ErrVal()
+    }
+    Gen.EnsureMembers(g, at)
+    let vt: Types.Type = objTuple(g, at)
+    let obj: String = F.Tmp()
+    F.Emit("${obj} = call ptr @zevic_alloc(i64 ${g.Tt.SizeOf(vt)})")
+    let bi: I64 = findFieldIdx(at, "buf")
+    let li: I64 = findFieldIdx(at, "len")
+    let ci: I64 = findFieldIdx(at, "cap")
+    if (bi < 0 || li < 0 || ci < 0) {
+        g.Diag.Error(n.Pos, "internal error: Array in Core.zev must have the fields `buf`, `len` and `cap`")
+        return F.ErrVal()
+    }
+    let gb: String = F.Tmp()
+    let gl: String = F.Tmp()
+    let gc: String = F.Tmp()
+    F.Emit("${gb} = getelementptr inbounds ${F.LlOf(vt)}, ptr ${obj}, i32 0, i32 ${bi}")
+    F.Emit("store ptr ${buf}, ptr ${gb}")
+    F.Emit("${gl} = getelementptr inbounds ${F.LlOf(vt)}, ptr ${obj}, i32 0, i32 ${li}")
+    F.Emit("store i64 ${cnt}, ptr ${gl}")
+    F.Emit("${gc} = getelementptr inbounds ${F.LlOf(vt)}, ptr ${obj}, i32 0, i32 ${ci}")
+    F.Emit("store i64 ${cnt}, ptr ${gc}")
+    Ctx.Val.New(at, obj)
+}
+
+// Shape.Named { Field: value }
+fn genStructLit(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    mut segs: Array<String> = []
+    mut nodes: Array<Ast.Node> = []
+    if (!flattenPath(nn(n.A), segs, nodes) || segs.Len() < 2) {
+        g.Diag.Error(n.Pos, "`{ name: value }` can only follow an enum variant like `Shape.Named`")
+        return F.ErrVal()
+    }
+    let (dOpt, used): (Option<Resolve.Decl>, I64) = Gen.FindDecl(g, F.File, segs, nn(n.A).Pos)
+    if (used < 0) {
+        return F.ErrVal()
+    }
+    mut vnOpt: Option<Ast.Node> = None
+    match (dOpt) {
+        Some(d) => {
+            if (d.Node.Kind == Ast.NK.DEnum && used == segs.Len() - 1) {
+                vnOpt = findVariantNode(d.Node, segs[used])
+            }
+        },
+        None => {},
+    }
+    let vn: Ast.Node = match (vnOpt) {
+        Some(x) => x,
+        None => {
+            g.Diag.Error(n.Pos, "`${Ast.PathJoin(segs, ".")}` is not an enum variant, so it cannot be built with `{ name: value }`")
+            return F.ErrVal()
+        },
+    }
+    let d: Resolve.Decl = match (dOpt) {
+        Some(x) => x,
+        None => return F.ErrVal(),
+    }
+    let vname: String = vn.Name
+    if (!vn.Flag) {
+        g.Diag.Error(n.Pos, "variant `${d.Name}.${vname}` has no named fields; write `${d.Name}.${vname}(...)`")
+        return F.ErrVal()
+    }
+    mut call: Ast.Node = Ast.Node.New(Ast.NK.Call, n.Pos)
+    call.Flag2 = true
+    call.A = n.A
+    mut ok: Bool = true
+    for (declF in vn.List2) {
+        mut given: Option<Ast.Node> = None
+        for (gv in n.List) {
+            if (gv.Name == declF.Name) {
+                if (given.IsSome()) {
+                    g.Diag.Error(gv.Pos, "field `${gv.Name}` is given twice")
+                    ok = false
+                } else {
+                    given = Some(gv)
+                }
+            }
+        }
+        match (given) {
+            Some(gv) => call.List.Push(nn(gv.B)),
+            None => {
+                g.Diag.Error(n.Pos, "variant `${d.Name}.${vname}` needs the field `${declF.Name}`")
+                ok = false
+            },
+        }
+    }
+    for (gv in n.List) {
+        mut known: Bool = false
+        for (declF in vn.List2) {
+            if (declF.Name == gv.Name) {
+                known = true
+            }
+        }
+        if (!known) {
+            g.Diag.Error(gv.Pos, "variant `${d.Name}.${vname}` has no field `${gv.Name}`")
+            ok = false
+        }
+    }
+    if (!ok) {
+        return F.ErrVal()
+    }
+    let t: Option<Types.Type> = staticType(F, d, Some(nodes[used - 1]), expect)
+    genVariant(F, Some(call), n.Pos, d, t, vname, expect)
 }
 
 fn mkIdent(pos: Token.Pos, name: String) -> Ast.Node {
