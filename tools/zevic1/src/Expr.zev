@@ -1843,7 +1843,6 @@ fn genIfaceMethod(mut F: Ctx.FnCtx, call: Ast.Node, p: Ctx.Place, recvNode: Ast.
 
 fn fnValueOf(mut F: Ctx.FnCtx, d: Resolve.Decl, pos: Token.Pos) -> Ctx.Val { Panic("not ported yet: fnValueOf") }
 fn genLambda(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genLambda") }
-fn genForIter(mut F: Ctx.FnCtx, n: Ast.Node) { Panic("not ported yet: genForIter") }
 
 // ---- places, paths and string literals ----
 
@@ -5314,6 +5313,180 @@ fn nnV(v: Option<Types.Variant>) -> Types.Variant {
         Some(x) => x,
         None => Panic("variant is missing"),
     }
+}
+
+// ---- for (x in ...) over arrays and iterables ----
+
+// Does the type have an `Iter()` method (its own, a default one, or one of an interface value)?
+fn hasIterMethod(mut g: Gen.Gen, t: Types.Type) -> Bool {
+    if (t.Kind == Types.TKind.Iface) {
+        mut all: Array<Gen.IMethod> = []
+        Gen.CollectIfaceMethods(g, t, all, 0)
+        for (m in all) {
+            if (m.Fn.Name == "Iter") {
+                return true
+            }
+        }
+        return false
+    }
+    if (!Gen.IsUserType(t)) {
+        return false
+    }
+    if (Gen.FindMember(g, t, "Iter").IsSome()) {
+        return true
+    }
+    let (dm, conflict): (Option<Gen.IMethod>, Bool) = Gen.FindDefault(g, t, "Iter")
+    dm.IsSome()
+}
+
+fn mkLet(pos: Token.Pos, pat: Ast.Node, init: Ast.Node) -> Ast.Node {
+    mut l: Ast.Node = Ast.Node.New(Ast.NK.Let, pos)
+    l.A = Some(pat)
+    l.C = Some(init)
+    l
+}
+
+fn mkPlusOne(pos: Token.Pos, name: String) -> Ast.Node {
+    mut inc: Ast.Node = Ast.Node.New(Ast.NK.Assign, pos)
+    inc.Op = Token.Tk.PlusEq
+    inc.A = Some(mkIdent(pos, name))
+    inc.B = Some(mkInt(pos, 1_U64))
+    inc
+}
+
+fn pushLoop(mut F: Ctx.FnCtx, n: Ast.Node, brk: String, cont: String) {
+    mut lp: Ctx.Loop = Ctx.Loop.New(brk, cont, curScope(F))
+    if (n.HasName) {
+        lp.Label = Some(n.Name)
+    }
+    F.Loops.Push(lp)
+}
+
+// for (x in v) over anything with Iter(): it = v.Iter(); loop { o = it.Next(); if None, stop; x = o.Unwrap(); body }
+fn genForIterable(mut F: Ctx.FnCtx, n: Ast.Node, src: Ctx.Val) {
+    mut g: Gen.Gen = F.G
+    let pos: Token.Pos = n.Pos
+    let sl: Ctx.Local = declareLocal(F, "$src", src.T, false, pos)
+    F.StoreTo(src.T, src, sl.Ptr)
+    let iter: Ctx.Val = genExpr(F, mkMethodCall(mkIdent(pos, "$src"), "Iter", pos, None, None), None)
+    if (iter.T.Id == g.Tt.Never.Id || g.IsErr(iter.T)) {
+        popScope(F)
+        return
+    }
+    // `Next` is a `mut fn`
+    let itl: Ctx.Local = declareLocal(F, "$iter", iter.T, true, pos)
+    F.StoreTo(iter.T, iter, itl.Ptr)
+    // Map is the one exception: `for (k, v in m)` destructures the (key, value) element
+    let isMap: Bool = match (Gen.DeclOfType(g, src.T)) {
+        Some(d) => src.T.Kind == Types.TKind.Class && d.Name == "Map" && d.ModIsStd,
+        None => false,
+    }
+    let mapPairs: Bool = n.C.IsSome() && isMap
+    if (n.C.IsSome() && !mapPairs) {
+        let il: Ctx.Local = declareLocal(F, "$i", g.Tt.I64, true, pos)
+        F.StoreTo(g.Tt.I64, Ctx.Val.New(g.Tt.I64, "0"), il.Ptr)
+    }
+    let head: String = F.NewLabel("for.cond")
+    let body: String = F.NewLabel("for.body")
+    let end: String = F.NewLabel("for.end")
+    F.GotoBlock(head)
+    let o: Ctx.Val = genExpr(F, mkMethodCall(mkIdent(pos, "$iter"), "Next", pos, None, None), None)
+    if (o.T.Id == g.Tt.Never.Id || g.IsErr(o.T) || !isOptionType(o.T)) {
+        if (!g.IsErr(o.T) && o.T.Id != g.Tt.Never.Id) {
+            g.Diag.Error(pos, "`Next()` must return an `Option`, found `${o.T.Name}`")
+        }
+        popScope(F)
+        return
+    }
+    let ol: Ctx.Local = declareLocal(F, "$o", o.T, false, pos)
+    F.StoreTo(o.T, o, ol.Ptr)
+    let some: Ctx.Val = genExpr(F, mkMethodCall(mkIdent(pos, "$o"), "IsSome", pos, None, None), Some(g.Tt.Bool))
+    F.CondBr(some.V, body, end)
+    F.StartBlock(body)
+    F.PushScope()
+    mut pat: Ast.Node = nn(n.A)
+    if (mapPairs) {
+        mut tp: Ast.Node = Ast.Node.New(Ast.NK.PTuple, pos)
+        tp.List.Push(nn(n.C))
+        tp.List.Push(nn(n.A))
+        pat = tp
+    }
+    genLet(F, mkLet(pos, pat, mkMethodCall(mkIdent(pos, "$o"), "Unwrap", pos, None, None)))
+    if (n.C.IsSome() && !mapPairs) {
+        genLet(F, mkLet(pos, nn(n.C), mkIdent(pos, "$i")))
+        genAssign(F, mkPlusOne(pos, "$i"))
+    }
+    pushLoop(F, n, end, head)
+    let unused: Ctx.Val = genBlock(F, nn(n.B), Some(g.Tt.Unit))
+    F.Loops.Pop()
+    popScope(F)
+    if (!F.Term) {
+        F.Br(head)
+    }
+    F.StartBlock(end)
+    popScope(F)
+}
+
+// for (x in arr) / for (i, x in arr):
+//   let $it = arr;  mut $i = 0
+//   while ($i < $it.Len()) { let x = $it.Index($i); let i = $i; $i += 1; body }
+// The counter moves before the body, so `continue` needs no special care.
+fn genForIter(mut F: Ctx.FnCtx, n: Ast.Node) {
+    mut g: Gen.Gen = F.G
+    let pos: Token.Pos = n.Pos
+    F.PushScope()
+    let it: Ctx.Val = genExpr(F, nn(n.D), None)
+    if (it.T.Id == g.Tt.Never.Id || g.IsErr(it.T)) {
+        popScope(F)
+        return
+    }
+    if (!isArrayType(F, it.T)) {
+        if (hasIterMethod(g, it.T)) {
+            genForIterable(F, n, it)
+            return
+        }
+        g.Diag.Error(nn(n.D).Pos, "cannot loop over a value of type `${it.T.Name}` (`for` works on ranges like `0..10`, on arrays and on anything that is `Iterable`)")
+        popScope(F)
+        return
+    }
+    let itl: Ctx.Local = declareLocal(F, "$it", it.T, false, pos)
+    F.StoreTo(it.T, it, itl.Ptr)
+    let il: Ctx.Local = declareLocal(F, "$i", g.Tt.I64, true, pos)
+    F.StoreTo(g.Tt.I64, Ctx.Val.New(g.Tt.I64, "0"), il.Ptr)
+
+    mut cond: Ast.Node = Ast.Node.New(Ast.NK.Binary, pos)
+    cond.Op = Token.Tk.Lt
+    cond.A = Some(mkIdent(pos, "$i"))
+    cond.B = Some(mkMethodCall(mkIdent(pos, "$it"), "Len", pos, None, None))
+
+    let get: Ast.Node = mkMethodCall(mkIdent(pos, "$it"), "Index", pos, Some(mkIdent(pos, "$i")), None)
+    let letElem: Ast.Node = mkLet(pos, nn(n.A), get)
+
+    let head: String = F.NewLabel("for.cond")
+    let body: String = F.NewLabel("for.body")
+    let end: String = F.NewLabel("for.end")
+    F.GotoBlock(head)
+    let c: Ctx.Val = genExpr(F, cond, Some(g.Tt.Bool))
+    if (c.T.Id != g.Tt.Never.Id && !g.IsErr(c.T)) {
+        F.CondBr(c.V, body, end)
+    }
+    F.StartBlock(body)
+    F.PushScope()
+    genLet(F, letElem)
+    match (n.C) {
+        Some(idxPat) => genLet(F, mkLet(pos, idxPat, mkIdent(pos, "$i"))),
+        None => {},
+    }
+    genAssign(F, mkPlusOne(pos, "$i"))
+    pushLoop(F, n, end, head)
+    let unused: Ctx.Val = genBlock(F, nn(n.B), Some(g.Tt.Unit))
+    F.Loops.Pop()
+    popScope(F)
+    if (!F.Term) {
+        F.Br(head)
+    }
+    F.StartBlock(end)
+    popScope(F)
 }
 
 fn mkIdent(pos: Token.Pos, name: String) -> Ast.Node {
