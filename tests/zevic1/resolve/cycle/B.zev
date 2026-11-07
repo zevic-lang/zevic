@@ -1,5 +1,0 @@
-module Cyc.B
-
-import Cyc.A
-
-fn B() {}

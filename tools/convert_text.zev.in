@@ -1,0 +1,92 @@
+// ---- text to numbers ----
+
+extern "zevic" {
+    fn zevic_f64_valid(s: String) -> I32
+    fn zevic_f64_parse(s: String) -> F64
+}
+
+fn badNumber(s: String, why: String) -> Error {
+    Error.New(ErrorKind.InvalidFormat, "cannot read \"${s}\" as a number: ${why}")
+}
+
+fn StringToI64(s: String) -> Result<I64, Error> {
+    let n: I64 = s.Len()
+    if (n == 0) {
+        return Err(badNumber(s, "the text is empty"))
+    }
+    mut i: I64 = 0
+    mut neg: Bool = false
+    let first: U8 = s.ByteAt(0)
+    if (first == b'-') {
+        neg = true
+        i = 1
+    } else if (first == b'+') {
+        i = 1
+    }
+    if (i == n) {
+        return Err(badNumber(s, "there are no digits"))
+    }
+    let limit: U64 = if (neg) { 9223372036854775808 } else { 9223372036854775807 }
+    mut acc: U64 = 0
+    while (i < n) {
+        let c: U8 = s.ByteAt(i)
+        if (c < b'0' || c > b'9') {
+            return Err(badNumber(s, "found a character that is not a digit"))
+        }
+        let d: U64 = (c - b'0').ToU64()
+        if (acc > (limit - d) / 10) {
+            return Err(Error.New(ErrorKind.OutOfRange, "\"${s}\" does not fit in I64"))
+        }
+        acc = acc * 10 + d
+        i += 1
+    }
+    if (neg) {
+        Ok(0_I64.WrapSub(acc.ToI64Wrap()))
+    } else {
+        Ok(acc.ToI64Wrap())
+    }
+}
+
+fn StringToU64(s: String) -> Result<U64, Error> {
+    let n: I64 = s.Len()
+    if (n == 0) {
+        return Err(badNumber(s, "the text is empty"))
+    }
+    mut i: I64 = 0
+    if (s.ByteAt(0) == b'+') {
+        i = 1
+    }
+    if (i == n) {
+        return Err(badNumber(s, "there are no digits"))
+    }
+    mut acc: U64 = 0
+    while (i < n) {
+        let c: U8 = s.ByteAt(i)
+        if (c < b'0' || c > b'9') {
+            if (i == 0 && c == b'-') {
+                return Err(Error.New(ErrorKind.OutOfRange, "\"${s}\" is negative and does not fit in U64"))
+            }
+            return Err(badNumber(s, "found a character that is not a digit"))
+        }
+        let d: U64 = (c - b'0').ToU64()
+        if (acc > (18446744073709551615 - d) / 10) {
+            return Err(Error.New(ErrorKind.OutOfRange, "\"${s}\" does not fit in U64"))
+        }
+        acc = acc * 10 + d
+        i += 1
+    }
+    Ok(acc)
+}
+
+fn StringToF64(s: String) -> Result<F64, Error> {
+    if (zevic_f64_valid(s) == 0) {
+        return Err(badNumber(s, "the format is not a decimal number"))
+    }
+    Ok(zevic_f64_parse(s))
+}
+
+fn StringToF32(s: String) -> Result<F32, Error> {
+    let v: F64 = StringToF64(s)?
+    Ok(v.ToF32())
+}
+

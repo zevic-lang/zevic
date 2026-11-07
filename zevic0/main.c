@@ -275,6 +275,7 @@ static const char *path_base_of(const char *path) {
 }
 
 int main(int argc, char **argv) {
+    zv_utf8_args(&argc, &argv);
     BuildOpts opts = {0};
     Vec zev_files = {0};
     const char *out = NULL;
@@ -368,7 +369,9 @@ int main(int argc, char **argv) {
     char *home = driver_find_home(argv[0]);
     if (!home) {
         fprintf(stderr, "error: cannot find the Zevic standard library and runtime.\n"
-                        "Set ZEVIC_HOME to the directory that contains `packages/Zevic/` and `runtime/`.\n");
+                        "Set ZEVIC_HOME to the directory that contains `packages/Zevic/` and `runtime/`.\n"
+                        "Looked in:\n%s",
+                driver_home_report());
         return 2;
     }
 
@@ -402,7 +405,7 @@ int main(int argc, char **argv) {
         for (const char *c = path_base_of(header_path); *c; c++)
             sb_putc(&guard, (*c >= 'a' && *c <= 'z') ? (char)(*c - 32) : ((*c >= 'A' && *c <= 'Z') || (*c >= '0' && *c <= '9')) ? *c : '_');
         gen_header(g, zsprintf("ZEVIC_%s", sb_str(&guard)), &h);
-        FILE *hf = fopen(header_path, "wb");
+        FILE *hf = zv_fopen(header_path, "wb");
         if (!hf) {
             fprintf(stderr, "error: cannot write `%s`\n", header_path);
             return 2;
@@ -412,7 +415,7 @@ int main(int argc, char **argv) {
     }
     if (emit_ll) {
         const char *path = out ? out : zsprintf("%s.ll", base);
-        FILE *f = fopen(path, "wb");
+        FILE *f = zv_fopen(path, "wb");
         if (!f) {
             fprintf(stderr, "error: cannot write `%s`\n", path);
             return 2;
@@ -431,7 +434,7 @@ int main(int argc, char **argv) {
 #endif
     char *exe = out ? zstrdup(out) : zsprintf("%s%s", base, exe_suffix);
     char *ll_path = zsprintf("%s.zevic.ll", exe);
-    FILE *f = fopen(ll_path, "wb");
+    FILE *f = zv_fopen(ll_path, "wb");
     if (!f) {
         fprintf(stderr, "error: cannot write `%s`\n", ll_path);
         return 2;

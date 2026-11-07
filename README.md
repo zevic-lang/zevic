@@ -19,7 +19,7 @@ fn Main() {
 
 ## ビルド
 
-必要なもの: C コンパイラ、`make`、`python3`(テスト用)、そして **clang 15 以上**(`zevic` が生成した LLVM IR をビルドするために使います)。
+必要なもの: C コンパイラ、`make`、そして **clang 15 以上**(`zevic` が生成した LLVM IR をビルドするために使います)。
 
 ### LLVM(clang)のインストール
 

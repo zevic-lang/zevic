@@ -54,6 +54,77 @@
 static int g_argc;
 static char **g_argv;
 
+#ifdef _WIN32
+/* Strings in Zevic are UTF-8, but the C library of Windows (argv, getenv, stat ...) speaks the ANSI code page. So
+ * every string that comes from or goes to the system is converted, and the wide functions are used. */
+static wchar_t *rt_wide(const char *s) {
+    int n = MultiByteToWideChar(CP_UTF8, 0, s, -1, NULL, 0);
+    if (n <= 0) return NULL;
+    wchar_t *w = malloc(sizeof(wchar_t) * (size_t)n);
+    if (!w) exit(101);
+    MultiByteToWideChar(CP_UTF8, 0, s, -1, w, n);
+    return w;
+}
+
+static char *rt_utf8(const wchar_t *w) {
+    int n = WideCharToMultiByte(CP_UTF8, 0, w, -1, NULL, 0, NULL, NULL);
+    if (n <= 0) return strdup("");
+    char *s = malloc((size_t)n);
+    if (!s) exit(101);
+    WideCharToMultiByte(CP_UTF8, 0, w, -1, s, n, NULL, NULL);
+    return s;
+}
+
+/* the command line split by the rules of the Microsoft C runtime */
+static char **rt_command_line(int *argc) {
+    const wchar_t *p = GetCommandLineW();
+    int cap = 8, n = 0;
+    char **v = malloc(sizeof(char *) * (size_t)cap);
+    wchar_t *buf = malloc(sizeof(wchar_t) * (wcslen(p) + 1));
+    if (!v || !buf) exit(101);
+    for (;;) {
+        while (*p == L' ' || *p == L'\t') p++;
+        if (!*p) break;
+        size_t len = 0;
+        int quoted = 0;
+        for (;;) {
+            size_t bs = 0;
+            while (*p == L'\\') {
+                bs++;
+                p++;
+            }
+            if (*p == L'"') {
+                for (size_t k = 0; k < bs / 2; k++) buf[len++] = L'\\';
+                if (bs % 2) {
+                    buf[len++] = L'"';
+                } else if (quoted && p[1] == L'"') {
+                    buf[len++] = L'"';
+                    p++;
+                } else {
+                    quoted = !quoted;
+                }
+                p++;
+            } else {
+                for (size_t k = 0; k < bs; k++) buf[len++] = L'\\';
+                if (!*p || (!quoted && (*p == L' ' || *p == L'\t'))) break;
+                buf[len++] = *p++;
+            }
+        }
+        buf[len] = 0;
+        if (n + 1 >= cap) {
+            cap *= 2;
+            v = realloc(v, sizeof(char *) * (size_t)cap);
+            if (!v) exit(101);
+        }
+        v[n++] = rt_utf8(buf);
+    }
+    free(buf);
+    v[n] = NULL;
+    *argc = n;
+    return v;
+}
+#endif
+
 void zevic_init(int argc, char **argv) {
     /* The heap never holds code; macOS/arm64 refuses executable mappings ("Cannot allocate executable pages") */
     GC_set_pages_executable(0);
@@ -62,6 +133,14 @@ void zevic_init(int argc, char **argv) {
     g_argv = argv;
 #ifdef _WIN32
     SetConsoleOutputCP(65001);
+    if (argc > 0 && argv) { /* not a library user calling zevic_init(0, 0) */
+        int n = 0;
+        char **v = rt_command_line(&n);
+        if (n > 0) {
+            g_argc = n;
+            g_argv = v;
+        }
+    }
 #endif
 }
 
@@ -523,23 +602,42 @@ static char *nul_copy(const char *p, int64_t n) {
 
 int32_t zevic_env_has(const char *name, int64_t nn) {
     char *k = nul_copy(name, nn);
+#ifdef _WIN32
+    wchar_t *wk = rt_wide(k);
+    int has = wk && _wgetenv(wk) != NULL;
+    free(wk);
+#else
     int has = getenv(k) != NULL;
+#endif
     free(k);
     return has;
 }
 
 void zevic_env_get(zevic_str *out, const char *name, int64_t nn) {
     char *k = nul_copy(name, nn);
+#ifdef _WIN32
+    wchar_t *wk = rt_wide(k);
+    const wchar_t *wv = wk ? _wgetenv(wk) : NULL;
+    char *v8 = wv ? rt_utf8(wv) : strdup("");
+    free(wk);
+    free(k);
+    str_set(out, v8, (int64_t)strlen(v8));
+    free(v8);
+#else
     const char *v = getenv(k);
     free(k);
     if (!v) v = "";
     str_set(out, v, (int64_t)strlen(v));
+#endif
 }
 
 int32_t zevic_env_set(const char *name, int64_t nn, const char *val, int64_t vn) {
     char *k = nul_copy(name, nn), *v = nul_copy(val, vn);
 #ifdef _WIN32
-    int rc = _putenv_s(k, v);
+    wchar_t *wk = rt_wide(k), *wv = rt_wide(v);
+    int rc = wk && wv ? _wputenv_s(wk, wv) : -1;
+    free(wk);
+    free(wv);
 #else
     int rc = setenv(k, v, 1);
 #endif
@@ -564,9 +662,12 @@ void zevic_arg(zevic_str *out, int32_t i) {
 void zevic_exe_path(zevic_str *out) {
     char buf[4096];
 #ifdef _WIN32
-    DWORD n = GetModuleFileNameA(NULL, buf, sizeof buf);
-    if (n > 0 && n < sizeof buf) {
-        str_set(out, buf, (int64_t)n);
+    wchar_t wbuf[32768];
+    DWORD n = GetModuleFileNameW(NULL, wbuf, (DWORD)(sizeof wbuf / sizeof wbuf[0]));
+    if (n > 0 && n < sizeof wbuf / sizeof wbuf[0]) {
+        char *u = rt_utf8(wbuf);
+        str_set(out, u, (int64_t)strlen(u));
+        free(u);
         return;
     }
 #elif defined(__APPLE__)
@@ -588,13 +689,20 @@ void zevic_exe_path(zevic_str *out) {
 }
 
 void zevic_cwd(zevic_str *out) {
-    char buf[4096];
 #ifdef _WIN32
-    char *r = _getcwd(buf, sizeof buf);
+    wchar_t wbuf[32768];
+    if (_wgetcwd(wbuf, (int)(sizeof wbuf / sizeof wbuf[0]))) {
+        char *u = rt_utf8(wbuf);
+        str_set(out, u, (int64_t)strlen(u));
+        free(u);
+    } else {
+        str_set(out, "", 0);
+    }
 #else
+    char buf[4096];
     char *r = getcwd(buf, sizeof buf);
-#endif
     str_set(out, r ? buf : "", r ? (int64_t)strlen(buf) : 0);
+#endif
 }
 
 void zevic_exit(int32_t code) {
@@ -779,10 +887,13 @@ void zevic_fs_errmsg(zevic_str *out) {
 static FILE *fs_fopen(const char *path, const char *mode) {
 #ifdef _WIN32
     /* paths are UTF-8 */
-    wchar_t wp[4096], wm[8];
-    if (MultiByteToWideChar(CP_UTF8, 0, path, -1, wp, 4096) == 0) { errno = EINVAL; return NULL; }
-    MultiByteToWideChar(CP_UTF8, 0, mode, -1, wm, 8);
-    return _wfopen(wp, wm);
+    wchar_t *wp = rt_wide(path), *wm = rt_wide(mode);
+    FILE *f = NULL;
+    if (wp && wm) f = _wfopen(wp, wm);
+    else errno = EINVAL;
+    free(wp);
+    free(wm);
+    return f;
 #else
     return fopen(path, mode);
 #endif
@@ -838,8 +949,15 @@ int32_t zevic_fs_write_all(const char *p, int64_t n, const char *d, int64_t dn, 
 /* 0: does not exist, 1: a file, 2: a directory */
 int32_t zevic_fs_kind(const char *p, int64_t n) {
     char *path = nul_copy(p, n);
+#ifdef _WIN32
+    struct _stat64 st;
+    wchar_t *wp = rt_wide(path);
+    int rc = wp ? _wstat64(wp, &st) : -1;
+    free(wp);
+#else
     struct stat st;
     int rc = stat(path, &st);
+#endif
     free(path);
     if (rc != 0) return 0;
     return (st.st_mode & S_IFMT) == S_IFDIR ? 2 : 1;
@@ -850,14 +968,16 @@ int32_t zevic_fs_remove(const char *p, int64_t n) {
     g_fs_errno = 0;
 #ifdef _WIN32
     /* the C library's remove() cannot remove a directory on Windows */
-    DWORD attr = GetFileAttributesA(path);
-    int rc = (attr != INVALID_FILE_ATTRIBUTES && (attr & FILE_ATTRIBUTE_DIRECTORY)) ? _rmdir(path) : remove(path);
-    if (rc != 0 && errno == EACCES && attr != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY) &&
+    wchar_t *wp = rt_wide(path);
+    DWORD attr = wp ? GetFileAttributesW(wp) : INVALID_FILE_ATTRIBUTES;
+    int rc = !wp ? -1 : (attr != INVALID_FILE_ATTRIBUTES && (attr & FILE_ATTRIBUTE_DIRECTORY)) ? _wrmdir(wp) : _wremove(wp);
+    if (rc != 0 && wp && errno == EACCES && attr != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY) &&
         (attr & FILE_ATTRIBUTE_READONLY)) {
         /* like rm -f: a read-only file (git writes its objects that way) is made writable first */
-        SetFileAttributesA(path, FILE_ATTRIBUTE_NORMAL);
-        rc = remove(path);
+        SetFileAttributesW(wp, FILE_ATTRIBUTE_NORMAL);
+        rc = _wremove(wp);
     }
+    free(wp);
 #else
     int rc = remove(path);
 #endif
@@ -875,7 +995,10 @@ int32_t zevic_fs_rename(const char *a, int64_t an, const char *b, int64_t bn) {
     g_fs_errno = 0;
 #ifdef _WIN32
     /* rename() refuses to replace an existing file on Windows; POSIX replaces it */
-    int rc = MoveFileExA(from, to, MOVEFILE_REPLACE_EXISTING) ? 0 : -1;
+    wchar_t *wf = rt_wide(from), *wt = rt_wide(to);
+    int rc = wf && wt && MoveFileExW(wf, wt, MOVEFILE_REPLACE_EXISTING) ? 0 : -1;
+    free(wf);
+    free(wt);
     if (rc != 0) errno = (GetLastError() == ERROR_FILE_NOT_FOUND || GetLastError() == ERROR_PATH_NOT_FOUND) ? ENOENT : EACCES;
 #else
     int rc = rename(from, to);
@@ -893,7 +1016,9 @@ int32_t zevic_fs_mkdir(const char *p, int64_t n) {
     char *path = nul_copy(p, n);
     g_fs_errno = 0;
 #ifdef _WIN32
-    int rc = _mkdir(path);
+    wchar_t *wp = rt_wide(path);
+    int rc = wp ? _wmkdir(wp) : -1;
+    free(wp);
 #else
     int rc = mkdir(path, 0777);
 #endif
@@ -916,21 +1041,27 @@ void zevic_fs_list(zevic_str *out, const char *p, int64_t n) {
     char *pat = malloc((size_t)n + 3);
     memcpy(pat, path, (size_t)n);
     memcpy(pat + n, "\\*", 3);
-    WIN32_FIND_DATAA fd;
-    HANDLE h = FindFirstFileA(pat, &fd);
+    wchar_t *wpat = rt_wide(pat);
+    WIN32_FIND_DATAW fd;
+    HANDLE h = wpat ? FindFirstFileW(wpat, &fd) : INVALID_HANDLE_VALUE;
     free(pat);
+    free(wpat);
     if (h == INVALID_HANDLE_VALUE) {
         g_fs_errno = ENOENT;
     } else {
         do {
-            const char *name = fd.cFileName;
-            if (!strcmp(name, ".") || !strcmp(name, "..")) continue;
+            char *name = rt_utf8(fd.cFileName);
+            if (!strcmp(name, ".") || !strcmp(name, "..")) {
+                free(name);
+                continue;
+            }
             int64_t l = (int64_t)strlen(name);
             while (len + l + 2 > cap) { cap *= 2; buf = realloc(buf, (size_t)cap); if (!buf) exit(101); }
             memcpy(buf + len, name, (size_t)l);
             len += l;
             buf[len++] = '\n';
-        } while (FindNextFileA(h, &fd));
+            free(name);
+        } while (FindNextFileW(h, &fd));
         FindClose(h);
     }
 #else
@@ -1139,7 +1270,7 @@ static char *slurp(const char *path, int64_t *len) {
  * are the child's standard handles. Returns the exit code, 127 when the program does not exist (what a POSIX shell
  * says), or -1 when it cannot be started for another reason. */
 static int win_spawn(const char *cmdline, HANDLE in, HANDLE out, HANDLE err) {
-    STARTUPINFOA si;
+    STARTUPINFOW si;
     PROCESS_INFORMATION pi;
     memset(&si, 0, sizeof si);
     memset(&pi, 0, sizeof pi);
@@ -1148,9 +1279,9 @@ static int win_spawn(const char *cmdline, HANDLE in, HANDLE out, HANDLE err) {
     si.hStdInput = in;
     si.hStdOutput = out;
     si.hStdError = err;
-    char *line = strdup(cmdline); /* CreateProcess may modify it */
-    if (!line) exit(101);
-    BOOL ok = CreateProcessA(NULL, line, NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi);
+    wchar_t *line = rt_wide(cmdline); /* CreateProcess may modify it */
+    if (!line) return -1;
+    BOOL ok = CreateProcessW(NULL, line, NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi);
     DWORD last = GetLastError();
     free(line);
     if (!ok) return (last == ERROR_FILE_NOT_FOUND || last == ERROR_PATH_NOT_FOUND) ? 127 : -1;

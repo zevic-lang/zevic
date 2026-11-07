@@ -32,10 +32,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
       # zevic turns Zevic into LLVM IR and asks clang (15 or newer) to build it.
       - name: Install LLVM (Linux, apt)
         if: runner.os == 'Linux'
@@ -69,14 +65,20 @@ jobs:
           "build/zevpm${{ matrix.exe }}" --version
           # zevfmt is written in Zevic too (tools/zevfmt)
           "build/zevic${{ matrix.exe }}" tools/zevfmt/src/*.zev -o "build/zevfmt${{ matrix.exe }}"
+          # the test runner is C too
+          if [ "${{ runner.os }}" = "Windows" ]; then PTHREAD=""; else PTHREAD="-pthread"; fi
+          clang -std=c11 -O1 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function $PTHREAD tests/zevtest.c -o "build/zevtest${{ matrix.exe }}"
 
       - name: Test
         run: |
-          python -u tests/run.py
-          python -u tests/zevpm_test.py
-          ZEVPM="build/zevpm-c${{ matrix.exe }}" python -u tests/zevpm_test.py
-          python -u tests/examples_test.py
-          python -u tests/zevfmt_test.py "build/zevic${{ matrix.exe }}" "build/zevfmt${{ matrix.exe }}"
+          export ZEVIC="build/zevic${{ matrix.exe }}" ZEVPM="build/zevpm${{ matrix.exe }}" ZEVFMT="build/zevfmt${{ matrix.exe }}"
+          T="build/zevtest${{ matrix.exe }}"
+          "$T" golden
+          "$T" zevpm
+          ZEVPM="build/zevpm-c${{ matrix.exe }}" "$T" zevpm
+          "$T" examples
+          "$T" zevfmt
+          "$T" install
           "build/zevfmt${{ matrix.exe }}" -check packages examples tools
 
       - name: Package
@@ -84,10 +86,11 @@ jobs:
         run: |
           VERSION="$(cat VERSION)"
           NAME="zevic-${VERSION}-${{ matrix.name }}"
-          mkdir -p "dist/$NAME/bin"
+          mkdir -p "dist/$NAME/bin" dist/extra
           cp "build/zevic${{ matrix.exe }}" "build/zevpm${{ matrix.exe }}" "build/zevfmt${{ matrix.exe }}" "dist/$NAME/bin/"
           cp -r packages runtime examples "dist/$NAME/"
           cp LICENSE README.md CHANGELOG.md VERSION "dist/$NAME/"
+          if [ "${{ runner.os }}" = "Windows" ]; then cp packaging/install.ps1 "dist/$NAME/"; else cp packaging/install.sh "dist/$NAME/"; fi
           cd dist
           if [ "${{ matrix.archive }}" = "zip" ]; then
             7z a "$NAME.zip" "$NAME" >/dev/null
@@ -96,23 +99,92 @@ jobs:
             tar -czf "$NAME.tar.gz" "$NAME"
             echo "file=dist/$NAME.tar.gz" >> "$GITHUB_OUTPUT"
           fi
+          # native packages
+          cd ..
+          if [ "${{ runner.os }}" = "Linux" ]; then
+            sh packaging/make-deb.sh "dist/$NAME" dist/extra
+            cp packaging/install.sh packaging/install.ps1 dist/extra/
+          elif [ "${{ runner.os }}" = "macOS" ]; then
+            sh packaging/make-pkg.sh "dist/$NAME" dist/extra
+          fi
+          cp "dist/$NAME".* dist/extra/
+          ls -l dist dist/extra
 
       - name: Smoke test the package
         run: |
           cd dist
           if [ "${{ matrix.archive }}" = "zip" ]; then 7z x -y *.zip >/dev/null; else tar -xzf *.tar.gz; fi
-          cd "zevic-$(cat ../VERSION)-${{ matrix.name }}"
-          ./bin/zevic${{ matrix.exe }} examples/01_hello.zev -o hello${{ matrix.exe }}
+          PKG="$(pwd)/zevic-$(cat ../VERSION)-${{ matrix.name }}"
+          # the way a user works: only bin is on PATH, and the work happens somewhere else
+          export PATH="$PKG/bin:$PATH"
+          unset ZEVIC ZEVIC_HOME ZEVPM ZEVFMT
+          mkdir -p "$RUNNER_TEMP/smoke work"
+          cd "$RUNNER_TEMP/smoke work"
+          zevic --version
+          zevpm --version
+          zevic "$PKG/examples/01_hello.zev" -o hello${{ matrix.exe }}
           ./hello${{ matrix.exe }}
-          ./bin/zevpm${{ matrix.exe }} new smoke
+          zevpm new smoke
           cd smoke
-          ../bin/zevpm${{ matrix.exe }} run
-          ../bin/zevpm${{ matrix.exe }} test
+          zevpm run
+          zevpm test
+          zevfmt -check src/Main.zev
+
+      # the installers: install somewhere with a space in the path, then use the installed copy only
+      - name: Smoke test the installer (Linux, macOS)
+        if: runner.os != 'Windows'
+        run: |
+          PKG="$(pwd)/dist/zevic-$(cat VERSION)-${{ matrix.name }}"
+          sh "$PKG/install.sh" --prefix "$RUNNER_TEMP/inst prefix"
+          export PATH="$RUNNER_TEMP/inst prefix/bin:$PATH"
+          unset ZEVIC ZEVIC_HOME ZEVPM ZEVFMT
+          mkdir -p "$RUNNER_TEMP/inst work" && cd "$RUNNER_TEMP/inst work"
+          zevic --version
+          zevic "$PKG/examples/01_hello.zev" -o hello && ./hello
+          zevpm new app && cd app && zevpm run && zevpm test
+          sh "$PKG/install.sh" --uninstall --prefix "$RUNNER_TEMP/inst prefix"
+          test ! -e "$RUNNER_TEMP/inst prefix/bin/zevic"
+      - name: Smoke test the installer (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          PKG="$(pwd)/dist/zevic-$(cat VERSION)-${{ matrix.name }}"
+          WPKG="$(cygpath -w "$PKG")"
+          PREFIX="$(cygpath -w "$RUNNER_TEMP")\\inst prefix"
+          powershell -NoProfile -ExecutionPolicy Bypass -File "$WPKG\\install.ps1" -Prefix "$PREFIX"
+          export PATH="$(cygpath -u "$PREFIX")/bin:$PATH"
+          unset ZEVIC ZEVIC_HOME ZEVPM ZEVFMT
+          mkdir -p "$RUNNER_TEMP/inst work" && cd "$RUNNER_TEMP/inst work"
+          zevic --version
+          zevic "$PKG/examples/01_hello.zev" -o hello.exe && ./hello.exe
+          zevpm new app && cd app && zevpm run && zevpm test
+          powershell -NoProfile -ExecutionPolicy Bypass -File "$WPKG\\install.ps1" -Uninstall -Prefix "$PREFIX"
+      - name: Smoke test the .deb (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y ./dist/extra/zevic_*.deb
+          unset ZEVIC ZEVIC_HOME ZEVPM ZEVFMT
+          mkdir -p "$RUNNER_TEMP/deb work" && cd "$RUNNER_TEMP/deb work"
+          command -v zevic
+          zevic --version
+          zevic "$GITHUB_WORKSPACE/examples/01_hello.zev" -o hello && ./hello
+          zevpm new app && cd app && zevpm run && zevpm test
+          sudo apt-get remove -y zevic
+          ! command -v zevic
+      - name: Smoke test the .pkg (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          sudo installer -pkg dist/extra/zevic-*.pkg -target /
+          unset ZEVIC ZEVIC_HOME ZEVPM ZEVFMT
+          mkdir -p "$RUNNER_TEMP/pkg work" && cd "$RUNNER_TEMP/pkg work"
+          /usr/local/bin/zevic --version
+          /usr/local/bin/zevic "$GITHUB_WORKSPACE/examples/01_hello.zev" -o hello && ./hello
+          export PATH="/usr/local/bin:$PATH"
+          zevpm new app && cd app && zevpm run && zevpm test
 
       - uses: actions/upload-artifact@v4
         with:
           name: zevic-${{ matrix.name }}
-          path: ${{ steps.pkg.outputs.file }}
+          path: dist/extra/*
           if-no-files-found: error
 
   release:
@@ -149,7 +221,8 @@ jobs:
         run: |
           ARGS="--tag ${{ steps.tag.outputs.name }}"
           if [ "${{ steps.tag.outputs.prerelease }}" = "true" ]; then ARGS="$ARGS --prerelease"; fi
-          python3 tools/release_notes.py $ARGS > RELEASE_NOTES.md
+          mkdir -p build; cc -std=c11 -O1 tools/release_notes.c -o build/release_notes
+          build/release_notes $ARGS --assets artifacts/* > RELEASE_NOTES.md
           cat RELEASE_NOTES.md
 
       - name: Checksums

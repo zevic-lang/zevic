@@ -19,33 +19,18 @@
 #endif
 
 #ifdef _WIN32
-#define POPEN _popen
-#define PCLOSE _pclose
+#define POPEN zv_popen
+#define PCLOSE zv_pclose
 #else
-#define POPEN popen
-#define PCLOSE pclose
+#define POPEN zv_popen
+#define PCLOSE zv_pclose
 #endif
 
 /* ---- the running executable ---- */
 
 static char *exe_path(const char *argv0) {
-#ifdef _WIN32
-    char buf[4096];
-    DWORD n = GetModuleFileNameA(NULL, buf, sizeof buf);
-    if (n > 0 && n < sizeof buf) return zstrndup(buf, n);
-#elif defined(__APPLE__)
-    char buf[4096];
-    uint32_t n = sizeof buf;
-    if (_NSGetExecutablePath(buf, &n) == 0) {
-        char *real = realpath(buf, NULL);
-        if (real) return real;
-        return zstrdup(buf);
-    }
-#else
-    char buf[4096];
-    ssize_t n = readlink("/proc/self/exe", buf, sizeof buf - 1);
-    if (n > 0) return zstrndup(buf, (size_t)n);
-#endif
+    char *p = zv_exe_path();
+    if (p) return p;
     return zstrdup(argv0 ? argv0 : "zevic");
 }
 
@@ -63,13 +48,27 @@ static bool is_home(const char *dir) {
     return file_exists(rt) && file_exists(sd);
 }
 
+static char *g_home_report;
+
+/* What driver_find_home looked at, for the error message when it finds nothing. */
+const char *driver_home_report(void) { return g_home_report ? g_home_report : ""; }
+
 char *driver_find_home(const char *argv0) {
-    const char *env = getenv("ZEVIC_HOME");
-    if (env && *env && is_home(env)) return zstrdup(env);
-    char *dir = dir_of(exe_path(argv0));
+    SB rep = {0};
+    const char *env = zv_getenv("ZEVIC_HOME");
+    if (env && *env) {
+        if (is_home(env)) return zstrdup(env);
+        sb_printf(&rep, "  ZEVIC_HOME=%s: has no runtime/zevic_rt.c and packages/Zevic/zevic.toml\n", env);
+    }
+    char *exe = exe_path(argv0);
+    char *dir = dir_of(exe);
+    sb_printf(&rep, "  the executable is %s\n", exe);
     char *cands[] = {zsprintf("%s/../share/zevic", dir), zsprintf("%s/..", dir), zsprintf("%s", dir), zstrdup(".")};
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < 4; i++) {
         if (is_home(cands[i])) return cands[i];
+        sb_printf(&rep, "  %s: no runtime/zevic_rt.c or packages/Zevic/zevic.toml\n", cands[i]);
+    }
+    g_home_report = sb_str(&rep);
     return NULL;
 }
 
@@ -95,9 +94,9 @@ static char *quote(const char *s) {
 static int run(const char *cmd) {
 #ifdef _WIN32
     char *full = zsprintf("\"%s\"", cmd); /* cmd.exe strips one pair of outer quotes */
-    int rc = system(full);
+    int rc = zv_system(full);
 #else
-    int rc = system(cmd);
+    int rc = zv_system(cmd);
     if (rc != -1 && (rc & 0x7f) == 0) rc = (rc >> 8) & 0xff;
 #endif
     return rc;
@@ -149,7 +148,7 @@ static void print_install_help(const char *why) {
 char *driver_find_clang(const char *cli_cc) {
     Vec cands = {0};
     if (cli_cc) vec_push(&cands, (void *)cli_cc);
-    const char *env = getenv("ZEVIC_CLANG");
+    const char *env = zv_getenv("ZEVIC_CLANG");
     if (env && *env) vec_push(&cands, (void *)env);
     vec_push(&cands, "clang");
 #ifdef _WIN32
@@ -198,9 +197,9 @@ static bool make_dirs(const char *path) {
             *c = 0;
             if (!dir_exists(p)) {
 #ifdef _WIN32
-                CreateDirectoryA(p, NULL);
+                zv_mkdir(p);
 #else
-                mkdir(p, 0777);
+                zv_mkdir(p);
 #endif
             }
             *c = save;
@@ -208,26 +207,26 @@ static bool make_dirs(const char *path) {
     }
     if (!dir_exists(p)) {
 #ifdef _WIN32
-        CreateDirectoryA(p, NULL);
+        zv_mkdir(p);
 #else
-        mkdir(p, 0777);
+        zv_mkdir(p);
 #endif
     }
     return dir_exists(p);
 }
 
 static char *cache_dir(void) {
-    const char *e = getenv("ZEVIC_CACHE");
+    const char *e = zv_getenv("ZEVIC_CACHE");
     char *dir = NULL;
     if (e && *e) {
         dir = zstrdup(e);
     } else {
 #ifdef _WIN32
-        const char *base = getenv("LOCALAPPDATA");
+        const char *base = zv_getenv("LOCALAPPDATA");
         if (base && *base) dir = zsprintf("%s/zevic/cache", base);
 #else
-        const char *xdg = getenv("XDG_CACHE_HOME");
-        const char *home = getenv("HOME");
+        const char *xdg = zv_getenv("XDG_CACHE_HOME");
+        const char *home = zv_getenv("HOME");
         if (xdg && *xdg) dir = zsprintf("%s/zevic", xdg);
         else if (home && *home) dir = zsprintf("%s/.cache/zevic", home);
 #endif
@@ -261,16 +260,16 @@ static char *cached_object(const char *clang, const char *label, const char *src
     SB cmd = {0};
     sb_printf(&cmd, "%s -c -x c %s %s -o %s", quote(clang), cflags, quote(src), quote(tmp));
     if (run(sb_str(&cmd)) != 0) {
-        remove(tmp);
+        zv_remove(tmp);
         return NULL;
     }
-    if (rename(tmp, obj) != 0) {
+    if (zv_rename(tmp, obj) != 0) {
 #ifdef _WIN32
         /* another build may have won the race */
-        remove(tmp);
+        zv_remove(tmp);
         if (!file_exists(obj)) return NULL;
 #else
-        remove(tmp);
+        zv_remove(tmp);
         return NULL;
 #endif
     }
@@ -431,17 +430,17 @@ int driver_build_lib(const char *clang, const char *home, const char *ll_path, c
     vec_push(&objs, gc_obj);
     /* the archive */
     char *ar = sibling_tool(clang, "llvm-ar");
-    remove(out_path);
+    zv_remove(out_path);
     SB cmd = {0};
     sb_printf(&cmd, "%s rcs %s", quote(ar ? ar : "ar"), quote(out_path));
     for (int i = 0; i < objs.n; i++) sb_printf(&cmd, " %s", quote(objs.v[i]));
     int rc = run(sb_str(&cmd));
     if (rc != 0) fprintf(stderr, "error: cannot make the archive (`%s` failed; install binutils or LLVM)\n", ar ? "llvm-ar" : "ar");
     if (!o->keep_ll) {
-        remove(main_obj);
-        for (int i = 0; i < o->inputs.n; i++) remove(zsprintf("%s/native%d.o", base, i));
-        remove(zsprintf("%s/zevic_rt.o", base));
-        remove(zsprintf("%s/bgc.o", base));
+        zv_remove(main_obj);
+        for (int i = 0; i < o->inputs.n; i++) zv_remove(zsprintf("%s/native%d.o", base, i));
+        zv_remove(zsprintf("%s/zevic_rt.o", base));
+        zv_remove(zsprintf("%s/bgc.o", base));
 #ifdef _WIN32
         _rmdir(base);
 #else
@@ -452,5 +451,5 @@ int driver_build_lib(const char *clang, const char *home, const char *ll_path, c
 }
 
 void driver_remove(const char *path) {
-    remove(path);
+    zv_remove(path);
 }

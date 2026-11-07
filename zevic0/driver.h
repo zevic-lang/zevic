@@ -15,6 +15,7 @@ typedef struct {
 } BuildOpts;
 
 /* The directory that holds `packages/Zevic/` and `runtime/`, or NULL. */
+const char *driver_home_report(void);
 char *driver_find_home(const char *argv0);
 /* A usable clang (version 15 or newer), or NULL after printing install instructions. */
 char *driver_find_clang(const char *cli_cc);
