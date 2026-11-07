@@ -1843,7 +1843,6 @@ fn genIfaceMethod(mut F: Ctx.FnCtx, call: Ast.Node, p: Ctx.Place, recvNode: Ast.
 
 fn fnValueOf(mut F: Ctx.FnCtx, d: Resolve.Decl, pos: Token.Pos) -> Ctx.Val { Panic("not ported yet: fnValueOf") }
 fn genLambda(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genLambda") }
-fn genTry(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genTry") }
 fn genForIter(mut F: Ctx.FnCtx, n: Ast.Node) { Panic("not ported yet: genForIter") }
 
 // ---- places, paths and string literals ----
@@ -5247,6 +5246,74 @@ fn genMatch(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Va
     }
     F.Emit("${r} = phi ${F.LlOf(rtype)} ${parts}")
     Ctx.Val.New(rtype, r)
+}
+
+// ---- the `?` operator ----
+
+fn genTry(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let v: Ctx.Val = genExpr(F, nn(n.A), None)
+    if (v.T.Id == g.Tt.Never.Id) {
+        return F.NeverVal(expect)
+    }
+    if (g.IsErr(v.T)) {
+        return F.ErrVal()
+    }
+    if (!isResultType(v.T)) {
+        if (isOptionType(v.T)) {
+            g.Diag.Error(n.Pos, "`?` works on a `Result`, not an `Option` (turn it into a `Result` with `OkOr(error)` first)")
+        } else {
+            g.Diag.Error(n.Pos, "`?` can only be used on a `Result`, found `${v.T.Name}`")
+        }
+        return F.ErrVal()
+    }
+    if (!isErrorType(v.T.Args[1])) {
+        g.Diag.Error(n.Pos, "`?` needs the error type to be `Error`, found `Result<${v.T.Args[0].Name}, ${v.T.Args[1].Name}>`")
+        return F.ErrVal()
+    }
+    let ret: Types.Type = match (F.Ret) {
+        Some(r) => r,
+        None => {
+            g.Diag.Error(n.Pos, "`?` needs to know the result type of the function; write the lambda's expected type (`let f: fn(...) -> Result<...> = ...`)")
+            return F.ErrVal()
+        },
+    }
+    if (!isResultType(ret) || ret.Args[1].Id != v.T.Args[1].Id) {
+        g.Diag.Error(n.Pos, "`?` can only be used in a function that returns `Result<_, Error>` (this one returns `${ret.Name}`)")
+        return F.ErrVal()
+    }
+    let okT: Types.Type = v.T.Args[0]
+    let ok: Types.Variant = nnV(findVariant(v.T, "Ok"))
+    let er: Types.Variant = nnV(findVariant(v.T, "Err"))
+    let sp: Ctx.Place = spill(F, v)
+    let tg: String = F.Tmp()
+    let isok: String = F.Tmp()
+    F.Emit("${tg} = load i32, ptr ${tagPtr(F, v.T, sp.Ptr)}")
+    F.Emit("${isok} = icmp eq i32 ${tg}, ${ok.Tag}")
+    let okL: String = F.NewLabel("try.ok")
+    let errL: String = F.NewLabel("try.err")
+    F.CondBr(isok, okL, errL)
+    // Err: return it from this function (running the defers of every open scope)
+    F.StartBlock(errL)
+    let ep: Ctx.Place = fieldPlace(F, payloadPtr(F, v.T, sp.Ptr), variantPayload(er), 0, v.T.Args[1], false)
+    let ev: Ctx.Val = loadPlace(F, ep)
+    let rv: Ctx.Val = buildVariant(F, ret, nnV(findVariant(ret, "Err")), [ev])
+    runAllDefers(F, None)
+    F.Emit("ret ${F.LlOf(ret)} ${rv.V}")
+    F.Term = true
+    F.StartBlock(okL)
+    if (okT.Id == g.Tt.Unit.Id) {
+        return F.UnitVal()
+    }
+    let op: Ctx.Place = fieldPlace(F, payloadPtr(F, v.T, sp.Ptr), variantPayload(ok), 0, okT, false)
+    loadPlace(F, op)
+}
+
+fn nnV(v: Option<Types.Variant>) -> Types.Variant {
+    match (v) {
+        Some(x) => x,
+        None => Panic("variant is missing"),
+    }
 }
 
 fn mkIdent(pos: Token.Pos, name: String) -> Ast.Node {
