@@ -6,6 +6,7 @@ module Zevic1.Ast
 import Zevic.Console
 import Zevic.Text
 import Zevic1.Token as Token
+import Zevic1.Types as Types
 
 enum NK {
     TypeName,
@@ -182,6 +183,8 @@ class Node {
     List2: Array<Node> = []
     List3: Array<Node> = []
     Path: Array<String> = []
+    // the type a type pattern resolved to (cached by the code generator)
+    Aux: Option<Types.Type> = None
 
     fn Init(kind: NK, pos: Token.Pos) {
         this.Kind = kind
@@ -217,6 +220,7 @@ class Node {
         n.List2 = this.List2
         n.List3 = this.List3
         n.Path = this.Path
+        n.Aux = this.Aux
         n
     }
 }

@@ -1843,7 +1843,6 @@ fn genIfaceMethod(mut F: Ctx.FnCtx, call: Ast.Node, p: Ctx.Place, recvNode: Ast.
 
 fn fnValueOf(mut F: Ctx.FnCtx, d: Resolve.Decl, pos: Token.Pos) -> Ctx.Val { Panic("not ported yet: fnValueOf") }
 fn genLambda(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genLambda") }
-fn genMatch(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genMatch") }
 fn genTry(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genTry") }
 fn genForIter(mut F: Ctx.FnCtx, n: Ast.Node) { Panic("not ported yet: genForIter") }
 
@@ -4557,6 +4556,697 @@ fn genPrimMethod(mut F: Ctx.FnCtx, call: Ast.Node, recv: Ctx.Val, name: String, 
     }
     g.Diag.Error(call.Pos, "type `${t.Name}` has no method `${name}` (or it takes different arguments)")
     F.ErrVal()
+}
+
+// ---- match ----
+
+fn wildNode() -> Ast.Node { Ast.Node.New(Ast.NK.PWild, Token.Pos.New(0, 0, 0)) }
+
+fn fieldPlace(mut F: Ctx.FnCtx, base: String, agg: Types.Type, idx: I64, ft: Types.Type, isMut: Bool) -> Ctx.Place {
+    let gep: String = F.Tmp()
+    F.Emit("${gep} = getelementptr inbounds ${F.LlOf(agg)}, ptr ${base}, i32 0, i32 ${idx}")
+    Ctx.Place.New(gep, ft, isMut)
+}
+
+fn variantPatName(pat: Ast.Node) -> String { pat.Path[pat.Path.Len() - 1] }
+
+fn isPreludeVariant(n: String) -> Bool { n == "Some" || n == "None" || n == "Ok" || n == "Err" }
+
+// Resolve the variant a pattern names, checking its shape. None after an error.
+fn patVariant(mut g: Gen.Gen, et: Types.Type, pat: Ast.Node) -> Option<Types.Variant> {
+    if (et.Kind != Types.TKind.Enum) {
+        g.Diag.Error(pat.Pos, "cannot match a value of type `${et.Name}` against the variant pattern `${Ast.PathJoin(pat.Path, ".")}`")
+        return None
+    }
+    let vname: String = variantPatName(pat)
+    let declName: String = match (Gen.DeclOfType(g, et)) {
+        Some(d) => d.Name,
+        None => et.Name,
+    }
+    if (pat.Path.Len() >= 2) {
+        let tn: String = pat.Path[pat.Path.Len() - 2]
+        if (tn != declName) {
+            g.Diag.Error(pat.Pos, "the pattern `${Ast.PathJoin(pat.Path, ".")}` belongs to a different type than the matched value (`${et.Name}`)")
+            return None
+        }
+    } else if (!isPreludeVariant(vname)) {
+        if (findVariant(et, vname).IsSome()) {
+            g.Diag.Error(pat.Pos, "write the variant with its type name, like `${declName}.${vname}` (only `Some`, `None`, `Ok` and `Err` can be written alone)")
+        } else {
+            g.Diag.Error(pat.Pos, "unknown variant `${vname}` of `${et.Name}`")
+        }
+        return None
+    }
+    let v: Types.Variant = match (findVariant(et, vname)) {
+        Some(x) => x,
+        None => {
+            g.Diag.Error(pat.Pos, "type `${et.Name}` has no variant `${vname}`")
+            return None
+        },
+    }
+    let nf: I64 = v.Fields.Len()
+    if (pat.Flag2) {
+        if (!v.Named) {
+            g.Diag.Error(pat.Pos, "variant `${v.Name}` has no named fields; write `${v.Name}(...)`")
+            return None
+        }
+    } else if (v.Named) {
+        g.Diag.Error(pat.Pos, "variant `${v.Name}` has named fields; match it with `${v.Name} { Name: pattern, .. }`")
+        return None
+    } else if (pat.List.Len() != nf) {
+        if (nf == 0) {
+            g.Diag.Error(pat.Pos, "variant `${v.Name}` has no data, so the pattern is written without `(...)`")
+        } else {
+            g.Diag.Error(pat.Pos, "variant `${v.Name}` has ${nf} value(s), but the pattern has ${pat.List.Len()}")
+        }
+        return None
+    }
+    Some(v)
+}
+
+fn variantPayload(v: Types.Variant) -> Types.Type {
+    match (v.Payload) {
+        Some(p) => p,
+        None => Panic("variant without data"),
+    }
+}
+
+fn patTest(mut F: Ctx.FnCtx, mut pat: Ast.Node, pl: Ctx.Place, fail: String) {
+    mut g: Gen.Gen = F.G
+    if (g.IsErr(pl.T)) {
+        return
+    }
+    match (pat.Kind) {
+        Ast.NK.PWild | Ast.NK.PBind => {},
+        Ast.NK.PType => {
+            if (pl.T.Kind != Types.TKind.Union) {
+                g.Diag.Error(pat.Pos, "a type pattern needs a union to match on, but this is `${pl.T.Name}`")
+                return
+            }
+            let mt: Types.Type = match (pat.Aux) {
+                Some(x) => x,
+                None => Gen.ResolveType(g, F.File, F.Env, nn(pat.A)),
+            }
+            if (g.IsErr(mt)) {
+                return
+            }
+            let idx: I64 = unionIndex(pl.T, mt)
+            if (idx < 0) {
+                g.Diag.Error(nn(pat.A).Pos, "`${mt.Name}` is not a member of `${pl.T.Name}`")
+                pat.Aux = Some(g.Err)
+                return
+            }
+            pat.Aux = Some(mt)
+            let tg: String = F.Tmp()
+            let eq: String = F.Tmp()
+            F.Emit("${tg} = load i32, ptr ${tagPtr(F, pl.T, pl.Ptr)}")
+            F.Emit("${eq} = icmp eq i32 ${tg}, ${idx}")
+            let ok: String = F.NewLabel("pat.type")
+            F.CondBr(eq, ok, fail)
+            F.StartBlock(ok)
+        },
+        Ast.NK.PLit => {
+            let v: Ctx.Val = genExpr(F, nn(pat.A), Some(pl.T))
+            if (g.IsErr(v.T) || v.T.Id == g.Tt.Never.Id) {
+                return
+            }
+            if (v.T.Id != pl.T.Id) {
+                F.TypeError(pat.Pos, pl.T, v.T, "a pattern")
+                return
+            }
+            let cur: Ctx.Val = loadPlace(F, pl)
+            let eq: Ctx.Val = genCompare(F, Token.Tk.EqEq, cur, v, pat.Pos)
+            if (g.IsErr(eq.T)) {
+                return
+            }
+            let ok: String = F.NewLabel("pat.ok")
+            F.CondBr(eq.V, ok, fail)
+            F.StartBlock(ok)
+        },
+        Ast.NK.PRange => {
+            let lo: Ctx.Val = genExpr(F, nn(pat.A), Some(pl.T))
+            let hi: Ctx.Val = genExpr(F, nn(pat.B), Some(pl.T))
+            if (g.IsErr(lo.T) || g.IsErr(hi.T) || lo.T.Id == g.Tt.Never.Id || hi.T.Id == g.Tt.Never.Id) {
+                return
+            }
+            if (lo.T.Id != pl.T.Id || hi.T.Id != pl.T.Id || !(pl.T.IsInt() || pl.T.Kind == Types.TKind.Char)) {
+                g.Diag.Error(pat.Pos, "a range pattern needs integers or characters of the matched type (`${pl.T.Name}`)")
+                return
+            }
+            let cur: Ctx.Val = loadPlace(F, pl)
+            let c1: Ctx.Val = genCompare(F, Token.Tk.Ge, cur, lo, pat.Pos)
+            let ok1: String = F.NewLabel("pat.lo")
+            F.CondBr(c1.V, ok1, fail)
+            F.StartBlock(ok1)
+            let c2: Ctx.Val = genCompare(F, if (pat.Flag) { Token.Tk.Le } else { Token.Tk.Lt }, cur, hi, pat.Pos)
+            let ok2: String = F.NewLabel("pat.hi")
+            F.CondBr(c2.V, ok2, fail)
+            F.StartBlock(ok2)
+        },
+        Ast.NK.PTuple => {
+            if (pl.T.Kind != Types.TKind.Tuple) {
+                g.Diag.Error(pat.Pos, "cannot match a value of type `${pl.T.Name}` against a tuple pattern")
+                return
+            }
+            if (pl.T.Args.Len() != pat.List.Len()) {
+                g.Diag.Error(pat.Pos, "the tuple pattern has ${pat.List.Len()} element(s), but the value has ${pl.T.Args.Len()}")
+                return
+            }
+            mut i: I64 = 0
+            while (i < pat.List.Len()) {
+                patTest(F, pat.List[i], fieldPlace(F, pl.Ptr, pl.T, i, pl.T.Args[i], pl.Mut), fail)
+                i += 1
+            }
+        },
+        Ast.NK.POr => {
+            let done: String = F.NewLabel("pat.or")
+            mut i: I64 = 0
+            while (i < pat.List.Len()) {
+                let last: Bool = i == pat.List.Len() - 1
+                let next: String = if (last) { fail } else { F.NewLabel("pat.alt") }
+                patTest(F, pat.List[i], pl, next)
+                if (!last) {
+                    F.Br(done)
+                    F.StartBlock(next)
+                }
+                i += 1
+            }
+            F.GotoBlock(done)
+        },
+        Ast.NK.PVariant => {
+            let v: Types.Variant = match (patVariant(g, pl.T, pat)) {
+                Some(x) => x,
+                None => return,
+            }
+            let tg: String = F.Tmp()
+            let eq: String = F.Tmp()
+            F.Emit("${tg} = load i32, ptr ${tagPtr(F, pl.T, pl.Ptr)}")
+            F.Emit("${eq} = icmp eq i32 ${tg}, ${v.Tag}")
+            let ok: String = F.NewLabel("pat.tag")
+            F.CondBr(eq, ok, fail)
+            F.StartBlock(ok)
+            if (v.Fields.Len() == 0) {
+                return
+            }
+            let pp: String = payloadPtr(F, pl.T, pl.Ptr)
+            let payload: Types.Type = variantPayload(v)
+            if (pat.Flag2) {
+                for (fp in pat.List2) {
+                    mut idx: I64 = -1
+                    mut k: I64 = 0
+                    while (k < v.Fields.Len()) {
+                        if (v.Fields[k].Name == fp.Name) {
+                            idx = k
+                        }
+                        k += 1
+                    }
+                    if (idx < 0) {
+                        g.Diag.Error(fp.Pos, "variant `${v.Name}` has no field `${fp.Name}`")
+                    } else {
+                        patTest(F, nn(fp.A), fieldPlace(F, pp, payload, idx, v.Fields[idx].T, pl.Mut), fail)
+                    }
+                }
+                if (!pat.Flag3 && pat.List2.Len() < v.Fields.Len()) {
+                    g.Diag.Error(pat.Pos, "the pattern does not mention every field of `${v.Name}`; add `..` to ignore the rest")
+                }
+            } else {
+                mut i: I64 = 0
+                while (i < pat.List.Len()) {
+                    patTest(F, pat.List[i], fieldPlace(F, pp, payload, i, v.Fields[i].T, pl.Mut), fail)
+                    i += 1
+                }
+            }
+        },
+        _ => g.Diag.Error(pat.Pos, "this pattern is not supported here"),
+    }
+}
+
+fn patHasBinding(pat: Ast.Node) -> Bool {
+    match (pat.Kind) {
+        Ast.NK.PBind => true,
+        Ast.NK.PType => pat.Name != "_",
+        Ast.NK.PTuple | Ast.NK.POr | Ast.NK.PVariant => {
+            for (p in pat.List) {
+                if (patHasBinding(p)) {
+                    return true
+                }
+            }
+            for (fp in pat.List2) {
+                if (patHasBinding(nn(fp.A))) {
+                    return true
+                }
+            }
+            false
+        },
+        _ => false,
+    }
+}
+
+fn patBind(mut F: Ctx.FnCtx, pat: Ast.Node, pl: Ctx.Place, isMut: Bool) {
+    mut g: Gen.Gen = F.G
+    if (g.IsErr(pl.T)) {
+        return
+    }
+    match (pat.Kind) {
+        Ast.NK.PBind => {
+            let l: Ctx.Local = declareLocal(F, pat.Name, pl.T, isMut, pat.Pos)
+            if (pl.T.Id != g.Tt.Unit.Id) {
+                let v: Ctx.Val = loadPlace(F, pl)
+                F.StoreTo(pl.T, v, l.Ptr)
+            }
+        },
+        Ast.NK.PType => {
+            match (pat.Aux) {
+                Some(mt) => {
+                    if (pl.T.Kind != Types.TKind.Union || pat.Name == "_") {
+                        return
+                    }
+                    let l: Ctx.Local = declareLocal(F, pat.Name, mt, isMut, pat.Pos)
+                    if (g.Tt.SizeOf(mt) > 0) {
+                        let mp: Ctx.Place = Ctx.Place.New(payloadPtr(F, pl.T, pl.Ptr), mt, pl.Mut)
+                        let v: Ctx.Val = loadPlace(F, mp)
+                        F.StoreTo(mt, v, l.Ptr)
+                    }
+                },
+                None => {},
+            }
+        },
+        Ast.NK.PTuple => {
+            if (pl.T.Kind != Types.TKind.Tuple || pl.T.Args.Len() != pat.List.Len()) {
+                return
+            }
+            mut i: I64 = 0
+            while (i < pat.List.Len()) {
+                patBind(F, pat.List[i], fieldPlace(F, pl.Ptr, pl.T, i, pl.T.Args[i], pl.Mut), isMut)
+                i += 1
+            }
+        },
+        Ast.NK.POr => {
+            for (p in pat.List) {
+                if (patHasBinding(p)) {
+                    g.Diag.Error(pat.Pos, "an `|` pattern cannot bind names (each alternative would bind different values)")
+                    return
+                }
+            }
+        },
+        Ast.NK.PVariant => {
+            if (pl.T.Kind != Types.TKind.Enum) {
+                return
+            }
+            let v: Types.Variant = match (findVariant(pl.T, variantPatName(pat))) {
+                Some(x) => x,
+                None => return,
+            }
+            if (v.Fields.Len() == 0) {
+                return
+            }
+            let pp: String = payloadPtr(F, pl.T, pl.Ptr)
+            let payload: Types.Type = variantPayload(v)
+            if (pat.Flag2) {
+                for (fp in pat.List2) {
+                    mut k: I64 = 0
+                    while (k < v.Fields.Len()) {
+                        if (v.Fields[k].Name == fp.Name) {
+                            patBind(F, nn(fp.A), fieldPlace(F, pp, payload, k, v.Fields[k].T, pl.Mut), isMut)
+                        }
+                        k += 1
+                    }
+                }
+            } else {
+                mut i: I64 = 0
+                while (i < pat.List.Len() && i < v.Fields.Len()) {
+                    patBind(F, pat.List[i], fieldPlace(F, pp, payload, i, v.Fields[i].T, pl.Mut), isMut)
+                    i += 1
+                }
+            }
+        },
+        _ => {},
+    }
+}
+
+// ---- exhaustiveness: does this set of pattern rows cover every value? ----
+
+fn patIsWild(p: Ast.Node) -> Bool { p.Kind == Ast.NK.PWild || p.Kind == Ast.NK.PBind }
+
+fn rowWith(first: Array<Ast.Node>, rest: Array<Ast.Node>, skip: I64) -> Array<Ast.Node> {
+    mut r: Array<Ast.Node> = []
+    for (x in first) {
+        r.Push(x)
+    }
+    mut i: I64 = skip
+    while (i < rest.Len()) {
+        r.Push(rest[i])
+        i += 1
+    }
+    r
+}
+
+fn rowsCover(rowsIn: Array<Array<Ast.Node>>, tys: Array<Types.Type>) -> Bool {
+    if (rowsIn.Len() == 0) {
+        return false
+    }
+    if (tys.Len() == 0) {
+        return true
+    }
+    let t: Types.Type = tys[0]
+    // expand `a | b` in the first column into separate rows
+    mut rows: Array<Array<Ast.Node>> = []
+    for (r in rowsIn) {
+        let p: Ast.Node = r[0]
+        if (p.Kind == Ast.NK.POr) {
+            for (alt in p.List) {
+                rows.Push(rowWith([alt], r, 1))
+            }
+        } else {
+            rows.Push(r)
+        }
+    }
+    mut restTys: Array<Types.Type> = []
+    mut ri: I64 = 1
+    while (ri < tys.Len()) {
+        restTys.Push(tys[ri])
+        ri += 1
+    }
+    if (t.Kind == Types.TKind.Enum) {
+        for (v in t.Variants) {
+            mut nrows: Array<Array<Ast.Node>> = []
+            for (r in rows) {
+                let p: Ast.Node = r[0]
+                mut sub: Array<Ast.Node> = []
+                if (patIsWild(p)) {
+                    for (f in v.Fields) {
+                        sub.Push(wildNode())
+                    }
+                } else if (p.Kind == Ast.NK.PVariant && variantPatName(p) == v.Name) {
+                    if (p.Flag2) {
+                        for (f in v.Fields) {
+                            mut sp: Ast.Node = wildNode()
+                            for (fp in p.List2) {
+                                if (f.Name == fp.Name) {
+                                    sp = nn(fp.A)
+                                }
+                            }
+                            sub.Push(sp)
+                        }
+                    } else {
+                        mut k: I64 = 0
+                        while (k < v.Fields.Len()) {
+                            sub.Push(if (k < p.List.Len()) { p.List[k] } else { wildNode() })
+                            k += 1
+                        }
+                    }
+                } else {
+                    continue
+                }
+                nrows.Push(rowWith(sub, r, 1))
+            }
+            mut ntys: Array<Types.Type> = []
+            for (f in v.Fields) {
+                ntys.Push(f.T)
+            }
+            for (x in restTys) {
+                ntys.Push(x)
+            }
+            if (!rowsCover(nrows, ntys)) {
+                return false
+            }
+        }
+        return true
+    }
+    if (t.Kind == Types.TKind.Union) {
+        for (m in t.Args) {
+            mut nrows: Array<Array<Ast.Node>> = []
+            for (r in rows) {
+                let p: Ast.Node = r[0]
+                let isThis: Bool = match (p.Aux) {
+                    Some(a) => p.Kind == Ast.NK.PType && a.Id == m.Id,
+                    None => false,
+                }
+                if (patIsWild(p) || isThis) {
+                    nrows.Push(rowWith([], r, 1))
+                }
+            }
+            if (!rowsCover(nrows, restTys)) {
+                return false
+            }
+        }
+        return true
+    }
+    if (t.Kind == Types.TKind.Tuple) {
+        mut nrows: Array<Array<Ast.Node>> = []
+        for (r in rows) {
+            let p: Ast.Node = r[0]
+            mut sub: Array<Ast.Node> = []
+            if (patIsWild(p)) {
+                for (a in t.Args) {
+                    sub.Push(wildNode())
+                }
+            } else if (p.Kind == Ast.NK.PTuple) {
+                mut k: I64 = 0
+                while (k < t.Args.Len()) {
+                    sub.Push(if (k < p.List.Len()) { p.List[k] } else { wildNode() })
+                    k += 1
+                }
+            } else {
+                continue
+            }
+            nrows.Push(rowWith(sub, r, 1))
+        }
+        mut ntys: Array<Types.Type> = []
+        for (a in t.Args) {
+            ntys.Push(a)
+        }
+        for (x in restTys) {
+            ntys.Push(x)
+        }
+        return rowsCover(nrows, ntys)
+    }
+    if (t.Kind == Types.TKind.Bool) {
+        mut b: I64 = 0
+        while (b < 2) {
+            mut nrows: Array<Array<Ast.Node>> = []
+            for (r in rows) {
+                let p: Ast.Node = r[0]
+                mut take: Bool = patIsWild(p)
+                if (p.Kind == Ast.NK.PLit && nn(p.A).Kind == Ast.NK.Bool && nn(p.A).Ival.ToI64Wrap() == b) {
+                    take = true
+                }
+                if (take) {
+                    nrows.Push(rowWith([], r, 1))
+                }
+            }
+            if (!rowsCover(nrows, restTys)) {
+                return false
+            }
+            b += 1
+        }
+        return true
+    }
+    // numbers, characters, strings: only a catch-all row covers everything
+    mut nrows: Array<Array<Ast.Node>> = []
+    for (r in rows) {
+        if (patIsWild(r[0])) {
+            nrows.Push(rowWith([], r, 1))
+        }
+    }
+    rowsCover(nrows, restTys)
+}
+
+fn missingHint(mut g: Gen.Gen, t: Types.Type, rows: Array<Array<Ast.Node>>) -> Option<String> {
+    if (t.Kind == Types.TKind.Union) {
+        for (m in t.Args) {
+            mut seen: Bool = false
+            for (r in rows) {
+                let p: Ast.Node = r[0]
+                if (patIsWild(p) || (p.Kind == Ast.NK.PType && sameAux(p, m))) {
+                    seen = true
+                } else if (p.Kind == Ast.NK.POr) {
+                    for (q in p.List) {
+                        if (q.Kind == Ast.NK.PType && sameAux(q, m)) {
+                            seen = true
+                        }
+                    }
+                }
+            }
+            if (!seen) {
+                return Some("`${m.Name}` is not handled")
+            }
+        }
+    }
+    // name one enum variant that no arm mentions, to make the message concrete
+    if (t.Kind == Types.TKind.Enum) {
+        let tn: String = match (Gen.DeclOfType(g, t)) {
+            Some(d) => d.Name,
+            None => t.Name,
+        }
+        for (v in t.Variants) {
+            mut count: I64 = 0
+            for (r in rows) {
+                let p: Ast.Node = r[0]
+                if (patIsWild(p) || (p.Kind == Ast.NK.PVariant && variantPatName(p) == v.Name)) {
+                    count += 1
+                } else if (p.Kind == Ast.NK.POr) {
+                    for (q in p.List) {
+                        if (q.Kind == Ast.NK.PVariant && variantPatName(q) == v.Name) {
+                            count += 1
+                        }
+                    }
+                }
+            }
+            if (count == 0) {
+                return Some("`${tn}.${v.Name}` is not handled")
+            }
+        }
+    }
+    None
+}
+
+fn sameAux(p: Ast.Node, m: Types.Type) -> Bool {
+    match (p.Aux) {
+        Some(a) => a.Id == m.Id,
+        None => false,
+    }
+}
+
+// Resolve the types of the type patterns first: the exhaustiveness check looks at them before the arms are generated.
+fn resolveTypePats(mut F: Ctx.FnCtx, pat: Option<Ast.Node>) {
+    match (pat) {
+        Some(p0) => {
+            mut p: Ast.Node = p0
+            if (p.Kind == Ast.NK.PType) {
+                p.Aux = Some(Gen.ResolveType(F.G, F.File, F.Env, nn(p.A)))
+            }
+            for (x in p.List) {
+                resolveTypePats(F, Some(x))
+            }
+            for (fp in p.List2) {
+                resolveTypePats(F, fp.A)
+            }
+        },
+        None => {},
+    }
+}
+
+fn genMatch(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let sp: Ctx.Place = genPlace(F, nn(n.A))
+    if (sp.T.Id == g.Tt.Never.Id) {
+        return F.NeverVal(expect)
+    }
+    let bad: Bool = g.IsErr(sp.T)
+    for (arm in n.List) {
+        resolveTypePats(F, arm.A)
+    }
+    if (!bad) {
+        mut rows: Array<Array<Ast.Node>> = []
+        for (arm in n.List) {
+            // a guarded arm may fail, so it does not count
+            if (arm.B.IsNone()) {
+                rows.Push([nn(arm.A)])
+            }
+        }
+        if (!rowsCover(rows, [sp.T])) {
+            let hint: Option<String> = missingHint(g, sp.T, rows)
+            match (hint) {
+                Some(h) => {
+                    g.Diag.Error(n.Pos, "this `match` does not cover every case: ${h}")
+                    g.Diag.Note("add an arm for it or a `_ =>` arm")
+                },
+                None => g.Diag.Error(n.Pos, "this `match` does not cover every case (add a `_ =>` arm)"),
+            }
+        }
+    }
+    let endL: String = F.NewLabel("match.end")
+    mut rvals: Array<Ctx.Val> = []
+    mut rlabels: Array<String> = []
+    let want: Option<Types.Type> = match (expect) {
+        Some(e) => if (e.Id != g.Tt.Unit.Id) { Some(e) } else { None },
+        None => None,
+    }
+    mut rt: Option<Types.Type> = None
+    for (arm in n.List) {
+        let next: String = F.NewLabel("arm.next")
+        F.PushScope()
+        if (!bad) {
+            patTest(F, nn(arm.A), sp, next)
+            patBind(F, nn(arm.A), sp, false)
+        }
+        match (arm.B) {
+            Some(guard) => {
+                mut gv: Ctx.Val = genExpr(F, guard, Some(g.Tt.Bool))
+                gv = coerce(F, guard.Pos, gv, g.Tt.Bool, "a match guard")
+                if (gv.T.Id != g.Tt.Never.Id && !g.IsErr(gv.T)) {
+                    let ok: String = F.NewLabel("guard.ok")
+                    F.CondBr(gv.V, ok, next)
+                    F.StartBlock(ok)
+                }
+            },
+            None => {},
+        }
+        let body: Ast.Node = nn(arm.C)
+        let armWant: Option<Types.Type> = if (rt.IsSome()) { rt } else { want }
+        mut v: Ctx.Val = if (body.Kind == Ast.NK.Block) { genBlock(F, body, armWant) } else { genExpr(F, body, armWant) }
+        let live: Bool = !F.Term
+        match (want) {
+            Some(w) => {
+                if (live && w.Kind == Types.TKind.Union && v.T.Id != w.Id && !g.IsErr(v.T) && v.T.Id != g.Tt.Never.Id) {
+                    v = coerce(F, body.Pos, v, w, "a `match` arm")
+                }
+            },
+            None => {},
+        }
+        if (live) {
+            if (g.IsErr(v.T)) {
+                // keep going: the error is already reported
+            } else {
+                match (rt) {
+                    None => { rt = Some(v.T) },
+                    Some(r0) => {
+                        if (v.T.Id != r0.Id && !g.IsErr(r0)) {
+                            g.Diag.Error(body.Pos, "the arms of this `match` have different types: `${r0.Name}` and `${v.T.Name}`")
+                            v = F.ErrVal()
+                        }
+                    },
+                }
+            }
+        }
+        popScope(F)
+        if (live && !F.Term) {
+            rvals.Push(v)
+            rlabels.Push(F.Cur)
+            F.Br(endL)
+        }
+        F.StartBlock(next)
+    }
+    F.Emit("unreachable")
+    F.Term = true
+    F.StartBlock(endL)
+    if (rvals.Len() == 0) {
+        F.Emit("unreachable")
+        F.Term = true
+        return F.NeverVal(expect)
+    }
+    for (v in rvals) {
+        if (g.IsErr(v.T)) {
+            return F.ErrVal()
+        }
+    }
+    let rtype: Types.Type = match (rt) {
+        Some(x) => x,
+        None => return F.UnitVal(),
+    }
+    if (rtype.Id == g.Tt.Unit.Id) {
+        return F.UnitVal()
+    }
+    let r: String = F.Tmp()
+    mut parts: String = ""
+    mut i: I64 = 0
+    while (i < rvals.Len()) {
+        parts = "${parts}${if (i > 0) { ", " } else { "" }}[ ${rvals[i].V}, %${rlabels[i]} ]"
+        i += 1
+    }
+    F.Emit("${r} = phi ${F.LlOf(rtype)} ${parts}")
+    Ctx.Val.New(rtype, r)
 }
 
 fn mkIdent(pos: Token.Pos, name: String) -> Ast.Node {
