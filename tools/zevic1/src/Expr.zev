@@ -1842,7 +1842,6 @@ fn genStmt(mut F: Ctx.FnCtx, s: Ast.Node) {
 fn fnValueOf(mut F: Ctx.FnCtx, d: Resolve.Decl, pos: Token.Pos) -> Ctx.Val { Panic("not ported yet: fnValueOf") }
 fn genLambda(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genLambda") }
 fn genCall(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genCall") }
-fn genMember(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genMember") }
 fn genMatch(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genMatch") }
 fn genTry(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genTry") }
 fn genCallDecl(mut F: Ctx.FnCtx, call: Ast.Node, d: Resolve.Decl, self: Option<Types.Type>, explicit: Option<Array<Types.Type>>, expect: Option<Types.Type>, recv: Option<Ctx.Val>) -> Ctx.Val { Panic("not ported yet: genCallDecl") }
@@ -2692,6 +2691,123 @@ fn genStructLit(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ct
     }
     let t: Option<Types.Type> = staticType(F, d, Some(nodes[used - 1]), expect)
     genVariant(F, Some(call), n.Pos, d, t, vname, expect)
+}
+
+// ---- members: `Type.Variant`, `Type.StaticField`, `Module.CONST`, `x.Field` ----
+
+fn findStaticField(g: Gen.Gen, t: Types.Type, name: String) -> Option<Ast.Node> {
+    match (Gen.DeclNode(g, t)) {
+        Some(td) => {
+            for (m in td.List) {
+                if (m.Kind == Ast.NK.Field && m.Flag && m.Name == name) {
+                    return Some(m)
+                }
+            }
+            None
+        },
+        None => None,
+    }
+}
+
+fn genStaticMember(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    mut segs: Array<String> = []
+    mut nodes: Array<Ast.Node> = []
+    let unusedFlat: Bool = flattenPath(n, segs, nodes)
+    mut used: I64 = 0
+    mut dOpt: Option<Resolve.Decl> = None
+    let selfDecl: Option<Resolve.Decl> = match (F.Env.SelfT) {
+        Some(st) => Gen.DeclOfType(g, st),
+        None => None,
+    }
+    if (segs[0] == "Self" && selfDecl.IsSome()) {
+        dOpt = selfDecl
+        used = 1
+    } else {
+        let (x, u): (Option<Resolve.Decl>, I64) = Gen.FindDecl(g, F.File, segs, n.Pos)
+        dOpt = x
+        used = u
+    }
+    if (used < 0) {
+        return F.ErrVal()
+    }
+    let d: Resolve.Decl = match (dOpt) {
+        Some(x) => x,
+        None => {
+            g.Diag.Error(n.Pos, "unknown name `${Ast.PathJoin(segs, ".")}`")
+            return F.ErrVal()
+        },
+    }
+    let dn: Ast.Node = d.Node
+    if (dn.Kind == Ast.NK.DConst && used == segs.Len()) {
+        let t: Types.Type = Gen.ResolveType(g, d.FileInfo(), Gen.MakeEnv(g, d, None, None), nn(dn.A))
+        let v: Ctx.Val = genExpr(F, nn(dn.B), Some(t))
+        return coerce(F, nn(dn.B).Pos, v, t, "a constant")
+    }
+    if ((dn.Kind == Ast.NK.DEnum || dn.Kind == Ast.NK.DStruct || dn.Kind == Ast.NK.DClass) && used == segs.Len() - 1) {
+        let member: String = segs[used]
+        let tnode: Ast.Node = nodes[used - 1]
+        let t: Option<Types.Type> = if (segs[0] == "Self" && F.Env.SelfT.IsSome()) { F.Env.SelfT } else { staticType(F, d, Some(tnode), expect) }
+        if (dn.Kind == Ast.NK.DEnum && findVariantNode(dn, member).IsSome()) {
+            return genVariant(F, None, n.Pos, d, t, member, expect)
+        }
+        match (t) {
+            Some(tt) => {
+                match (findStaticField(g, tt, member)) {
+                    Some(sf) => {
+                        mut tenv: Gen.Env = Gen.Env.New()
+                        tenv.SelfT = Some(tt)
+                        mut i: I64 = 0
+                        while (i < dn.List2.Len()) {
+                            tenv.Add(dn.List2[i].Name, tt.Args[i])
+                            i += 1
+                        }
+                        let ft: Types.Type = Gen.ResolveType(g, d.FileInfo(), tenv, nn(sf.A))
+                        let osf: Resolve.FileInfo = F.File
+                        let oe: Gen.Env = F.Env
+                        let os: Option<Ctx.Scope> = F.Scope
+                        F.File = d.FileInfo()
+                        F.Env = tenv
+                        F.Scope = Some(Ctx.Scope.New())
+                        mut v: Ctx.Val = F.ErrVal()
+                        match (sf.B) {
+                            Some(init) => { v = genExpr(F, init, Some(ft)) },
+                            None => {},
+                        }
+                        v = coerce(F, n.Pos, v, ft, "a static field")
+                        F.File = osf
+                        F.Env = oe
+                        F.Scope = os
+                        return v
+                    },
+                    None => {},
+                }
+                if (Gen.FindMember(g, tt, member).IsSome()) {
+                    g.Diag.Error(n.Pos, "`${d.Name}.${member}` is a function; call it with `()`")
+                    return F.ErrVal()
+                }
+            },
+            None => {},
+        }
+        g.Diag.Error(n.Pos, "type `${d.Name}` has no member `${member}`")
+        return F.ErrVal()
+    }
+    if (dn.Kind == Ast.NK.DFn && used == segs.Len()) {
+        return fnValueOf(F, d, n.Pos)
+    }
+    g.Diag.Error(n.Pos, "`${Ast.PathJoin(segs, ".")}` cannot be used as a value here")
+    F.ErrVal()
+}
+
+fn genMember(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val {
+    if (isStaticPath(F, n)) {
+        return genStaticMember(F, n, expect)
+    }
+    let p: Ctx.Place = genPlace(F, n)
+    if (p.T.Id == F.G.Tt.Never.Id) {
+        return F.NeverVal(expect)
+    }
+    loadPlace(F, p)
 }
 
 fn mkIdent(pos: Token.Pos, name: String) -> Ast.Node {
