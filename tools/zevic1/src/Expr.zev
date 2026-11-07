@@ -1839,15 +1839,10 @@ fn genStmt(mut F: Ctx.FnCtx, s: Ast.Node) {
 
 // ---- not ported yet ----
 
-fn rootName(n: Ast.Node) -> String { Panic("not ported yet: rootName") }
-fn isStaticPath(F: Ctx.FnCtx, n: Ast.Node) -> Bool { Panic("not ported yet: isStaticPath") }
-fn genPlace(mut F: Ctx.FnCtx, n: Ast.Node) -> Ctx.Place { Panic("not ported yet: genPlace") }
-fn loadPlace(mut F: Ctx.FnCtx, p: Ctx.Place) -> Ctx.Val { Panic("not ported yet: loadPlace") }
 fn fnValueOf(mut F: Ctx.FnCtx, d: Resolve.Decl, pos: Token.Pos) -> Ctx.Val { Panic("not ported yet: fnValueOf") }
 fn preludeVariantOwner(F: Ctx.FnCtx, name: String) -> Option<Resolve.Decl> { Panic("not ported yet: preludeVariantOwner") }
 fn staticType(mut F: Ctx.FnCtx, d: Resolve.Decl, tnode: Option<Ast.Node>, expect: Option<Types.Type>) -> Option<Types.Type> { Panic("not ported yet: staticType") }
 fn genVariant(mut F: Ctx.FnCtx, call: Option<Ast.Node>, pos: Token.Pos, d: Resolve.Decl, et: Option<Types.Type>, vname: String, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genVariant") }
-fn genStringLit(mut F: Ctx.FnCtx, n: Ast.Node) -> Ctx.Val { Panic("not ported yet: genStringLit") }
 fn genIndexRead(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genIndexRead") }
 fn genArrayLit(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genArrayLit") }
 fn genStructLit(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genStructLit") }
@@ -1859,7 +1854,268 @@ fn genTry(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val 
 fn genCallDecl(mut F: Ctx.FnCtx, call: Ast.Node, d: Resolve.Decl, self: Option<Types.Type>, explicit: Option<Array<Types.Type>>, expect: Option<Types.Type>, recv: Option<Ctx.Val>) -> Ctx.Val { Panic("not ported yet: genCallDecl") }
 fn genIndexAssign(mut F: Ctx.FnCtx, n: Ast.Node) { Panic("not ported yet: genIndexAssign") }
 fn genForIter(mut F: Ctx.FnCtx, n: Ast.Node) { Panic("not ported yet: genForIter") }
-fn isPureExpr(n: Ast.Node) -> Bool { Panic("not ported yet: isPureExpr") }
+
+// ---- places, paths and string literals ----
+
+// The names of a dotted path `A.B.C`, or None when the expression is not one.
+fn flattenPath(n: Ast.Node, mut segs: Array<String>, mut nodes: Array<Ast.Node>) -> Bool {
+    if (n.Kind == Ast.NK.Ident) {
+        segs.Push(n.Name)
+        nodes.Push(n)
+        return true
+    }
+    if (n.Kind == Ast.NK.Member) {
+        match (n.A) {
+            Some(a) => {
+                if (flattenPath(a, segs, nodes)) {
+                    segs.Push(n.Name)
+                    nodes.Push(n)
+                    return true
+                }
+            },
+            None => {},
+        }
+    }
+    false
+}
+
+// Is this a dotted path whose first name is not a variable (a module or type)?
+fn isStaticPath(F: Ctx.FnCtx, n: Ast.Node) -> Bool {
+    mut segs: Array<String> = []
+    mut nodes: Array<Ast.Node> = []
+    if (!flattenPath(n, segs, nodes)) {
+        return false
+    }
+    F.FindLocal(segs[0]).IsNone()
+}
+
+// The name of the variable a path starts from (for messages).
+fn rootName(n: Ast.Node) -> String {
+    mut cur: Ast.Node = n
+    while (cur.Kind == Ast.NK.Member || cur.Kind == Ast.NK.Index) {
+        match (cur.A) {
+            Some(a) => { cur = a },
+            None => return "this value",
+        }
+    }
+    if (cur.Kind == Ast.NK.Ident) {
+        return cur.Name
+    }
+    if (cur.Kind == Ast.NK.This) {
+        return "this"
+    }
+    "this value"
+}
+
+// An expression that can be evaluated twice without changing the result.
+fn isPureExpr(n: Ast.Node) -> Bool {
+    match (n.Kind) {
+        Ast.NK.Ident | Ast.NK.Int | Ast.NK.This | Ast.NK.Bool | Ast.NK.Char | Ast.NK.Byte => true,
+        Ast.NK.Member | Ast.NK.Unary => isPureExpr(nn(n.A)),
+        Ast.NK.Binary | Ast.NK.Index => isPureExpr(nn(n.A)) && isPureExpr(nn(n.B)),
+        _ => false,
+    }
+}
+
+fn placeErr(F: Ctx.FnCtx) -> Ctx.Place { Ctx.Place.New("", F.G.Err, false) }
+
+fn loadPlace(mut F: Ctx.FnCtx, p: Ctx.Place) -> Ctx.Val {
+    if (F.G.IsErr(p.T)) {
+        return F.ErrVal()
+    }
+    if (p.T.Id == F.G.Tt.Unit.Id) {
+        return F.UnitVal()
+    }
+    let t: String = F.Tmp()
+    F.Emit("${t} = load ${F.LlOf(p.T)}, ptr ${p.Ptr}")
+    Ctx.Val.New(p.T, t)
+}
+
+// A value in a fresh slot, so that it has an address.
+fn spill(mut F: Ctx.FnCtx, v: Ctx.Val) -> Ctx.Place {
+    let g: Gen.Gen = F.G
+    if (g.IsErr(v.T) || v.T.Id == g.Tt.Never.Id) {
+        return Ctx.Place.New("", v.T, false)
+    }
+    let ptr: String = F.NewSlot(v.T)
+    if (v.T.Id != g.Tt.Unit.Id) {
+        F.StoreTo(v.T, v, ptr)
+    }
+    Ctx.Place.New(ptr, v.T, false)
+}
+
+// A class object is laid out like a tuple of its fields.
+fn objTuple(mut g: Gen.Gen, cls: Types.Type) -> Types.Type {
+    mut ts: Array<Types.Type> = []
+    for (f in cls.Fields) {
+        ts.Push(f.T)
+    }
+    g.Tt.Tuple(ts)
+}
+
+fn checkVis(mut F: Ctx.FnCtx, t: Types.Type, name: String, pos: Token.Pos, what: String) -> Bool {
+    mut g: Gen.Gen = F.G
+    if (Gen.NameIsPub(name)) {
+        return true
+    }
+    match (Gen.DeclOfType(g, t)) {
+        Some(d) => {
+            if (d.ModName == fileModName(F)) {
+                return true
+            }
+            g.Diag.Error(pos, "${what} `${name}` of `${t.Name}` is private (names starting with a lowercase letter are only visible inside module `${d.ModName}`)")
+            false
+        },
+        None => true,
+    }
+}
+
+fn findFieldIdx(t: Types.Type, name: String) -> I64 {
+    mut i: I64 = 0
+    while (i < t.Fields.Len()) {
+        if (t.Fields[i].Name == name) {
+            return i
+        }
+        i += 1
+    }
+    -1
+}
+
+
+
+fn genPlace(mut F: Ctx.FnCtx, n: Ast.Node) -> Ctx.Place {
+    mut g: Gen.Gen = F.G
+    match (n.Kind) {
+        Ast.NK.Ident => {
+            match (F.FindLocal(n.Name)) {
+                Some(l) => return Ctx.Place.New(l.Ptr, l.T, l.Mut),
+                None => {},
+            }
+        },
+        Ast.NK.This => {
+            if (!F.HasThis) {
+                g.Diag.Error(n.Pos, "`this` can only be used inside a method")
+                return placeErr(F)
+            }
+            return Ctx.Place.New(F.ThisSlot, thisType(F), F.ThisMut)
+        },
+        Ast.NK.Index => {
+            // an element of an array: a class element is a reference, so its fields can be changed in place; a struct
+            // element is copied into a local and stored back after the assignment (see genAssign). Either way the
+            // array itself must be `mut`.
+            mut amut: Bool = false
+            let a: Ast.Node = nn(n.A)
+            if (a.Kind == Ast.NK.Ident || a.Kind == Ast.NK.Member || a.Kind == Ast.NK.This || a.Kind == Ast.NK.Index) {
+                let ap: Ctx.Place = genPlace(F, a)
+                if (g.IsErr(ap.T) || ap.T.Id == g.Tt.Never.Id) {
+                    return placeErr(F)
+                }
+                amut = ap.Mut
+            }
+            let v: Ctx.Val = genExpr(F, n, None)
+            if (v.T.Id == g.Tt.Never.Id || g.IsErr(v.T)) {
+                return placeErr(F)
+            }
+            if (v.T.Kind == Types.TKind.Struct) {
+                let name: String = "$el${F.NSlot}"
+                let l: Ctx.Local = declareLocal(F, name, v.T, true, n.Pos)
+                F.StoreTo(v.T, v, l.Ptr)
+                F.WbElem = Some(n)
+                F.WbName = name
+                return Ctx.Place.New(l.Ptr, v.T, amut)
+            }
+            let p: Ctx.Place = spill(F, v)
+            return Ctx.Place.New(p.Ptr, p.T, amut)
+        },
+        Ast.NK.Member => {
+            if (!isStaticPath(F, n)) {
+                let b: Ctx.Place = genPlace(F, nn(n.A))
+                if (g.IsErr(b.T)) {
+                    return placeErr(F)
+                }
+                if (b.T.Id == g.Tt.Never.Id) {
+                    return b
+                }
+                mut bt: Types.Type = b.T
+                if (bt.Kind != Types.TKind.Struct && bt.Kind != Types.TKind.Class) {
+                    g.Diag.Error(n.Pos, "type `${bt.Name}` has no field `${n.Name}`")
+                    return placeErr(F)
+                }
+                Gen.EnsureMembers(g, bt)
+                let idx: I64 = findFieldIdx(bt, n.Name)
+                if (idx < 0) {
+                    match (Gen.FindMember(g, bt, n.Name)) {
+                        Some(m) => g.Diag.Error(n.Pos, "`${n.Name}` is a method of `${bt.Name}`; call it with `()`"),
+                        None => g.Diag.Error(n.Pos, "type `${bt.Name}` has no field `${n.Name}`"),
+                    }
+                    return placeErr(F)
+                }
+                if (!checkVis(F, bt, n.Name, n.Pos, "field")) {
+                    return placeErr(F)
+                }
+                mut base: String = b.Ptr
+                mut sll: String = ""
+                if (bt.Kind == Types.TKind.Class) {
+                    base = F.Tmp()
+                    F.Emit("${base} = load ptr, ptr ${b.Ptr}")
+                    sll = F.LlOf(objTuple(g, bt))
+                } else {
+                    sll = F.LlOf(bt)
+                }
+                let gep: String = F.Tmp()
+                F.Emit("${gep} = getelementptr inbounds ${sll}, ptr ${base}, i32 0, i32 ${idx}")
+                return Ctx.Place.New(gep, bt.Fields[idx].T, b.Mut)
+            }
+        },
+        _ => {},
+    }
+    spill(F, genExpr(F, n, None))
+}
+
+fn genStringLit(mut F: Ctx.FnCtx, n: Ast.Node) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    if (n.List.Len() == 0) {
+        return strVal(F, Gen.StrConst(g, ""))
+    }
+    if (n.List.Len() == 1 && n.List[0].Kind == Ast.NK.StrLit) {
+        return strVal(F, Gen.StrConst(g, n.List[0].Name))
+    }
+    // interpolation: build the result in a runtime string builder
+    rtDecl(F, "zevic_sb_new", "declare ptr @zevic_sb_new()")
+    rtDecl(F, "zevic_sb_add", "declare void @zevic_sb_add(ptr, ptr, i64)")
+    rtDecl(F, "zevic_sb_finish", "declare void @zevic_sb_finish(ptr, ptr)")
+    let sb: String = F.Tmp()
+    F.Emit("${sb} = call ptr @zevic_sb_new()")
+    for (part in n.List) {
+        mut s: Ctx.Val = F.ErrVal()
+        if (part.Kind == Ast.NK.StrLit) {
+            s = strVal(F, Gen.StrConst(g, part.Name))
+        } else {
+            let v: Ctx.Val = genExpr(F, part, None)
+            if (v.T.Id == g.Tt.Never.Id) {
+                return F.NeverVal(Some(g.Tt.Str))
+            }
+            s = genToString(F, v, part.Pos)
+        }
+        let (p, len): (String, String) = strParts(F, s)
+        F.Emit("call void @zevic_sb_add(ptr ${sb}, ptr ${p}, i64 ${len})")
+    }
+    callStrOut(F, "zevic_sb_finish", "ptr ${sb}")
+}
+
+fn thisType(F: Ctx.FnCtx) -> Types.Type {
+    match (F.ThisT) {
+        Some(t) => t,
+        None => Panic("`this` type is missing"),
+    }
+}
+
+fn fileModName(F: Ctx.FnCtx) -> String {
+    match (F.File.Mod) {
+        Some(m) => m.Name,
+        None => "",
+    }
+}
 
 fn mkIdent(pos: Token.Pos, name: String) -> Ast.Node {
     mut n: Ast.Node = Ast.Node.New(Ast.NK.Ident, pos)
