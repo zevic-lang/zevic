@@ -1839,7 +1839,6 @@ fn genStmt(mut F: Ctx.FnCtx, s: Ast.Node) {
 
 // ---- not ported yet ----
 fn genPrintf(mut F: Ctx.FnCtx, n: Ast.Node, toErr: Bool) -> Ctx.Val { Panic("not ported yet: genPrintf") }
-fn genPrimMethod(mut F: Ctx.FnCtx, call: Ast.Node, recv: Ctx.Val, name: String, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genPrimMethod") }
 fn genIfaceMethod(mut F: Ctx.FnCtx, call: Ast.Node, p: Ctx.Place, recvNode: Ast.Node, name: String, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genIfaceMethod") }
 
 fn fnValueOf(mut F: Ctx.FnCtx, d: Resolve.Decl, pos: Token.Pos) -> Ctx.Val { Panic("not ported yet: fnValueOf") }
@@ -4064,6 +4063,500 @@ fn genConstruct(mut F: Ctx.FnCtx, call: Ast.Node, d: Resolve.Decl, t: Types.Type
     let v: String = F.Tmp()
     F.Emit("${v} = load ${F.LlOf(t)}, ptr ${obj}")
     Ctx.Val.New(t, v)
+}
+
+// ---- methods of the built-in types ----
+
+fn intFits(from: Types.Type, to: Types.Type) -> Bool {
+    let fb: I32 = from.Bits()
+    let tb: I32 = to.Bits()
+    if (from.IsSigned() == to.IsSigned()) {
+        return tb >= fb
+    }
+    if (!from.IsSigned() && to.IsSigned()) {
+        return tb > fb
+    }
+    false
+}
+
+fn castInt(mut F: Ctx.FnCtx, v: Ctx.Val, to: Types.Type) -> Ctx.Val {
+    let fb: I32 = v.T.Bits()
+    let tb: I32 = to.Bits()
+    if (fb == tb) {
+        return Ctx.Val.New(to, v.V)
+    }
+    let r: String = F.Tmp()
+    if (tb < fb) {
+        F.Emit("${r} = trunc ${F.LlOf(v.T)} ${v.V} to ${F.LlOf(to)}")
+    } else {
+        F.Emit("${r} = ${if (v.T.IsSigned()) { "sext" } else { "zext" }} ${F.LlOf(v.T)} ${v.V} to ${F.LlOf(to)}")
+    }
+    Ctx.Val.New(to, r)
+}
+
+fn pow2(n: I32) -> F64 {
+    mut r: F64 = 1.0
+    mut i: I32 = 0
+    while (i < n) {
+        r = r * 2.0
+        i += 1
+    }
+    r
+}
+
+fn castFloatToInt(mut F: Ctx.FnCtx, v: Ctx.Val, to: Types.Type, pos: Token.Pos) -> Ctx.Val {
+    let bits: I32 = to.Bits()
+    let sgn: Bool = to.IsSigned()
+    mut x: String = v.V
+    if (v.T.Kind == Types.TKind.F32) {
+        x = F.Tmp()
+        F.Emit("${x} = fpext float ${v.V} to double")
+    }
+    let lo: F64 = if (sgn) { 0.0 - pow2(bits - 1) } else { 0.0 }
+    let hi: F64 = pow2(if (sgn) { bits - 1 } else { bits })
+    let c1: String = F.Tmp()
+    let c2: String = F.Tmp()
+    let both: String = F.Tmp()
+    F.Emit("${c1} = fcmp oge double ${x}, ${doubleHex(lo)}")
+    F.Emit("${c2} = fcmp olt double ${x}, ${doubleHex(hi)}")
+    F.Emit("${both} = and i1 ${c1}, ${c2}")
+    let ok: String = F.NewLabel("ok")
+    let bad: String = coldPanic(F, "conversion from a decimal number is out of range (or NaN)", pos)
+    F.CondBr(both, ok, bad)
+    F.StartBlock(ok)
+    let r: String = F.Tmp()
+    F.Emit("${r} = ${if (sgn) { "fptosi" } else { "fptoui" }} double ${x} to ${F.LlOf(to)}")
+    Ctx.Val.New(to, r)
+}
+
+fn castToFloat(mut F: Ctx.FnCtx, v: Ctx.Val, to: Types.Type) -> Ctx.Val {
+    if (!v.T.IsInt() && v.T.Id == to.Id) {
+        return v
+    }
+    let r: String = F.Tmp()
+    if (v.T.IsInt()) {
+        F.Emit("${r} = ${if (v.T.IsSigned()) { "sitofp" } else { "uitofp" }} ${F.LlOf(v.T)} ${v.V} to ${F.LlOf(to)}")
+    } else {
+        F.Emit("${r} = ${if (to.Kind == Types.TKind.F64) { "fpext" } else { "fptrunc" }} ${F.LlOf(v.T)} ${v.V} to ${F.LlOf(to)}")
+    }
+    Ctx.Val.New(to, r)
+}
+
+fn isCoreType(t: Types.Type, kind: Types.TKind, name: String) -> Bool {
+    if (t.Kind != kind) {
+        return false
+    }
+    t.DeclName == name
+}
+
+fn isResultType(t: Types.Type) -> Bool { isCoreType(t, Types.TKind.Enum, "Result") }
+
+fn isOptionType(t: Types.Type) -> Bool { isCoreType(t, Types.TKind.Enum, "Option") }
+
+fn isErrorType(t: Types.Type) -> Bool { isCoreType(t, Types.TKind.Class, "Error") }
+
+// Result<A, E> with the same payload shape, relabelled as Result<B, E>.
+fn retagResult(mut g: Gen.Gen, res: Types.Type, ok: Types.Type) -> Types.Type {
+    match (Gen.DeclOfType(g, res)) {
+        Some(d) => Gen.Instantiate(g, d, [ok, res.Args[1]], Token.Pos.New(0, 0, 0)),
+        None => res,
+    }
+}
+
+// the one argument of a call, evaluated as `t`
+fn genArg1(mut F: Ctx.FnCtx, call: Ast.Node, t: Types.Type, what: String) -> Ctx.Val {
+    let v: Ctx.Val = genExpr(F, call.List[0], Some(t))
+    coerce(F, call.List[0].Pos, v, t, what)
+}
+
+fn isNeverOrErr(g: Gen.Gen, v: Ctx.Val) -> Bool { v.T.Id == g.Tt.Never.Id || g.IsErr(v.T) }
+
+fn passUp(mut F: Ctx.FnCtx, v: Ctx.Val) -> Ctx.Val {
+    if (v.T.Id == F.G.Tt.Never.Id) { v } else { F.ErrVal() }
+}
+
+// x.ToCInt(), c.ToI32(), c.ToCLong() ...: conversions between Zevic numbers and C numbers.
+// Both sides are mapped to their Zevic equivalents, converted there, and the result relabelled.
+fn genCConversion(mut F: Ctx.FnCtx, call: Ast.Node, recv: Ctx.Val, name: String, expect: Option<Types.Type>) -> Option<Ctx.Val> {
+    mut g: Gen.Gen = F.G
+    if (!Text.StartsWith(name, "To")) {
+        return None
+    }
+    let src: Option<Types.Type> = cNative(g, recv.T)
+    if (src.IsNone() && !recv.T.IsNumeric()) {
+        return None
+    }
+    mut base: String = name.Slice(2, name.Len())
+    mut wrap: Bool = false
+    if (base.Len() > 4 && Text.EndsWith(base, "Wrap")) {
+        wrap = true
+        base = base.Slice(0, base.Len() - 4)
+    }
+    let toC: Option<Types.Type> = g.Tt.CByName(base)
+    let toNative: Option<Types.Type> = match (toC) {
+        Some(c) => cNative(g, c),
+        None => None,
+    }
+    if (src.IsNone() && toNative.IsNone()) {
+        return None
+    }
+    if (toC.IsSome() && toNative.IsNone()) {
+        return None
+    }
+    let to: Types.Type = match (toNative) {
+        Some(x) => x,
+        None => match (g.Tt.PrimByName(base)) {
+            Some(p) => p,
+            None => return None,
+        },
+    }
+    if (!to.IsNumeric()) {
+        return None
+    }
+    let r: Ctx.Val = match (src) {
+        Some(s) => Ctx.Val.New(s, recv.V),
+        None => recv,
+    }
+    mut res: Ctx.Val = genPrimMethod(F, call, r, "To${to.Name}${if (wrap) { "Wrap" } else { "" }}", expect)
+    if (g.IsErr(res.T) || res.T.Id == g.Tt.Never.Id) {
+        return Some(res)
+    }
+    match (toC) {
+        Some(c) => {
+            if (isResultType(res.T)) {
+                res = Ctx.Val.New(retagResult(g, res.T, c), res.V)
+            } else {
+                res = Ctx.Val.New(c, res.V)
+            }
+        },
+        None => {},
+    }
+    Some(res)
+}
+
+// x.Equals(y), x.Compare(y), x.Hash() on the built-in types.
+fn genBuiltinIfaceMethod(mut F: Ctx.FnCtx, call: Ast.Node, recv: Ctx.Val, name: String) -> Option<Ctx.Val> {
+    mut g: Gen.Gen = F.G
+    let t: Types.Type = recv.T
+    let nargs: I64 = call.List.Len()
+    if (name == "Hash") {
+        if (nargs > 0 || !Gen.BuiltinSatisfies(t, "Hashable")) {
+            return None
+        }
+        mut x: String = ""
+        if (t.Kind == Types.TKind.Str) {
+            let (p, n): (String, String) = strParts(F, recv)
+            Gen.Declare(g, "zevic_str_hash", "declare i64 @zevic_str_hash(ptr, i64)")
+            x = F.Tmp()
+            F.Emit("${x} = call i64 @zevic_str_hash(ptr ${p}, i64 ${n})")
+        } else {
+            if (t.Kind == Types.TKind.Bool) {
+                x = F.Tmp()
+                F.Emit("${x} = zext i1 ${recv.V} to i64")
+            } else if (t.Kind == Types.TKind.Char) {
+                x = F.Tmp()
+                F.Emit("${x} = zext i32 ${recv.V} to i64")
+            } else if (t.Bits() == 64) {
+                x = recv.V
+            } else {
+                x = F.Tmp()
+                F.Emit("${x} = ${if (t.IsSigned()) { "sext" } else { "zext" }} ${F.LlOf(t)} ${recv.V} to i64")
+            }
+            Gen.Declare(g, "zevic_hash_u64", "declare i64 @zevic_hash_u64(i64)")
+            let h: String = F.Tmp()
+            F.Emit("${h} = call i64 @zevic_hash_u64(i64 ${x})")
+            x = h
+        }
+        return Some(Ctx.Val.New(g.Tt.U64, x))
+    }
+    if (nargs != 1) {
+        return None
+    }
+    let o: Ctx.Val = genArg1(F, call, t, "the argument")
+    if (isNeverOrErr(g, o)) {
+        return Some(passUp(F, o))
+    }
+    if (name == "Equals") {
+        return Some(genCompare(F, Token.Tk.EqEq, recv, o, call.Pos))
+    }
+    if (!Gen.BuiltinSatisfies(t, "Comparable")) {
+        return None
+    }
+    let lt: Ctx.Val = genCompare(F, Token.Tk.Lt, recv, o, call.Pos)
+    let gt: Ctx.Val = genCompare(F, Token.Tk.Gt, recv, o, call.Pos)
+    let a: String = F.Tmp()
+    let b: String = F.Tmp()
+    F.Emit("${a} = select i1 ${gt.V}, i32 1, i32 0")
+    F.Emit("${b} = select i1 ${lt.V}, i32 -1, i32 ${a}")
+    Some(Ctx.Val.New(g.Tt.I32, b))
+}
+
+fn genPrimMethod(mut F: Ctx.FnCtx, call: Ast.Node, recv: Ctx.Val, name: String, expect: Option<Types.Type>) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let t: Types.Type = recv.T
+    let nargs: I64 = call.List.Len()
+    let isStr: Bool = t.Kind == Types.TKind.Str
+    match (genCConversion(F, call, recv, name, expect)) {
+        Some(v) => return v,
+        None => {},
+    }
+    if (Gen.IsBuiltinValue(t) && (name == "Equals" || name == "Compare" || name == "Hash")) {
+        match (genBuiltinIfaceMethod(F, call, recv, name)) {
+            Some(v) => return v,
+            None => {},
+        }
+    }
+    if (isStr && name == "ToC") {
+        if (nargs > 0) {
+            g.Diag.Error(call.Pos, "`ToC` takes no arguments")
+            return F.ErrVal()
+        }
+        // a String is always NUL-terminated, so its data pointer is a valid C string
+        let (p, n): (String, String) = strParts(F, recv)
+        return Ctx.Val.New(nnT(g.Tt.CByName("CString")), p)
+    }
+    if (name == "ToString") {
+        if (nargs > 0) {
+            g.Diag.Error(call.Pos, "`ToString` takes no arguments")
+            return F.ErrVal()
+        }
+        return genToString(F, recv, call.Pos)
+    }
+    // Char <-> U32
+    if (t.Kind == Types.TKind.Char && name == "ToU32" && nargs == 0) {
+        return Ctx.Val.New(g.Tt.U32, recv.V)
+    }
+    if (t.Kind == Types.TKind.U32 && name == "ToCharUnchecked" && nargs == 0) {
+        return Ctx.Val.New(g.Tt.Char, recv.V)
+    }
+    if (t.Kind == Types.TKind.U32 && name == "ToChar" && nargs == 0) {
+        return callStd(F, "Zevic.Convert", "U32ToChar", call.Pos, [recv], expect)
+    }
+    // numeric conversions: ToI32, ToU8Wrap, ToF64, ...
+    if (Text.StartsWith(name, "To") && t.IsNumeric()) {
+        mut base: String = name.Slice(2, name.Len())
+        mut wrap: Bool = false
+        if (base.Len() > 4 && Text.EndsWith(base, "Wrap")) {
+            wrap = true
+            base = base.Slice(0, base.Len() - 4)
+        }
+        match (g.Tt.PrimByName(base)) {
+            Some(to) => {
+                if (to.IsNumeric()) {
+                    if (nargs > 0) {
+                        g.Diag.Error(call.Pos, "`${name}` takes no arguments")
+                        return F.ErrVal()
+                    }
+                    if (to.IsFloat()) {
+                        if (wrap) {
+                            g.Diag.Error(call.Pos, "`${name}` does not exist (only integer conversions have a `Wrap` form)")
+                            return F.ErrVal()
+                        }
+                        return castToFloat(F, recv, to)
+                    }
+                    if (t.IsInt()) {
+                        if (wrap || intFits(t, to)) {
+                            return castInt(F, recv, to)
+                        }
+                        // may not fit: the answer is a Result, computed by Zevic.Convert
+                        return callStd(F, "Zevic.Convert", "${t.Name}To${to.Name}", call.Pos, [recv], expect)
+                    }
+                    if (wrap) {
+                        g.Diag.Error(call.Pos, "`${name}` does not exist for `${t.Name}`")
+                        return F.ErrVal()
+                    }
+                    return castFloatToInt(F, recv, to, call.Pos)
+                }
+            },
+            None => {},
+        }
+    }
+    // WrapAdd / WrapSub / WrapMul: arithmetic that wraps around instead of panicking
+    if (t.IsInt() && (name == "WrapAdd" || name == "WrapSub" || name == "WrapMul")) {
+        if (nargs != 1) {
+            g.Diag.Error(call.Pos, "`${name}` takes one argument")
+            return F.ErrVal()
+        }
+        let o: Ctx.Val = genArg1(F, call, t, "the argument")
+        if (isNeverOrErr(g, o)) {
+            return passUp(F, o)
+        }
+        let op: String = if (name == "WrapAdd") { "add" } else if (name == "WrapSub") { "sub" } else { "mul" }
+        let r: String = F.Tmp()
+        F.Emit("${r} = ${op} ${F.LlOf(t)} ${recv.V}, ${o.V}")
+        return Ctx.Val.New(t, r)
+    }
+    if (t.IsInt() && (name == "Min" || name == "Max")) {
+        if (nargs != 1) {
+            g.Diag.Error(call.Pos, "`${name}` takes one argument")
+            return F.ErrVal()
+        }
+        let o: Ctx.Val = genArg1(F, call, t, "the argument")
+        if (isNeverOrErr(g, o)) {
+            return passUp(F, o)
+        }
+        let c: String = F.Tmp()
+        let r: String = F.Tmp()
+        let sgn: Bool = t.IsSigned()
+        let pred: String = if (name == "Min") { if (sgn) { "slt" } else { "ult" } } else { if (sgn) { "sgt" } else { "ugt" } }
+        F.Emit("${c} = icmp ${pred} ${F.LlOf(t)} ${recv.V}, ${o.V}")
+        F.Emit("${r} = select i1 ${c}, ${F.LlOf(t)} ${recv.V}, ${F.LlOf(t)} ${o.V}")
+        return Ctx.Val.New(t, r)
+    }
+    // Min / Max / Clamp on decimal numbers (integers are handled above)
+    if (t.IsFloat() && (name == "Min" || name == "Max") && nargs == 1) {
+        let o: Ctx.Val = genArg1(F, call, t, "the argument")
+        if (isNeverOrErr(g, o)) {
+            return passUp(F, o)
+        }
+        let c: String = F.Tmp()
+        let r: String = F.Tmp()
+        F.Emit("${c} = fcmp ${if (name == "Min") { "olt" } else { "ogt" }} ${F.LlOf(t)} ${recv.V}, ${o.V}")
+        F.Emit("${r} = select i1 ${c}, ${F.LlOf(t)} ${recv.V}, ${F.LlOf(t)} ${o.V}")
+        return Ctx.Val.New(t, r)
+    }
+    if (t.IsNumeric() && name == "Clamp") {
+        if (nargs != 2) {
+            g.Diag.Error(call.Pos, "`Clamp` takes two arguments: the lowest and the highest value")
+            return F.ErrVal()
+        }
+        mut lo: Ctx.Val = genExpr(F, call.List[0], Some(t))
+        lo = coerce(F, call.List[0].Pos, lo, t, "the lowest value of `Clamp`")
+        mut hi: Ctx.Val = genExpr(F, call.List[1], Some(t))
+        hi = coerce(F, call.List[1].Pos, hi, t, "the highest value of `Clamp`")
+        if (lo.T.Id == g.Tt.Never.Id || hi.T.Id == g.Tt.Never.Id) {
+            return F.NeverVal(Some(t))
+        }
+        if (g.IsErr(lo.T) || g.IsErr(hi.T)) {
+            return F.ErrVal()
+        }
+        let fl: Bool = t.IsFloat()
+        let sgn: Bool = t.IsSigned()
+        let lt: String = if (fl) { "fcmp olt" } else if (sgn) { "icmp slt" } else { "icmp ult" }
+        let gt: String = if (fl) { "fcmp ogt" } else if (sgn) { "icmp sgt" } else { "icmp ugt" }
+        let ll: String = F.LlOf(t)
+        let bad: String = F.Tmp()
+        F.Emit("${bad} = ${gt} ${ll} ${lo.V}, ${hi.V}")
+        let ok: String = F.NewLabel("ok")
+        F.CondBr(bad, coldPanic(F, "Clamp: the lowest value is greater than the highest", call.Pos), ok)
+        F.StartBlock(ok)
+        let c1: String = F.Tmp()
+        let m1: String = F.Tmp()
+        let c2: String = F.Tmp()
+        let m2: String = F.Tmp()
+        F.Emit("${c1} = ${lt} ${ll} ${recv.V}, ${lo.V}")
+        F.Emit("${m1} = select i1 ${c1}, ${ll} ${lo.V}, ${ll} ${recv.V}")
+        F.Emit("${c2} = ${gt} ${ll} ${m1}, ${hi.V}")
+        F.Emit("${m2} = select i1 ${c2}, ${ll} ${hi.V}, ${ll} ${m1}")
+        return Ctx.Val.New(t, m2)
+    }
+    if (t.IsInt() && name == "Abs" && nargs == 0) {
+        if (!t.IsSigned()) {
+            return recv
+        }
+        let n: Ctx.Val = genIntArith(F, Token.Tk.Minus, Ctx.Val.New(t, "0"), recv, call.Pos)
+        let r: String = F.Tmp()
+        F.Emit("${r} = icmp slt ${F.LlOf(t)} ${recv.V}, 0")
+        let sel: String = F.Tmp()
+        F.Emit("${sel} = select i1 ${r}, ${F.LlOf(t)} ${n.V}, ${F.LlOf(t)} ${recv.V}")
+        return Ctx.Val.New(t, sel)
+    }
+    if (t.IsFloat() && name == "Abs" && nargs == 0) {
+        let intr: String = if (t.Kind == Types.TKind.F64) { "llvm.fabs.f64" } else { "llvm.fabs.f32" }
+        Gen.Declare(g, intr, "declare ${F.LlOf(t)} @${intr}(${F.LlOf(t)})")
+        let r: String = F.Tmp()
+        F.Emit("${r} = call ${F.LlOf(t)} @${intr}(${F.LlOf(t)} ${recv.V})")
+        return Ctx.Val.New(t, r)
+    }
+    if (t.IsFloat() && (name == "IsNaN" || name == "IsInf") && nargs == 0) {
+        let r: String = F.Tmp()
+        if (name == "IsNaN") {
+            F.Emit("${r} = fcmp uno ${F.LlOf(t)} ${recv.V}, ${recv.V}")
+        } else {
+            let intr: String = if (t.Kind == Types.TKind.F64) { "llvm.fabs.f64" } else { "llvm.fabs.f32" }
+            Gen.Declare(g, intr, "declare ${F.LlOf(t)} @${intr}(${F.LlOf(t)})")
+            let a: String = F.Tmp()
+            F.Emit("${a} = call ${F.LlOf(t)} @${intr}(${F.LlOf(t)} ${recv.V})")
+            F.Emit("${r} = fcmp oeq ${F.LlOf(t)} ${a}, 0x7FF0000000000000")
+        }
+        return Ctx.Val.New(g.Tt.Bool, r)
+    }
+    if (isStr) {
+        if (Text.StartsWith(name, "To") && nargs == 0) {
+            match (g.Tt.PrimByName(name.Slice(2, name.Len()))) {
+                Some(to) => {
+                    if (to.IsNumeric()) {
+                        return callStd(F, "Zevic.Convert", "StringTo${to.Name}", call.Pos, [recv], expect)
+                    }
+                },
+                None => {},
+            }
+        }
+        if (name == "Len" && nargs == 0) {
+            let (p, n): (String, String) = strParts(F, recv)
+            return Ctx.Val.New(g.Tt.I64, n)
+        }
+        if (name == "IsEmpty" && nargs == 0) {
+            let (p, n): (String, String) = strParts(F, recv)
+            let r: String = F.Tmp()
+            F.Emit("${r} = icmp eq i64 ${n}, 0")
+            return Ctx.Val.New(g.Tt.Bool, r)
+        }
+        if (name == "CharCount" && nargs == 0) {
+            let (p, n): (String, String) = strParts(F, recv)
+            rtDecl(F, "zevic_str_char_count", "declare i64 @zevic_str_char_count(ptr, i64)")
+            let r: String = F.Tmp()
+            F.Emit("${r} = call i64 @zevic_str_char_count(ptr ${p}, i64 ${n})")
+            return Ctx.Val.New(g.Tt.I64, r)
+        }
+        if (name == "Slice" && nargs == 2) {
+            // s.Slice(from, to): a copy of the bytes [from, to); both ends must be on character boundaries
+            mut a: Ctx.Val = genExpr(F, call.List[0], Some(g.Tt.I64))
+            a = coerce(F, call.List[0].Pos, a, g.Tt.I64, "the start of `Slice`")
+            mut b: Ctx.Val = genExpr(F, call.List[1], Some(g.Tt.I64))
+            b = coerce(F, call.List[1].Pos, b, g.Tt.I64, "the end of `Slice`")
+            if (a.T.Id == g.Tt.Never.Id || b.T.Id == g.Tt.Never.Id) {
+                return F.NeverVal(None)
+            }
+            if (g.IsErr(a.T) || g.IsErr(b.T)) {
+                return F.ErrVal()
+            }
+            let (p, n): (String, String) = strParts(F, recv)
+            rtDecl(F, "zevic_str_slice_ok", "declare i32 @zevic_str_slice_ok(ptr, i64, i64, i64)")
+            rtDecl(F, "zevic_str_slice", "declare void @zevic_str_slice(ptr, ptr, i64, i64, i64)")
+            let ok: String = F.Tmp()
+            let bad: String = F.Tmp()
+            F.Emit("${ok} = call i32 @zevic_str_slice_ok(ptr ${p}, i64 ${n}, i64 ${a.V}, i64 ${b.V})")
+            F.Emit("${bad} = icmp eq i32 ${ok}, 0")
+            let go: String = F.NewLabel("ok")
+            F.CondBr(bad, coldPanic(F, "string slice out of range or not on character boundaries", call.Pos), go)
+            F.StartBlock(go)
+            let slot: String = F.NewSlot(g.Tt.Str)
+            F.Emit("call void @zevic_str_slice(ptr ${slot}, ptr ${p}, i64 ${n}, i64 ${a.V}, i64 ${b.V})")
+            let r: String = F.Tmp()
+            F.Emit("${r} = load { ptr, i64 }, ptr ${slot}")
+            return Ctx.Val.New(g.Tt.Str, r)
+        }
+        if (name == "ByteAt" && nargs == 1) {
+            let i: Ctx.Val = genArg1(F, call, g.Tt.I64, "the argument of `ByteAt`")
+            if (isNeverOrErr(g, i)) {
+                return passUp(F, i)
+            }
+            let (p, n): (String, String) = strParts(F, recv)
+            let bad: String = F.Tmp()
+            F.Emit("${bad} = icmp uge i64 ${i.V}, ${n}")
+            let ok: String = F.NewLabel("ok")
+            F.CondBr(bad, coldPanic(F, "string index out of range", call.Pos), ok)
+            F.StartBlock(ok)
+            let gp: String = F.Tmp()
+            let r: String = F.Tmp()
+            F.Emit("${gp} = getelementptr inbounds i8, ptr ${p}, i64 ${i.V}")
+            F.Emit("${r} = load i8, ptr ${gp}")
+            return Ctx.Val.New(g.Tt.U8, r)
+        }
+    }
+    g.Diag.Error(call.Pos, "type `${t.Name}` has no method `${name}` (or it takes different arguments)")
+    F.ErrVal()
 }
 
 fn mkIdent(pos: Token.Pos, name: String) -> Ast.Node {
