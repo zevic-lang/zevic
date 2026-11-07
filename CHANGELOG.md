@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- the release archive works with only `bin` on PATH, from any directory: the executables are tested in that setting (a directory name with a space, started by name and by full path), on Linux, macOS and Windows
+- Windows: names are UTF-8 throughout. `zevic` and the runtime read the command line, the environment, the program path and the files through the wide-character functions, so non-ASCII user names and folders work (before, the ANSI code page and UTF-8 were mixed)
+- `zevic` says where it looked when it cannot find the standard library and the runtime
+- the tests are written in C (`tests/zevtest.c`) instead of Python; `make test` and CI no longer need Python (only `tools/release_notes.py` and `tools/gen_convert.py` do)
+- the self-hosting compiler (`zevic1`) moved to the `selfhost` branch
+
 - the standard library is now a real package, `Zevic` (`packages/Zevic/` with a `zevic.toml` and `src/`), instead of a flat `stdlib/` directory. The compiler finds it through `ZEVIC_HOME` / `share/zevic/packages/Zevic`; `zevic --print-stdlib` prints its directory; zevpm checks a package's `zevic = ">=..."` against the version of the `Zevic` package. Release archives carry `packages/Zevic/`
 - release notes: `tools/release_notes.py` builds them from `CHANGELOG.md` and the commits since the previous tag; CI uses them as the body of every GitHub release (and no longer uses generated notes)
 

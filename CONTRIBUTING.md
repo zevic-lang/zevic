@@ -1,6 +1,6 @@
 # Contributing
 
-- Build: `make`. Test: `make test` (golden tests under `tests/golden/`, runner `tests/run.py`).
+- Build: `make`. Test: `make test` (golden tests under `tests/golden/`, runner `tests/zevtest.c`, written in C: `build/zevtest golden|examples|zevfmt|zevpm|install`).
 - A test is a directory with `input.zev` and one of `expected_output.txt` (run) or `expected_error.txt` (compile error).
   Extra `.zev`, `.c` and `.cpp` files in the directory are passed to the compiler; `args.txt` adds options
   (`{dir}` is the test directory, `{tmp}` a scratch directory).

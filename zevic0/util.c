@@ -2,6 +2,17 @@
 #include "util.h"
 
 #include <sys/stat.h>
+#ifdef _WIN32
+#include <direct.h>
+#include <io.h>
+#include <windows.h>
+#include <wchar.h>
+#else
+#include <unistd.h>
+#endif
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
 
 #ifndef S_ISREG
 #define S_ISREG(m) (((m) & _S_IFMT) == _S_IFREG)
@@ -227,8 +238,168 @@ void die(const char *fmt, ...) {
 
 /* ---- files ---- */
 
+#ifdef _WIN32
+static wchar_t *to_wide(const char *s) {
+    int n = MultiByteToWideChar(CP_UTF8, 0, s, -1, NULL, 0);
+    if (n <= 0) return NULL;
+    wchar_t *w = zalloc(sizeof(wchar_t) * (size_t)n);
+    MultiByteToWideChar(CP_UTF8, 0, s, -1, w, n);
+    return w;
+}
+
+static char *from_wide(const wchar_t *w) {
+    int n = WideCharToMultiByte(CP_UTF8, 0, w, -1, NULL, 0, NULL, NULL);
+    if (n <= 0) return zstrdup("");
+    char *s = zalloc((size_t)n);
+    WideCharToMultiByte(CP_UTF8, 0, w, -1, s, n, NULL, NULL);
+    return s;
+}
+
+/* a path that is not valid UTF-8 (an ANSI name from an old script) is tried as it is, with the ANSI functions */
+FILE *zv_fopen(const char *path, const char *mode) {
+    wchar_t *wp = to_wide(path), *wm = to_wide(mode);
+    if (wp && wm) return _wfopen(wp, wm);
+    return fopen(path, mode);
+}
+
+char *zv_getenv(const char *name) {
+    wchar_t *wn = to_wide(name);
+    if (!wn) return NULL;
+    const wchar_t *v = _wgetenv(wn);
+    return v ? from_wide(v) : NULL;
+}
+
+int zv_remove(const char *path) {
+    wchar_t *w = to_wide(path);
+    return w ? _wremove(w) : remove(path);
+}
+
+int zv_rename(const char *from, const char *to) {
+    wchar_t *a = to_wide(from), *b = to_wide(to);
+    return a && b ? _wrename(a, b) : rename(from, to);
+}
+
+int zv_mkdir(const char *path) {
+    wchar_t *w = to_wide(path);
+    return w ? _wmkdir(w) : _mkdir(path);
+}
+
+int zv_system(const char *cmd) {
+    wchar_t *w = to_wide(cmd);
+    return w ? _wsystem(w) : system(cmd);
+}
+
+FILE *zv_popen(const char *cmd, const char *mode) {
+    wchar_t *w = to_wide(cmd), *m = to_wide(mode);
+    return w && m ? _wpopen(w, m) : _popen(cmd, mode);
+}
+
+int zv_pclose(FILE *f) { return _pclose(f); }
+
+/* The command line split by the rules of the Microsoft C runtime (quotes, and backslashes before quotes). Done here
+ * because CommandLineToArgvW lives in shell32, which is not linked by default. */
+void zv_utf8_args(int *argc, char ***argv) {
+    const wchar_t *p = GetCommandLineW();
+    if (!p) return;
+    int cap = 8, n = 0;
+    char **v = zalloc(sizeof(char *) * (size_t)cap);
+    wchar_t *buf = zalloc(sizeof(wchar_t) * (wcslen(p) + 1));
+    for (;;) {
+        while (*p == L' ' || *p == L'\t') p++;
+        if (!*p) break;
+        size_t len = 0;
+        bool quoted = false;
+        for (;;) {
+            size_t bs = 0;
+            while (*p == L'\\') {
+                bs++;
+                p++;
+            }
+            if (*p == L'"') {
+                for (size_t k = 0; k < bs / 2; k++) buf[len++] = L'\\';
+                if (bs % 2) {
+                    buf[len++] = L'"';
+                } else if (quoted && p[1] == L'"') {
+                    buf[len++] = L'"'; /* "" inside quotes is a quote */
+                    p++;
+                } else {
+                    quoted = !quoted;
+                }
+                p++;
+            } else {
+                for (size_t k = 0; k < bs; k++) buf[len++] = L'\\';
+                if (!*p || (!quoted && (*p == L' ' || *p == L'\t'))) break;
+                buf[len++] = *p++;
+            }
+        }
+        buf[len] = 0;
+        if (n + 1 >= cap) {
+            v = zrealloc(v, sizeof(char *) * (size_t)cap, sizeof(char *) * (size_t)cap * 2);
+            cap *= 2;
+        }
+        v[n++] = from_wide(buf);
+    }
+    if (n <= 0) return;
+    v[n] = NULL;
+    *argc = n;
+    *argv = v;
+}
+
+char *zv_exe_path(void) {
+    wchar_t buf[32768];
+    DWORD n = GetModuleFileNameW(NULL, buf, (DWORD)(sizeof buf / sizeof buf[0]));
+    if (n > 0 && n < sizeof buf / sizeof buf[0]) return from_wide(buf);
+    return NULL;
+}
+
+static bool path_kind(const char *path, bool want_dir) {
+    wchar_t *w = to_wide(path);
+    struct _stat64 st;
+    if (!w || _wstat64(w, &st) != 0) return false;
+    return want_dir ? (st.st_mode & _S_IFMT) == _S_IFDIR : (st.st_mode & _S_IFMT) == _S_IFREG;
+}
+#else
+FILE *zv_fopen(const char *path, const char *mode) { return fopen(path, mode); }
+char *zv_getenv(const char *name) {
+    const char *v = getenv(name);
+    return v ? zstrdup(v) : NULL;
+}
+int zv_remove(const char *path) { return remove(path); }
+int zv_rename(const char *from, const char *to) { return rename(from, to); }
+int zv_mkdir(const char *path) { return mkdir(path, 0777); }
+int zv_system(const char *cmd) { return system(cmd); }
+FILE *zv_popen(const char *cmd, const char *mode) { return popen(cmd, mode); }
+int zv_pclose(FILE *f) { return pclose(f); }
+void zv_utf8_args(int *argc, char ***argv) {
+    (void)argc;
+    (void)argv;
+}
+
+char *zv_exe_path(void) {
+    char buf[4096];
+#ifdef __APPLE__
+    uint32_t n = sizeof buf;
+    if (_NSGetExecutablePath(buf, &n) == 0) {
+        char *real = realpath(buf, NULL);
+        return real ? real : zstrdup(buf);
+    }
+    return NULL;
+#else
+    ssize_t n = readlink("/proc/self/exe", buf, sizeof buf - 1);
+    if (n > 0) return zstrndup(buf, (size_t)n);
+    return NULL;
+#endif
+}
+
+static bool path_kind(const char *path, bool want_dir) {
+    struct stat st;
+    if (stat(path, &st) != 0) return false;
+    return want_dir ? S_ISDIR(st.st_mode) : S_ISREG(st.st_mode);
+}
+#endif
+
 char *read_file(const char *path, size_t *len) {
-    FILE *f = fopen(path, "rb");
+    FILE *f = zv_fopen(path, "rb");
     if (!f) return NULL;
     fseek(f, 0, SEEK_END);
     long n = ftell(f);
@@ -241,12 +412,6 @@ char *read_file(const char *path, size_t *len) {
     return buf;
 }
 
-bool file_exists(const char *path) {
-    struct stat st;
-    return stat(path, &st) == 0 && S_ISREG(st.st_mode);
-}
+bool file_exists(const char *path) { return path_kind(path, false); }
 
-bool dir_exists(const char *path) {
-    struct stat st;
-    return stat(path, &st) == 0 && S_ISDIR(st.st_mode);
-}
+bool dir_exists(const char *path) { return path_kind(path, true); }

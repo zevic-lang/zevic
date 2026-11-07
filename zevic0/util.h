@@ -74,4 +74,20 @@ char *read_file(const char *path, size_t *len);
 bool file_exists(const char *path);
 bool dir_exists(const char *path);
 
+/* Operating system calls with UTF-8 strings. On Windows the C library's own functions use the ANSI code page, so a
+ * path or a value with other characters (a user name in Japanese, say) would be read wrongly: these convert to and
+ * from UTF-16 and call the wide functions. Everywhere else they are the plain C functions. */
+FILE *zv_fopen(const char *path, const char *mode);
+char *zv_getenv(const char *name); /* NULL when unset */
+int zv_remove(const char *path);
+int zv_rename(const char *from, const char *to);
+int zv_mkdir(const char *path);
+int zv_system(const char *cmd);
+FILE *zv_popen(const char *cmd, const char *mode);
+int zv_pclose(FILE *f);
+/* Replaces argc/argv with the UTF-8 form of the command line (Windows only; elsewhere nothing changes). */
+void zv_utf8_args(int *argc, char ***argv);
+/* The path of the running executable (UTF-8), or NULL. */
+char *zv_exe_path(void);
+
 #endif

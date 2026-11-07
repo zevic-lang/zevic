@@ -53,7 +53,7 @@
 ### 0-3. 開発環境
 
 - [ ] clang 15 以上を入れる(`clang --version`)。Windows は Visual Studio Build Tools も
-- [ ] `make`、`git`、`python3`(スクリプト用)を入れる
+- [ ] `make`、`git`、`python3`(スクリプト用: リリースノート、変換表の生成)を入れる
 - [ ] まず1つの OS に絞る(いちばん慣れているもの)。他の OS は段階⑥で CI に足す
 - [ ] Boehm GC のソースを取得し、ライセンスを確認する(同梱するのは段階⑤)
 

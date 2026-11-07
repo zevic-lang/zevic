@@ -1,9 +1,0 @@
-module Main
-
-fn A(a: I32 | String) {
-    let c: Bool = a is I32 is String
-    let d: I32 | = 1
-    match (a) {
-        n: => 1,
-    }
-}

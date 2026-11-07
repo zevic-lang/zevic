@@ -32,10 +32,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
       # zevic turns Zevic into LLVM IR and asks clang (15 or newer) to build it.
       - name: Install LLVM (Linux, apt)
         if: runner.os == 'Linux'
@@ -69,14 +65,20 @@ jobs:
           "build/zevpm${{ matrix.exe }}" --version
           # zevfmt is written in Zevic too (tools/zevfmt)
           "build/zevic${{ matrix.exe }}" tools/zevfmt/src/*.zev -o "build/zevfmt${{ matrix.exe }}"
+          # the test runner is C too
+          if [ "${{ runner.os }}" = "Windows" ]; then PTHREAD=""; else PTHREAD="-pthread"; fi
+          clang -std=c11 -O1 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function $PTHREAD tests/zevtest.c -o "build/zevtest${{ matrix.exe }}"
 
       - name: Test
         run: |
-          python -u tests/run.py
-          python -u tests/zevpm_test.py
-          ZEVPM="build/zevpm-c${{ matrix.exe }}" python -u tests/zevpm_test.py
-          python -u tests/examples_test.py
-          python -u tests/zevfmt_test.py "build/zevic${{ matrix.exe }}" "build/zevfmt${{ matrix.exe }}"
+          export ZEVIC="build/zevic${{ matrix.exe }}" ZEVPM="build/zevpm${{ matrix.exe }}" ZEVFMT="build/zevfmt${{ matrix.exe }}"
+          T="build/zevtest${{ matrix.exe }}"
+          "$T" golden
+          "$T" zevpm
+          ZEVPM="build/zevpm-c${{ matrix.exe }}" "$T" zevpm
+          "$T" examples
+          "$T" zevfmt
+          "$T" install
           "build/zevfmt${{ matrix.exe }}" -check packages examples tools
 
       - name: Package
@@ -101,13 +103,21 @@ jobs:
         run: |
           cd dist
           if [ "${{ matrix.archive }}" = "zip" ]; then 7z x -y *.zip >/dev/null; else tar -xzf *.tar.gz; fi
-          cd "zevic-$(cat ../VERSION)-${{ matrix.name }}"
-          ./bin/zevic${{ matrix.exe }} examples/01_hello.zev -o hello${{ matrix.exe }}
+          PKG="$(pwd)/zevic-$(cat ../VERSION)-${{ matrix.name }}"
+          # the way a user works: only bin is on PATH, and the work happens somewhere else
+          export PATH="$PKG/bin:$PATH"
+          unset ZEVIC ZEVIC_HOME ZEVPM ZEVFMT
+          mkdir -p "$RUNNER_TEMP/smoke work"
+          cd "$RUNNER_TEMP/smoke work"
+          zevic --version
+          zevpm --version
+          zevic "$PKG/examples/01_hello.zev" -o hello${{ matrix.exe }}
           ./hello${{ matrix.exe }}
-          ./bin/zevpm${{ matrix.exe }} new smoke
+          zevpm new smoke
           cd smoke
-          ../bin/zevpm${{ matrix.exe }} run
-          ../bin/zevpm${{ matrix.exe }} test
+          zevpm run
+          zevpm test
+          zevfmt -check src/Main.zev
 
       - uses: actions/upload-artifact@v4
         with:
