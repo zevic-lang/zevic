@@ -1838,10 +1838,8 @@ fn genStmt(mut F: Ctx.FnCtx, s: Ast.Node) {
 }
 
 // ---- not ported yet ----
-fn genConstruct(mut F: Ctx.FnCtx, call: Ast.Node, d: Resolve.Decl, t: Types.Type, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genConstruct") }
 fn genPrintf(mut F: Ctx.FnCtx, n: Ast.Node, toErr: Bool) -> Ctx.Val { Panic("not ported yet: genPrintf") }
 fn genPrimMethod(mut F: Ctx.FnCtx, call: Ast.Node, recv: Ctx.Val, name: String, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genPrimMethod") }
-fn genBufMethod(mut F: Ctx.FnCtx, call: Ast.Node, recv: Ctx.Val, name: String) -> Ctx.Val { Panic("not ported yet: genBufMethod") }
 fn genIfaceMethod(mut F: Ctx.FnCtx, call: Ast.Node, p: Ctx.Place, recvNode: Ast.Node, name: String, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genIfaceMethod") }
 
 fn fnValueOf(mut F: Ctx.FnCtx, d: Resolve.Decl, pos: Token.Pos) -> Ctx.Val { Panic("not ported yet: fnValueOf") }
@@ -3815,6 +3813,257 @@ fn genCall(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val
     }
     g.Diag.Error(callee.Pos, "this expression cannot be called")
     F.ErrVal()
+}
+
+// ---- Buf, extern structs and `Type.New(...)` ----
+
+fn genI64Arg(mut F: Ctx.FnCtx, a: Ast.Node, what: String) -> Ctx.Val {
+    let v: Ctx.Val = genExpr(F, a, Some(F.G.Tt.I64))
+    coerce(F, a.Pos, v, F.G.Tt.I64, what)
+}
+
+fn isExternStruct(g: Gen.Gen, t: Types.Type) -> Bool {
+    if (t.Kind != Types.TKind.Struct) {
+        return false
+    }
+    match (Gen.DeclOfType(g, t)) {
+        Some(d) => d.Abi != "",
+        None => false,
+    }
+}
+
+// Buf<T>.New(capacity)
+fn genBufNew(mut F: Ctx.FnCtx, call: Ast.Node, t: Types.Type) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    if (call.List.Len() != 1) {
+        g.Diag.Error(call.Pos, "`Buf.New` takes the capacity")
+        return F.ErrVal()
+    }
+    let cap: Ctx.Val = genI64Arg(F, call.List[0], "the capacity of `Buf.New`")
+    if (cap.T.Id == g.Tt.Never.Id) {
+        return F.NeverVal(Some(t))
+    }
+    if (g.IsErr(cap.T)) {
+        return F.ErrVal()
+    }
+    let et: Types.Type = t.Args[0]
+    let bytes: String = F.Tmp()
+    let p: String = F.Tmp()
+    F.Emit("${bytes} = mul i64 ${cap.V}, ${elemSize(F, et)}")
+    rtDecl(F, "zevic_alloc", "declare ptr @zevic_alloc(i64)")
+    F.Emit("${p} = call ptr @zevic_alloc(i64 ${bytes})")
+    Ctx.Val.New(t, p)
+}
+
+fn genBufMethod(mut F: Ctx.FnCtx, call: Ast.Node, recv: Ctx.Val, name: String) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let et: Types.Type = recv.T.Args[0]
+    let nargs: I64 = call.List.Len()
+    let unit: Bool = et.Id == g.Tt.Unit.Id
+    if (name == "Get" && nargs == 1) {
+        let i: Ctx.Val = genI64Arg(F, call.List[0], "the index of `Buf.Get`")
+        if (i.T.Id == g.Tt.Never.Id) {
+            return i
+        }
+        if (g.IsErr(i.T)) {
+            return F.ErrVal()
+        }
+        if (unit) {
+            return F.UnitVal()
+        }
+        let gp: String = elemPtr(F, et, recv.V, i.V)
+        let r: String = F.Tmp()
+        F.Emit("${r} = load ${F.LlOf(et)}, ptr ${gp}")
+        return Ctx.Val.New(et, r)
+    }
+    if (name == "Set" && nargs == 2) {
+        let i: Ctx.Val = genI64Arg(F, call.List[0], "the index of `Buf.Set`")
+        mut v: Ctx.Val = genExpr(F, call.List[1], Some(et))
+        v = coerce(F, call.List[1].Pos, v, et, "the value of `Buf.Set`")
+        if (i.T.Id == g.Tt.Never.Id || v.T.Id == g.Tt.Never.Id) {
+            return F.NeverVal(None)
+        }
+        if (g.IsErr(i.T) || g.IsErr(v.T)) {
+            return F.ErrVal()
+        }
+        if (!unit) {
+            F.StoreTo(et, v, elemPtr(F, et, recv.V, i.V))
+        }
+        return F.UnitVal()
+    }
+    if (name == "Copy" && nargs == 4) {
+        mut src: Ctx.Val = genExpr(F, call.List[0], Some(recv.T))
+        src = coerce(F, call.List[0].Pos, src, recv.T, "the source of `Buf.Copy`")
+        let from: Ctx.Val = genI64Arg(F, call.List[1], "an argument of `Buf.Copy`")
+        let to: Ctx.Val = genI64Arg(F, call.List[2], "an argument of `Buf.Copy`")
+        let n: Ctx.Val = genI64Arg(F, call.List[3], "an argument of `Buf.Copy`")
+        let nv: I32 = g.Tt.Never.Id
+        if (src.T.Id == nv || from.T.Id == nv || to.T.Id == nv || n.T.Id == nv) {
+            return F.NeverVal(None)
+        }
+        if (g.IsErr(src.T) || g.IsErr(from.T) || g.IsErr(to.T) || g.IsErr(n.T)) {
+            return F.ErrVal()
+        }
+        let sp: String = elemPtr(F, et, src.V, from.V)
+        let dp: String = elemPtr(F, et, recv.V, to.V)
+        let bytes: String = F.Tmp()
+        F.Emit("${bytes} = mul i64 ${n.V}, ${elemSize(F, et)}")
+        Gen.Declare(g, "llvm.memmove.p0.p0.i64", "declare void @llvm.memmove.p0.p0.i64(ptr, ptr, i64, i1 immarg)")
+        F.Emit("call void @llvm.memmove.p0.p0.i64(ptr ${dp}, ptr ${sp}, i64 ${bytes}, i1 false)")
+        return F.UnitVal()
+    }
+    if (name == "Ptr" && nargs == 0) {
+        return Ctx.Val.New(g.Tt.Ptr(et), recv.V)
+    }
+    g.Diag.Error(call.Pos, "`Buf` has no method `${name}` that takes ${nargs} argument(s)")
+    F.ErrVal()
+}
+
+// Point.New(x, y) for an `extern struct`: every field, in order.
+fn genExternStructNew(mut F: Ctx.FnCtx, call: Ast.Node, d: Resolve.Decl, t: Types.Type) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    Gen.EnsureMembers(g, t)
+    mut ok: Bool = true
+    for (f in t.Fields) {
+        if (g.IsErr(f.T) || Gen.IsCValueType(f.T) || isExternStruct(g, f.T)) {
+            continue
+        }
+        g.Diag.Error(d.Node.Pos, "field `${f.Name}` of the extern struct `${d.Name}` has type `${f.T.Name}`; its fields must be C types, pointers or other extern structs")
+        ok = false
+    }
+    if (!ok) {
+        return F.ErrVal()
+    }
+    if (call.List.Len() != t.Fields.Len()) {
+        g.Diag.Error(call.Pos, "`${d.Name}.New` takes ${t.Fields.Len()} argument(s) (one per field), but ${call.List.Len()} were given")
+        return F.ErrVal()
+    }
+    let slot: String = F.NewSlot(t)
+    F.Emit("store ${F.LlOf(t)} zeroinitializer, ptr ${slot}")
+    mut i: I64 = 0
+    while (i < t.Fields.Len()) {
+        let f: Types.Field = t.Fields[i]
+        mut v: Ctx.Val = genExpr(F, call.List[i], Some(f.T))
+        v = coerce(F, call.List[i].Pos, v, f.T, "field `${f.Name}` of `${d.Name}`")
+        if (v.T.Id == g.Tt.Never.Id) {
+            return F.NeverVal(None)
+        }
+        if (g.IsErr(v.T)) {
+            return F.ErrVal()
+        }
+        let gep: String = F.Tmp()
+        F.Emit("${gep} = getelementptr inbounds ${F.LlOf(t)}, ptr ${slot}, i32 0, i32 ${i}")
+        F.StoreTo(f.T, v, gep)
+        i += 1
+    }
+    let r: String = F.Tmp()
+    F.Emit("${r} = load ${F.LlOf(t)}, ptr ${slot}")
+    Ctx.Val.New(t, r)
+}
+
+// Type.New(args)
+fn genConstruct(mut F: Ctx.FnCtx, call: Ast.Node, d: Resolve.Decl, t: Types.Type, expect: Option<Types.Type>) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let td: Ast.Node = d.Node
+    if (t.Kind == Types.TKind.Buf) {
+        return genBufNew(F, call, t)
+    }
+    if (td.Kind == Ast.NK.DEnum) {
+        let first: String = if (td.List.Len() > 0) { td.List[0].Name } else { "Variant" }
+        g.Diag.Error(call.Pos, "an enum value is built with one of its variants, like `${d.Name}.${first}(...)`")
+        return F.ErrVal()
+    }
+    if (d.Abi != "" && t.Kind == Types.TKind.Struct) {
+        return genExternStructNew(F, call, d, t)
+    }
+    Gen.EnsureMembers(g, t)
+    let isClass: Bool = t.Kind == Types.TKind.Class
+    mut obj: String = ""
+    let vt: Types.Type = if (isClass) { objTuple(g, t) } else { t }
+    if (isClass) {
+        rtDecl(F, "zevic_alloc", "declare ptr @zevic_alloc(i64)")
+        obj = F.Tmp()
+        F.Emit("${obj} = call ptr @zevic_alloc(i64 ${g.Tt.SizeOf(vt)})")
+    } else {
+        obj = F.NewSlot(t)
+        F.Emit("store ${F.LlOf(t)} zeroinitializer, ptr ${obj}")
+    }
+    // field initial values, evaluated as the type's own code would
+    mut tenv: Gen.Env = Gen.Env.New()
+    tenv.SelfT = Some(t)
+    mut ti: I64 = 0
+    while (ti < td.List2.Len()) {
+        tenv.Add(td.List2[ti].Name, t.Args[ti])
+        ti += 1
+    }
+    let init: Option<Ast.Node> = Gen.FindMember(g, t, "Init")
+    mut i: I64 = 0
+    while (i < t.Fields.Len()) {
+        let f: Types.Field = t.Fields[i]
+        mut fdecl: Option<Ast.Node> = None
+        for (m in td.List) {
+            if (m.Kind == Ast.NK.Field && !m.Flag && m.Name == f.Name) {
+                fdecl = Some(m)
+            }
+        }
+        let initExpr: Option<Ast.Node> = match (fdecl) {
+            Some(fd) => fd.B,
+            None => None,
+        }
+        match (initExpr) {
+            None => {
+                if (init.IsNone()) {
+                    g.Diag.Error(call.Pos, "`${t.Name}` has no `Init`, so every field needs an initial value (`${f.Name}` has none)")
+                    return F.ErrVal()
+                }
+            },
+            Some(ie) => {
+                let sf: Resolve.FileInfo = F.File
+                let se: Gen.Env = F.Env
+                let ss: Option<Ctx.Scope> = F.Scope
+                F.File = d.FileInfo()
+                F.Env = tenv
+                F.Scope = Some(Ctx.Scope.New())
+                mut v: Ctx.Val = genExpr(F, ie, Some(f.T))
+                v = coerce(F, ie.Pos, v, f.T, "a field initial value")
+                F.File = sf
+                F.Env = se
+                F.Scope = ss
+                if (!g.IsErr(v.T) && v.T.Id != g.Tt.Never.Id) {
+                    let gep: String = F.Tmp()
+                    F.Emit("${gep} = getelementptr inbounds ${F.LlOf(vt)}, ptr ${obj}, i32 0, i32 ${i}")
+                    F.StoreTo(f.T, v, gep)
+                }
+            },
+        }
+        i += 1
+    }
+    match (init) {
+        Some(initFn) => {
+            let recv: Ctx.Val = Ctx.Val.New(g.Tt.Ptr(g.Tt.U8), obj)
+            let md: Resolve.Decl = Gen.MethodDecl(g, t, initFn)
+            if (initFn.IsStatic) {
+                g.Diag.Error(initFn.Pos, "`Init` cannot be static")
+                return F.ErrVal()
+            }
+            let r: Ctx.Val = genCallDecl(F, call, md, Some(t), None, None, Some(recv))
+            if (g.IsErr(r.T) || r.T.Id == g.Tt.Never.Id) {
+                return r
+            }
+        },
+        None => {
+            if (call.List.Len() > 0) {
+                g.Diag.Error(call.Pos, "`${t.Name}` has no `Init`, so `New` takes no arguments")
+                return F.ErrVal()
+            }
+        },
+    }
+    if (isClass) {
+        return Ctx.Val.New(t, obj)
+    }
+    let v: String = F.Tmp()
+    F.Emit("${v} = load ${F.LlOf(t)}, ptr ${obj}")
+    Ctx.Val.New(t, v)
 }
 
 fn mkIdent(pos: Token.Pos, name: String) -> Ast.Node {
