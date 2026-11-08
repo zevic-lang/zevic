@@ -1,5 +1,6 @@
 module Zevic.Fs
 
+import Zevic.Path
 import Zevic.Text
 
 // Files and directories. Everything that can fail returns a `Result`; paths are UTF-8.
@@ -22,6 +23,12 @@ extern "zevic" {
     fn zevic_fs_file_read_line(h: *CVoid) -> String
     fn zevic_fs_file_line_ok() -> I32
     fn zevic_fs_file_read_all(h: *CVoid) -> String
+    fn zevic_fs_islink(path: String) -> I32
+    fn zevic_fs_size(path: String) -> I64
+    fn zevic_fs_mtime_ns(path: String) -> I64
+    fn zevic_fs_copy(from: String, to: String) -> I32
+    fn zevic_fs_temp_dir() -> String
+    fn zevic_time_monotonic_ns() -> I64
 }
 
 // The error for the failure that just happened.
@@ -103,6 +110,127 @@ fn List(path: String) -> Result<Array<String>, Error> {
         i += 1
     }
     Ok(names)
+}
+
+// The lines of a text file, without line endings (see `Text.Lines`).
+fn ReadLines(path: String) -> Result<Array<String>, Error> {
+    let text: String = ReadAll(path)?
+    Ok(Text.Lines(text))
+}
+
+// Writes the lines to a file, each followed by a line break (the file is replaced).
+fn WriteLines(path: String, lines: Array<String>) -> Result<Unit, Error> {
+    if (lines.IsEmpty()) {
+        return WriteAll(path, "")
+    }
+    WriteAll(path, Text.Join(lines, "\n") + "\n")
+}
+
+// The size of a file in bytes.
+fn Size(path: String) -> Result<I64, Error> {
+    let n: I64 = zevic_fs_size(path)
+    if (zevic_fs_failed() != 0) {
+        return Err(failure("get the size of", path))
+    }
+    Ok(n)
+}
+
+// When the file was last changed: milliseconds since 1970-01-01 00:00:00 UTC.
+fn ModifiedMillis(path: String) -> Result<I64, Error> {
+    let ns: I64 = zevic_fs_mtime_ns(path)
+    if (zevic_fs_failed() != 0) {
+        return Err(failure("get the time of", path))
+    }
+    Ok(ns / 1000000)
+}
+
+// Is the path itself a symbolic link (even a broken one)? `IsFile` and `IsDir` look through links.
+fn IsSymlink(path: String) -> Bool { zevic_fs_islink(path) != 0 }
+
+// Copies the contents of a file (the target is replaced).
+fn Copy(from: String, to: String) -> Result<Unit, Error> {
+    if (zevic_fs_copy(from, to) == 0) {
+        return Err(failure("copy \"${from}\" to", to))
+    }
+    Ok(())
+}
+
+// Creates the directory and the missing ones above it. It is fine if the directory is already there.
+fn CreateDirAll(path: String) -> Result<Unit, Error> {
+    if (IsDir(path)) { return Ok(()) }
+    let parent: String = Path.Parent(path)
+    if (parent != path && !parent.IsEmpty() && !IsDir(parent)) {
+        CreateDirAll(parent)?
+    }
+    CreateDir(path)
+}
+
+// Removes a file, or a directory with everything in it. A path that is not there is fine. A symbolic link is
+// removed itself; what it points to is left alone.
+fn RemoveAll(path: String) -> Result<Unit, Error> {
+    if (!Exists(path) && !IsSymlink(path)) { return Ok(()) }
+    if (IsSymlink(path) || !IsDir(path)) { return Remove(path) }
+    for (name in List(path)?) {
+        RemoveAll(Path.Join(path, name))?
+    }
+    Remove(path)
+}
+
+fn walkInto(dir: String, mut out: Array<String>) -> Result<Unit, Error> {
+    for (name in List(dir)?) {
+        let full: String = Path.Join(dir, name)
+        out.Push(full)
+        if (IsDir(full) && !IsSymlink(full)) {
+            walkInto(full, out)?
+        }
+    }
+    Ok(())
+}
+
+// Every file and directory below `root` (not `root` itself), as `root` joined to the name. A directory comes
+// before what is in it; the names in one directory are sorted. Symbolic links to directories are listed but not entered.
+fn Walk(root: String) -> Result<Array<String>, Error> {
+    mut out: Array<String> = []
+    walkInto(root, out)?
+    Ok(out)
+}
+
+// Copies a directory with everything in it to `to` (made if needed; files that are there are replaced).
+// Copying a directory into itself is an error.
+fn CopyDir(from: String, to: String) -> Result<Unit, Error> {
+    if (Path.IsInside(Path.Absolute(from), Path.Absolute(to))) {
+        return Err(Error.New(ErrorKind.Invalid, "cannot copy \"${from}\" into itself (\"${to}\")"))
+    }
+    copyTree(from, to)
+}
+
+fn copyTree(from: String, to: String) -> Result<Unit, Error> {
+    CreateDirAll(to)?
+    for (name in List(from)?) {
+        let src: String = Path.Join(from, name)
+        let dst: String = Path.Join(to, name)
+        if (IsDir(src)) { copyTree(src, dst)? } else { Copy(src, dst)? }
+    }
+    Ok(())
+}
+
+// The directory for temporary files of the system (TMPDIR, or /tmp).
+fn TempDir() -> String { zevic_fs_temp_dir() }
+
+// Makes a new, empty directory in `TempDir()` whose name starts with `prefix`, and returns its path.
+// The caller removes it (`RemoveAll`).
+fn MakeTempDir(prefix: String) -> Result<String, Error> {
+    mut salt: I64 = zevic_time_monotonic_ns()
+    mut tries: I32 = 0
+    while (tries < 100) {
+        let path: String = Path.Join(TempDir(), prefix + Text.Format("%x", salt & 0xFFFFFFFFFF))
+        if (!Exists(path) && zevic_fs_mkdir(path) != 0) {
+            return Ok(path)
+        }
+        salt = salt * 6364136223846793005 + 1442695040888963407
+        tries += 1
+    }
+    Err(Error.New(ErrorKind.Io, "cannot make a temporary directory in \"${TempDir()}\""))
 }
 
 enum Mode {

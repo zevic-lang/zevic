@@ -1,0 +1,20 @@
+os true true
+a/b a/b /b b x/y/z.txt
+a/b/d /a ../.. . /
+b.txt [] b /a / . / a
+gz true true true a.tar .bashrc
+d/a.md d/a.md d/a /
+true false a|b [/] []
+../c/d . b/c true true
+true true false false
+true
+temp true true
+alpha,beta,gamma
+size 10 true
+mtime true true
+17
+copy missing true
+a a/b a/b/c a/b/two.bin a/one.txt copy.txt
+dup/b dup/b/c dup/b/two.bin dup/one.txt
+into itself true
+gone false true

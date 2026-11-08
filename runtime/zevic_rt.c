@@ -1053,6 +1053,153 @@ int32_t zevic_fs_kind(const char *p, int64_t n) {
     return (st.st_mode & S_IFMT) == S_IFDIR ? 2 : 1;
 }
 
+/* ---- more file calls (Zevic.Fs): symlinks, size, time, copy, temp dir ---- */
+
+/* Is the path itself a symbolic link (or, on Windows, a reparse point)? A broken link counts. */
+int32_t zevic_fs_islink(const char *p, int64_t n) {
+    char *path = nul_copy(p, n);
+#ifdef _WIN32
+    wchar_t *wp = rt_wide(path);
+    DWORD attr = wp ? GetFileAttributesW(wp) : INVALID_FILE_ATTRIBUTES;
+    free(wp);
+    int r = attr != INVALID_FILE_ATTRIBUTES && (attr & FILE_ATTRIBUTE_REPARSE_POINT) ? 1 : 0;
+#else
+    struct stat st;
+    int r = lstat(path, &st) == 0 && (st.st_mode & S_IFMT) == S_IFLNK ? 1 : 0;
+#endif
+    free(path);
+    return r;
+}
+
+/* Size in bytes and modification time (ns since 1970). On failure: 0, and zevic_fs_failed() is true. */
+static int fs_stat_path(const char *p, int64_t n, int64_t *size, int64_t *mtime_ns) {
+    char *path = nul_copy(p, n);
+    g_fs_errno = 0;
+#ifdef _WIN32
+    struct _stat64 st;
+    wchar_t *wp = rt_wide(path);
+    int rc = wp ? _wstat64(wp, &st) : -1;
+    free(wp);
+    if (rc == 0) *mtime_ns = (int64_t)st.st_mtime * 1000000000LL;
+#else
+    struct stat st;
+    int rc = stat(path, &st);
+    if (rc == 0) {
+#ifdef __APPLE__
+        *mtime_ns = (int64_t)st.st_mtimespec.tv_sec * 1000000000LL + st.st_mtimespec.tv_nsec;
+#else
+        *mtime_ns = (int64_t)st.st_mtim.tv_sec * 1000000000LL + st.st_mtim.tv_nsec;
+#endif
+    }
+#endif
+    free(path);
+    if (rc != 0) {
+        g_fs_errno = errno ? errno : EIO;
+        return 0;
+    }
+    *size = (int64_t)st.st_size;
+    return 1;
+}
+
+int64_t zevic_fs_size(const char *p, int64_t n) {
+    int64_t size = 0, mt = 0;
+    return fs_stat_path(p, n, &size, &mt) ? size : 0;
+}
+
+int64_t zevic_fs_mtime_ns(const char *p, int64_t n) {
+    int64_t size = 0, mt = 0;
+    return fs_stat_path(p, n, &size, &mt) ? mt : 0;
+}
+
+/* Copy the bytes of a file (the permission bits too, where there are any). 1 on success. */
+int32_t zevic_fs_copy(const char *a, int64_t an, const char *b, int64_t bn) {
+    char *from = nul_copy(a, an);
+    char *to = nul_copy(b, bn);
+    g_fs_errno = 0;
+    int ok = 0;
+    FILE *in = fs_fopen(from, "rb");
+    if (!in) {
+        g_fs_errno = errno;
+    } else {
+        FILE *out = fs_fopen(to, "wb");
+        if (!out) {
+            g_fs_errno = errno;
+        } else {
+            char buf[65536];
+            size_t got;
+            ok = 1;
+            while ((got = fread(buf, 1, sizeof buf, in)) > 0) {
+                if (fwrite(buf, 1, got, out) != got) {
+                    g_fs_errno = errno ? errno : EIO;
+                    ok = 0;
+                    break;
+                }
+            }
+            if (ferror(in) && ok) {
+                g_fs_errno = errno ? errno : EIO;
+                ok = 0;
+            }
+            if (fclose(out) != 0 && ok) {
+                g_fs_errno = errno ? errno : EIO;
+                ok = 0;
+            }
+        }
+        fclose(in);
+    }
+#ifndef _WIN32
+    if (ok) {
+        struct stat st;
+        if (stat(from, &st) == 0) (void)chmod(to, st.st_mode & 07777);
+    }
+#endif
+    free(from);
+    free(to);
+    return ok;
+}
+
+/* The directory for temporary files, without a trailing separator. */
+void zevic_fs_temp_dir(zevic_str *out) {
+#ifdef _WIN32
+    wchar_t w[MAX_PATH + 2];
+    DWORD k = GetTempPathW(MAX_PATH + 1, w);
+    if (k == 0 || k > MAX_PATH) {
+        str_set(out, "C:\\Windows\\Temp", 15);
+        return;
+    }
+    while (k > 3 && (w[k - 1] == L'\\' || w[k - 1] == L'/')) w[--k] = 0;
+    char *u = rt_utf8(w);
+    int64_t l = (int64_t)strlen(u);
+    char *b = zevic_alloc_atomic(l + 1);
+    memcpy(b, u, (size_t)l + 1);
+    free(u);
+    out->p = b;
+    out->n = l;
+#else
+    const char *t = getenv("TMPDIR");
+    if (!t || !*t) t = "/tmp";
+    int64_t l = (int64_t)strlen(t);
+    while (l > 1 && t[l - 1] == '/') l--;
+    char *b = zevic_alloc_atomic(l + 1);
+    memcpy(b, t, (size_t)l);
+    b[l] = 0;
+    out->p = b;
+    out->n = l;
+#endif
+}
+
+/* "windows", "macos" or "linux" ("unix" for anything else). */
+void zevic_os_name(zevic_str *out) {
+#if defined(_WIN32)
+    str_set(out, "windows", 7);
+#elif defined(__APPLE__)
+    str_set(out, "macos", 5);
+#elif defined(__linux__)
+    str_set(out, "linux", 5);
+#else
+    str_set(out, "unix", 4);
+#endif
+}
+
 int32_t zevic_fs_remove(const char *p, int64_t n) {
     char *path = nul_copy(p, n);
     g_fs_errno = 0;

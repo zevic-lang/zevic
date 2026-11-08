@@ -1,0 +1,206 @@
+module Zevic.Path
+
+import Zevic.Env
+import Zevic.Text
+
+// File names and paths as text. Nothing here touches the disk (see `Zevic.Fs` for that); every function
+// works on the text of the path. On Windows both `\` and `/` separate the parts and a path can start with a
+// drive (`C:\`); elsewhere only `/` does. Results use the separator of the system (`Separator()`).
+
+fn isWin() -> Bool { Env.OS() == "windows" }
+
+fn isSep(b: U8) -> Bool { b == b'/' || (b == b'\\' && isWin()) }
+
+fn isLetter(b: U8) -> Bool { (b >= b'a' && b <= b'z') || (b >= b'A' && b <= b'Z') }
+
+// "/" , or "\" on Windows.
+fn Separator() -> String { if (isWin()) { "\\" } else { "/" } }
+
+// How many bytes at the start are the root: 1 for `/`, 3 for `C:\`, 2 for `C:` (Windows), else 0.
+fn rootLen(p: String) -> I64 {
+    let n: I64 = p.Len()
+    if (n > 0 && isSep(p.ByteAt(0))) { return 1 }
+    if (isWin() && n >= 2 && p.ByteAt(1) == b':' && isLetter(p.ByteAt(0))) {
+        if (n >= 3 && isSep(p.ByteAt(2))) { return 3 }
+        return 2
+    }
+    0
+}
+
+// The root written the way Clean writes it.
+fn rootText(p: String) -> String {
+    let r: I64 = rootLen(p)
+    if (r == 1) { return Separator() }
+    if (r == 3) { return p.Slice(0, 2) + Separator() }
+    if (r == 2) { return p.Slice(0, 2) }
+    ""
+}
+
+// Does the path start at the root (`/a`, or `C:\a` on Windows)? `C:a` is not absolute.
+fn IsAbsolute(p: String) -> Bool {
+    let r: I64 = rootLen(p)
+    r == 1 || r == 3
+}
+
+// The parts between the separators, without empty ones and without the root. "/a//b/" gives ["a", "b"].
+fn Split(p: String) -> Array<String> {
+    mut out: Array<String> = []
+    let n: I64 = p.Len()
+    mut i: I64 = rootLen(p)
+    while (i < n) {
+        while (i < n && isSep(p.ByteAt(i))) { i += 1 }
+        let start: I64 = i
+        while (i < n && !isSep(p.ByteAt(i))) { i += 1 }
+        if (i > start) { out.Push(p.Slice(start, i)) }
+    }
+    out
+}
+
+// The root of the path (`/`, `C:\`, `C:`) or "".
+fn Root(p: String) -> String { rootText(p) }
+
+fn joinParts(parts: Array<String>) -> String {
+    Text.Join(parts, Separator())
+}
+
+// `a` and `b` with one separator between them. If `b` is absolute it is the result; an empty side is dropped.
+fn Join(a: String, b: String) -> String {
+    if (a.IsEmpty()) { return b }
+    if (b.IsEmpty()) { return a }
+    if (rootLen(b) > 0 && (IsAbsolute(b) || rootLen(b) == 2)) { return b }
+    if (isSep(a.ByteAt(a.Len() - 1))) { return a + b }
+    if (isWin() && rootLen(a) == 2 && a.Len() == 2) { return a + b }
+    a + Separator() + b
+}
+
+// Joins all the parts with `Join`.
+fn JoinAll(parts: Array<String>) -> String {
+    mut out: String = ""
+    for (p in parts) {
+        out = Join(out, p)
+    }
+    out
+}
+
+// Tidies the path as text: removes `.`, repeated separators and `x/..`. `..` at the start of a relative path
+// stays; above the root it is dropped. The result of an empty relative path is ".".
+fn Clean(p: String) -> String {
+    let rooted: Bool = IsAbsolute(p)
+    mut stack: Array<String> = []
+    for (c in Split(p)) {
+        if (c == ".") { continue }
+        if (c == "..") {
+            if (stack.Len() > 0 && stack[stack.Len() - 1] != "..") {
+                stack.Pop()
+                continue
+            }
+            if (!rooted) {
+                stack.Push(c)
+            }
+            continue
+        }
+        stack.Push(c)
+    }
+    let root: String = rootText(p)
+    if (stack.Len() == 0) {
+        if (root.IsEmpty()) { return "." }
+        return root
+    }
+    root + joinParts(stack)
+}
+
+// The text of the path without separators at the end (the root is kept).
+fn trimEnd(p: String) -> String {
+    mut j: I64 = p.Len()
+    let r: I64 = rootLen(p)
+    while (j > r && isSep(p.ByteAt(j - 1))) { j -= 1 }
+    p.Slice(0, j)
+}
+
+// The last part: "a/b.txt" gives "b.txt". "" for a root or an empty path.
+fn FileName(p: String) -> String {
+    let parts: Array<String> = Split(p)
+    if (parts.Len() == 0) { "" } else { parts[parts.Len() - 1] }
+}
+
+// The path without its last part: "a/b" gives "a", "/a" gives "/", "a" gives ".". A root stays as it is.
+fn Parent(p: String) -> String {
+    let q: String = trimEnd(p)
+    let name: String = FileName(q)
+    if (name.IsEmpty()) { return q }
+    let head: String = q.Slice(0, q.Len() - name.Len())
+    let h: String = trimEnd(head)
+    if (h.IsEmpty()) { return "." }
+    h
+}
+
+// The part of the file name after its last dot: "a/b.tar.gz" gives "gz". None if there is no dot, the only
+// dot is the first character (".bashrc") or nothing follows it ("a.").
+fn Extension(p: String) -> Option<String> {
+    let name: String = FileName(p)
+    match (Text.LastIndexOf(name, ".")) {
+        Some(i) => {
+            if (i == 0 || i == name.Len() - 1) { None } else { Some(name.Slice(i + 1, name.Len())) }
+        },
+        None => None,
+    }
+}
+
+// The file name without its extension: "b.tar.gz" gives "b.tar".
+fn Stem(p: String) -> String {
+    let name: String = FileName(p)
+    match (Extension(p)) {
+        Some(e) => name.Slice(0, name.Len() - e.Len() - 1),
+        None => name,
+    }
+}
+
+// The path with another extension ("gz" or ".gz"); an empty `ext` removes it. A root is returned as it is.
+fn WithExtension(p: String, ext: String) -> String {
+    let q: String = trimEnd(p)
+    let name: String = FileName(q)
+    if (name.IsEmpty()) { return p }
+    let dir: String = q.Slice(0, q.Len() - name.Len())
+    let e: String = Text.TrimPrefix(ext, ".")
+    let base: String = Stem(q)
+    if (e.IsEmpty()) { dir + base } else { dir + base + "." + e }
+}
+
+// The path as an absolute one: joined to the current directory if needed, then cleaned.
+fn Absolute(p: String) -> String {
+    if (IsAbsolute(p)) { Clean(p) } else { Clean(Join(Env.CurrentDir(), p)) }
+}
+
+// The way from `base` to `target`, as text: Relative("/a/b", "/a/c/d") is "../c/d". Both must be absolute or
+// both relative (and on the same drive); otherwise, or when `base` needs `..` to be understood, None.
+fn Relative(base: String, target: String) -> Option<String> {
+    if (IsAbsolute(base) != IsAbsolute(target)) { return None }
+    let b: String = Clean(base)
+    let t: String = Clean(target)
+    if (rootText(b) != rootText(t)) { return None }
+    let bp: Array<String> = Split(b)
+    let tp: Array<String> = Split(t)
+    mut common: I64 = 0
+    while (common < bp.Len() && common < tp.Len() && bp[common] == tp[common]) { common += 1 }
+    mut out: Array<String> = []
+    mut i: I64 = common
+    while (i < bp.Len()) {
+        if (bp[i] == "." || bp[i] == "..") { return None }
+        out.Push("..")
+        i += 1
+    }
+    i = common
+    while (i < tp.Len()) {
+        out.Push(tp[i])
+        i += 1
+    }
+    if (out.Len() == 0) { Some(".") } else { Some(joinParts(out)) }
+}
+
+// Is `p` the same as `dir` or somewhere below it (compared by parts, after Clean)?
+fn IsInside(dir: String, p: String) -> Bool {
+    match (Relative(dir, p)) {
+        Some(r) => r == "." || (r != ".." && !Text.StartsWith(r, ".." + Separator())),
+        None => false,
+    }
+}

@@ -1,0 +1,44 @@
+module Main
+
+import Zevic.Console
+import Zevic.Fs
+import Zevic.Path
+import Zevic.Env
+import Zevic.Text
+
+// the tests run on every system: show paths with "/" whatever the system uses
+fn N(s: String) -> String { Text.Replace(s, Path.Separator(), "/") }
+
+fn Main() {
+    Console.Println("os ${Env.OS().Len() > 0} ${Env.IsWindows() == (Env.OS() == "windows")}")
+    Console.Println("${N(Path.Join("a", "b"))} ${N(Path.Join("a/", "b"))} ${N(Path.Join("a", "/b"))} ${N(Path.Join("", "b"))} ${N(Path.JoinAll(["x", "y", "z.txt"]))}")
+    Console.Println("${N(Path.Clean("a//b/./c/../d/"))} ${N(Path.Clean("/../a"))} ${N(Path.Clean("../../a/.."))} ${N(Path.Clean(""))} ${N(Path.Clean("/"))}")
+    Console.Println("${Path.FileName("/a/b.txt")} [${Path.FileName("/")}] ${Path.FileName("a/b/")} ${N(Path.Parent("/a/b"))} ${N(Path.Parent("/a"))} ${N(Path.Parent("a"))} ${N(Path.Parent("/"))} ${N(Path.Parent("a/b/"))}")
+    Console.Println("${Path.Extension("x/a.tar.gz").Unwrap()} ${Path.Extension(".bashrc").IsNone()} ${Path.Extension("a.").IsNone()} ${Path.Extension("noext").IsNone()} ${Path.Stem("x/a.tar.gz")} ${Path.Stem(".bashrc")}")
+    Console.Println("${N(Path.WithExtension("d/a.txt", "md"))} ${N(Path.WithExtension("d/a", ".md"))} ${N(Path.WithExtension("d/a.txt", ""))} ${N(Path.WithExtension("/", "x"))}")
+    Console.Println("${Path.IsAbsolute("/a")} ${Path.IsAbsolute("a")} ${Path.Split("/a//b/").Join("|")} [${N(Path.Root("/a"))}] [${Path.Root("a")}]")
+    Console.Println("${N(Path.Relative("/a/b", "/a/c/d").Unwrap())} ${Path.Relative("/a", "/a").Unwrap()} ${N(Path.Relative("a", "a/b/c").Unwrap())} ${Path.Relative("/a", "b").IsNone()} ${Path.Relative("../a", "b").IsNone()}")
+    Console.Println("${Path.IsInside("/a", "/a/b")} ${Path.IsInside("/a", "/a")} ${Path.IsInside("/a/b", "/a")} ${Path.IsInside("/a", "/ab")}")
+    Console.Println("${Path.Absolute("x/../y").Len() > 3}")
+
+    let root: String = Fs.MakeTempDir("zevfs-").Unwrap()
+    Console.Println("temp ${Fs.IsDir(root)} ${Path.IsInside(Fs.TempDir(), root)}")
+    Fs.CreateDirAll(Path.Join(root, "a/b/c")).Unwrap()
+    Fs.CreateDirAll(Path.Join(root, "a/b/c")).Unwrap()
+    Fs.WriteLines(Path.Join(root, "a/one.txt"), ["alpha", "beta", "gamma"]).Unwrap()
+    Fs.WriteAll(Path.Join(root, "a/b/two.bin"), "0123456789").Unwrap()
+    Console.Println(Fs.ReadLines(Path.Join(root, "a/one.txt")).Unwrap().Join(","))
+    Console.Println("size ${Fs.Size(Path.Join(root, "a/b/two.bin")).Unwrap()} ${Fs.Size(Path.Join(root, "nope")).IsErr()}")
+    let ms: I64 = Fs.ModifiedMillis(Path.Join(root, "a/one.txt")).Unwrap()
+    Console.Println("mtime ${ms > 1600000000000} ${ms < 4000000000000}")
+    Fs.Copy(Path.Join(root, "a/one.txt"), Path.Join(root, "copy.txt")).Unwrap()
+    Console.Println("${Fs.ReadAll(Path.Join(root, "copy.txt")).Unwrap().Len()}")
+    Console.Println("copy missing ${Fs.Copy(Path.Join(root, "nope"), Path.Join(root, "x")).IsErr()}")
+    let all: Array<String> = Fs.Walk(root).Unwrap()
+    Console.Println(all.Map((p: String) => N(Path.Relative(root, p).Unwrap())).Join(" "))
+    Fs.CopyDir(Path.Join(root, "a"), Path.Join(root, "dup")).Unwrap()
+    Console.Println(Fs.Walk(Path.Join(root, "dup")).Unwrap().Map((p: String) => N(Path.Relative(root, p).Unwrap())).Join(" "))
+    Console.Println("into itself ${Fs.CopyDir(Path.Join(root, "a"), Path.Join(root, "a/b/inner")).IsErr()}")
+    Fs.RemoveAll(root).Unwrap()
+    Console.Println("gone ${Fs.Exists(root)} ${Fs.RemoveAll(root).IsOk()}")
+}
