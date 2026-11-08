@@ -3720,10 +3720,13 @@ fn genCall(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val
                         let last: Ast.Node = nodes[nodes.Len() - 1]
                         if (d.Abi == "intrinsic") {
                             if (d.Name == "Printf") {
-                                return genPrintf(F, n, false)
+                                return genPrintf(F, n, 0)
                             }
                             if (d.Name == "Eprintf") {
-                                return genPrintf(F, n, true)
+                                return genPrintf(F, n, 1)
+                            }
+                            if (d.Name == "Format") {
+                                return genPrintf(F, n, 2)
                             }
                             if (d.Name == "ObjPtr" || d.Name == "PtrObj") {
                                 return genObjPtr(F, n, d, last)
@@ -5809,23 +5812,29 @@ fn inSet(c: U8, set: String) -> Bool {
     false
 }
 
+fn isFloatConv(c: U8) -> Bool {
+    c == b'f' || c == b'e' || c == b'E' || c == b'g' || c == b'G'
+}
+
 class FmtPiece {
     Text: String = ""
     IsSpec: Bool = false
     Conv: U8 = 0
 }
 
-fn genPrintf(mut F: Ctx.FnCtx, n: Ast.Node, toErr: Bool) -> Ctx.Val {
+// mode 0: Printf (stdout), 1: Eprintf (stderr), 2: Text.Format (returns a String)
+fn genPrintf(mut F: Ctx.FnCtx, n: Ast.Node, mode: I64) -> Ctx.Val {
     mut g: Gen.Gen = F.G
+    let who: String = if (mode == 2) { "Format" } else { "Printf" }
     if (n.List.Len() < 1 || n.List[0].Kind != Ast.NK.Str) {
-        g.Diag.Error(n.Pos, "`Printf` needs a string literal as its format")
+        g.Diag.Error(n.Pos, "`${who}` needs a string literal as its format")
         return F.ErrVal()
     }
     let fs: Ast.Node = n.List[0]
     mut f: String = ""
     for (part in fs.List) {
         if (part.Kind != Ast.NK.StrLit) {
-            g.Diag.Error(fs.Pos, "the format of `Printf` cannot contain `\${...}`; pass the values as arguments")
+            g.Diag.Error(fs.Pos, "the format of `${who}` cannot contain `\${...}`; pass the values as arguments")
             return F.ErrVal()
         }
         f = "${f}${part.Name}"
@@ -5873,15 +5882,15 @@ fn genPrintf(mut F: Ctx.FnCtx, n: Ast.Node, toErr: Bool) -> Ctx.Val {
                 j += 1
             }
         }
-        if (j >= len || !inSet(f.ByteAt(j), "duxXfscDi")) {
-            g.Diag.Error(fs.Pos, "invalid format specifier in `Printf` (use %d %u %x %f %s %c or %%)")
+        if (j >= len || !inSet(f.ByteAt(j), "duoxXfeEgGscDi")) {
+            g.Diag.Error(fs.Pos, "invalid format specifier in `${who}` (use %d %u %o %x %f %e %g %s %c or %%)")
             return F.ErrVal()
         }
         let conv: U8 = if (f.ByteAt(j) == b'i') { b'd' } else { f.ByteAt(j) }
         mut p: FmtPiece = FmtPiece.New()
         p.IsSpec = true
         p.Conv = conv
-        let length: String = if (conv == b'd' || conv == b'u' || conv == b'x' || conv == b'X') { "ll" } else { "" }
+        let length: String = if (conv == b'd' || conv == b'u' || conv == b'o' || conv == b'x' || conv == b'X') { "ll" } else { "" }
         let cconv: U8 = if (conv == b'c') { b's' } else { conv }
         let precText: String = if (hasPrec) { ".${if (prec.Len() > 0) { prec } else { "0" }}" } else { "" }
         p.Text = "%${flags}${width}${precText}${length}${byteStr(cconv)}"
@@ -5912,17 +5921,17 @@ fn genPrintf(mut F: Ctx.FnCtx, n: Ast.Node, toErr: Bool) -> Ctx.Val {
         }
         let an: Ast.Node = n.List[ai]
         ai += 1
-        let hint: Option<Types.Type> = if (p.Conv == b'f') { Some(g.Tt.F64) } else { None }
+        let hint: Option<Types.Type> = if (isFloatConv(p.Conv)) { Some(g.Tt.F64) } else { None }
         let v: Ctx.Val = genExpr(F, an, hint)
         if (v.T.Id == g.Tt.Never.Id) {
             return F.NeverVal(None)
         }
         mut ok: Bool = true
         mut need: String = ""
-        if (p.Conv == b'd' || p.Conv == b'u' || p.Conv == b'x' || p.Conv == b'X') {
+        if (p.Conv == b'd' || p.Conv == b'u' || p.Conv == b'o' || p.Conv == b'x' || p.Conv == b'X') {
             ok = v.T.IsInt()
             need = "an integer"
-        } else if (p.Conv == b'f') {
+        } else if (isFloatConv(p.Conv)) {
             ok = v.T.IsFloat()
             need = "a decimal number"
         } else if (p.Conv == b's') {
@@ -5938,7 +5947,12 @@ fn genPrintf(mut F: Ctx.FnCtx, n: Ast.Node, toErr: Bool) -> Ctx.Val {
         }
         vals.Push(v)
     }
-    let stream: I64 = if (toErr) { 2 } else { 1 }
+    let stream: I64 = if (mode == 2) { 3 } else if (mode == 1) { 2 } else { 1 }
+    if (mode == 2) {
+        rtDecl(F, "zevic_fmt_begin", "declare void @zevic_fmt_begin()")
+        rtDecl(F, "zevic_fmt_end", "declare void @zevic_fmt_end(ptr)")
+        F.Emit("call void @zevic_fmt_begin()")
+    }
     rtDecl(F, "zevic_printf_lit", "declare void @zevic_printf_lit(i32, ptr, i64)")
     rtDecl(F, "zevic_printf_i", "declare void @zevic_printf_i(i32, ptr, i64)")
     rtDecl(F, "zevic_printf_f", "declare void @zevic_printf_f(i32, ptr, double)")
@@ -5956,7 +5970,7 @@ fn genPrintf(mut F: Ctx.FnCtx, n: Ast.Node, toErr: Bool) -> Ctx.Val {
         if (g.IsErr(v.T)) {
             continue
         }
-        if (p.Conv == b'd' || p.Conv == b'u' || p.Conv == b'x' || p.Conv == b'X') {
+        if (p.Conv == b'd' || p.Conv == b'u' || p.Conv == b'o' || p.Conv == b'x' || p.Conv == b'X') {
             mut x: String = v.V
             let bits: I32 = v.T.Bits()
             if (bits < 64) {
@@ -5964,7 +5978,7 @@ fn genPrintf(mut F: Ctx.FnCtx, n: Ast.Node, toErr: Bool) -> Ctx.Val {
                 F.Emit("${x} = ${if (v.T.IsSigned()) { "sext" } else { "zext" }} i${bits} ${v.V} to i64")
             }
             F.Emit("call void @zevic_printf_i(i32 ${stream}, ptr ${constPtr(c)}, i64 ${x})")
-        } else if (p.Conv == b'f') {
+        } else if (isFloatConv(p.Conv)) {
             mut x: String = v.V
             if (v.T.Id == g.Tt.F32.Id) {
                 x = F.Tmp()
@@ -5977,6 +5991,13 @@ fn genPrintf(mut F: Ctx.FnCtx, n: Ast.Node, toErr: Bool) -> Ctx.Val {
         } else {
             F.Emit("call void @zevic_printf_c(i32 ${stream}, ptr ${constPtr(c)}, i32 ${v.V})")
         }
+    }
+    if (mode == 2) {
+        let slot: String = F.NewSlot(g.Tt.Str)
+        F.Emit("call void @zevic_fmt_end(ptr ${slot})")
+        let r: String = F.Tmp()
+        F.Emit("${r} = load { ptr, i64 }, ptr ${slot}")
+        return Ctx.Val.New(g.Tt.Str, r)
     }
     F.UnitVal()
 }
@@ -6249,7 +6270,7 @@ fn mkMethodCall(recv: Ast.Node, method: String, pos: Token.Pos, a1: Option<Ast.N
 
 // A one-byte (ASCII) string.
 fn byteStr(c: U8) -> String {
-    let all: String = "duxXfscDi"
+    let all: String = "duoxXfeEgGscDi"
     mut i: I64 = 0
     while (i < all.Len()) {
         if (all.ByteAt(i) == c) {

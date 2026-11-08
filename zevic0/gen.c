@@ -4666,9 +4666,11 @@ typedef struct {
     char conv;
 } FmtPiece;
 
-static Val gen_printf(FnCtx *F, Node *n, bool to_err) {
+/* mode 0: Printf (stdout), 1: Eprintf (stderr), 2: Text.Format (returns a String) */
+static Val gen_printf(FnCtx *F, Node *n, int mode) {
+    const char *who = mode == 2 ? "Format" : "Printf";
     if (n->list.n < 1 || ((Node *)n->list.v[0])->kind != N_STRING) {
-        diag_error(n->pos, "`Printf` needs a string literal as its format");
+        diag_error(n->pos, "`%s` needs a string literal as its format", who);
         return err_val();
     }
     Node *fs = n->list.v[0];
@@ -4676,7 +4678,7 @@ static Val gen_printf(FnCtx *F, Node *n, bool to_err) {
     for (int i = 0; i < fs->list.n; i++) {
         Node *part = fs->list.v[i];
         if (part->kind != N_STR_LIT) {
-            diag_error(fs->pos, "the format of `Printf` cannot contain `${...}`; pass the values as arguments");
+            diag_error(fs->pos, "the format of `%s` cannot contain `${...}`; pass the values as arguments", who);
             return err_val();
         }
         sb_putn(&fmt, part->name, (size_t)part->slen);
@@ -4712,15 +4714,15 @@ static Val gen_printf(FnCtx *F, Node *n, bool to_err) {
             j++;
             while (j < len && f[j] >= '0' && f[j] <= '9') sb_putc(&prec, f[j++]);
         }
-        if (j >= len || !strchr("duxXfscDi", f[j])) {
-            diag_error(fs->pos, "invalid format specifier in `Printf` (use %%d %%u %%x %%f %%s %%c or %%%%)");
+        if (j >= len || !strchr("duoxXfeEgGscDi", f[j])) {
+            diag_error(fs->pos, "invalid format specifier in `%s` (use %%d %%u %%o %%x %%f %%e %%g %%s %%c or %%%%)", who);
             return err_val();
         }
         char conv = f[j] == 'i' ? 'd' : f[j];
         FmtPiece *p = zalloc(sizeof *p);
         p->is_spec = true;
         p->conv = conv;
-        const char *length = (conv == 'd' || conv == 'u' || conv == 'x' || conv == 'X') ? "ll" : "";
+        const char *length = (conv == 'd' || conv == 'u' || conv == 'o' || conv == 'x' || conv == 'X') ? "ll" : "";
         char cconv = (conv == 'c') ? 's' : conv;
         p->text = zsprintf("%%%s%s%s%s%s%c", sb_str(&flags), sb_str(&width), has_prec ? "." : "",
                            has_prec ? (prec.len ? sb_str(&prec) : "0") : "", length, cconv);
@@ -4748,15 +4750,15 @@ static Val gen_printf(FnCtx *F, Node *n, bool to_err) {
         FmtPiece *p = pieces.v[i];
         if (!p->is_spec) continue;
         Node *an = n->list.v[ai++];
-        Type *hint = (p->conv == 'f') ? ty_f64 : NULL;
+        Type *hint = strchr("feEgG", p->conv) ? ty_f64 : NULL;
         Val *v = zalloc(sizeof *v);
         *v = gen_expr(F, an, hint);
         if (v->t == ty_never) return never_val(NULL);
         bool ok = true;
         const char *need = "";
         switch (p->conv) {
-        case 'd': case 'u': case 'x': case 'X': ok = ty_is_int(v->t); need = "an integer"; break;
-        case 'f': ok = ty_is_float(v->t); need = "a decimal number"; break;
+        case 'd': case 'u': case 'o': case 'x': case 'X': ok = ty_is_int(v->t); need = "an integer"; break;
+        case 'f': case 'e': case 'E': case 'g': case 'G': ok = ty_is_float(v->t); need = "a decimal number"; break;
         case 's': ok = v->t == ty_string; need = "a `String`"; break;
         case 'c': ok = v->t == ty_char; need = "a `Char`"; break;
         default: break;
@@ -4767,7 +4769,12 @@ static Val gen_printf(FnCtx *F, Node *n, bool to_err) {
         }
         vec_push(&vals, v);
     }
-    int stream = to_err ? 2 : 1;
+    int stream = mode == 2 ? 3 : (mode == 1 ? 2 : 1);
+    if (mode == 2) {
+        rt_decl(F, "zevic_fmt_begin", "declare void @zevic_fmt_begin()");
+        rt_decl(F, "zevic_fmt_end", "declare void @zevic_fmt_end(ptr)");
+        emit(F, "call void @zevic_fmt_begin()");
+    }
     rt_decl(F, "zevic_printf_lit", "declare void @zevic_printf_lit(i32, ptr, i64)");
     rt_decl(F, "zevic_printf_i", "declare void @zevic_printf_i(i32, ptr, i64)");
     rt_decl(F, "zevic_printf_f", "declare void @zevic_printf_f(i32, ptr, double)");
@@ -4783,7 +4790,7 @@ static Val gen_printf(FnCtx *F, Node *n, bool to_err) {
         }
         Val *v = vals.v[vi++];
         if (is_err(v->t)) continue;
-        if (p->conv == 'd' || p->conv == 'u' || p->conv == 'x' || p->conv == 'X') {
+        if (p->conv == 'd' || p->conv == 'u' || p->conv == 'o' || p->conv == 'x' || p->conv == 'X') {
             char *x = v->v;
             int bits = ty_bits(v->t);
             if (bits < 64) {
@@ -4791,7 +4798,7 @@ static Val gen_printf(FnCtx *F, Node *n, bool to_err) {
                 emit(F, "%s = %s i%d %s to i64", x, ty_is_signed(v->t) ? "sext" : "zext", bits, v->v);
             }
             emit(F, "call void @zevic_printf_i(i32 %d, ptr %s, i64 %s)", stream, const_ptr(c), x);
-        } else if (p->conv == 'f') {
+        } else if (strchr("feEgG", p->conv)) {
             char *x = v->v;
             if (v->t == ty_f32) {
                 x = tmp(F);
@@ -4805,6 +4812,14 @@ static Val gen_printf(FnCtx *F, Node *n, bool to_err) {
         } else {
             emit(F, "call void @zevic_printf_c(i32 %d, ptr %s, i32 %s)", stream, const_ptr(c), v->v);
         }
+    }
+    if (mode == 2) {
+        char *slot = new_slot(F, ty_string);
+        emit(F, "call void @zevic_fmt_end(ptr %s)", slot);
+        char *r = tmp(F);
+        emit(F, "%s = load { ptr, i64 }, ptr %s", r, slot);
+        Val res = {ty_string, r};
+        return res;
     }
     return unit_val();
 }
@@ -5778,8 +5793,9 @@ static Val gen_call(FnCtx *F, Node *n, Type *expect) {
             if (d && d->node->kind == D_FN && used == segs.n) {
                 Node *last = nodes.v[nodes.n - 1];
                 if (d->abi && strcmp(d->abi, "intrinsic") == 0) {
-                    if (strcmp(d->name, "Printf") == 0) return gen_printf(F, n, false);
-                    if (strcmp(d->name, "Eprintf") == 0) return gen_printf(F, n, true);
+                    if (strcmp(d->name, "Printf") == 0) return gen_printf(F, n, 0);
+                    if (strcmp(d->name, "Eprintf") == 0) return gen_printf(F, n, 1);
+                    if (strcmp(d->name, "Format") == 0) return gen_printf(F, n, 2);
                     if (strcmp(d->name, "ObjPtr") == 0 || strcmp(d->name, "PtrObj") == 0) return gen_obj_ptr(F, n, d, last);
                     diag_error(n->pos, "unknown intrinsic `%s`", d->name);
                     return err_val();

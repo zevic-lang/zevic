@@ -28,6 +28,7 @@
 #endif
 #include <math.h>
 #include <setjmp.h>
+#include <stdarg.h>
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
 #endif
@@ -228,16 +229,74 @@ void zevic_eprintln(const char *p, int64_t n) {
 
 /* ---- Printf pieces: the compiler splits the format and checks types ---- */
 
-void zevic_printf_lit(int32_t s, const char *p, int64_t n) {
+/* Stream 3 is not a file: Text.Format collects the pieces in a per-thread buffer (zevic_fmt_begin / zevic_fmt_end). */
+static _Thread_local char *g_fmt_buf;
+static _Thread_local int64_t g_fmt_len, g_fmt_cap;
+
+static void fmt_reserve(int64_t extra) {
+    if (g_fmt_len + extra + 1 <= g_fmt_cap) return;
+    int64_t cap = g_fmt_cap ? g_fmt_cap : 256;
+    while (cap < g_fmt_len + extra + 1) cap *= 2;
+    char *p = realloc(g_fmt_buf, (size_t)cap);
+    if (!p) exit(101);
+    g_fmt_buf = p;
+    g_fmt_cap = cap;
+}
+
+static void out_bytes(int32_t s, const char *p, int64_t n) {
+    if (s == 3) {
+        fmt_reserve(n);
+        if (n > 0) memcpy(g_fmt_buf + g_fmt_len, p, (size_t)n);
+        g_fmt_len += n;
+        return;
+    }
     fwrite(p, 1, (size_t)n, stream_of(s));
 }
 
+static void out_fmt(int32_t s, const char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    if (s == 3) {
+        va_list cp;
+        va_copy(cp, ap);
+        int need = vsnprintf(NULL, 0, fmt, cp);
+        va_end(cp);
+        if (need > 0) {
+            fmt_reserve(need);
+            vsnprintf(g_fmt_buf + g_fmt_len, (size_t)need + 1, fmt, ap);
+            g_fmt_len += need;
+        }
+    } else {
+        vfprintf(stream_of(s), fmt, ap);
+    }
+    va_end(ap);
+}
+
+void zevic_fmt_begin(void) {
+    g_fmt_len = 0;
+}
+
+void zevic_fmt_end(zevic_str *out) {
+    fmt_reserve(0);
+    g_fmt_buf[g_fmt_len] = 0;
+    char *p = zevic_alloc_atomic(g_fmt_len + 1);
+    if (g_fmt_len > 0) memcpy(p, g_fmt_buf, (size_t)g_fmt_len);
+    p[g_fmt_len] = 0;
+    out->p = p;
+    out->n = g_fmt_len;
+    g_fmt_len = 0;
+}
+
+void zevic_printf_lit(int32_t s, const char *p, int64_t n) {
+    out_bytes(s, p, n);
+}
+
 void zevic_printf_i(int32_t s, const char *fmt, int64_t v) {
-    fprintf(stream_of(s), fmt, (long long)v);
+    out_fmt(s, fmt, (long long)v);
 }
 
 void zevic_printf_f(int32_t s, const char *fmt, double v) {
-    fprintf(stream_of(s), fmt, v);
+    out_fmt(s, fmt, v);
 }
 
 void zevic_printf_s(int32_t s, const char *fmt, const char *p, int64_t n) {
@@ -245,7 +304,7 @@ void zevic_printf_s(int32_t s, const char *fmt, const char *p, int64_t n) {
     if (!buf) exit(101);
     memcpy(buf, p, (size_t)n);
     buf[n] = 0;
-    fprintf(stream_of(s), fmt, buf);
+    out_fmt(s, fmt, buf);
     free(buf);
 }
 
@@ -273,7 +332,7 @@ void zevic_printf_c(int32_t s, const char *fmt, uint32_t cp) {
     char buf[5];
     int n = utf8_encode(cp, buf);
     buf[n] = 0;
-    fprintf(stream_of(s), fmt, buf);
+    out_fmt(s, fmt, buf);
 }
 
 /* ---- strings ---- */

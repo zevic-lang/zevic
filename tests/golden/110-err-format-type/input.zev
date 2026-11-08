@@ -1,0 +1,8 @@
+module Main
+
+import Zevic.Console
+import Zevic.Text
+
+fn Main() {
+    Console.Println(Text.Format("%d", "text"))
+}

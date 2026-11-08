@@ -9,6 +9,13 @@ extern "zevic" {
     fn zevic_str_lower(s: String) -> String
 }
 
+extern "intrinsic" {
+    // C-style formatting that returns a String: `Text.Format("%5d|%-6s|%.2f", n, s, x)`. The format must be a
+    // string literal; the compiler checks the count and the types of the values (%d %u %o %x %X: integers,
+    // %f %e %g: decimal numbers, %s: String, %c: Char, %%). Flags, width and precision work as in C.
+    fn Format(fmt: String, ...) -> String
+}
+
 // The byte position of the first `sub` in `s`; None if there is none.
 fn IndexOf(s: String, sub: String) -> Option<I64> {
     let i: I64 = zevic_str_index(s, sub, 0)

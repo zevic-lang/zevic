@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+Standard library growth for 0.4.1.
+
+- `Text.Format("%5d|%-8s|%.2f", ...)` (proposal 0008): C-style formatting that returns a `String`. Like `Printf`, the format is a string literal and the compiler checks the number and the types of the values. `Printf` / `Eprintf` / `Format` now also accept `%o %e %E %g %G`. Both compilers (`zevic0`, `zevic1`) implement it; the runtime collects the pieces in a per-thread buffer
+
 ## 0.4.0
 
 Self-hosting: the compiler is written in Zevic.

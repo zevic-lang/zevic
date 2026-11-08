@@ -1,0 +1,32 @@
+module Main
+
+import Zevic.Console
+import Zevic.Text
+
+fn Pad(n: I64) -> String {
+    Text.Format("[%05d]", n)
+}
+
+fn Main() {
+    Console.Println(Text.Format("%d + %d = %d", 1, 2, 3))
+    Console.Println(Text.Format("|%5d|%-5d|%+d|", 42, 42, 42))
+    Console.Println(Text.Format("%x %X %o %#x", 255, 255, 8, 255))
+    Console.Println(Text.Format("%.2f %8.3f %e %g", 3.14159, 2.5, 12345.678, 0.0001))
+    Console.Println(Text.Format("%s|%10s|%-10s|%.2s", "abc", "right", "left", "truncate"))
+    Console.Println(Text.Format("%c%c%c", 'Z', 'e', 'v'))
+    Console.Println(Text.Format("100%% sure"))
+    Console.Println(Text.Format("no placeholders"))
+    Console.Println(Text.Format("%s", "日本語"))
+    let small: I8 = -5
+    let big: U64 = 18446744073709551615
+    Console.Println(Text.Format("%d %u", small, big))
+    // a Format inside the arguments of another Format
+    Console.Println(Text.Format("<%s|%s>", Pad(7), Text.Format("%03d", 5)))
+    // a long result
+    let long: String = Text.Format("%s-%s", Text.Repeat("ab", 400), Text.Repeat("cd", 400))
+    Console.Println("${long.Len()}")
+    // Printf still works next to it
+    Console.Printf("%s=%d\n", "x", 10)
+    let empty: String = Text.Format("")
+    Console.Println("empty: ${empty.Len()}")
+}
