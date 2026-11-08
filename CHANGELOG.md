@@ -4,7 +4,7 @@
 
 Self-hosting: the compiler is written in Zevic.
 
-- `zevic1` (`tools/zevic1/`, about 12,000 lines of Zevic) is a complete port of `zevic0`: lexer, parser, module resolution, type checking, LLVM IR generation and the clang driver. It compiles every program the C compiler does: all 99 golden tests pass with it
+- `zevic1` (`tools/zevic1/`, about 13,000 lines of Zevic) is a complete port of `zevic0`: lexer, parser, module resolution, type checking, LLVM IR generation and the clang driver. It compiles every program the C compiler does: all 99 golden tests pass with it
 - bootstrap: `zevic` (C) builds `zevic1`, `zevic1` builds `zevic2`, `zevic2` builds `zevic3`, and all of them write byte-identical LLVM IR (`make bootstrap`). That IR is committed as `bootstrap/zevic.ll`: `tools/bootstrap-build.sh` rebuilds the compiler from it with clang alone, no C compiler for Zevic needed. CI checks all of this on every push (Linux: also the committed IR and the golden tests with the self-hosted compiler; macOS and Windows: the fixed point and the golden tests)
 - the standard library's files are named `Zevic/<file>` in panic locations, so the IR does not depend on where Zevic is installed
 - `make zevic1`, `make bootstrap`, `make bootstrap-update` (after changing the compiler), `make test-selfhost`
