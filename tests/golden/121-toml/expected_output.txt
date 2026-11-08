@@ -1,0 +1,95 @@
+TOML éxample
+5
+Tom 1979-05-27T07:32:00-08:00
+true 3 8002 3.14
+79.5 frontend 2
+3 Hammer 0 gray
+3735928559 493 13 1000000 -17
+6.626e-34 true -0.5 07:32:00 1979-05-27 1979-05-27 07:32:00
+Roses are red
+Violets are blue
+The quick brown fox
+raw \n text
+say "hi" 1
+title = "TOML éxample"
+license = "MIT\\n"
+
+[owner]
+name = "Tom"
+dob = 1979-05-27T07:32:00-08:00
+
+[database]
+enabled = true
+ports = [8000, 8001, 8002]
+data = [["delta", "phi"], [3.14]]
+
+[database.temp_targets]
+cpu = 79.5
+case = 72.0
+
+[servers.alpha]
+ip = "10.0.0.1"
+role = "frontend"
+
+[servers."beta node"]
+ip = "10.0.0.2"
+
+[[products]]
+name = "Hammer"
+sku = 738594937
+
+[[products]]
+
+[[products]]
+name = "Nail"
+sku = 284758393
+color = "gray"
+
+[nums]
+hex = 3735928559
+oct = 493
+bin = 13
+big = 1000000
+neg = -17
+fl = 6.626e-34
+pinf = inf
+flt = -0.5
+lt = 07:32:00
+ld = 1979-05-27
+ldt = 1979-05-27 07:32:00
+
+[strings]
+multi = "Roses are red\nViolets are blue"
+cont = "The quick brown fox"
+lit = "raw \\n text"
+q = "say \"hi\""
+
+[strings.dotted.key]
+here = 1
+round trip true
+a = "bell\u0007 é 😀"
+inf = inf
+n = nan
+
+[["key with space"]]
+x = 1
+
+[["key with space"]]
+y = [true]
+
+true
+TOML line 1: a value was expected
+TOML line 2: the key "a" is defined twice
+TOML line 2: the table [t] is defined twice
+TOML line 1: a string is not closed
+TOML line 1: a `,` or `]` was expected in the array
+TOML line 1: a key was expected
+TOML line 1: unexpected text after the value
+TOML line 1: a number cannot start with 0 ("012")
+TOML line 1: a `_` in a number must be between digits
+TOML line 1: a number has no digits
+TOML line 3: "b" is a value, not a table
+TOML line 2: the key "a" is defined twice
+TOML line 1: a string is not closed
+TOML line 1: unknown escape
+TOML line 2: "a" is an array of tables; write [[a]]

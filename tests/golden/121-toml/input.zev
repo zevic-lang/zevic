@@ -1,0 +1,34 @@
+module Main
+
+import Zevic.Console
+import Zevic.Toml
+
+fn Main() {
+    let doc: String = "# a config\ntitle = \"TOML \\u00e9xample\"\nlicense = 'MIT\\n'\n\n[owner]\nname = \"Tom\"\ndob = 1979-05-27T07:32:00-08:00\n\n[database]\nenabled = true\nports = [ 8000, 8001, 8002 ]\ndata = [ [\"delta\", \"phi\"], [3.14] ]\ntemp_targets = { cpu = 79.5, case = 72.0 }\n\n[servers.alpha]\nip = \"10.0.0.1\"\nrole = \"frontend\"\n\n[servers.\"beta node\"]\nip = \"10.0.0.2\"\n\n[[products]]\nname = \"Hammer\"\nsku = 738594937\n\n[[products]]\n\n[[products]]\nname = \"Nail\"\nsku = 284758393\ncolor = \"gray\"\n\n[nums]\nhex = 0xDEAD_BEEF\noct = 0o755\nbin = 0b1101\nbig = 1_000_000\nneg = -17\nfl = 6.626e-34\npinf = +inf\nflt = -0.5\nlt = 07:32:00\nld = 1979-05-27\nldt = 1979-05-27 07:32:00\n\n[strings]\nmulti = \"\"\"\nRoses are red\nViolets are blue\"\"\"\ncont = \"\"\"The quick brown \\\n   fox\"\"\"\nlit = '''\nraw \\n text'''\nq = \"say \\\"hi\\\"\"\ndotted.key.here = 1\n"
+    let v: Toml.Value = Toml.Parse(doc).Unwrap()
+    Console.Println(v.Get("title").Unwrap().AsString().Unwrap())
+    Console.Println("${v.GetPath("license").Unwrap().AsString().Unwrap().Len()}")
+    Console.Println("${v.GetPath("owner.name").Unwrap().AsString().Unwrap()} ${v.GetPath("owner.dob").Unwrap().AsDateTime().Unwrap()}")
+    Console.Println("${v.GetPath("database.enabled").Unwrap().AsBool().Unwrap()} ${v.GetPath("database.ports").Unwrap().AsArray().Unwrap().Len()} ${v.GetPath("database.ports").Unwrap().At(2).Unwrap().AsI64().Unwrap()} ${v.GetPath("database.data").Unwrap().At(1).Unwrap().At(0).Unwrap().AsF64().Unwrap()}")
+    Console.Println("${v.GetPath("database.temp_targets.cpu").Unwrap().AsF64().Unwrap()} ${v.GetPath("servers.alpha.role").Unwrap().AsString().Unwrap()} ${v.GetPath("servers").Unwrap().AsTable().Unwrap().Len()}")
+    let products: Array<Toml.Value> = v.Get("products").Unwrap().AsArray().Unwrap()
+    Console.Println("${products.Len()} ${products[0].Get("name").Unwrap().AsString().Unwrap()} ${products[1].AsTable().Unwrap().Len()} ${products[2].Get("color").Unwrap().AsString().Unwrap()}")
+    Console.Println("${v.GetPath("nums.hex").Unwrap().AsI64().Unwrap()} ${v.GetPath("nums.oct").Unwrap().AsI64().Unwrap()} ${v.GetPath("nums.bin").Unwrap().AsI64().Unwrap()} ${v.GetPath("nums.big").Unwrap().AsI64().Unwrap()} ${v.GetPath("nums.neg").Unwrap().AsI64().Unwrap()}")
+    Console.Println("${v.GetPath("nums.fl").Unwrap().AsF64().Unwrap()} ${v.GetPath("nums.pinf").Unwrap().AsF64().Unwrap() > 1.0e300} ${v.GetPath("nums.flt").Unwrap().AsF64().Unwrap()} ${v.GetPath("nums.lt").Unwrap().AsDateTime().Unwrap()} ${v.GetPath("nums.ld").Unwrap().AsDateTime().Unwrap()} ${v.GetPath("nums.ldt").Unwrap().AsDateTime().Unwrap()}")
+    Console.Println(v.GetPath("strings.multi").Unwrap().AsString().Unwrap())
+    Console.Println(v.GetPath("strings.cont").Unwrap().AsString().Unwrap())
+    Console.Println(v.GetPath("strings.lit").Unwrap().AsString().Unwrap())
+    Console.Println("${v.GetPath("strings.q").Unwrap().AsString().Unwrap()} ${v.GetPath("strings.dotted.key.here").Unwrap().AsI64().Unwrap()}")
+    let out: String = Toml.Stringify(v).Unwrap()
+    Console.Print(out)
+    let again: Toml.Value = Toml.Parse(out).Unwrap()
+    Console.Println("round trip ${Toml.Stringify(again).Unwrap() == out}")
+    Console.Println(Toml.Stringify(Toml.Parse("a = \"bell\\u0007 \\u00e9 \\U0001F600\"\n\"key with space\" = [{x = 1}, {y = [true]}]\ninf = inf\nn = nan\n").Unwrap()).Unwrap())
+    Console.Println("${Toml.Stringify(Toml.Value.Integer(1)).IsErr()}")
+    for (bad in ["a = ", "a = 1\na = 2", "[t]\n[t]", "a = \"x", "a = [1, 2", "= 1", "a = 1 b = 2", "a = 012", "a = 1__0", "a = 0x", "[a]\nb = 1\n[a.b]\nc = 1", "a.b = 1\na = 2", "x = 'a\nb'", "a = \"\\q\"", "[[a]]\n[a]"]) {
+        match (Toml.Parse(bad)) {
+            Ok(_) => Console.Println("accepted: ${bad}"),
+            Err(e) => Console.Println(e.Message()),
+        }
+    }
+}

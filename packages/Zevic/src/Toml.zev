@@ -1,0 +1,777 @@
+module Zevic.Toml
+
+// TOML 1.0: `Parse` text into a `Value`, `Stringify` a `Value` back into text.
+//
+//     let v: Toml.Value = Toml.Parse("[server]\nport = 8080\nhosts = [\"a\", \"b\"]")?
+//     let port: I64 = v.GetPath("server.port").UnwrapOr(Toml.Value.Integer(80)).AsI64().UnwrapOr(80)
+//
+// The root of a document is a `Value.Table`. A table keeps the order of its keys. Dates and times are kept as the
+// text that was written (`DateTime` holds it; `AsDateTime` gives it back, and `Zevic.DateTime.Parse` reads the ones
+// with a zone). Not checked: a table written as an inline table can still be extended by a later `[header]`.
+
+import Zevic.Chars
+import Zevic.Math
+import Zevic.Text
+
+enum Value {
+    Str(String),
+    Integer(I64),
+    Float(F64),
+    Bool(Bool),
+    DateTime(String),
+    List(Array<Value>),
+    Table(Map<String, Value>),
+
+    fn AsString() -> Option<String> {
+        match (this) {
+            Value.Str(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    fn AsI64() -> Option<I64> {
+        match (this) {
+            Value.Integer(n) => Some(n),
+            _ => None,
+        }
+    }
+
+    // A float; an integer is accepted too.
+    fn AsF64() -> Option<F64> {
+        match (this) {
+            Value.Float(f) => Some(f),
+            Value.Integer(n) => Some(n.ToF64()),
+            _ => None,
+        }
+    }
+
+    fn AsBool() -> Option<Bool> {
+        match (this) {
+            Value.Bool(b) => Some(b),
+            _ => None,
+        }
+    }
+
+    // The text of a date, a time or a date and time, as written.
+    fn AsDateTime() -> Option<String> {
+        match (this) {
+            Value.DateTime(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    fn AsArray() -> Option<Array<Value>> {
+        match (this) {
+            Value.List(xs) => Some(xs),
+            _ => None,
+        }
+    }
+
+    fn AsTable() -> Option<Map<String, Value>> {
+        match (this) {
+            Value.Table(m) => Some(m),
+            _ => None,
+        }
+    }
+
+    // The member of a table (None for other values and for a missing key).
+    fn Get(key: String) -> Option<Value> {
+        match (this) {
+            Value.Table(m) => m.Get(key),
+            _ => None,
+        }
+    }
+
+    // The element of an array.
+    fn At(i: I64) -> Option<Value> {
+        match (this) {
+            Value.List(xs) => if (i >= 0 && i < xs.Len()) { Some(xs[i]) } else { None },
+            _ => None,
+        }
+    }
+
+    // A value deep inside, by keys separated with dots: "server.port". (A key that has a dot in it cannot be reached this way.)
+    fn GetPath(path: String) -> Option<Value> {
+        mut cur: Value = this
+        for (k in Text.Split(path, ".")) {
+            match (cur.Get(k)) {
+                Some(v) => { cur = v },
+                None => return None,
+            }
+        }
+        Some(cur)
+    }
+}
+
+let inf: F64 = Math.Pow(10.0, 1000.0)
+
+class Parser {
+    s: String
+    pos: I64 = 0
+    line: I64 = 1
+
+    fn Init(s: String) { this.s = s }
+
+    fn Fail(msg: String) -> Error {
+        Error.New(ErrorKind.Invalid, "TOML line ${this.line}: ${msg}")
+    }
+
+    fn AtEnd() -> Bool { this.pos >= this.s.Len() }
+
+    // The byte at `pos + ahead`, or 0 past the end.
+    fn Peek(ahead: I64) -> U8 {
+        if (this.pos + ahead >= this.s.Len()) { 0 } else { this.s.ByteAt(this.pos + ahead) }
+    }
+
+    fn Looking(text: String) -> Bool {
+        let n: I64 = text.Len()
+        this.pos + n <= this.s.Len() && this.s.Slice(this.pos, this.pos + n) == text
+    }
+
+    // Spaces and tabs.
+    mut fn SkipBlank() {
+        while (!this.AtEnd() && (this.Peek(0) == b' ' || this.Peek(0) == b'\t')) { this.pos += 1 }
+    }
+
+    // A comment up to (not including) the end of the line.
+    mut fn SkipComment() {
+        if (this.Peek(0) == b'#') {
+            while (!this.AtEnd() && this.Peek(0) != b'\n') { this.pos += 1 }
+        }
+    }
+
+    // Blank space, comments and line breaks (between statements and inside arrays).
+    mut fn SkipAll() {
+        loop {
+            this.SkipBlank()
+            this.SkipComment()
+            if (this.Peek(0) == b'\r' && this.Peek(1) == b'\n') {
+                this.pos += 1
+            }
+            if (this.Peek(0) == b'\n') {
+                this.pos += 1
+                this.line += 1
+            } else {
+                break
+            }
+        }
+    }
+
+    // The end of a statement: only blank space and a comment may follow on the line.
+    mut fn EndOfLine() -> Result<Unit, Error> {
+        this.SkipBlank()
+        this.SkipComment()
+        if (this.AtEnd()) { return Ok(()) }
+        if (this.Peek(0) == b'\r' && this.Peek(1) == b'\n') { this.pos += 1 }
+        if (this.Peek(0) == b'\n') {
+            this.pos += 1
+            this.line += 1
+            return Ok(())
+        }
+        Err(this.Fail("unexpected text after the value"))
+    }
+
+    // ---- keys ----
+
+    fn isBare(b: U8) -> Bool {
+        (b >= b'a' && b <= b'z') || (b >= b'A' && b <= b'Z') || (b >= b'0' && b <= b'9') || b == b'_' || b == b'-'
+    }
+
+    mut fn KeyPart() -> Result<String, Error> {
+        let b: U8 = this.Peek(0)
+        if (b == b'"') { return this.BasicString() }
+        if (b == b'\'') { return this.LiteralString() }
+        let start: I64 = this.pos
+        while (!this.AtEnd() && this.isBare(this.Peek(0))) { this.pos += 1 }
+        if (this.pos == start) { return Err(this.Fail("a key was expected")) }
+        Ok(this.s.Slice(start, this.pos))
+    }
+
+    // A key, maybe dotted: a.b."c d".
+    mut fn Key() -> Result<Array<String>, Error> {
+        mut parts: Array<String> = []
+        loop {
+            this.SkipBlank()
+            parts.Push(this.KeyPart()?)
+            this.SkipBlank()
+            if (this.Peek(0) == b'.') {
+                this.pos += 1
+            } else {
+                break
+            }
+        }
+        Ok(parts)
+    }
+
+    // ---- strings ----
+
+    // `n` hex digits as a character.
+    mut fn UnicodeEscape(n: I64) -> Result<String, Error> {
+        if (this.pos + n > this.s.Len()) { return Err(this.Fail("a unicode escape needs ${n} hex digits")) }
+        mut v: U32 = 0
+        mut i: I64 = 0
+        while (i < n) {
+            match (Chars.DigitValue(this.s.ByteAt(this.pos + i).ToU32().ToCharUnchecked(), 16)) {
+                Some(d) => { v = v * 16 + d.ToU32Wrap() },
+                None => return Err(this.Fail("a unicode escape needs ${n} hex digits")),
+            }
+            i += 1
+        }
+        this.pos += n
+        match (Chars.FromU32(v)) {
+            Some(c) => Ok("${c}"),
+            None => Err(this.Fail("not a valid unicode character")),
+        }
+    }
+
+    // The text for the escape after a backslash (the backslash is already read).
+    mut fn Escape() -> Result<String, Error> {
+        let b: U8 = this.Peek(0)
+        this.pos += 1
+        if (b == b'b') { return Ok("\u{8}") }
+        if (b == b't') { return Ok("\t") }
+        if (b == b'n') { return Ok("\n") }
+        if (b == b'f') { return Ok("\u{c}") }
+        if (b == b'r') { return Ok("\r") }
+        if (b == b'"') { return Ok("\"") }
+        if (b == b'\\') { return Ok("\\") }
+        if (b == b'u') { return this.UnicodeEscape(4) }
+        if (b == b'U') { return this.UnicodeEscape(8) }
+        Err(this.Fail("unknown escape"))
+    }
+
+    mut fn BasicString() -> Result<String, Error> {
+        this.pos += 1
+        mut sb: StringBuilder = StringBuilder.New()
+        loop {
+            if (this.AtEnd()) { return Err(this.Fail("a string is not closed")) }
+            let b: U8 = this.Peek(0)
+            if (b == b'"') {
+                this.pos += 1
+                break
+            }
+            if (b == b'\n' || b == b'\r') { return Err(this.Fail("a string is not closed on its line")) }
+            if (b == b'\\') {
+                this.pos += 1
+                sb.Append(this.Escape()?)
+                continue
+            }
+            let start: I64 = this.pos
+            while (!this.AtEnd() && this.Peek(0) != b'"' && this.Peek(0) != b'\\' && this.Peek(0) != b'\n' && this.Peek(0) != b'\r') { this.pos += 1 }
+            sb.Append(this.s.Slice(start, this.pos))
+        }
+        Ok(sb.ToString())
+    }
+
+    mut fn LiteralString() -> Result<String, Error> {
+        this.pos += 1
+        let start: I64 = this.pos
+        while (!this.AtEnd() && this.Peek(0) != b'\'' && this.Peek(0) != b'\n') { this.pos += 1 }
+        if (this.Peek(0) != b'\'') { return Err(this.Fail("a string is not closed")) }
+        let text: String = this.s.Slice(start, this.pos)
+        this.pos += 1
+        Ok(text)
+    }
+
+    // A string in three quotes. A line break right after the opening quotes is dropped.
+    mut fn MultiBasic() -> Result<String, Error> {
+        this.pos += 3
+        if (this.Peek(0) == b'\r' && this.Peek(1) == b'\n') { this.pos += 1 }
+        if (this.Peek(0) == b'\n') {
+            this.pos += 1
+            this.line += 1
+        }
+        mut sb: StringBuilder = StringBuilder.New()
+        loop {
+            if (this.AtEnd()) { return Err(this.Fail("a multi-line string is not closed")) }
+            if (this.Looking("\"\"\"")) {
+                // up to two more quotes can belong to the text: """a"""" is a"
+                this.pos += 3
+                mut extra: I64 = 0
+                while (extra < 2 && this.Peek(0) == b'"') {
+                    sb.Append("\"")
+                    this.pos += 1
+                    extra += 1
+                }
+                break
+            }
+            let b: U8 = this.Peek(0)
+            if (b == b'\\') {
+                this.pos += 1
+                // a backslash before a line break removes the break and the white space after it
+                mut look: I64 = this.pos
+                while (look < this.s.Len() && (this.s.ByteAt(look) == b' ' || this.s.ByteAt(look) == b'\t' || this.s.ByteAt(look) == b'\r')) { look += 1 }
+                if (look < this.s.Len() && this.s.ByteAt(look) == b'\n') {
+                    this.pos = look
+                    while (!this.AtEnd() && (this.Peek(0) == b' ' || this.Peek(0) == b'\t' || this.Peek(0) == b'\n' || this.Peek(0) == b'\r')) {
+                        if (this.Peek(0) == b'\n') { this.line += 1 }
+                        this.pos += 1
+                    }
+                    continue
+                }
+                sb.Append(this.Escape()?)
+                continue
+            }
+            if (b == b'\n') { this.line += 1 }
+            let start: I64 = this.pos
+            this.pos += 1
+            while (!this.AtEnd() && this.Peek(0) != b'"' && this.Peek(0) != b'\\' && this.Peek(0) != b'\n') { this.pos += 1 }
+            sb.Append(this.s.Slice(start, this.pos))
+        }
+        Ok(sb.ToString())
+    }
+
+    mut fn MultiLiteral() -> Result<String, Error> {
+        this.pos += 3
+        if (this.Peek(0) == b'\r' && this.Peek(1) == b'\n') { this.pos += 1 }
+        if (this.Peek(0) == b'\n') {
+            this.pos += 1
+            this.line += 1
+        }
+        let start: I64 = this.pos
+        loop {
+            if (this.AtEnd()) { return Err(this.Fail("a multi-line string is not closed")) }
+            if (this.Looking("'''")) { break }
+            if (this.Peek(0) == b'\n') { this.line += 1 }
+            this.pos += 1
+        }
+        mut stop: I64 = this.pos
+        this.pos += 3
+        mut extra: I64 = 0
+        while (extra < 2 && this.Peek(0) == b'\'') {
+            this.pos += 1
+            stop += 1
+            extra += 1
+        }
+        Ok(this.s.Slice(start, stop))
+    }
+
+    // ---- values ----
+
+    mut fn Value() -> Result<Value, Error> {
+        this.SkipBlank()
+        let b: U8 = this.Peek(0)
+        if (b == b'"') {
+            if (this.Looking("\"\"\"")) { return Ok(Value.Str(this.MultiBasic()?)) }
+            return Ok(Value.Str(this.BasicString()?))
+        }
+        if (b == b'\'') {
+            if (this.Looking("'''")) { return Ok(Value.Str(this.MultiLiteral()?)) }
+            return Ok(Value.Str(this.LiteralString()?))
+        }
+        if (b == b'[') { return this.Array() }
+        if (b == b'{') { return this.Inline() }
+        if (this.Looking("true")) {
+            this.pos += 4
+            return Ok(Value.Bool(true))
+        }
+        if (this.Looking("false")) {
+            this.pos += 5
+            return Ok(Value.Bool(false))
+        }
+        this.Scalar()
+    }
+
+    mut fn Array() -> Result<Value, Error> {
+        this.pos += 1
+        mut items: Array<Value> = []
+        loop {
+            this.SkipAll()
+            if (this.Peek(0) == b']') {
+                this.pos += 1
+                break
+            }
+            items.Push(this.Value()?)
+            this.SkipAll()
+            if (this.Peek(0) == b',') {
+                this.pos += 1
+                continue
+            }
+            if (this.Peek(0) == b']') {
+                this.pos += 1
+                break
+            }
+            return Err(this.Fail("a `,` or `]` was expected in the array"))
+        }
+        Ok(Value.List(items))
+    }
+
+    mut fn Inline() -> Result<Value, Error> {
+        this.pos += 1
+        let table: Map<String, Value> = Map.New()
+        this.SkipBlank()
+        if (this.Peek(0) == b'}') {
+            this.pos += 1
+            return Ok(Value.Table(table))
+        }
+        loop {
+            this.SkipBlank()
+            let key: Array<String> = this.Key()?
+            this.SkipBlank()
+            if (this.Peek(0) != b'=') { return Err(this.Fail("`=` was expected after the key")) }
+            this.pos += 1
+            let v: Value = this.Value()?
+            this.Assign(table, key, v)?
+            this.SkipBlank()
+            if (this.Peek(0) == b',') {
+                this.pos += 1
+                continue
+            }
+            if (this.Peek(0) == b'}') {
+                this.pos += 1
+                break
+            }
+            return Err(this.Fail("a `,` or `}` was expected in the inline table"))
+        }
+        Ok(Value.Table(table))
+    }
+
+    fn isDigit(b: U8) -> Bool { b >= b'0' && b <= b'9' }
+
+    // Numbers, dates and times: read the characters up to a separator and decide what they are.
+    mut fn Scalar() -> Result<Value, Error> {
+        let start: I64 = this.pos
+        while (!this.AtEnd()) {
+            let c: U8 = this.Peek(0)
+            if (this.isBare(c) || c == b'+' || c == b'.' || c == b':') {
+                this.pos += 1
+            } else {
+                break
+            }
+        }
+        // a date and a time separated by a space
+        if (this.pos - start == 10 && this.Peek(0) == b' ' && this.isDigit(this.Peek(1)) && this.isDigit(this.Peek(2)) && this.Peek(3) == b':') {
+            this.pos += 1
+            while (!this.AtEnd()) {
+                let c: U8 = this.Peek(0)
+                if (this.isBare(c) || c == b'+' || c == b'.' || c == b':') {
+                    this.pos += 1
+                } else {
+                    break
+                }
+            }
+        }
+        let tok: String = this.s.Slice(start, this.pos)
+        if (tok.IsEmpty()) { return Err(this.Fail("a value was expected")) }
+        let n: I64 = tok.Len()
+        // date or time
+        if ((n >= 10 && tok.ByteAt(4) == b'-' && tok.ByteAt(7) == b'-' && this.isDigit(tok.ByteAt(0))) || (n >= 8 && tok.ByteAt(2) == b':' && tok.ByteAt(5) == b':' && this.isDigit(tok.ByteAt(0)))) {
+            return Ok(Value.DateTime(tok))
+        }
+        this.Number(tok)
+    }
+
+    // The digits of `tok` with the `_` separators removed; an error if a `_` is not between two digits.
+    fn cleanDigits(tok: String) -> Result<String, Error> {
+        mut sb: StringBuilder = StringBuilder.New()
+        let n: I64 = tok.Len()
+        mut i: I64 = 0
+        while (i < n) {
+            let c: U8 = tok.ByteAt(i)
+            if (c == b'_') {
+                let before: Bool = i > 0 && Chars.IsAlphaNumeric(tok.ByteAt(i - 1).ToU32().ToCharUnchecked())
+                let after: Bool = i + 1 < n && Chars.IsAlphaNumeric(tok.ByteAt(i + 1).ToU32().ToCharUnchecked())
+                if (!before || !after) { return Err(this.Fail("a `_` in a number must be between digits")) }
+            } else {
+                sb.AppendChar(c.ToU32().ToCharUnchecked())
+            }
+            i += 1
+        }
+        Ok(sb.ToString())
+    }
+
+    fn radixNumber(digits: String, base: I32, negative: Bool) -> Result<Value, Error> {
+        if (digits.IsEmpty()) { return Err(this.Fail("a number has no digits")) }
+        mut v: I64 = 0
+        let b: I64 = base.ToI64()
+        for (c in Text.ToChars(digits)) {
+            match (Chars.DigitValue(c, base)) {
+                Some(d) => {
+                    if (v > (9223372036854775807 - d.ToI64()) / b) { return Err(this.Fail("the integer is too large")) }
+                    v = v * b + d.ToI64()
+                },
+                None => return Err(this.Fail("\"${digits}\" is not a valid number")),
+            }
+        }
+        Ok(Value.Integer(if (negative) { -v } else { v }))
+    }
+
+    fn Number(tok: String) -> Result<Value, Error> {
+        mut t: String = tok
+        mut negative: Bool = false
+        mut signed: Bool = false
+        if (Text.StartsWith(t, "+") || Text.StartsWith(t, "-")) {
+            negative = Text.StartsWith(t, "-")
+            signed = true
+            t = t.Slice(1, t.Len())
+        }
+        if (t == "inf") { return Ok(Value.Float(if (negative) { -inf } else { inf })) }
+        if (t == "nan") { return Ok(Value.Float(inf - inf)) }
+        if (t.IsEmpty() || !this.isDigit(t.ByteAt(0))) { return Err(this.Fail("\"${tok}\" is not a value")) }
+        if (!signed && Text.StartsWith(t, "0x")) { return this.radixNumber(this.cleanDigits(t.Slice(2, t.Len()))?, 16, false) }
+        if (!signed && Text.StartsWith(t, "0o")) { return this.radixNumber(this.cleanDigits(t.Slice(2, t.Len()))?, 8, false) }
+        if (!signed && Text.StartsWith(t, "0b")) { return this.radixNumber(this.cleanDigits(t.Slice(2, t.Len()))?, 2, false) }
+        let clean: String = this.cleanDigits(t)?
+        if (clean.Len() > 1 && clean.ByteAt(0) == b'0' && this.isDigit(clean.ByteAt(1))) {
+            return Err(this.Fail("a number cannot start with 0 (\"${tok}\")"))
+        }
+        if (Text.Contains(clean, ".") || Text.Contains(clean, "e") || Text.Contains(clean, "E")) {
+            // a float needs digits on both sides of the point
+            match (Text.IndexOf(clean, ".")) {
+                Some(i) => {
+                    if (i == clean.Len() - 1 || !this.isDigit(clean.ByteAt(i + 1))) { return Err(this.Fail("\"${tok}\" is not a valid float")) }
+                },
+                None => {},
+            }
+            match (clean.ToF64()) {
+                Ok(f) => return Ok(Value.Float(if (negative) { -f } else { f })),
+                Err(_) => return Err(this.Fail("\"${tok}\" is not a valid float")),
+            }
+        }
+        this.radixNumber(clean, 10, negative)
+    }
+
+    // ---- tables ----
+
+    // Store `v` under the dotted `key` inside `table`, making the tables on the way.
+    fn Assign(table: Map<String, Value>, key: Array<String>, v: Value) -> Result<Unit, Error> {
+        mut cur: Map<String, Value> = table
+        mut i: I64 = 0
+        while (i < key.Len() - 1) {
+            match (cur.Get(key[i])) {
+                Some(existing) => {
+                    match (existing) {
+                        Value.Table(t) => { cur = t },
+                        _ => return Err(this.Fail("the key \"${key[i]}\" is already a value, not a table")),
+                    }
+                },
+                None => {
+                    let t: Map<String, Value> = Map.New()
+                    cur.Set(key[i], Value.Table(t))
+                    cur = t
+                },
+            }
+            i += 1
+        }
+        let last: String = key[key.Len() - 1]
+        if (cur.Contains(last)) { return Err(this.Fail("the key \"${last}\" is defined twice")) }
+        cur.Set(last, v)
+        Ok(())
+    }
+
+    // The table a header like [a.b.c] points to; `array` is true for [[a.b.c]] (a new table is added at the end).
+    fn Open(root: Map<String, Value>, path: Array<String>, array: Bool, defined: Set<String>) -> Result<Map<String, Value>, Error> {
+        mut cur: Map<String, Value> = root
+        mut i: I64 = 0
+        while (i < path.Len()) {
+            let k: String = path[i]
+            let isLast: Bool = i == path.Len() - 1
+            match (cur.Get(k)) {
+                Some(existing) => {
+                    match (existing) {
+                        Value.Table(t) => {
+                            if (isLast && array) { return Err(this.Fail("\"${k}\" is a table, not an array of tables")) }
+                            cur = t
+                        },
+                        Value.List(xs) => {
+                            if (isLast && !array) { return Err(this.Fail("\"${k}\" is an array of tables; write [[${Text.Join(path, ".")}]]")) }
+                            if (xs.Len() == 0) { return Err(this.Fail("\"${k}\" is an empty array, not a table")) }
+                            match (xs[xs.Len() - 1]) {
+                                Value.Table(t) => {
+                                    if (isLast && array) {
+                                        let fresh: Map<String, Value> = Map.New()
+                                        mut ys: Array<Value> = xs
+                                        ys.Push(Value.Table(fresh))
+                                        cur = fresh
+                                    } else {
+                                        cur = t
+                                    }
+                                },
+                                _ => return Err(this.Fail("\"${k}\" is an array of values, not tables")),
+                            }
+                        },
+                        _ => return Err(this.Fail("\"${k}\" is a value, not a table")),
+                    }
+                },
+                None => {
+                    let t: Map<String, Value> = Map.New()
+                    if (isLast && array) {
+                        cur.Set(k, Value.List([Value.Table(t)]))
+                    } else {
+                        cur.Set(k, Value.Table(t))
+                    }
+                    cur = t
+                },
+            }
+            i += 1
+        }
+        Ok(cur)
+    }
+}
+
+// Reads a TOML document. The result is a `Value.Table`.
+fn Parse(text: String) -> Result<Value, Error> {
+    mut p: Parser = Parser.New(text)
+    // a byte order mark at the start is allowed
+    if (Text.StartsWith(text, "\u{FEFF}")) { p.pos = 3 }
+    let root: Map<String, Value> = Map.New()
+    mut current: Map<String, Value> = root
+    mut defined: Set<String> = Set.New()
+    loop {
+        p.SkipAll()
+        if (p.AtEnd()) { break }
+        if (p.Peek(0) == b'[') {
+            let array: Bool = p.Peek(1) == b'['
+            p.pos += if (array) { 2 } else { 1 }
+            let path: Array<String> = p.Key()?
+            p.SkipBlank()
+            if (array) {
+                if (!p.Looking("]]")) { return Err(p.Fail("`]]` was expected")) }
+                p.pos += 2
+            } else {
+                if (p.Peek(0) != b']') { return Err(p.Fail("`]` was expected")) }
+                p.pos += 1
+            }
+            let id: String = Text.Join(path, "\u{1F}")
+            if (!array) {
+                if (!defined.Add(id)) { return Err(p.Fail("the table [${Text.Join(path, ".")}] is defined twice")) }
+            }
+            current = p.Open(root, path, array, defined)?
+            p.EndOfLine()?
+            continue
+        }
+        let key: Array<String> = p.Key()?
+        p.SkipBlank()
+        if (p.Peek(0) != b'=') { return Err(p.Fail("`=` was expected after the key")) }
+        p.pos += 1
+        let v: Value = p.Value()?
+        p.Assign(current, key, v)?
+        p.EndOfLine()?
+    }
+    Ok(Value.Table(root))
+}
+
+// ---- writing ----
+
+fn isBareKey(k: String) -> Bool {
+    if (k.IsEmpty()) { return false }
+    mut i: I64 = 0
+    while (i < k.Len()) {
+        let b: U8 = k.ByteAt(i)
+        let ok: Bool = (b >= b'a' && b <= b'z') || (b >= b'A' && b <= b'Z') || (b >= b'0' && b <= b'9') || b == b'_' || b == b'-'
+        if (!ok) { return false }
+        i += 1
+    }
+    true
+}
+
+fn quoteString(s: String) -> String {
+    mut sb: StringBuilder = StringBuilder.New()
+    sb.Append("\"")
+    for (c in Text.ToChars(s)) {
+        let u: U32 = c.ToU32()
+        if (c == '"') { sb.Append("\\\"") }
+        else if (c == '\\') { sb.Append("\\\\") }
+        else if (c == '\n') { sb.Append("\\n") }
+        else if (c == '\t') { sb.Append("\\t") }
+        else if (c == '\r') { sb.Append("\\r") }
+        else if (u < 32_U32 || u == 127_U32) { sb.Append(Text.Format("\\u%04X", u)) }
+        else { sb.AppendChar(c) }
+    }
+    sb.Append("\"")
+    sb.ToString()
+}
+
+fn keyText(k: String) -> String { if (isBareKey(k)) { k } else { quoteString(k) } }
+
+fn pathText(path: Array<String>) -> String { Text.Join(path.Map((k: String) => keyText(k)), ".") }
+
+fn floatText(f: F64) -> String {
+    if (f != f) { return "nan" }
+    if (f == inf) { return "inf" }
+    if (f == -inf) { return "-inf" }
+    "${f}"
+}
+
+// A value on one line. A table is written inline: { a = 1, b = 2 }.
+fn inlineText(v: Value) -> String {
+    match (v) {
+        Value.Str(s) => quoteString(s),
+        Value.Integer(n) => "${n}",
+        Value.Float(f) => floatText(f),
+        Value.Bool(b) => "${b}",
+        Value.DateTime(s) => s,
+        Value.List(xs) => "[" + Text.Join(xs.Map((x: Value) => inlineText(x)), ", ") + "]",
+        Value.Table(m) => {
+            if (m.IsEmpty()) { return "{}" }
+            let parts: Array<String> = m.ToArray().Map((kv: (String, Value)) => {
+                let (k, x): (String, Value) = kv
+                "${keyText(k)} = ${inlineText(x)}"
+            })
+            "{ " + Text.Join(parts, ", ") + " }"
+        },
+    }
+}
+
+fn isTable(v: Value) -> Bool {
+    match (v) {
+        Value.Table(_) => true,
+        _ => false,
+    }
+}
+
+// An array that is not empty and holds only tables is written as [[table]] sections.
+fn isTableArray(v: Value) -> Bool {
+    match (v) {
+        Value.List(xs) => xs.Len() > 0 && xs.All((x: Value) => isTable(x)),
+        _ => false,
+    }
+}
+
+fn writeTable(path: Array<String>, table: Map<String, Value>, mut sb: StringBuilder, isArrayItem: Bool) {
+    mut hasPlain: Bool = false
+    for ((_, v) in table.ToArray()) {
+        if (!isTable(v) && !isTableArray(v)) { hasPlain = true }
+    }
+    // a table that only holds other tables needs no header of its own
+    if (path.Len() > 0 && (hasPlain || table.IsEmpty() || isArrayItem)) {
+        if (sb.Len() > 0) { sb.AppendLine("") }
+        sb.AppendLine(if (isArrayItem) { "[[${pathText(path)}]]" } else { "[${pathText(path)}]" })
+    }
+    // plain values first (a key after a [section] would belong to that section)
+    for ((k, v) in table.ToArray()) {
+        if (!isTable(v) && !isTableArray(v)) {
+            sb.AppendLine("${keyText(k)} = ${inlineText(v)}")
+        }
+    }
+    for ((k, v) in table.ToArray()) {
+        let sub: Array<String> = path.Concat([k])
+        match (v) {
+            Value.Table(t) => writeTable(sub, t, sb, false),
+            Value.List(xs) => {
+                if (isTableArray(v)) {
+                    for (x in xs) {
+                        match (x) {
+                            Value.Table(t) => writeTable(sub, t, sb, true),
+                            _ => {},
+                        }
+                    }
+                }
+            },
+            _ => {},
+        }
+    }
+}
+
+// TOML text for a `Value.Table`. Tables become [sections], arrays of tables become [[sections]], and everything else
+// is written on one line. An error if `v` is not a table.
+fn Stringify(v: Value) -> Result<String, Error> {
+    match (v) {
+        Value.Table(t) => {
+            mut sb: StringBuilder = StringBuilder.New()
+            writeTable([], t, sb, false)
+            Ok(sb.ToString())
+        },
+        _ => Err(Error.New(ErrorKind.Invalid, "a TOML document must be a table")),
+    }
+}
