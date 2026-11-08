@@ -1,0 +1,18 @@
+module Main
+
+import Zevic.Console
+
+fn Main() {
+    mut sb: StringBuilder = StringBuilder.New()
+    sb.Append("hello")
+    sb.AppendChar(' ')
+    sb.AppendLine("world")
+    sb.AppendRepeat("ab", 3)
+    Console.Println(sb.ToString())
+    Console.Println("${sb.Len()}")
+    sb.Truncate(5)
+    Console.Println(sb.ToString())
+    sb.Clear()
+    sb.Append("again")
+    Console.Println("${sb.ToString()} ${sb.IsEmpty()}")
+}

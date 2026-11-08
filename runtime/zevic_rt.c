@@ -505,6 +505,37 @@ void zevic_sb_finish(zevic_str *out, void *h) {
     out->n = b->n;
 }
 
+/* ---- StringBuilder (Zevic.Core). Same buffer as the interpolation builder; ToString copies, because
+ * a builder can be cleared or cut back and then written again. ---- */
+
+void *zevic_strbuf_new(void) {
+    return zevic_sb_new();
+}
+
+void zevic_strbuf_add(void *h, const char *p, int64_t n) {
+    zevic_sb_add(h, p, n);
+}
+
+int64_t zevic_strbuf_len(void *h) {
+    return ((sbuf *)h)->n;
+}
+
+/* Keep the first n bytes (n is checked by the caller). */
+void zevic_strbuf_truncate(void *h, int64_t n) {
+    sbuf *b = h;
+    b->n = n;
+    if (b->p) b->p[n] = 0;
+}
+
+void zevic_strbuf_snapshot(zevic_str *out, void *h) {
+    sbuf *b = h;
+    char *c = zevic_alloc_atomic(b->n + 1);
+    if (b->n) memcpy(c, b->p, (size_t)b->n);
+    c[b->n] = 0;
+    out->p = c;
+    out->n = b->n;
+}
+
 /* ---- C strings ---- */
 
 /* Length of the valid UTF-8 sequence at p (0 if invalid). */

@@ -844,3 +844,65 @@ class Handle<T> {
         if (p == Null) { None } else { Some(Intrinsics.PtrObj<T>(p)) }
     }
 }
+
+// ---- StringBuilder ----
+// Builds a String piece by piece without copying the whole text every time (`s = s + t` in a loop is slow).
+// The pieces are appended in order; `ToString` makes the String. The builder can be used again afterwards.
+
+extern "zevic" {
+    fn zevic_strbuf_new() -> *CVoid
+    fn zevic_strbuf_add(h: *CVoid, s: String)
+    fn zevic_strbuf_len(h: *CVoid) -> I64
+    fn zevic_strbuf_truncate(h: *CVoid, n: I64)
+    fn zevic_strbuf_snapshot(h: *CVoid) -> String
+}
+
+class StringBuilder {
+    h: *CVoid = Null
+
+    fn Init() {
+        this.h = zevic_strbuf_new()
+    }
+
+    // The number of bytes so far.
+    fn Len() -> I64 { zevic_strbuf_len(this.h) }
+
+    fn IsEmpty() -> Bool { zevic_strbuf_len(this.h) == 0 }
+
+    mut fn Append(s: String) {
+        zevic_strbuf_add(this.h, s)
+    }
+
+    mut fn AppendChar(c: Char) {
+        zevic_strbuf_add(this.h, "${c}")
+    }
+
+    // `s` and a newline ("\n").
+    mut fn AppendLine(s: String) {
+        zevic_strbuf_add(this.h, s)
+        zevic_strbuf_add(this.h, "\n")
+    }
+
+    // `s` repeated `n` times.
+    mut fn AppendRepeat(s: String, n: I64) {
+        mut i: I64 = 0
+        while (i < n) {
+            zevic_strbuf_add(this.h, s)
+            i += 1
+        }
+    }
+
+    // Keeps the first `n` bytes. `n` must be at a character boundary within the text.
+    mut fn Truncate(n: I64) {
+        if (n < 0 || n > zevic_strbuf_len(this.h)) {
+            Panic("StringBuilder.Truncate: ${n} is out of range (length ${zevic_strbuf_len(this.h)})")
+        }
+        zevic_strbuf_truncate(this.h, n)
+    }
+
+    mut fn Clear() {
+        zevic_strbuf_truncate(this.h, 0)
+    }
+
+    fn ToString() -> String { zevic_strbuf_snapshot(this.h) }
+}
