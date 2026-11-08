@@ -1,0 +1,53 @@
+loud=false v=0 name=world title=true names=1 file=a.txt rest=1
+loud=true v=2 name=Taro title=false names=1 file=a.txt rest=3
+loud=true v=1 name=B title=true names=2 file=x rest=1
+loud=false v=0 name=world title=true names=1 file=-weird rest=2
+42 true true
+error: the option --count is required
+error: the argument <file> is required
+error: the option -c needs a value
+error: unknown option --nope
+error: unknown option -q
+error: the flag --loud does not take a value
+error: the argument <file> is required
+true true true
+greet 1.2.3 - Say hello
+
+Usage: greet [OPTIONS] <file> [more...]
+
+Arguments:
+  <file>               Input file
+  [more...]            Other files
+
+Options:
+  -l, --loud           Shout
+  -v, --verbose        More output (repeat for more)
+  -n, --name <NAME>    Who to greet [default: world]
+  -t, --title <TITLE>  A title
+  -c, --count <N>      How many times [required]
+  -h, --help           Print help
+  -V, --version        Print version
+add true true 2 x
+a command is needed (one of: add, rm) | unknown command "zip" | the argument <path> is required
+false true
+add - Add files
+
+Usage: tool add [OPTIONS] [paths...]
+
+Arguments:
+  [paths...]   Files to add
+
+Options:
+  -f, --force  Force
+  -h, --help   Print help
+tool - A tool with commands
+
+Usage: tool [OPTIONS] <COMMAND>
+
+Commands:
+  add          Add files
+  rm           Remove files
+
+Options:
+  -q, --quiet  Be quiet
+  -h, --help   Print help

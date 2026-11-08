@@ -1,0 +1,494 @@
+module Zevic.Cli
+
+import Zevic.Console
+import Zevic.Env
+import Zevic.Text
+
+// A command line parser with help text, options, flags, positional arguments and subcommands.
+//
+//     mut app: Cli.Command = Cli.Command.New("greet", "Say hello")
+//     app.SetVersion("1.0.0")
+//     app.Flag("loud", "l", "Shout")
+//     app.Option("name", "n", "NAME", "Who to greet", "world")
+//     app.Positional("times", "How many times", false)
+//     let m: Cli.Matches = app.ParseEnv()           // prints help or the error and exits when needed
+//     Console.Println(m.Get("name").Unwrap())
+//
+// Accepted forms: `--name Taro`, `--name=Taro`, `-n Taro`, `-nTaro`, flags together (`-lv`), `--` to end the
+// options, and a lone `-` as a positional argument. `--help` / `-h` and (if a version is set) `--version` / `-V`
+// are added by the parser.
+
+struct ArgSpec {
+    long: String
+    short: String
+    valueName: String
+    help: String
+    takesValue: Bool
+    required: Bool
+    hasDefault: Bool
+    defaultValue: String
+
+    fn Init(long: String, short: String, valueName: String, help: String, takesValue: Bool, required: Bool, hasDefault: Bool, defaultValue: String) {
+        this.long = long
+        this.short = short
+        this.valueName = valueName
+        this.help = help
+        this.takesValue = takesValue
+        this.required = required
+        this.hasDefault = hasDefault
+        this.defaultValue = defaultValue
+    }
+}
+
+// The result of parsing: what was given on the command line, by the names the command declared.
+class Matches {
+    counts: Map<String, I64> = Map.New()
+    values: Map<String, Array<String>> = Map.New()
+    positionals: Array<String> = []
+    positionalNames: Array<String> = []
+    subName: String = ""
+    sub: Option<Matches> = None
+    help: Bool = false
+    version: Bool = false
+    helpText: String = ""
+    versionText: String = ""
+
+    // Was the flag (or option) given at least once?
+    fn Flag(name: String) -> Bool { this.counts.GetOr(name, 0) > 0 }
+
+    // How many times the flag was given (`-vvv` is 3).
+    fn Count(name: String) -> I64 { this.counts.GetOr(name, 0) }
+
+    // The value of an option: the last one given, or its default. None if there is neither.
+    fn Get(name: String) -> Option<String> {
+        match (this.values.Get(name)) {
+            Some(vs) => vs.Last(),
+            None => None,
+        }
+    }
+
+    // All the values given for an option, in order (the default if none was given).
+    fn GetAll(name: String) -> Array<String> { this.values.GetOr(name, []) }
+
+    // The option as a whole number: None if it was not given; an error if it is not a number.
+    fn GetInt(name: String) -> Result<Option<I64>, Error> {
+        match (this.Get(name)) {
+            Some(s) => {
+                match (s.ToI64()) {
+                    Ok(v) => Ok(Some(v)),
+                    Err(_) => Err(Error.New(ErrorKind.Invalid, "the value of --${name} must be a whole number (got \"${s}\")")),
+                }
+            },
+            None => Ok(None),
+        }
+    }
+
+    // The option as a number with a fraction.
+    fn GetFloat(name: String) -> Result<Option<F64>, Error> {
+        match (this.Get(name)) {
+            Some(s) => {
+                match (s.ToF64()) {
+                    Ok(v) => Ok(Some(v)),
+                    Err(_) => Err(Error.New(ErrorKind.Invalid, "the value of --${name} must be a number (got \"${s}\")")),
+                }
+            },
+            None => Ok(None),
+        }
+    }
+
+    // A positional argument by its name (the one the command declared).
+    fn Arg(name: String) -> Option<String> {
+        mut i: I64 = 0
+        while (i < this.positionalNames.Len()) {
+            if (this.positionalNames[i] == name) {
+                return if (i < this.positionals.Len()) { Some(this.positionals[i]) } else { None }
+            }
+            i += 1
+        }
+        None
+    }
+
+    // All the positional arguments, in order (a rest argument takes the remaining ones).
+    fn Positionals() -> Array<String> { this.positionals }
+
+    // The name of the subcommand that was given; None if there was none.
+    fn Subcommand() -> Option<String> { if (this.subName.IsEmpty()) { None } else { Some(this.subName) } }
+
+    // What was parsed for the subcommand.
+    fn SubMatches() -> Option<Matches> { this.sub }
+
+    // Was `--help` given? `ParseEnv` and `ParseOrExit` handle it for you.
+    fn HelpRequested() -> Bool { this.help }
+
+    fn VersionRequested() -> Bool { this.version }
+
+    fn HelpText() -> String { this.helpText }
+}
+
+// How a positional argument is written in the usage line: <required>, [optional] or [rest...].
+fn argShown(p: ArgSpec) -> String {
+    if (p.defaultValue == "...") { return "[${p.long}...]" }
+    if (p.required) { "<${p.long}>" } else { "[${p.long}]" }
+}
+
+class Command {
+    name: String
+    about: String
+    version: String = ""
+    specs: Array<ArgSpec> = []
+    positionals: Array<ArgSpec> = []
+    subs: Array<Command> = []
+
+    fn Init(name: String, about: String) {
+        this.name = name
+        this.about = about
+    }
+
+    mut fn SetVersion(v: String) { this.version = v }
+
+    // A switch without a value: `--verbose`, `-v`. Use "" for no short name.
+    mut fn Flag(long: String, short: String, help: String) {
+        this.specs.Push(ArgSpec.New(long, short, "", help, false, false, false, ""))
+    }
+
+    // An option with a value that may be left out (it is then not there for `Get`).
+    mut fn OptionalOption(long: String, short: String, valueName: String, help: String) {
+        this.specs.Push(ArgSpec.New(long, short, valueName, help, true, false, false, ""))
+    }
+
+    // An option with a value and a default for when it is not given.
+    mut fn Option(long: String, short: String, valueName: String, help: String, defaultValue: String) {
+        this.specs.Push(ArgSpec.New(long, short, valueName, help, true, false, true, defaultValue))
+    }
+
+    // An option with a value that must be given.
+    mut fn RequiredOption(long: String, short: String, valueName: String, help: String) {
+        this.specs.Push(ArgSpec.New(long, short, valueName, help, true, true, false, ""))
+    }
+
+    // The next positional argument, in the order declared.
+    mut fn Positional(name: String, help: String, required: Bool) {
+        this.positionals.Push(ArgSpec.New(name, "", name, help, true, required, false, ""))
+    }
+
+    // Takes all the positional arguments that are left (must be the last one declared). `Positionals()` has them.
+    mut fn Rest(name: String, help: String) {
+        this.positionals.Push(ArgSpec.New(name, "", name, help, true, false, false, "..."))
+    }
+
+    mut fn Subcommand(c: Command) { this.subs.Push(c) }
+
+    fn findLong(name: String) -> Option<ArgSpec> {
+        for (s in this.specs) {
+            if (s.long == name) { return Some(s) }
+        }
+        None
+    }
+
+    fn findShort(c: String) -> Option<ArgSpec> {
+        for (s in this.specs) {
+            if (!s.short.IsEmpty() && s.short == c) { return Some(s) }
+        }
+        None
+    }
+
+    fn findSub(name: String) -> Option<Command> {
+        for (c in this.subs) {
+            if (c.name == name) { return Some(c) }
+        }
+        None
+    }
+
+    fn usageLine(prefix: String) -> String {
+        mut parts: Array<String> = [prefix]
+        if (this.specs.Len() > 0) { parts.Push("[OPTIONS]") }
+        for (p in this.positionals) {
+            parts.Push(argShown(p))
+        }
+        if (this.subs.Len() > 0) { parts.Push("<COMMAND>") }
+        Text.Join(parts, " ")
+    }
+
+    fn optionLeft(s: ArgSpec) -> String {
+        let short: String = if (s.short.IsEmpty()) { "    " } else { "-${s.short}, " }
+        let value: String = if (s.takesValue) { " <${s.valueName}>" } else { "" }
+        short + "--" + s.long + value
+    }
+
+    // The help text for this command; `prefix` is the command path ("app sub").
+    fn helpFor(prefix: String) -> String {
+        mut sb: StringBuilder = StringBuilder.New()
+        if (this.version.IsEmpty()) {
+            sb.AppendLine("${this.name} - ${this.about}")
+        } else {
+            sb.AppendLine("${this.name} ${this.version} - ${this.about}")
+        }
+        sb.AppendLine("")
+        sb.AppendLine("Usage: ${this.usageLine(prefix)}")
+        mut left: Array<String> = []
+        mut right: Array<String> = []
+        if (this.positionals.Len() > 0) {
+            for (p in this.positionals) {
+                left.Push("  " + argShown(p))
+                right.Push(p.help)
+            }
+        }
+        let argCount: I64 = left.Len()
+        for (s in this.specs) {
+            left.Push("  " + this.optionLeft(s))
+            let def: String = if (s.hasDefault) { " [default: ${s.defaultValue}]" } else if (s.required) { " [required]" } else { "" }
+            right.Push(s.help + def)
+        }
+        left.Push("  -h, --help")
+        right.Push("Print help")
+        if (!this.version.IsEmpty()) {
+            left.Push("  -V, --version")
+            right.Push("Print version")
+        }
+        let optCount: I64 = left.Len() - argCount
+        mut subLeft: Array<String> = []
+        mut subRight: Array<String> = []
+        for (c in this.subs) {
+            subLeft.Push("  ${c.name}")
+            subRight.Push(c.about)
+        }
+        mut width: I64 = 0
+        for (l in left) { if (l.CharCount() > width) { width = l.CharCount() } }
+        for (l in subLeft) { if (l.CharCount() > width) { width = l.CharCount() } }
+        if (this.subs.Len() > 0) {
+            sb.AppendLine("")
+            sb.AppendLine("Commands:")
+            mut i: I64 = 0
+            while (i < subLeft.Len()) {
+                sb.AppendLine(Text.PadRight(subLeft[i], width, ' ') + "  " + subRight[i])
+                i += 1
+            }
+        }
+        if (argCount > 0) {
+            sb.AppendLine("")
+            sb.AppendLine("Arguments:")
+            mut i: I64 = 0
+            while (i < argCount) {
+                sb.AppendLine(Text.PadRight(left[i], width, ' ') + "  " + right[i])
+                i += 1
+            }
+        }
+        if (optCount > 0) {
+            sb.AppendLine("")
+            sb.AppendLine("Options:")
+            mut i: I64 = argCount
+            while (i < left.Len()) {
+                sb.AppendLine(Text.PadRight(left[i], width, ' ') + "  " + right[i])
+                i += 1
+            }
+        }
+        sb.ToString()
+    }
+
+    // The help text.
+    fn Help() -> String { this.helpFor(this.name) }
+
+    fn parseInto(args: Array<String>, prefix: String) -> Result<Matches, Error> {
+        mut m: Matches = Matches.New()
+        m.helpText = this.helpFor(prefix)
+        m.versionText = "${this.name} ${this.version}"
+        for (p in this.positionals) { m.positionalNames.Push(p.long) }
+        for (s in this.specs) {
+            if (s.hasDefault) { m.values.Set(s.long, [s.defaultValue]) }
+        }
+        mut given: Set<String> = Set.New()
+        mut i: I64 = 0
+        mut onlyPositional: Bool = false
+        while (i < args.Len()) {
+            let a: String = args[i]
+            i += 1
+            if (onlyPositional || a == "-" || !Text.StartsWith(a, "-")) {
+                // a subcommand, or a positional argument
+                if (!onlyPositional && this.subs.Len() > 0 && m.positionals.Len() == 0) {
+                    match (this.findSub(a)) {
+                        Some(c) => {
+                            m.subName = c.name
+                            m.sub = Some(c.parseInto(args.Slice(i, args.Len()), "${prefix} ${c.name}")?)
+                            i = args.Len()
+                            continue
+                        },
+                        None => {
+                            return Err(Error.New(ErrorKind.Invalid, "unknown command \"${a}\""))
+                        },
+                    }
+                }
+                m.positionals.Push(a)
+                continue
+            }
+            if (a == "--") {
+                onlyPositional = true
+                continue
+            }
+            if (Text.StartsWith(a, "--")) {
+                mut name: String = a.Slice(2, a.Len())
+                mut inline: Option<String> = None
+                match (Text.IndexOf(name, "=")) {
+                    Some(k) => {
+                        inline = Some(name.Slice(k + 1, name.Len()))
+                        name = name.Slice(0, k)
+                    },
+                    None => {},
+                }
+                if (name == "help") {
+                    m.help = true
+                    return Ok(m)
+                }
+                if (name == "version" && !this.version.IsEmpty()) {
+                    m.version = true
+                    return Ok(m)
+                }
+                match (this.findLong(name)) {
+                    Some(s) => {
+                        if (s.takesValue) {
+                            mut value: String = ""
+                            match (inline) {
+                                Some(v) => { value = v },
+                                None => {
+                                    if (i >= args.Len()) {
+                                        return Err(Error.New(ErrorKind.Invalid, "the option --${name} needs a value"))
+                                    }
+                                    value = args[i]
+                                    i += 1
+                                },
+                            }
+                            this.store(m, given, s, value)
+                        } else {
+                            match (inline) {
+                                Some(_) => {
+                                    return Err(Error.New(ErrorKind.Invalid, "the flag --${name} does not take a value"))
+                                },
+                                None => {},
+                            }
+                            m.counts.Set(s.long, m.counts.GetOr(s.long, 0) + 1)
+                        }
+                    },
+                    None => {
+                        return Err(Error.New(ErrorKind.Invalid, "unknown option --${name}"))
+                    },
+                }
+                continue
+            }
+            // short options: -abc, -n value, -nvalue
+            mut k: I64 = 1
+            let chars: Array<Char> = Text.ToChars(a.Slice(1, a.Len()))
+            mut ci: I64 = 0
+            while (ci < chars.Len()) {
+                let c: String = "${chars[ci]}"
+                ci += 1
+                if (c == "h") {
+                    m.help = true
+                    return Ok(m)
+                }
+                if (c == "V" && !this.version.IsEmpty()) {
+                    m.version = true
+                    return Ok(m)
+                }
+                match (this.findShort(c)) {
+                    Some(s) => {
+                        if (s.takesValue) {
+                            mut value: String = ""
+                            if (ci < chars.Len()) {
+                                value = Text.FromChars(chars.Slice(ci, chars.Len()))
+                                if (Text.StartsWith(value, "=")) { value = value.Slice(1, value.Len()) }
+                                ci = chars.Len()
+                            } else {
+                                if (i >= args.Len()) {
+                                    return Err(Error.New(ErrorKind.Invalid, "the option -${c} needs a value"))
+                                }
+                                value = args[i]
+                                i += 1
+                            }
+                            this.store(m, given, s, value)
+                        } else {
+                            m.counts.Set(s.long, m.counts.GetOr(s.long, 0) + 1)
+                        }
+                    },
+                    None => {
+                        return Err(Error.New(ErrorKind.Invalid, "unknown option -${c}"))
+                    },
+                }
+                k += 1
+            }
+        }
+        if (m.help || m.version) { return Ok(m) }
+        if (this.subs.Len() > 0 && m.subName.IsEmpty()) {
+            return Err(Error.New(ErrorKind.Invalid, "a command is needed (one of: ${Text.Join(this.subs.Map((c: Command) => c.name), ", ")})"))
+        }
+        for (s in this.specs) {
+            if (s.required && !m.values.Contains(s.long)) {
+                return Err(Error.New(ErrorKind.Invalid, "the option --${s.long} is required"))
+            }
+        }
+        mut pi: I64 = 0
+        for (p in this.positionals) {
+            if (p.defaultValue == "...") { break }
+            if (p.required && pi >= m.positionals.Len()) {
+                return Err(Error.New(ErrorKind.Invalid, "the argument <${p.long}> is required"))
+            }
+            pi += 1
+        }
+        let hasRest: Bool = this.positionals.Len() > 0 && this.positionals[this.positionals.Len() - 1].defaultValue == "..."
+        if (!hasRest && m.positionals.Len() > this.positionals.Len() && this.subs.Len() == 0) {
+            return Err(Error.New(ErrorKind.Invalid, "unexpected argument \"${m.positionals[this.positionals.Len()]}\""))
+        }
+        Ok(m)
+    }
+
+    // Remember a value of an option: the first value given replaces the default, later ones are added.
+    fn store(mut m: Matches, mut given: Set<String>, s: ArgSpec, value: String) {
+        if (given.Add(s.long)) {
+            m.values.Set(s.long, [value])
+        } else {
+            m.values.Update(s.long, [value], (old: Array<String>) => old.Concat([value]))
+        }
+    }
+
+    // Parses the given arguments (without the program name). `--help` gives a `Matches` where
+    // `HelpRequested()` is true; a mistake gives an error that says what is wrong.
+    fn Parse(args: Array<String>) -> Result<Matches, Error> { this.parseInto(args, this.name) }
+
+    // Parses the arguments of the program (`Env.RawArgs()`). Prints the help and exits with 0 for `--help`, prints the
+    // version and exits with 0 for `--version`, and for a mistake prints the error and a hint to standard error and
+    // exits with 2.
+    fn ParseEnv() -> Matches { this.ParseOrExit(Env.RawArgs()) }
+
+    fn ParseOrExit(args: Array<String>) -> Matches {
+        match (this.Parse(args)) {
+            Ok(m) => {
+                let target: Matches = deepest(m)
+                if (target.help) {
+                    Console.Print(target.helpText)
+                    Env.Exit(0)
+                }
+                if (target.version) {
+                    Console.Println(target.versionText)
+                    Env.Exit(0)
+                }
+                m
+            },
+            Err(e) => {
+                Console.Eprintln("error: ${e.Message()}")
+                Console.Eprintln("")
+                Console.Eprintln("Usage: ${this.usageLine(this.name)}")
+                Console.Eprintln("For more information, try '--help'.")
+                Env.Exit(2)
+            },
+        }
+    }
+}
+
+// The matches of the innermost subcommand that was given (where help or version was asked for).
+fn deepest(m: Matches) -> Matches {
+    match (m.sub) {
+        Some(s) => {
+            let inner: Matches = deepest(s)
+            if (inner.help || inner.version) { inner } else { m }
+        },
+        None => m,
+    }
+}

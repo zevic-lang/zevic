@@ -1,0 +1,61 @@
+module Main
+
+import Zevic.Console
+import Zevic.Cli
+
+fn build() -> Cli.Command {
+    mut app: Cli.Command = Cli.Command.New("greet", "Say hello")
+    app.SetVersion("1.2.3")
+    app.Flag("loud", "l", "Shout")
+    app.Flag("verbose", "v", "More output (repeat for more)")
+    app.Option("name", "n", "NAME", "Who to greet", "world")
+    app.OptionalOption("title", "t", "TITLE", "A title")
+    app.RequiredOption("count", "c", "N", "How many times")
+    app.Positional("file", "Input file", true)
+    app.Rest("more", "Other files")
+    return app
+}
+
+fn Show(m: Cli.Matches) {
+    Console.Println("loud=${m.Flag("loud")} v=${m.Count("verbose")} name=${m.Get("name").Unwrap()} title=${m.Get("title").IsNone()} names=${m.GetAll("name").Len()} file=${m.Arg("file").Unwrap()} rest=${m.Positionals().Len()}")
+}
+
+fn Why(r: Result<Cli.Matches, Error>) -> String {
+    match (r) {
+        Ok(_) => "no error",
+        Err(e) => e.Message(),
+    }
+}
+
+fn Main() {
+    let app: Cli.Command = build()
+    Show(app.Parse(["--count", "3", "a.txt"]).Unwrap())
+    Show(app.Parse(["-l", "-vv", "-c3", "--name=Taro", "-t", "Dr", "a.txt", "b.txt", "c.txt"]).Unwrap())
+    Show(app.Parse(["-lvc", "5", "-n", "A", "-n", "B", "x"]).Unwrap())
+    Show(app.Parse(["--count=1", "--", "-weird", "--also"]).Unwrap())
+    let m: Cli.Matches = app.Parse(["-c", "42", "f"]).Unwrap()
+    Console.Println("${m.GetInt("count").Unwrap().Unwrap()} ${app.Parse(["-c", "x", "f"]).Unwrap().GetInt("count").IsErr()} ${m.GetInt("title").Unwrap().IsNone()}")
+    for (bad in [["f"], ["-c", "1"], ["-c"], ["--nope", "-c", "1", "f"], ["-q", "-c", "1", "f"], ["--loud=1", "-c", "1", "f"], ["-c", "1"]]) {
+        Console.Println("error: ${Why(app.Parse(bad))}")
+    }
+    Console.Println("${app.Parse(["--help"]).Unwrap().HelpRequested()} ${app.Parse(["-V"]).Unwrap().VersionRequested()} ${app.Parse(["-h", "--bogus"]).Unwrap().HelpRequested()}")
+    Console.Print(app.Help())
+
+    mut git: Cli.Command = Cli.Command.New("tool", "A tool with commands")
+    git.Flag("quiet", "q", "Be quiet")
+    mut add: Cli.Command = Cli.Command.New("add", "Add files")
+    add.Flag("force", "f", "Force")
+    add.Rest("paths", "Files to add")
+    git.Subcommand(add)
+    mut rm: Cli.Command = Cli.Command.New("rm", "Remove files")
+    rm.Positional("path", "File to remove", true)
+    git.Subcommand(rm)
+    let g: Cli.Matches = git.Parse(["-q", "add", "-f", "a", "b"]).Unwrap()
+    let sub: Cli.Matches = g.SubMatches().Unwrap()
+    Console.Println("${g.Subcommand().Unwrap()} ${g.Flag("quiet")} ${sub.Flag("force")} ${sub.Positionals().Len()} ${git.Parse(["rm", "x"]).Unwrap().SubMatches().Unwrap().Arg("path").Unwrap()}")
+    Console.Println("${Why(git.Parse([]))} | ${Why(git.Parse(["zip"]))} | ${Why(git.Parse(["rm"]))}")
+    let h: Cli.Matches = git.Parse(["add", "--help"]).Unwrap()
+    Console.Println("${h.HelpRequested()} ${h.SubMatches().Unwrap().HelpRequested()}")
+    Console.Print(h.SubMatches().Unwrap().HelpText())
+    Console.Print(git.Help())
+}
