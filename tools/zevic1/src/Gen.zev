@@ -1123,7 +1123,7 @@ fn llEscape(s: String) -> String {
             i += 1
             continue
         }
-        out += s.Slice(run, i)
+        if (i > run) { out += s.Slice(run, i) }
         out += "\\${HexN(c.ToU64Wrap(), 2)}"
         i += 1
         run = i

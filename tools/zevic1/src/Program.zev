@@ -226,7 +226,7 @@ fn cSpelling(t: Types.Type, g: Gen.Gen) -> String {
         return "${inner}${if (Text.EndsWith(inner, "*")) { "" } else { " " }}*"
     }
     if (t.Kind == Types.TKind.Struct) {
-        return "struct ${t.DeclName}"
+        return "struct ${shortName(t)}"
     }
     let tab: Array<(String, String)> = [
         ("CChar", "char"), ("CSChar", "signed char"), ("CUChar", "unsigned char"), ("CShort", "short"),
@@ -258,7 +258,7 @@ fn headerStruct(mut g: Gen.Gen, t: Types.Type, mut seen: Map<String, Bool>, mut 
     for (f in t.Fields) {
         headerStruct(g, f.T, seen, out)
     }
-    out.Push("struct ${t.DeclName} {\n")
+    out.Push("struct ${shortName(t)} {\n")
     for (f in t.Fields) {
         out.Push("    ${cSpelling(f.T, g)} ${f.Name};\n")
     }
@@ -298,4 +298,12 @@ fn GenHeader(mut g: Gen.Gen, guard: String) -> String {
 fn ctxLl(mut g: Gen.Gen, t: Types.Type) -> String {
     mut tt: Types.TypeTable = g.Tt
     tt.LlOf(t)
+}
+
+// "Main::Point" -> "Point"
+fn shortName(t: Types.Type) -> String {
+    match (Text.IndexOf(t.DeclName, "::")) {
+        Some(i) => t.DeclName.Slice(i + 2, t.DeclName.Len()),
+        None => t.DeclName,
+    }
 }
