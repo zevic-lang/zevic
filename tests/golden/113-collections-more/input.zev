@@ -1,0 +1,65 @@
+module Main
+
+import Zevic.Console
+
+fn Show<T>(label: String, xs: Array<T>) {
+    Console.Println("${label}: ${xs.Map((x: T) => "${x}").Join(",")}")
+}
+
+fn Main() {
+    let a: Array<I32> = [5, 3, 8, 1, 9, 2]
+    Show("take", a.Take(2))
+    Show("skip", a.Skip(4))
+    Show("takeWhile", a.TakeWhile((x: I32) => x != 1))
+    Show("skipWhile", a.SkipWhile((x: I32) => x != 1))
+    Show("flatMap", a.Take(3).FlatMap((x: I32) => [x, x * 10]))
+    let z: Array<(I32, String)> = a.Take(3).Zip(["a", "b"])
+    let (zn, zs): (I32, String) = z[1]
+    Console.Println("zip: ${z.Len()} ${zn} ${zs}")
+    Show("chunk", a.Chunk(4).Map((c: Array<I32>) => c.Len()))
+    let parts: (Array<I32>, Array<I32>) = a.Partition((x: I32) => x > 4)
+    let (yes, no): (Array<I32>, Array<I32>) = parts
+    Show("yes", yes)
+    Show("no", no)
+    let g: Map<Bool, Array<I32>> = a.GroupBy((x: I32) => x % 2 == 0)
+    Show("even", g[true])
+    Show("odd", g[false])
+    Show("distinct", [1, 2, 1, 3, 2].Distinct())
+    Console.Println("min ${a.Min().Unwrap()} max ${a.Max().Unwrap()} ${(a.Take(0)).Min().IsNone()}")
+    let words: Array<String> = ["pear", "fig", "banana", "kiwi"]
+    Console.Println("minBy ${words.MinBy((w: String) => w.Len()).Unwrap()} maxBy ${words.MaxBy((w: String) => w.Len()).Unwrap()}")
+    Show("repeat", Array<I32>.Repeat(7, 3))
+    Show("reversed", a.Reversed())
+    Show("sorted", a.Sorted())
+    Show("orig", a)
+    mut b: Array<I32> = a.Sorted()
+    Console.Println("bs ${b.BinarySearch(8).Unwrap()} ${b.BinarySearch(4).IsNone()}")
+    b.Swap(0, 5)
+    Show("swap", b)
+    b.RetainWhere((x: I32) => x > 2)
+    Show("retain", b)
+    b.Fill(0)
+    Show("fill", b)
+    Console.Println("indexWhere ${a.IndexWhere((x: I32) => x > 7).Unwrap()}")
+
+    mut m: Map<String, I32> = Map.New()
+    m.Set("a", 1)
+    Console.Println("getOr ${m.GetOr("a", 0)} ${m.GetOr("z", 42)}")
+    Console.Println("getOrInsert ${m.GetOrInsert("b", 5)} ${m.GetOrInsert("b", 6)} ${m.Len()}")
+    m.Update("a", 0, (v: I32) => v + 100)
+    m.Update("c", 7, (v: I32) => v + 100)
+    Console.Println("update ${m["a"]} ${m["c"]}")
+    let other: Map<String, I32> = Map<String, I32>.FromPairs([("a", -1), ("d", 4)])
+    m.Extend(other)
+    Console.Println("extend ${m["a"]} ${m["d"]} ${m.Len()}")
+    let removed: I64 = m.RemoveWhere((k: String, v: I32) => v > 4)
+    Console.Println("removed ${removed} left ${m.Len()} ${m.Entries().Len()}")
+
+    let s1: Set<I32> = Set<I32>.FromArray([1, 2, 3, 4])
+    let s2: Set<I32> = Set<I32>.FromArray([3, 4, 5])
+    Show("union", s1.Union(s2).ToArray())
+    Show("intersect", s1.Intersect(s2).ToArray())
+    Show("diff", s1.Difference(s2).ToArray())
+    Show("sym", s1.SymmetricDifference(s2).ToArray())
+    Console.Println("${s1.IsSubset(s2)} ${Set<I32>.FromArray([3]).IsSubset(s2)} ${s1.IsSuperset(Set<I32>.FromArray([1, 2]))} ${s1.IsDisjoint(Set<I32>.FromArray([9]))} ${s1 == Set<I32>.FromArray([4, 3, 2, 1])} ${s1 == s2}")
+}

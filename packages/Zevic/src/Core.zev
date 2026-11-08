@@ -155,6 +155,280 @@ interface Iterable<T> {
         }
         n
     }
+
+    // The first `n` elements (all of them if there are fewer).
+    fn Take(n: I64) -> Array<T> {
+        mut out: Array<T> = []
+        if (n <= 0) {
+            return out
+        }
+        mut it: Iterator<T> = this.Iter()
+        loop {
+            match (it.Next()) {
+                Some(v) => {
+                    out.Push(v)
+                    if (out.Len() >= n) { break }
+                },
+                None => break,
+            }
+        }
+        out
+    }
+
+    // Everything but the first `n` elements.
+    fn Skip(n: I64) -> Array<T> {
+        mut out: Array<T> = []
+        mut it: Iterator<T> = this.Iter()
+        mut i: I64 = 0
+        loop {
+            match (it.Next()) {
+                Some(v) => {
+                    if (i >= n) { out.Push(v) }
+                    i += 1
+                },
+                None => break,
+            }
+        }
+        out
+    }
+
+    // The elements from the start up to (not including) the first one for which `f` is false.
+    fn TakeWhile(f: fn(T) -> Bool) -> Array<T> {
+        mut out: Array<T> = []
+        mut it: Iterator<T> = this.Iter()
+        loop {
+            match (it.Next()) {
+                Some(v) => {
+                    if (!f(v)) { break }
+                    out.Push(v)
+                },
+                None => break,
+            }
+        }
+        out
+    }
+
+    // The elements from the first one for which `f` is false to the end.
+    fn SkipWhile(f: fn(T) -> Bool) -> Array<T> {
+        mut out: Array<T> = []
+        mut it: Iterator<T> = this.Iter()
+        mut skipping: Bool = true
+        loop {
+            match (it.Next()) {
+                Some(v) => {
+                    if (skipping && f(v)) { continue }
+                    skipping = false
+                    out.Push(v)
+                },
+                None => break,
+            }
+        }
+        out
+    }
+
+    // `f` on every element, with the arrays it returns joined into one.
+    fn FlatMap<U>(f: fn(T) -> Array<U>) -> Array<U> {
+        mut out: Array<U> = []
+        mut it: Iterator<T> = this.Iter()
+        loop {
+            match (it.Next()) {
+                Some(v) => out.Extend(f(v)),
+                None => break,
+            }
+        }
+        out
+    }
+
+    // Pairs of elements at the same position; as long as the shorter one.
+    fn Zip<U>(other: Array<U>) -> Array<(T, U)> {
+        mut out: Array<(T, U)> = []
+        mut it: Iterator<T> = this.Iter()
+        mut i: I64 = 0
+        loop {
+            if (i >= other.Len()) { break }
+            match (it.Next()) {
+                Some(v) => out.Push((v, other[i])),
+                None => break,
+            }
+            i += 1
+        }
+        out
+    }
+
+    // Groups of at most `n` elements, in order. `n` must be positive.
+    fn Chunk(n: I64) -> Array<Array<T>> {
+        if (n <= 0) {
+            Panic("Chunk: the size must be positive (got ${n})")
+        }
+        mut out: Array<Array<T>> = []
+        mut cur: Array<T> = []
+        mut it: Iterator<T> = this.Iter()
+        loop {
+            match (it.Next()) {
+                Some(v) => {
+                    cur.Push(v)
+                    if (cur.Len() >= n) {
+                        out.Push(cur)
+                        cur = []
+                    }
+                },
+                None => break,
+            }
+        }
+        if (cur.Len() > 0) {
+            out.Push(cur)
+        }
+        out
+    }
+
+    // (the elements for which `f` is true, the others), each in order.
+    fn Partition(f: fn(T) -> Bool) -> (Array<T>, Array<T>) {
+        mut yes: Array<T> = []
+        mut no: Array<T> = []
+        mut it: Iterator<T> = this.Iter()
+        loop {
+            match (it.Next()) {
+                Some(v) => {
+                    if (f(v)) { yes.Push(v) } else { no.Push(v) }
+                },
+                None => break,
+            }
+        }
+        (yes, no)
+    }
+
+    // The elements grouped by the key `f` gives. The groups and the elements in them keep their order.
+    fn GroupBy<K: Hashable>(f: fn(T) -> K) -> Map<K, Array<T>> {
+        mut out: Map<K, Array<T>> = Map.New()
+        mut it: Iterator<T> = this.Iter()
+        loop {
+            match (it.Next()) {
+                Some(v) => {
+                    let k: K = f(v)
+                    match (out.Get(k)) {
+                        Some(group) => {
+                            mut g: Array<T> = group
+                            g.Push(v)
+                        },
+                        None => out.Set(k, [v]),
+                    }
+                },
+                None => break,
+            }
+        }
+        out
+    }
+
+    // The elements without repeats, first occurrences only. `T` must be `Hashable`.
+    fn Distinct() -> Array<T> {
+        mut seen: Set<T> = Set.New()
+        mut out: Array<T> = []
+        mut it: Iterator<T> = this.Iter()
+        loop {
+            match (it.Next()) {
+                Some(v) => {
+                    if (seen.Add(v)) { out.Push(v) }
+                },
+                None => break,
+            }
+        }
+        out
+    }
+
+    // The smallest element; the first one if several are equal. None if there are none. `T` must be `Comparable`.
+    fn Min() -> Option<T> {
+        mut best: Option<T> = None
+        mut it: Iterator<T> = this.Iter()
+        loop {
+            match (it.Next()) {
+                Some(v) => {
+                    match (best) {
+                        Some(b) => {
+                            if (v.Compare(b) < 0) { best = Some(v) }
+                        },
+                        None => { best = Some(v) },
+                    }
+                },
+                None => break,
+            }
+        }
+        best
+    }
+
+    // The largest element; the first one if several are equal. `T` must be `Comparable`.
+    fn Max() -> Option<T> {
+        mut best: Option<T> = None
+        mut it: Iterator<T> = this.Iter()
+        loop {
+            match (it.Next()) {
+                Some(v) => {
+                    match (best) {
+                        Some(b) => {
+                            if (v.Compare(b) > 0) { best = Some(v) }
+                        },
+                        None => { best = Some(v) },
+                    }
+                },
+                None => break,
+            }
+        }
+        best
+    }
+
+    // The element whose key (from `f`) is smallest / largest; the first one if several are equal.
+    fn MinBy<K>(f: fn(T) -> K) -> Option<T> {
+        mut best: Option<T> = None
+        mut bestKey: Option<K> = None
+        mut it: Iterator<T> = this.Iter()
+        loop {
+            match (it.Next()) {
+                Some(v) => {
+                    let k: K = f(v)
+                    match (bestKey) {
+                        Some(bk) => {
+                            if (k.Compare(bk) < 0) {
+                                best = Some(v)
+                                bestKey = Some(k)
+                            }
+                        },
+                        None => {
+                            best = Some(v)
+                            bestKey = Some(k)
+                        },
+                    }
+                },
+                None => break,
+            }
+        }
+        best
+    }
+
+    fn MaxBy<K>(f: fn(T) -> K) -> Option<T> {
+        mut best: Option<T> = None
+        mut bestKey: Option<K> = None
+        mut it: Iterator<T> = this.Iter()
+        loop {
+            match (it.Next()) {
+                Some(v) => {
+                    let k: K = f(v)
+                    match (bestKey) {
+                        Some(bk) => {
+                            if (k.Compare(bk) > 0) {
+                                best = Some(v)
+                                bestKey = Some(k)
+                            }
+                        },
+                        None => {
+                            best = Some(v)
+                            bestKey = Some(k)
+                        },
+                    }
+                },
+                None => break,
+            }
+        }
+        best
+    }
 }
 
 enum Option<T> {
@@ -561,6 +835,102 @@ class Array<T> : Iterable<T> {
         r.appendRange(other, 0, other.len)
         r
     }
+
+    // `n` copies of `x`.
+    static fn Repeat(x: T, n: I64) -> Array<T> {
+        mut r: Array<T> = Array.New()
+        mut i: I64 = 0
+        while (i < n) {
+            r.Push(x)
+            i += 1
+        }
+        r
+    }
+
+    // A reversed copy; the array itself does not change.
+    fn Reversed() -> Array<T> {
+        mut r: Array<T> = Array.New()
+        mut i: I64 = this.len - 1
+        while (i >= 0) {
+            r.Push(this.buf.Get(i))
+            i -= 1
+        }
+        r
+    }
+
+    // A sorted copy (stable). `T` must be `Comparable`.
+    fn Sorted() -> Array<T> {
+        mut r: Array<T> = this.Slice(0, this.len)
+        r.Sort()
+        r
+    }
+
+    fn SortedBy(cmp: fn(T, T) -> I32) -> Array<T> {
+        mut r: Array<T> = this.Slice(0, this.len)
+        r.SortBy(cmp)
+        r
+    }
+
+    mut fn Swap(i: I64, j: I64) {
+        if (i < 0 || i >= this.len || j < 0 || j >= this.len) {
+            Panic("Swap: ${i} or ${j} is out of range (length ${this.len})")
+        }
+        let t: T = this.buf.Get(i)
+        this.buf.Set(i, this.buf.Get(j))
+        this.buf.Set(j, t)
+    }
+
+    // Set every element to `x`.
+    mut fn Fill(x: T) {
+        mut i: I64 = 0
+        while (i < this.len) {
+            this.buf.Set(i, x)
+            i += 1
+        }
+    }
+
+    // Keep only the elements for which `f` is true (in place, order kept).
+    mut fn RetainWhere(f: fn(T) -> Bool) {
+        mut w: I64 = 0
+        mut i: I64 = 0
+        while (i < this.len) {
+            let v: T = this.buf.Get(i)
+            if (f(v)) {
+                this.buf.Set(w, v)
+                w += 1
+            }
+            i += 1
+        }
+        this.len = w
+    }
+
+    // The position of the first element for which `f` is true.
+    fn IndexWhere(f: fn(T) -> Bool) -> Option<I64> {
+        mut i: I64 = 0
+        while (i < this.len) {
+            if (f(this.buf.Get(i))) {
+                return Some(i)
+            }
+            i += 1
+        }
+        None
+    }
+
+    // The position of `x` in an array that is already sorted (`Sort`). If `x` is repeated, any of its positions.
+    // None if it is not there. `T` must be `Comparable`.
+    fn BinarySearch(x: T) -> Option<I64> {
+        mut lo: I64 = 0
+        mut hi: I64 = this.len - 1
+        while (lo <= hi) {
+            let mid: I64 = lo + (hi - lo) / 2
+            let c: I32 = this.buf.Get(mid).Compare(x)
+            if (c == 0) {
+                return Some(mid)
+            }
+            if (c < 0) { lo = mid + 1 } else { hi = mid - 1 }
+        }
+        None
+    }
 }
 
 // ---- Map and Set ----
@@ -740,6 +1110,73 @@ class Map<K: Hashable, V> : Iterable<(K, V)> {
     }
 
     fn Iter() -> Iterator<(K, V)> { MapIter<K, V>.New(this) }
+
+    // The value for `k`, or `d` if there is none.
+    fn GetOr(k: K, d: V) -> V {
+        match (this.Get(k)) {
+            Some(v) => v,
+            None => d,
+        }
+    }
+
+    // The value for `k`; if there is none, `d` is stored and returned.
+    mut fn GetOrInsert(k: K, d: V) -> V {
+        match (this.Get(k)) {
+            Some(v) => v,
+            None => {
+                this.Set(k, d)
+                d
+            },
+        }
+    }
+
+    // Replace the value for `k` by `f(old)`; if there is none, store `d`.
+    mut fn Update(k: K, d: V, f: fn(V) -> V) {
+        match (this.Get(k)) {
+            Some(v) => this.Set(k, f(v)),
+            None => this.Set(k, d),
+        }
+    }
+
+    // Copy all the entries of `other` in (its values win for keys that are in both).
+    mut fn Extend(other: Map<K, V>) {
+        let ks: Array<K> = other.Keys()
+        mut i: I64 = 0
+        while (i < ks.Len()) {
+            this.Set(ks[i], other[ks[i]])
+            i += 1
+        }
+    }
+
+    // Remove the entries for which `f(key, value)` is true. Returns how many were removed.
+    mut fn RemoveWhere(f: fn(K, V) -> Bool) -> I64 {
+        let ks: Array<K> = this.Keys()
+        mut n: I64 = 0
+        mut i: I64 = 0
+        while (i < ks.Len()) {
+            if (f(ks[i], this[ks[i]])) {
+                this.Remove(ks[i])
+                n += 1
+            }
+            i += 1
+        }
+        n
+    }
+
+    // The entries as (key, value) pairs, in insertion order.
+    fn Entries() -> Array<(K, V)> { this.ToArray() }
+
+    // A Map from pairs; a later pair with the same key replaces an earlier one.
+    static fn FromPairs(pairs: Array<(K, V)>) -> Map<K, V> {
+        mut m: Map<K, V> = Map.New()
+        mut i: I64 = 0
+        while (i < pairs.Len()) {
+            let (k, v): (K, V) = pairs[i]
+            m.Set(k, v)
+            i += 1
+        }
+        m
+    }
 }
 
 class MapIter<K: Hashable, V> : Iterator<(K, V)> {
@@ -796,6 +1233,78 @@ class Set<T: Hashable> : Iterable<T> {
     mut fn Clear() { this.m.Clear() }
 
     fn Iter() -> Iterator<T> { SetIter<T>.New(this.m.Keys()) }
+
+    // A Set of the elements of `items`.
+    static fn FromArray(items: Array<T>) -> Set<T> {
+        mut s: Set<T> = Set.New()
+        s.AddAll(items)
+        s
+    }
+
+    // Add every element of `items`.
+    mut fn AddAll(items: Array<T>) {
+        mut i: I64 = 0
+        while (i < items.Len()) {
+            this.Add(items[i])
+            i += 1
+        }
+    }
+
+    // The elements in `this` or `other`.
+    fn Union(other: Set<T>) -> Set<T> {
+        mut r: Set<T> = Set.FromArray(this.m.Keys())
+        r.AddAll(other.m.Keys())
+        r
+    }
+
+    // The elements in both.
+    fn Intersect(other: Set<T>) -> Set<T> {
+        mut r: Set<T> = Set.New()
+        let ks: Array<T> = this.m.Keys()
+        mut i: I64 = 0
+        while (i < ks.Len()) {
+            if (other.Contains(ks[i])) { r.Add(ks[i]) }
+            i += 1
+        }
+        r
+    }
+
+    // The elements of `this` that are not in `other`.
+    fn Difference(other: Set<T>) -> Set<T> {
+        mut r: Set<T> = Set.New()
+        let ks: Array<T> = this.m.Keys()
+        mut i: I64 = 0
+        while (i < ks.Len()) {
+            if (!other.Contains(ks[i])) { r.Add(ks[i]) }
+            i += 1
+        }
+        r
+    }
+
+    // The elements in exactly one of the two.
+    fn SymmetricDifference(other: Set<T>) -> Set<T> {
+        this.Difference(other).Union(other.Difference(this))
+    }
+
+    // Is every element of `this` in `other`?
+    fn IsSubset(other: Set<T>) -> Bool {
+        let ks: Array<T> = this.m.Keys()
+        mut i: I64 = 0
+        while (i < ks.Len()) {
+            if (!other.Contains(ks[i])) { return false }
+            i += 1
+        }
+        true
+    }
+
+    fn IsSuperset(other: Set<T>) -> Bool { other.IsSubset(this) }
+
+    fn IsDisjoint(other: Set<T>) -> Bool { this.Intersect(other).IsEmpty() }
+
+    // Same elements (the order does not matter): `a == b` calls this.
+    fn Equals(other: Set<T>) -> Bool {
+        this.Len() == other.Len() && this.IsSubset(other)
+    }
 }
 
 class SetIter<T: Hashable> : Iterator<T> {
