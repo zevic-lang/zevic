@@ -1,0 +1,18 @@
+INFO  started
+WARN  careful
+ERROR failed
+DEBUG now visible
+INFO  handled request=42 user="Taro Yamada"
+INFO  no fields
+WARN  slow request=42 user="Taro Yamada" ms=1500 note="a=b \"q\"" empty=""
+INFO  old settings request=42 user="Taro Yamada"
+{"level":"info","msg":"json \"line\"","request":"7","user":"Ann \"A\""}
+{"level":"info","msg":"plain json"}
+{"level":"error","msg":"kept"}
+false true ERROR
+true true
+2026-11-09T07:13:00.123Z INFO  with time
+{"time":"2026-11-09T07:13:00.123Z","level":"info","msg":"with time"}
+INFO  one
+ERROR two
+true

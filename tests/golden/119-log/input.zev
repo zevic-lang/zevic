@@ -1,0 +1,51 @@
+module Main
+
+import Zevic.Console
+import Zevic.DateTime
+import Zevic.Fs
+import Zevic.Log
+import Zevic.Path
+
+fn Main() {
+    mut lines: Array<String> = []
+    mut log: Log.Logger = Log.Logger.New()
+    log.ToStdout()
+    log.ShowTime(false)
+    log.Debug("hidden")
+    log.Info("started")
+    log.Warn("careful")
+    log.Error("failed")
+    log.SetLevel(Log.Level.Debug)
+    log.Debug("now visible")
+    let req: Log.Logger = log.With("request", "42").With("user", "Taro Yamada")
+    req.Info("handled")
+    log.Info("no fields")
+    req.LogKV(Log.Level.Warn, "slow", [("ms", "1500"), ("note", "a=b \"q\""), ("empty", "")])
+    log.UseJson(true)
+    req.Info("old settings")
+    log.With("request", "7").With("user", "Ann \"A\"").Info("json \"line\"")
+    log.Info("plain json")
+    log.SetLevel(Log.Level.Error)
+    log.Warn("dropped")
+    log.Error("kept")
+    Console.Println("${log.Enabled(Log.Level.Warn)} ${log.Enabled(Log.Level.Error)} ${Log.LevelName(log.GetLevel())}")
+    Console.Println("${Log.ParseLevel("Warning").Unwrap() == Log.Level.Warn} ${Log.ParseLevel("nope").IsNone()}")
+
+    mut timed: Log.Logger = Log.Logger.New()
+    timed.ToStdout()
+    timed.SetClock(() => DateTime.Make(2026, 11, 9, 7, 13, 0).Unwrap().AddMillis(123))
+    timed.Info("with time")
+    timed.UseJson(true)
+    timed.Info("with time")
+
+    let dir: String = Fs.MakeTempDir("zevlog-").Unwrap()
+    let file: String = Path.Join(dir, "app.log")
+    mut flog: Log.Logger = Log.Logger.New()
+    flog.ShowTime(false)
+    flog.ToFile(file).Unwrap()
+    flog.Info("one")
+    flog.Error("two")
+    Console.Print(Fs.ReadAll(file).Unwrap())
+    Console.Println("${flog.ToFile(Path.Join(dir, "no/such/dir/x.log")).IsErr()}")
+    Fs.RemoveAll(dir).Unwrap()
+}

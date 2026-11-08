@@ -1,0 +1,180 @@
+module Zevic.Log
+
+import Zevic.Console
+import Zevic.DateTime
+import Zevic.Fs
+import Zevic.Json
+import Zevic.Text
+
+// Leveled log lines. A `Logger` is a value you make and pass around (there is no global logger):
+//
+//     mut log: Log.Logger = Log.Logger.New()
+//     log.SetLevel(Log.Level.Debug)
+//     let req: Log.Logger = log.With("request", "42")
+//     req.Info("started")          // 2026-11-09T07:13:00.123Z INFO  started request=42
+//
+// The default goes to standard error as text. `UseJson` writes one JSON object per line instead.
+
+enum Level {
+    Debug,
+    Info,
+    Warn,
+    Error,
+}
+
+fn levelNumber(l: Level) -> I32 {
+    match (l) {
+        Level.Debug => 0,
+        Level.Info => 1,
+        Level.Warn => 2,
+        Level.Error => 3,
+    }
+}
+
+// "DEBUG", "INFO", "WARN" or "ERROR".
+fn LevelName(l: Level) -> String {
+    match (l) {
+        Level.Debug => "DEBUG",
+        Level.Info => "INFO",
+        Level.Warn => "WARN",
+        Level.Error => "ERROR",
+    }
+}
+
+// The level for a name in any case ("warn", "Warning" and "WARN" all give Warn). None for an unknown name.
+fn ParseLevel(name: String) -> Option<Level> {
+    let n: String = Text.ToLower(name)
+    if (n == "debug") { return Some(Level.Debug) }
+    if (n == "info") { return Some(Level.Info) }
+    if (n == "warn" || n == "warning") { return Some(Level.Warn) }
+    if (n == "error") { return Some(Level.Error) }
+    None
+}
+
+fn needsQuotes(v: String) -> Bool {
+    if (v.IsEmpty()) { return true }
+    mut i: I64 = 0
+    while (i < v.Len()) {
+        let c: U8 = v.ByteAt(i)
+        if (c <= b' ' || c == b'"' || c == b'=' || c == b'\\' || c == 127) { return true }
+        i += 1
+    }
+    false
+}
+
+class Logger {
+    level: Level = Level.Info
+    json: Bool = false
+    showTime: Bool = true
+    fields: Array<(String, String)> = []
+    sink: fn(String) -> Unit
+    clock: fn() -> DateTime.DateTime
+
+    fn Init() {
+        this.sink = (line: String) => Console.Eprintln(line)
+        this.clock = () => DateTime.NowUtc()
+    }
+
+    // Lines below this level are dropped. The default is Info.
+    mut fn SetLevel(l: Level) { this.level = l }
+
+    fn GetLevel() -> Level { this.level }
+
+    // Would a line of this level be written?
+    fn Enabled(l: Level) -> Bool { levelNumber(l) >= levelNumber(this.level) }
+
+    // One JSON object per line: {"time":"...","level":"info","msg":"...","key":"value"}.
+    mut fn UseJson(on: Bool) { this.json = on }
+
+    // Leave the time out of the lines (handy in tests).
+    mut fn ShowTime(on: Bool) { this.showTime = on }
+
+    // Where the finished lines go (without the line break). The default is standard error.
+    mut fn SetSink(f: fn(String) -> Unit) { this.sink = f }
+
+    mut fn ToStdout() {
+        this.sink = (line: String) => Console.Println(line)
+    }
+
+    mut fn ToStderr() {
+        this.sink = (line: String) => Console.Eprintln(line)
+    }
+
+    // Append the lines to a file (made if needed). The error is returned now if the file cannot be written.
+    mut fn ToFile(path: String) -> Result<Unit, Error> {
+        Fs.Append(path, "")?
+        this.sink = (line: String) => {
+            let _written: Result<Unit, Error> = Fs.Append(path, line + "\n")
+        }
+        Ok(())
+    }
+
+    // Where the time comes from; the default is the clock of the computer (UTC).
+    mut fn SetClock(f: fn() -> DateTime.DateTime) { this.clock = f }
+
+    // A new logger that writes the same way and adds `key=value` to every line. It takes the settings the logger
+    // has now; later changes to either logger do not reach the other.
+    fn With(key: String, value: String) -> Logger {
+        mut l: Logger = this.copy()
+        l.fields.Push((key, value))
+        l
+    }
+
+    // A new logger like this one, but with its own list of fields.
+    fn copy() -> Logger {
+        mut l: Logger = Logger.New()
+        l.level = this.level
+        l.json = this.json
+        l.showTime = this.showTime
+        l.sink = this.sink
+        l.clock = this.clock
+        l.fields = this.fields.Slice(0, this.fields.Len())
+        l
+    }
+
+    // Writes a line of this level with the given extra fields (as well as the ones from `With`).
+    fn LogKV(l: Level, msg: String, extra: Array<(String, String)>) {
+        if (!this.Enabled(l)) { return }
+        let all: Array<(String, String)> = this.fields.Concat(extra)
+        let time: String = if (this.showTime) { this.clock().ToIso() } else { "" }
+        if (this.json) {
+            mut sb: StringBuilder = StringBuilder.New()
+            sb.Append("{")
+            if (this.showTime) {
+                sb.Append("\"time\":${Json.Quote(time)},")
+            }
+            sb.Append("\"level\":${Json.Quote(Text.ToLower(LevelName(l)))},\"msg\":${Json.Quote(msg)}")
+            for ((k, v) in all) {
+                sb.Append(",${Json.Quote(k)}:${Json.Quote(v)}")
+            }
+            sb.Append("}")
+            this.sink(sb.ToString())
+            return
+        }
+        mut sb: StringBuilder = StringBuilder.New()
+        if (this.showTime) {
+            sb.Append(time)
+            sb.Append(" ")
+        }
+        sb.Append(Text.PadRight(LevelName(l), 5, ' '))
+        sb.Append(" ")
+        sb.Append(msg)
+        for ((k, v) in all) {
+            sb.Append(" ")
+            sb.Append(k)
+            sb.Append("=")
+            sb.Append(if (needsQuotes(v)) { Json.Quote(v) } else { v })
+        }
+        this.sink(sb.ToString())
+    }
+
+    fn Log(l: Level, msg: String) { this.LogKV(l, msg, []) }
+
+    fn Debug(msg: String) { this.LogKV(Level.Debug, msg, []) }
+
+    fn Info(msg: String) { this.LogKV(Level.Info, msg, []) }
+
+    fn Warn(msg: String) { this.LogKV(Level.Warn, msg, []) }
+
+    fn Error(msg: String) { this.LogKV(Level.Error, msg, []) }
+}

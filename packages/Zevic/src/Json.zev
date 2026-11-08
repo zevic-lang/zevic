@@ -438,6 +438,9 @@ fn quote(s: String) -> String {
 }
 
 // A whole number is written without ".0"; NaN and infinity have no JSON form and become null.
+// `s` as a JSON string literal: in double quotes, with the escapes JSON needs.
+fn Quote(s: String) -> String { quote(s) }
+
 fn numberText(n: F64) -> String {
     if (n - n != 0.0) {
         return "null"
