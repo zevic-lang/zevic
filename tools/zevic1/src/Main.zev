@@ -3,9 +3,11 @@ module Main
 import Zevic.Console
 import Zevic.Env
 import Zevic.Fs
+import Zevic.Text
 import Zevic1.Ast as Ast
 import Zevic1.Diag as Diag
 import Zevic1.Gen as Gen
+import Zevic1.Program as Program
 import Zevic1.Home as Home
 import Zevic1.Lexer as Lexer
 import Zevic1.Parser as Parser
@@ -268,6 +270,133 @@ fn selftestTypes() -> I32 {
     0
 }
 
+
+fn endsWith(s: String, suffix: String) -> Bool {
+    s.Len() >= suffix.Len() && s.Slice(s.Len() - suffix.Len(), s.Len()) == suffix
+}
+
+fn guardOf(path: String) -> String {
+    mut base: String = path
+    mut i: I64 = 0
+    while (i < path.Len()) {
+        let c: U8 = path.ByteAt(i)
+        if (c == b'/' || c == b'\\') { base = path.Slice(i + 1, path.Len()) }
+        i += 1
+    }
+    mut out: String = ""
+    i = 0
+    while (i < base.Len()) {
+        let c: U8 = base.ByteAt(i)
+        if (c >= b'a' && c <= b'z') {
+            out = "${out}${Text.ToUpper(base.Slice(i, i + 1))}"
+        } else if ((c >= b'A' && c <= b'Z') || (c >= b'0' && c <= b'9')) {
+            out = "${out}${base.Slice(i, i + 1)}"
+        } else {
+            out = "${out}_"
+        }
+        i += 1
+    }
+    "ZEVIC_${out}"
+}
+
+fn baseNoExt(path: String) -> String {
+    mut b: String = path
+    mut i: I64 = 0
+    while (i < path.Len()) {
+        let c: U8 = path.ByteAt(i)
+        if (c == b'/' || c == b'\\') { b = path.Slice(i + 1, path.Len()) }
+        i += 1
+    }
+    if (endsWith(b, ".zev")) { b.Slice(0, b.Len() - 4) } else { b }
+}
+
+// Compile Zevic files to LLVM IR (`--emit-ll`); building the executable is not ported yet.
+fn compile(args: Array<String>) -> I32 {
+    mut files: Array<String> = []
+    mut out: Option<String> = None
+    mut headerPath: Option<String> = None
+    mut testMode: Bool = false
+    mut libMode: Bool = false
+    mut emitLl: Bool = false
+    mut i: I64 = 0
+    while (i < args.Len()) {
+        let a: String = args[i]
+        if (a == "-o" && i + 1 < args.Len()) {
+            i += 1
+            out = Some(args[i])
+        } else if (a == "--emit-header" && i + 1 < args.Len()) {
+            i += 1
+            headerPath = Some(args[i])
+        } else if (a == "--lib") {
+            libMode = true
+        } else if (a == "--test") {
+            testMode = true
+        } else if (a == "--emit-ll") {
+            emitLl = true
+        } else if (endsWith(a, ".zev")) {
+            files.Push(a)
+        } else {
+            Console.Eprintln("error: unsupported argument `${a}`")
+            return 1
+        }
+        i += 1
+    }
+    if (!testMode) {
+        mut kept: Array<String> = []
+        for (f in files) {
+            if (!endsWith(f, "_test.zev")) { kept.Push(f) }
+        }
+        files = kept
+    }
+    if (files.Len() == 0) {
+        Console.Eprintln("usage: zevic1 --emit-ll [-o out.ll] <file.zev>...")
+        return 1
+    }
+    if (!emitLl) {
+        Console.Eprintln("error: zevic1 can only write LLVM IR so far (use --emit-ll)")
+        return 1
+    }
+    mut diag: Diag.Diag = Diag.Diag.New()
+    let pg: Resolve.Program = match (loadProgram(files, diag)) {
+        Ok(p) => p,
+        Err(c) => return c,
+    }
+    mut g: Gen.Gen = Gen.Gen.New(pg, diag, 8)
+    g.TestMode = testMode
+    g.LibMode = libMode
+    let ll: Option<String> = Program.GenProgram(g)
+    let text: String = match (ll) {
+        Some(t) => t,
+        None => {
+            Console.Eprintln("${diag.Errors} error${if (diag.Errors == 1) { "" } else { "s" }} found")
+            return 1
+        },
+    }
+    match (headerPath) {
+        Some(hp) => {
+            match (Fs.WriteAll(hp, Program.GenHeader(g, guardOf(hp)))) {
+                Ok(_) => {},
+                Err(_) => {
+                    Console.Eprintln("error: cannot write `${hp}`")
+                    return 2
+                },
+            }
+        },
+        None => {},
+    }
+    let path: String = match (out) {
+        Some(o) => o,
+        None => "${baseNoExt(files[0])}.ll",
+    }
+    match (Fs.WriteAll(path, text)) {
+        Ok(_) => 0,
+        Err(_) => {
+            Console.Eprintln("error: cannot write `${path}`")
+            2
+        },
+    }
+}
+
 fn Main(args: Array<String>) {
     if (args.Len() == 1 && args[0] == "--selftest-types") {
         Env.Exit(selftestTypes())
@@ -283,6 +412,9 @@ fn Main(args: Array<String>) {
     }
     if (args.Len() >= 2 && args[0] == "--dump-modules") {
         Env.Exit(dumpModules(args.Slice(1, args.Len())))
+    }
+    if (args.Len() >= 1 && args[0] != "--dump-tokens") {
+        Env.Exit(compile(args))
     }
     Console.Eprintln("usage: zevic1 --dump-tokens <file> | --dump-ast <file> | --dump-modules <file>...")
     Env.Exit(2)

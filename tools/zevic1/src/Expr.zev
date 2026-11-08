@@ -4129,7 +4129,7 @@ fn isCoreType(t: Types.Type, kind: Types.TKind, name: String) -> Bool {
     if (t.Kind != kind) {
         return false
     }
-    t.DeclName == name
+    t.DeclName == "Zevic.Core::${name}"
 }
 
 fn isResultType(t: Types.Type) -> Bool { isCoreType(t, Types.TKind.Enum, "Result") }
