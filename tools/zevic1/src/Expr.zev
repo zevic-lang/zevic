@@ -288,7 +288,7 @@ fn coldPanic(mut F: Ctx.FnCtx, msg: String, pos: Token.Pos) -> String {
     mut g: Gen.Gen = F.G
     Gen.Declare(g, "zevic_panic", "declare void @zevic_panic(ptr, i64, ptr, i32) noreturn")
     let label: String = F.NewLabel("panic")
-    let file: String = g.Diag.Name(pos.File)
+    let file: String = Gen.SrcName(g, pos.File)
     let m: String = Gen.StrConst(g, msg)
     let fl: String = Gen.StrConst(g, file)
     // the constants are `{ ptr @x, i64 n }`; the runtime takes the pieces
@@ -1829,7 +1829,6 @@ fn genStmt(mut F: Ctx.FnCtx, s: Ast.Node) {
 
 // ---- not ported yet ----
 
-
 // ---- places, paths and string literals ----
 
 // The names of a dotted path `A.B.C`, or None when the expression is not one.
@@ -1955,8 +1954,6 @@ fn findFieldIdx(t: Types.Type, name: String) -> I64 {
     }
     -1
 }
-
-
 
 fn genPlace(mut F: Ctx.FnCtx, n: Ast.Node) -> Ctx.Place {
     mut g: Gen.Gen = F.G
@@ -2931,7 +2928,7 @@ fn emitCall(mut F: Ctx.FnCtx, inst: Gen.Inst, args: Array<Ctx.Val>) -> Ctx.Val {
     if (!inst.IsExtern && inst.D.ModName == "Zevic.Test" && F.Inst.D.ModName != "Zevic.Test") {
         // an assertion reports the line of the call, not a line inside the library
         rtDecl(F, "zevic_test_at", "declare void @zevic_test_at(ptr, i32)")
-        let fc: String = Gen.StrConst(g, g.Diag.Name(g.CallPos.File))
+        let fc: String = Gen.StrConst(g, Gen.SrcName(g, g.CallPos.File))
         F.Emit("call void @zevic_test_at(ptr ${constPtr(fc)}, i32 ${g.CallPos.Line})")
     }
     if (inst.IsExtern && !zevicAbi) {
@@ -3220,7 +3217,7 @@ fn emitPanicCall(mut F: Ctx.FnCtx, msg: Ctx.Val, pos: Token.Pos) {
     mut g: Gen.Gen = F.G
     Gen.Declare(g, "zevic_panic", "declare void @zevic_panic(ptr, i64, ptr, i32) noreturn")
     let (p, n): (String, String) = strParts(F, msg)
-    let fc: String = Gen.StrConst(g, g.Diag.Name(pos.File))
+    let fc: String = Gen.StrConst(g, Gen.SrcName(g, pos.File))
     F.Emit("call void @zevic_panic(ptr ${p}, i64 ${n}, ptr ${constPtr(fc)}, i32 ${pos.Line})")
     F.Emit("unreachable")
     F.Term = true

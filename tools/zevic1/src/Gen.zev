@@ -1157,3 +1157,14 @@ fn Declare(mut g: Gen, name: String, line: String) {
     g.Declared.Set(name, true)
     g.Decls.Put("${line}\n")
 }
+
+// The file name written into the program for panic locations. Files of the standard library are written as
+// `Zevic/<file>` whatever the installation directory is, so the same program gives the same LLVM IR everywhere.
+fn SrcName(g: Gen, file: I32) -> String {
+    let name: String = g.Diag.Name(file)
+    let std: String = g.Pg.StdDir
+    if (std.Len() > 0 && name.Len() > std.Len() && name.Slice(0, std.Len()) == std) {
+        return "Zevic${name.Slice(std.Len(), name.Len())}"
+    }
+    name
+}

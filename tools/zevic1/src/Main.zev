@@ -8,13 +8,14 @@ import Zevic1.Ast as Ast
 import Zevic1.Diag as Diag
 import Zevic1.Driver as Driver
 import Zevic1.Gen as Gen
-import Zevic1.Program as Program
 import Zevic1.Home as Home
 import Zevic1.Lexer as Lexer
 import Zevic1.Parser as Parser
+import Zevic1.Program as Program
 import Zevic1.Resolve as Resolve
 import Zevic1.Token as Token
 import Zevic1.Types as Types
+import Zevic1.Version as Version
 
 fn dumpTokens(path: String) -> I32 {
     let text: String = match (Fs.ReadAll(path)) {
@@ -271,7 +272,6 @@ fn selftestTypes() -> I32 {
     0
 }
 
-
 fn endsWith(s: String, suffix: String) -> Bool {
     s.Len() >= suffix.Len() && s.Slice(s.Len() - suffix.Len(), s.Len()) == suffix
 }
@@ -390,7 +390,7 @@ fn compile(args: Array<String>) -> I32 {
         Ok(p) => p,
         Err(c) => return c,
     }
-    mut g: Gen.Gen = Gen.Gen.New(pg, diag, 8)
+    mut g: Gen.Gen = Gen.Gen.New(pg, diag, if (Driver.IsWindows()) { 4 } else { 8 })
     g.TestMode = testMode
     g.LibMode = libMode
     let ll: Option<String> = Program.GenProgram(g)
@@ -459,6 +459,26 @@ fn compile(args: Array<String>) -> I32 {
 }
 
 fn Main(args: Array<String>) {
+    if (args.Len() == 1 && args[0] == "--version") {
+        Console.Println("zevic ${Version.Current}")
+        Env.Exit(0)
+    }
+    if (args.Len() == 1 && args[0] == "--print-stdlib") {
+        match (Home.Find()) {
+            Some(h) => {
+                Console.Println("${h}/packages/Zevic")
+                Env.Exit(0)
+            },
+            None => {
+                Console.Eprintln("zevic: error: cannot find the Zevic standard library")
+                Env.Exit(2)
+            },
+        }
+    }
+    if (args.Len() == 1 && (args[0] == "--help" || args[0] == "-h")) {
+        usage()
+        Env.Exit(0)
+    }
     if (args.Len() == 1 && args[0] == "--selftest-types") {
         Env.Exit(selftestTypes())
     }

@@ -341,9 +341,9 @@ zevic1       ─コンパイル→ zevic2
 zevic2       ─コンパイル→ zevic3
 ```
 
-- [ ] `zevic1` と `zevic2` が出力する `.ll` が**完全に一致**する(一致したらセルフホスティング成功)
-- [ ] 最終的な `.ll` を `bootstrap/zevic.ll` として**コミットする**。C がなくても、`clang bootstrap/zevic.ll runtime/*.c` だけでコンパイラを作れる
-- [ ] CI で、毎回ブートストラップを検査する
+- [x] `zevic1` と `zevic2` が出力する `.ll` が**完全に一致**する(一致したらセルフホスティング成功)
+- [x] 最終的な `.ll` を `bootstrap/zevic.ll` として**コミットする**。C がなくても、`clang bootstrap/zevic.ll runtime/*.c` だけでコンパイラを作れる
+- [x] CI で、毎回ブートストラップを検査する
 
 ### 7-4. 残りのツール
 

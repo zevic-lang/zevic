@@ -10,3 +10,4 @@
 *.toml text eol=lf
 # golden tests keep their bytes exactly (some inputs have mixed line endings on purpose)
 tests/golden/** -text
+bootstrap/zevic.ll text eol=lf

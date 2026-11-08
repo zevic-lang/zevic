@@ -1,12 +1,21 @@
 # Changelog
 
-## Unreleased
+## 0.4.0
+
+Self-hosting: the compiler is written in Zevic.
+
+- `zevic1` (`tools/zevic1/`, about 12,000 lines of Zevic) is a complete port of `zevic0`: lexer, parser, module resolution, type checking, LLVM IR generation and the clang driver. It compiles every program the C compiler does: all 99 golden tests pass with it
+- bootstrap: `zevic` (C) builds `zevic1`, `zevic1` builds `zevic2`, `zevic2` builds `zevic3`, and all of them write byte-identical LLVM IR (`make bootstrap`). That IR is committed as `bootstrap/zevic.ll`: `tools/bootstrap-build.sh` rebuilds the compiler from it with clang alone, no C compiler for Zevic needed. CI checks all of this on every push (Linux: also the committed IR and the golden tests with the self-hosted compiler; macOS and Windows: the fixed point and the golden tests)
+- the standard library's files are named `Zevic/<file>` in panic locations, so the IR does not depend on where Zevic is installed
+- `make zevic1`, `make bootstrap`, `make bootstrap-update` (after changing the compiler), `make test-selfhost`
+
+Other changes in this release:
 
 - the release archive works with only `bin` on PATH, from any directory: the executables are tested in that setting (a directory name with a space, started by name and by full path), on Linux, macOS and Windows
 - Windows: names are UTF-8 throughout. `zevic` and the runtime read the command line, the environment, the program path and the files through the wide-character functions, so non-ASCII user names and folders work (before, the ANSI code page and UTF-8 were mixed)
 - `zevic` says where it looked when it cannot find the standard library and the runtime
 - the tests are written in C (`tests/zevtest.c`) instead of Python; the repository no longer contains any Python (`tools/release_notes.c` and `tools/gen_convert.c` replace the scripts)
-- the self-hosting compiler (`zevic1`) moved to the `selfhost` branch
+- the self-hosting compiler (`zevic1`) is part of this release (see above)
 
 - the standard library is now a real package, `Zevic` (`packages/Zevic/` with a `zevic.toml` and `src/`), instead of a flat `stdlib/` directory. The compiler finds it through `ZEVIC_HOME` / `share/zevic/packages/Zevic`; `zevic --print-stdlib` prints its directory; zevpm checks a package's `zevic = ">=..."` against the version of the `Zevic` package. Release archives carry `packages/Zevic/`
 - release notes: `tools/release_notes.c` builds them from `CHANGELOG.md` and the commits since the previous tag; CI uses them as the body of every GitHub release (and no longer uses generated notes)
