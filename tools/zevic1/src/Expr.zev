@@ -1828,10 +1828,7 @@ fn genStmt(mut F: Ctx.FnCtx, s: Ast.Node) {
 }
 
 // ---- not ported yet ----
-fn genPrintf(mut F: Ctx.FnCtx, n: Ast.Node, toErr: Bool) -> Ctx.Val { Panic("not ported yet: genPrintf") }
 
-fn fnValueOf(mut F: Ctx.FnCtx, d: Resolve.Decl, pos: Token.Pos) -> Ctx.Val { Panic("not ported yet: fnValueOf") }
-fn genLambda(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genLambda") }
 
 // ---- places, paths and string literals ----
 
@@ -5802,6 +5799,434 @@ fn genIfaceMethod(mut F: Ctx.FnCtx, call: Ast.Node, p: Ctx.Place, recvNode: Ast.
     Ctx.Val.New(ret, r)
 }
 
+// ---- Printf ----
+
+fn inSet(c: U8, set: String) -> Bool {
+    mut i: I64 = 0
+    while (i < set.Len()) {
+        if (set.ByteAt(i) == c) {
+            return true
+        }
+        i += 1
+    }
+    false
+}
+
+class FmtPiece {
+    Text: String = ""
+    IsSpec: Bool = false
+    Conv: U8 = 0
+}
+
+fn genPrintf(mut F: Ctx.FnCtx, n: Ast.Node, toErr: Bool) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    if (n.List.Len() < 1 || n.List[0].Kind != Ast.NK.Str) {
+        g.Diag.Error(n.Pos, "`Printf` needs a string literal as its format")
+        return F.ErrVal()
+    }
+    let fs: Ast.Node = n.List[0]
+    mut f: String = ""
+    for (part in fs.List) {
+        if (part.Kind != Ast.NK.StrLit) {
+            g.Diag.Error(fs.Pos, "the format of `Printf` cannot contain `\${...}`; pass the values as arguments")
+            return F.ErrVal()
+        }
+        f = "${f}${part.Name}"
+    }
+    mut pieces: Array<FmtPiece> = []
+    mut lit: String = ""
+    let len: I64 = f.Len()
+    mut i: I64 = 0
+    while (i < len) {
+        let c: U8 = f.ByteAt(i)
+        if (c != b'%') {
+            lit = "${lit}${f.Slice(i, i + 1)}"
+            i += 1
+            continue
+        }
+        if (i + 1 < len && f.ByteAt(i + 1) == b'%') {
+            lit = "${lit}%"
+            i += 2
+            continue
+        }
+        if (lit.Len() > 0) {
+            mut p: FmtPiece = FmtPiece.New()
+            p.Text = lit
+            pieces.Push(p)
+            lit = ""
+        }
+        mut j: I64 = i + 1
+        mut flags: String = ""
+        mut width: String = ""
+        mut prec: String = ""
+        while (j < len && inSet(f.ByteAt(j), "-+ 0#")) {
+            flags = "${flags}${f.Slice(j, j + 1)}"
+            j += 1
+        }
+        while (j < len && f.ByteAt(j) >= b'0' && f.ByteAt(j) <= b'9') {
+            width = "${width}${f.Slice(j, j + 1)}"
+            j += 1
+        }
+        mut hasPrec: Bool = false
+        if (j < len && f.ByteAt(j) == b'.') {
+            hasPrec = true
+            j += 1
+            while (j < len && f.ByteAt(j) >= b'0' && f.ByteAt(j) <= b'9') {
+                prec = "${prec}${f.Slice(j, j + 1)}"
+                j += 1
+            }
+        }
+        if (j >= len || !inSet(f.ByteAt(j), "duxXfscDi")) {
+            g.Diag.Error(fs.Pos, "invalid format specifier in `Printf` (use %d %u %x %f %s %c or %%)")
+            return F.ErrVal()
+        }
+        let conv: U8 = if (f.ByteAt(j) == b'i') { b'd' } else { f.ByteAt(j) }
+        mut p: FmtPiece = FmtPiece.New()
+        p.IsSpec = true
+        p.Conv = conv
+        let length: String = if (conv == b'd' || conv == b'u' || conv == b'x' || conv == b'X') { "ll" } else { "" }
+        let cconv: U8 = if (conv == b'c') { b's' } else { conv }
+        let precText: String = if (hasPrec) { ".${if (prec.Len() > 0) { prec } else { "0" }}" } else { "" }
+        p.Text = "%${flags}${width}${precText}${length}${byteStr(cconv)}"
+        pieces.Push(p)
+        i = j + 1
+    }
+    if (lit.Len() > 0) {
+        mut p: FmtPiece = FmtPiece.New()
+        p.Text = lit
+        pieces.Push(p)
+    }
+    mut nspecs: I64 = 0
+    for (p in pieces) {
+        if (p.IsSpec) {
+            nspecs += 1
+        }
+    }
+    if (nspecs != n.List.Len() - 1) {
+        g.Diag.Error(n.Pos, "the format has ${nspecs} placeholder(s), but ${n.List.Len() - 1} value(s) were given")
+        return F.ErrVal()
+    }
+    // evaluate the arguments first, in order
+    mut vals: Array<Ctx.Val> = []
+    mut ai: I64 = 1
+    for (p in pieces) {
+        if (!p.IsSpec) {
+            continue
+        }
+        let an: Ast.Node = n.List[ai]
+        ai += 1
+        let hint: Option<Types.Type> = if (p.Conv == b'f') { Some(g.Tt.F64) } else { None }
+        let v: Ctx.Val = genExpr(F, an, hint)
+        if (v.T.Id == g.Tt.Never.Id) {
+            return F.NeverVal(None)
+        }
+        mut ok: Bool = true
+        mut need: String = ""
+        if (p.Conv == b'd' || p.Conv == b'u' || p.Conv == b'x' || p.Conv == b'X') {
+            ok = v.T.IsInt()
+            need = "an integer"
+        } else if (p.Conv == b'f') {
+            ok = v.T.IsFloat()
+            need = "a decimal number"
+        } else if (p.Conv == b's') {
+            ok = v.T.Id == g.Tt.Str.Id
+            need = "a `String`"
+        } else if (p.Conv == b'c') {
+            ok = v.T.Id == g.Tt.Char.Id
+            need = "a `Char`"
+        }
+        if (!ok && !g.IsErr(v.T)) {
+            g.Diag.Error(an.Pos, "`%${byteStr(p.Conv)}` needs ${need}, found `${v.T.Name}`")
+            return F.ErrVal()
+        }
+        vals.Push(v)
+    }
+    let stream: I64 = if (toErr) { 2 } else { 1 }
+    rtDecl(F, "zevic_printf_lit", "declare void @zevic_printf_lit(i32, ptr, i64)")
+    rtDecl(F, "zevic_printf_i", "declare void @zevic_printf_i(i32, ptr, i64)")
+    rtDecl(F, "zevic_printf_f", "declare void @zevic_printf_f(i32, ptr, double)")
+    rtDecl(F, "zevic_printf_s", "declare void @zevic_printf_s(i32, ptr, ptr, i64)")
+    rtDecl(F, "zevic_printf_c", "declare void @zevic_printf_c(i32, ptr, i32)")
+    mut vi: I64 = 0
+    for (p in pieces) {
+        let c: String = Gen.StrConst(g, p.Text)
+        if (!p.IsSpec) {
+            F.Emit("call void @zevic_printf_lit(i32 ${stream}, ptr ${constPtr(c)}, i64 ${p.Text.Len()})")
+            continue
+        }
+        let v: Ctx.Val = vals[vi]
+        vi += 1
+        if (g.IsErr(v.T)) {
+            continue
+        }
+        if (p.Conv == b'd' || p.Conv == b'u' || p.Conv == b'x' || p.Conv == b'X') {
+            mut x: String = v.V
+            let bits: I32 = v.T.Bits()
+            if (bits < 64) {
+                x = F.Tmp()
+                F.Emit("${x} = ${if (v.T.IsSigned()) { "sext" } else { "zext" }} i${bits} ${v.V} to i64")
+            }
+            F.Emit("call void @zevic_printf_i(i32 ${stream}, ptr ${constPtr(c)}, i64 ${x})")
+        } else if (p.Conv == b'f') {
+            mut x: String = v.V
+            if (v.T.Id == g.Tt.F32.Id) {
+                x = F.Tmp()
+                F.Emit("${x} = fpext float ${v.V} to double")
+            }
+            F.Emit("call void @zevic_printf_f(i32 ${stream}, ptr ${constPtr(c)}, double ${x})")
+        } else if (p.Conv == b's') {
+            let (sp, sn): (String, String) = strParts(F, v)
+            F.Emit("call void @zevic_printf_s(i32 ${stream}, ptr ${constPtr(c)}, ptr ${sp}, i64 ${sn})")
+        } else {
+            F.Emit("call void @zevic_printf_c(i32 ${stream}, ptr ${constPtr(c)}, i32 ${v.V})")
+        }
+    }
+    F.UnitVal()
+}
+
+// ---- function values and lambdas ----
+
+// A named function as a value: { thunk, null }. The thunk takes the (unused) environment first.
+fn fnValueOf(mut F: Ctx.FnCtx, d: Resolve.Decl, pos: Token.Pos) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let fnNode: Ast.Node = d.Node
+    if (fnNode.List2.Len() > 0) {
+        g.Diag.Error(pos, "the generic function `${d.Name}` cannot be used as a value (call it, or wrap it in a lambda)")
+        return F.ErrVal()
+    }
+    if (d.Abi != "") {
+        g.Diag.Error(pos, "the ${d.Abi} function `${d.Name}` cannot be used as a value here (wrap it in a Zevic function)")
+        return F.ErrVal()
+    }
+    let inst: Gen.Inst = Gen.GetInst(g, d, None, None)
+    for (pt in inst.Ptypes) {
+        if (g.IsErr(pt)) {
+            return F.ErrVal()
+        }
+    }
+    if (g.IsErr(inst.Ret)) {
+        return F.ErrVal()
+    }
+    let ft: Types.Type = g.Tt.Fn(inst.Ptypes, inst.Ret)
+    let thunk: String = "thunk.${inst.Name}"
+    if (g.Thunks.Get(thunk).IsNone()) {
+        g.Thunks.Set(thunk, inst.Name)
+        mut ps: String = ""
+        mut cargs: String = ""
+        mut i: I64 = 0
+        while (i < inst.Ptypes.Len()) {
+            ps = "${ps}, ${F.LlOf(inst.Ptypes[i])} %p${i}"
+            cargs = "${cargs}${if (i > 0) { ", " } else { "" }}${F.LlOf(inst.Ptypes[i])} %p${i}"
+            i += 1
+        }
+        let isVoid: Bool = inst.Ret.Id == g.Tt.Unit.Id || inst.Ret.Id == g.Tt.Never.Id
+        let rl: String = if (isVoid) { "void" } else { F.LlOf(inst.Ret) }
+        if (inst.Ret.Id == g.Tt.Never.Id) {
+            g.Funcs.Put("define ${rl} @\"${thunk}\"(ptr %env${ps}) {\nentry:\n  call void @\"${inst.Name}\"(${cargs})\n  unreachable\n}\n\n")
+        } else if (isVoid) {
+            g.Funcs.Put("define ${rl} @\"${thunk}\"(ptr %env${ps}) {\nentry:\n  call void @\"${inst.Name}\"(${cargs})\n  ret void\n}\n\n")
+        } else {
+            g.Funcs.Put("define ${rl} @\"${thunk}\"(ptr %env${ps}) {\nentry:\n  %r = call ${rl} @\"${inst.Name}\"(${cargs})\n  ret ${rl} %r\n}\n\n")
+        }
+    }
+    Ctx.Val.New(ft, "{ ptr @\"${thunk}\", ptr null }")
+}
+
+// (x: I32) => body: a function plus an environment holding the variables it captures.
+fn genLambda(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let pos: Token.Pos = n.Pos
+    mut want: Option<Types.Type> = None
+    match (expect) {
+        Some(e) => {
+            if (e.Kind == Types.TKind.Fn) {
+                want = Some(e)
+            }
+        },
+        None => {},
+    }
+    match (want) {
+        Some(w) => {
+            if (w.Args.Len() != n.List.Len()) {
+                g.Diag.Error(pos, "this lambda takes ${n.List.Len()} parameter(s), but a function with ${w.Args.Len()} is expected")
+                return F.ErrVal()
+            }
+        },
+        None => {},
+    }
+    mut ptypes: Array<Types.Type> = []
+    mut i: I64 = 0
+    while (i < n.List.Len()) {
+        let pm: Ast.Node = n.List[i]
+        mut pt: Types.Type = g.Err
+        match (pm.A) {
+            Some(te) => { pt = Gen.ResolveType(g, F.File, F.Env, te) },
+            None => {
+                match (want) {
+                    Some(w) => { pt = w.Args[i] },
+                    None => {
+                        g.Diag.Error(pm.Pos, "the type of the lambda parameter `${pm.Name}` cannot be inferred here; write `${pm.Name}: Type`")
+                        return F.ErrVal()
+                    },
+                }
+            },
+        }
+        if (g.IsErr(pt)) {
+            return F.ErrVal()
+        }
+        match (want) {
+            Some(w) => {
+                if (pt.Id != w.Args[i].Id) {
+                    g.Diag.Error(pm.Pos, "parameter `${pm.Name}` has type `${pt.Name}`, but `${w.Args[i].Name}` is expected here")
+                    return F.ErrVal()
+                }
+            },
+            None => {},
+        }
+        ptypes.Push(pt)
+        i += 1
+    }
+    // what the body uses from the enclosing function
+    mut used: Map<String, Bool> = Map.New()
+    mut usesThis: Bool = collectIdents(n.B, used)
+    mut capNames: Array<String> = []
+    mut capLocals: Array<Ctx.Local> = []
+    for (name in used.Keys()) {
+        mut isParam: Bool = false
+        for (pm in n.List) {
+            if (pm.Name == name) {
+                isParam = true
+            }
+        }
+        if (isParam) {
+            continue
+        }
+        match (F.FindLocal(name)) {
+            Some(l) => {
+                if (n.Flag && l.Mut && l.T.Kind != Types.TKind.Class) {
+                    g.Diag.Error(n.Pos, "an `async` block cannot use the `mut` variable `${l.Name}` of the surrounding function (the two would race); send the value through a `Channel`, or keep it in a class that is guarded by a `Mutex`")
+                    return F.ErrVal()
+                }
+                capNames.Push(l.Name)
+                capLocals.Push(l)
+            },
+            None => {},
+        }
+    }
+    if (usesThis && !F.HasThis) {
+        usesThis = false
+    }
+    let nslots: I64 = capLocals.Len() + if (usesThis) { 1 } else { 0 }
+
+    // the lambda's own function
+    let wantRet: Option<Types.Type> = match (want) {
+        Some(w) => w.Ret,
+        None => None,
+    }
+    mut lf: Ctx.FnCtx = Ctx.FnCtx.New(g, F.Inst, F.File, wantRet)
+    lf.Env = F.Env
+    lf.Cur = "entry"
+    collectLambdaNames(n.B, lf.Heap)
+    lf.PushScope()
+    mut slot: I64 = 0
+    if (usesThis) {
+        let gp: String = lf.Tmp()
+        let tp: String = lf.Tmp()
+        lf.Emit("${gp} = getelementptr inbounds ptr, ptr %env, i64 ${slot}")
+        slot += 1
+        lf.Emit("${tp} = load ptr, ptr ${gp}")
+        lf.HasThis = true
+        lf.ThisT = F.ThisT
+        lf.ThisMut = F.ThisMut
+        if (thisType(F).Kind == Types.TKind.Class) {
+            lf.ThisSlot = lf.NewSlot(thisType(F))
+            lf.Emit("store ptr ${tp}, ptr ${lf.ThisSlot}")
+        } else {
+            lf.ThisSlot = tp
+        }
+    }
+    for (cl in capLocals) {
+        let gp: String = lf.Tmp()
+        let cp: String = lf.Tmp()
+        lf.Emit("${gp} = getelementptr inbounds ptr, ptr %env, i64 ${slot}")
+        slot += 1
+        lf.Emit("${cp} = load ptr, ptr ${gp}")
+        let unusedLocal: Ctx.Local = lf.BindLocalPtr(cl.Name, cl.T, cl.Mut, cp, cl.Pos)
+    }
+    mut params: String = "ptr %env"
+    mut pi: I64 = 0
+    while (pi < n.List.Len()) {
+        let pm: Ast.Node = n.List[pi]
+        let pt: Types.Type = ptypes[pi]
+        params = "${params}, ${lf.LlOf(pt)} %p${pi}"
+        let pl: Ctx.Local = declareLocal(lf, pm.Name, pt, false, pm.Pos)
+        if (pt.Id != g.Tt.Unit.Id) {
+            lf.StoreTo(pt, Ctx.Val.New(pt, "%p${pi}"), pl.Ptr)
+        }
+        pi += 1
+    }
+    let body: Ast.Node = nn(n.B)
+    mut v: Ctx.Val = if (body.Kind == Ast.NK.Block) { genBlock(lf, body, lf.Ret) } else { genExpr(lf, body, lf.Ret) }
+    let ret: Types.Type = match (lf.Ret) {
+        Some(r) => r,
+        None => if (v.T.Id == g.Tt.Never.Id || g.IsErr(v.T)) { g.Tt.Unit } else { v.T },
+    }
+    if (!lf.Term) {
+        if (ret.Id == g.Tt.Unit.Id) {
+            lf.Emit("ret void")
+        } else if (ret.Id == g.Tt.Never.Id) {
+            lf.Emit("unreachable")
+        } else {
+            v = coerce(lf, body.Pos, v, ret, "the result of the lambda")
+            if (g.IsErr(v.T)) {
+                lf.Emit("unreachable")
+            } else {
+                lf.Emit("ret ${lf.LlOf(ret)} ${v.V}")
+            }
+        }
+        lf.Term = true
+    }
+    let lname: String = "lambda.${g.NLambda}"
+    g.NLambda += 1
+    let rl: String = if (ret.Id == g.Tt.Unit.Id || ret.Id == g.Tt.Never.Id) { "void" } else { lf.LlOf(ret) }
+    g.Funcs.Put("define ${rl} @\"${lname}\"(${params}) {\nentry:\n${lf.Allocas.String()}${lf.Code.String()}${lf.Cold.String()}}\n\n")
+
+    // the environment: the cells of the captured variables (and `this`)
+    mut env: String = "null"
+    if (nslots > 0) {
+        rtDecl(F, "zevic_alloc", "declare ptr @zevic_alloc(i64)")
+        env = F.Tmp()
+        F.Emit("${env} = call ptr @zevic_alloc(i64 ${nslots * 8})")
+        mut si: I64 = 0
+        if (usesThis) {
+            mut tv: String = F.ThisSlot
+            if (thisType(F).Kind == Types.TKind.Class) {
+                tv = F.Tmp()
+                F.Emit("${tv} = load ptr, ptr ${F.ThisSlot}")
+            }
+            let gp: String = F.Tmp()
+            F.Emit("${gp} = getelementptr inbounds ptr, ptr ${env}, i64 ${si}")
+            si += 1
+            F.Emit("store ptr ${tv}, ptr ${gp}")
+        }
+        for (cl in capLocals) {
+            let gp: String = F.Tmp()
+            F.Emit("${gp} = getelementptr inbounds ptr, ptr ${env}, i64 ${si}")
+            si += 1
+            F.Emit("store ptr ${cl.Ptr}, ptr ${gp}")
+        }
+    }
+    let ft: Types.Type = g.Tt.Fn(ptypes, ret)
+    let a: String = F.Tmp()
+    let b: String = F.Tmp()
+    F.Emit("${a} = insertvalue { ptr, ptr } undef, ptr @\"${lname}\", 0")
+    F.Emit("${b} = insertvalue { ptr, ptr } ${a}, ptr ${env}, 1")
+    if (env == "null") {
+        g.Noenv.Set("${F.Inst.Name}:${b}", lname)
+    }
+    Ctx.Val.New(ft, b)
+}
+
 fn mkIdent(pos: Token.Pos, name: String) -> Ast.Node {
     mut n: Ast.Node = Ast.Node.New(Ast.NK.Ident, pos)
     n.SetName(name)
@@ -5823,4 +6248,17 @@ fn mkMethodCall(recv: Ast.Node, method: String, pos: Token.Pos, a1: Option<Ast.N
         None => {},
     }
     c
+}
+
+// A one-byte (ASCII) string.
+fn byteStr(c: U8) -> String {
+    let all: String = "duxXfscDi"
+    mut i: I64 = 0
+    while (i < all.Len()) {
+        if (all.ByteAt(i) == c) {
+            return all.Slice(i, i + 1)
+        }
+        i += 1
+    }
+    "?"
 }

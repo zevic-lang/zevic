@@ -72,6 +72,7 @@ class Gen {
     StrConst: Map<String, String> = Map.New()
     TestMode: Bool = false
     LibMode: Bool = false
+    NLambda: I64 = 0
     // wrapper functions already written (thunks and C callbacks), by name
     Thunks: Map<String, String> = Map.New()
     // "<function symbol>:%tN" -> symbol of a lambda that captures nothing (so it can go to C as a callback)
