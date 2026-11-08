@@ -144,3 +144,220 @@ fn Repeat(s: String, n: I64) -> String {
     }
     out
 }
+
+// ---- characters (UTF-8) ----
+// Strings are UTF-8, so these walk the bytes and treat every character as 1 to 4 bytes. Positions named
+// "chars" below count characters; every other position in this module is a byte position.
+
+// The length in bytes of the character that starts with byte `b` (1 for a stray continuation byte).
+fn seqLen(b: U8) -> I64 {
+    if (b < b'\xC0') { return 1 }
+    if (b < b'\xE0') { return 2 }
+    if (b < b'\xF0') { return 3 }
+    4
+}
+
+// The character at byte `i` (a character boundary) and the number of bytes it takes.
+fn decode(s: String, i: I64) -> (Char, I64) {
+    let n: I64 = s.Len()
+    let b0: U32 = s.ByteAt(i).ToU32()
+    let k: I64 = seqLen(s.ByteAt(i))
+    if (k == 1 || i + k > n) {
+        return (b0.ToCharUnchecked(), 1)
+    }
+    mut cp: U32 = 0
+    if (k == 2) { cp = b0 & 0x1F_U32 }
+    if (k == 3) { cp = b0 & 0x0F_U32 }
+    if (k == 4) { cp = b0 & 0x07_U32 }
+    mut j: I64 = 1
+    while (j < k) {
+        cp = (cp << 6) | (s.ByteAt(i + j).ToU32() & 0x3F_U32)
+        j += 1
+    }
+    (cp.ToCharUnchecked(), k)
+}
+
+// All the characters of `s`.
+fn ToChars(s: String) -> Array<Char> {
+    mut out: Array<Char> = []
+    mut i: I64 = 0
+    let n: I64 = s.Len()
+    while (i < n) {
+        let (c, k): (Char, I64) = decode(s, i)
+        out.Push(c)
+        i += k
+    }
+    out
+}
+
+// The text made of `chars`.
+fn FromChars(chars: Array<Char>) -> String {
+    mut sb: StringBuilder = StringBuilder.New()
+    for (c in chars) {
+        sb.AppendChar(c)
+    }
+    sb.ToString()
+}
+
+// The character number `index` (counting from 0); None if the text is shorter. This walks from the start.
+fn CharAt(s: String, index: I64) -> Option<Char> {
+    if (index < 0) { return None }
+    mut i: I64 = 0
+    mut seen: I64 = 0
+    let n: I64 = s.Len()
+    while (i < n) {
+        let (c, k): (Char, I64) = decode(s, i)
+        if (seen == index) { return Some(c) }
+        seen += 1
+        i += k
+    }
+    None
+}
+
+// The characters from number `from` up to (not including) `to`. The ends are cut to the length of the text.
+fn SliceChars(s: String, from: I64, to: I64) -> String {
+    let n: I64 = s.Len()
+    mut start: I64 = n
+    mut stop: I64 = n
+    mut i: I64 = 0
+    mut seen: I64 = 0
+    while (i < n) {
+        if (seen == from) { start = i }
+        if (seen == to) {
+            stop = i
+            break
+        }
+        seen += 1
+        let (_, k): (Char, I64) = decode(s, i)
+        i += k
+    }
+    if (from <= 0) { start = 0 }
+    if (start > stop) { return "" }
+    s.Slice(start, stop)
+}
+
+// The characters in the opposite order.
+fn Reverse(s: String) -> String {
+    mut cs: Array<Char> = ToChars(s)
+    cs.Reverse()
+    FromChars(cs)
+}
+
+// `s` with `pad` added on the left until it is `width` characters long. Longer text is left as it is.
+fn PadLeft(s: String, width: I64, pad: Char) -> String {
+    let missing: I64 = width - s.CharCount()
+    if (missing <= 0) { return s }
+    Repeat("${pad}", missing) + s
+}
+
+// `s` with `pad` added on the right until it is `width` characters long.
+fn PadRight(s: String, width: I64, pad: Char) -> String {
+    let missing: I64 = width - s.CharCount()
+    if (missing <= 0) { return s }
+    s + Repeat("${pad}", missing)
+}
+
+// `s` in the middle of `width` characters (the extra pad character goes on the right).
+fn Center(s: String, width: I64, pad: Char) -> String {
+    let missing: I64 = width - s.CharCount()
+    if (missing <= 0) { return s }
+    let left: I64 = missing / 2
+    Repeat("${pad}", left) + s + Repeat("${pad}", missing - left)
+}
+
+// `s` without `prefix` at the start (unchanged if it does not start with it).
+fn TrimPrefix(s: String, prefix: String) -> String {
+    if (StartsWith(s, prefix)) { s.Slice(prefix.Len(), s.Len()) } else { s }
+}
+
+fn TrimSuffix(s: String, suffix: String) -> String {
+    if (EndsWith(s, suffix)) { s.Slice(0, s.Len() - suffix.Len()) } else { s }
+}
+
+// Is the text empty or only spaces, tabs and line breaks?
+fn IsBlank(s: String) -> Bool { Trim(s).IsEmpty() }
+
+// The byte position of the last `sub`; None if there is none.
+fn LastIndexOf(s: String, sub: String) -> Option<I64> {
+    mut found: Option<I64> = None
+    mut from: I64 = 0
+    loop {
+        let i: I64 = zevic_str_index(s, sub, from)
+        if (i < 0) { break }
+        found = Some(i)
+        from = i + 1
+        if (from > s.Len()) { break }
+    }
+    found
+}
+
+// How many times `sub` is in `s`, not counting overlaps. 0 for an empty `sub`.
+fn Count(s: String, sub: String) -> I64 {
+    if (sub.IsEmpty()) { return 0 }
+    mut n: I64 = 0
+    mut from: I64 = 0
+    loop {
+        let i: I64 = zevic_str_index(s, sub, from)
+        if (i < 0) { break }
+        n += 1
+        from = i + sub.Len()
+    }
+    n
+}
+
+// Like Split, but makes at most `n` pieces: the last piece is the rest of the text.
+fn SplitN(s: String, sep: String, n: I64) -> Array<String> {
+    if (sep.IsEmpty()) {
+        Panic("Text.SplitN: the separator is empty")
+    }
+    mut out: Array<String> = []
+    if (n <= 0) { return out }
+    mut start: I64 = 0
+    while (out.Len() < n - 1) {
+        let i: I64 = zevic_str_index(s, sep, start)
+        if (i < 0) { break }
+        out.Push(s.Slice(start, i))
+        start = i + sep.Len()
+    }
+    out.Push(s.Slice(start, s.Len()))
+    out
+}
+
+// The words of a text: pieces separated by any run of spaces, tabs and line breaks. No empty pieces.
+fn Words(s: String) -> Array<String> {
+    mut out: Array<String> = []
+    mut i: I64 = 0
+    let n: I64 = s.Len()
+    while (i < n) {
+        while (i < n && isSpace(s.ByteAt(i))) { i += 1 }
+        let start: I64 = i
+        while (i < n && !isSpace(s.ByteAt(i))) { i += 1 }
+        if (i > start) { out.Push(s.Slice(start, i)) }
+    }
+    out
+}
+
+// Replaces only the first `from`.
+fn ReplaceFirst(s: String, from: String, to: String) -> String {
+    if (from.IsEmpty()) { return s }
+    let i: I64 = zevic_str_index(s, from, 0)
+    if (i < 0) { return s }
+    s.Slice(0, i) + to + s.Slice(i + from.Len(), s.Len())
+}
+
+// Are the texts equal when the ASCII letters are compared without case?
+fn EqualsIgnoreCase(a: String, b: String) -> Bool { ToLower(a) == ToLower(b) }
+
+// The first letter in upper case (ASCII), the rest unchanged.
+fn Capitalize(s: String) -> String {
+    if (s.IsEmpty()) { return s }
+    ToUpper(s.Slice(0, 1)) + s.Slice(1, s.Len())
+}
+
+// At most `max` characters; if the text is longer, it ends with `ellipsis` and the whole result is `max` characters.
+fn Truncate(s: String, max: I64, ellipsis: String) -> String {
+    if (s.CharCount() <= max) { return s }
+    let keep: I64 = max - ellipsis.CharCount()
+    if (keep <= 0) { return SliceChars(ellipsis, 0, max) }
+    SliceChars(s, 0, keep) + ellipsis
+}

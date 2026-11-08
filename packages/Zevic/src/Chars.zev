@@ -1,0 +1,75 @@
+module Zevic.Chars
+
+// Tests and conversions for single characters. The classes (digit, letter, upper, lower, space, punctuation)
+// are the ASCII ones; characters outside ASCII are none of them and ToUpper / ToLower leave them as they are.
+
+fn IsAscii(c: Char) -> Bool { c.ToU32() < 128_U32 }
+
+fn IsDigit(c: Char) -> Bool { c >= '0' && c <= '9' }
+
+fn IsHexDigit(c: Char) -> Bool {
+    IsDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
+}
+
+fn IsUpper(c: Char) -> Bool { c >= 'A' && c <= 'Z' }
+
+fn IsLower(c: Char) -> Bool { c >= 'a' && c <= 'z' }
+
+fn IsAlpha(c: Char) -> Bool { IsUpper(c) || IsLower(c) }
+
+fn IsAlphaNumeric(c: Char) -> Bool { IsAlpha(c) || IsDigit(c) }
+
+// Space, tab, line feed, carriage return, form feed and vertical tab.
+fn IsSpace(c: Char) -> Bool {
+    let u: U32 = c.ToU32()
+    u == 32_U32 || (u >= 9_U32 && u <= 13_U32)
+}
+
+fn IsControl(c: Char) -> Bool {
+    let u: U32 = c.ToU32()
+    u < 32_U32 || u == 127_U32
+}
+
+// ASCII punctuation and symbols: printable, and neither a letter, a digit nor a space.
+fn IsPunct(c: Char) -> Bool {
+    let u: U32 = c.ToU32()
+    u > 32_U32 && u < 127_U32 && !IsAlphaNumeric(c)
+}
+
+fn ToUpper(c: Char) -> Char {
+    if (IsLower(c)) { (c.ToU32() - 32_U32).ToCharUnchecked() } else { c }
+}
+
+fn ToLower(c: Char) -> Char {
+    if (IsUpper(c)) { (c.ToU32() + 32_U32).ToCharUnchecked() } else { c }
+}
+
+// The value of a digit in `base` (2 to 36): '0'-'9' are 0-9, 'a'-'z' and 'A'-'Z' are 10-35. None if it is not a digit in that base.
+fn DigitValue(c: Char, base: I32) -> Option<I32> {
+    mut v: I32 = -1
+    if (IsDigit(c)) { v = (c.ToU32() - 48_U32).ToI32Wrap() }
+    if (IsLower(c)) { v = (c.ToU32() - 97_U32).ToI32Wrap() + 10 }
+    if (IsUpper(c)) { v = (c.ToU32() - 65_U32).ToI32Wrap() + 10 }
+    if (v >= 0 && v < base) { Some(v) } else { None }
+}
+
+// The digit for a value 0 to 35 (lower case letters from 10); None for other values.
+fn FromDigit(d: I32) -> Option<Char> {
+    if (d < 0 || d > 35) { return None }
+    if (d < 10) { return Some((48_U32 + d.ToU32Wrap()).ToCharUnchecked()) }
+    Some((97_U32 + (d - 10).ToU32Wrap()).ToCharUnchecked())
+}
+
+// The character with this code point; None for surrogates and numbers above 0x10FFFF.
+fn FromU32(u: U32) -> Option<Char> {
+    if (u > 0x10FFFF_U32 || (u >= 0xD800_U32 && u <= 0xDFFF_U32)) { None } else { Some(u.ToCharUnchecked()) }
+}
+
+// How many bytes the character takes in UTF-8 (1 to 4).
+fn Utf8Len(c: Char) -> I64 {
+    let u: U32 = c.ToU32()
+    if (u < 0x80_U32) { return 1 }
+    if (u < 0x800_U32) { return 2 }
+    if (u < 0x10000_U32) { return 3 }
+    4
+}

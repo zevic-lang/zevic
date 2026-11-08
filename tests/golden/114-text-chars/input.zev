@@ -1,0 +1,27 @@
+module Main
+
+import Zevic.Console
+import Zevic.Text
+import Zevic.Chars
+
+fn Main() {
+    let s: String = "héllo, 世界!"
+    let cs: Array<Char> = Text.ToChars(s)
+    Console.Println("${cs.Len()} ${s.CharCount()} ${s.Len()} ${Text.FromChars(cs)}")
+    Console.Println("${Text.CharAt(s, 1).Unwrap()} ${Text.CharAt(s, 8).Unwrap()} ${Text.CharAt(s, 99).IsNone()}")
+    Console.Println("[${Text.SliceChars(s, 7, 9)}] [${Text.SliceChars(s, 0, 2)}] [${Text.SliceChars(s, 5, 100)}] [${Text.SliceChars(s, 9, 3)}]")
+    Console.Println(Text.Reverse(s))
+    Console.Println("[${Text.PadLeft("42", 6, '0')}] [${Text.PadRight("ab", 5, '.')}] [${Text.Center("世界", 6, '*')}] [${Text.PadLeft("long", 2, ' ')}]")
+    Console.Println("${Text.TrimPrefix("foobar", "foo")} ${Text.TrimSuffix("foobar", "bar")} ${Text.TrimPrefix("foobar", "x")}")
+    Console.Println("${Text.IsBlank("  \t\n")} ${Text.IsBlank(" a ")}")
+    Console.Println("${Text.LastIndexOf("a-b-c", "-").Unwrap()} ${Text.LastIndexOf("abc", "z").IsNone()} ${Text.Count("aaaa", "aa")} ${Text.Count("abc", "")}")
+    Console.Println(Text.SplitN("a,b,c,d", ",", 3).Join("|"))
+    Console.Println(Text.Words("  one  two\tthree\n").Join("|"))
+    Console.Println("${Text.ReplaceFirst("a.a.a", ".", "-")} ${Text.EqualsIgnoreCase("HeLLo", "hello")} ${Text.Capitalize("zevic")}")
+    Console.Println("${Text.Truncate("hello world", 8, "...")} ${Text.Truncate("short", 8, "...")} ${Text.Truncate("世界世界世界", 4, "…")}")
+
+    Console.Println("${Chars.IsDigit('7')} ${Chars.IsAlpha('x')} ${Chars.IsUpper('x')} ${Chars.IsSpace('\t')} ${Chars.IsPunct('!')} ${Chars.IsPunct('a')} ${Chars.IsAscii('世')}")
+    Console.Println("${Chars.ToUpper('q')} ${Chars.ToLower('Q')} ${Chars.ToUpper('世')}")
+    Console.Println("${Chars.DigitValue('f', 16).Unwrap()} ${Chars.DigitValue('g', 16).IsNone()} ${Chars.DigitValue('Z', 36).Unwrap()} ${Chars.FromDigit(11).Unwrap()} ${Chars.FromDigit(3).Unwrap()}")
+    Console.Println("${Chars.FromU32(0x4E16_U32).Unwrap()} ${Chars.FromU32(0xD800_U32).IsNone()} ${Chars.Utf8Len('a')} ${Chars.Utf8Len('é')} ${Chars.Utf8Len('世')} ${Chars.Utf8Len(Chars.FromU32(0x1F600_U32).Unwrap())}")
+}

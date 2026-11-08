@@ -1,0 +1,16 @@
+10 10 15 héllo, 世界!
+é 界 true
+[世界] [hé] [, 世界!] []
+!界世 ,olléh
+[000042] [ab...] [**世界**] [long]
+bar foo foobar
+true false
+3 true 2 0
+a|b|c,d
+one|two|three
+a-a.a true Zevic
+hello... short 世界世…
+true true false true true false false
+Q q 世
+15 true 35 b 3
+世 true 1 2 3 4
