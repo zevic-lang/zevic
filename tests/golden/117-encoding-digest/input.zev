@@ -1,0 +1,26 @@
+module Main
+
+import Zevic.Console
+import Zevic.Bytes
+import Zevic.Encoding
+import Zevic.Digest
+
+fn Main() {
+    Console.Println("${Encoding.HexEncode([1, 255, 16])} ${Encoding.HexEncodeUpper([171, 205])} ${Encoding.HexEncodeString("Zevic")}")
+    Console.Println("${Encoding.HexEncode(Encoding.HexDecode("00ff10AB").Unwrap())} ${Encoding.HexDecode("abc").IsErr()} ${Encoding.HexDecode("zz").IsErr()}")
+    Console.Println("${Encoding.Base64EncodeString("Man")} ${Encoding.Base64EncodeString("Ma")} ${Encoding.Base64EncodeString("M")} [${Encoding.Base64EncodeString("")}] ${Encoding.Base64EncodeString("hello, world!")}")
+    Console.Println("${Encoding.Base64Encode([251, 255, 254])} ${Encoding.Base64UrlEncode([251, 255, 254])} ${Encoding.Base64UrlEncode([1])}")
+    Console.Println("${Encoding.Base64DecodeString("TWFu").Unwrap()} ${Encoding.Base64DecodeString("TWE=").Unwrap()} ${Encoding.Base64DecodeString("TQ").Unwrap()} ${Encoding.Base64DecodeString("aGVsbG8sIHdvcmxkIQ==").Unwrap()}")
+    Console.Println("${Encoding.HexEncode(Encoding.Base64Decode("+//+").Unwrap())} ${Encoding.HexEncode(Encoding.Base64UrlDecode("-__-").Unwrap())} ${Encoding.Base64Decode("T").IsErr()} ${Encoding.Base64Decode("TW=u").IsErr()} ${Encoding.Base64Decode("TQ===").IsErr()}")
+    Console.Println("${Encoding.UrlEncode("a b&c=d/é~")} ${Encoding.FormEncode("a b+c")}")
+    Console.Println("${Encoding.UrlDecode("a%20b%26c%3Dd%2F%C3%A9~").Unwrap()} ${Encoding.UrlDecode("a+b").Unwrap()} ${Encoding.FormDecode("a+b%2B").Unwrap()} ${Encoding.UrlDecode("%4").IsErr()} ${Encoding.UrlDecode("%zz").IsErr()} ${Encoding.UrlDecode("%FF").IsErr()} ${Encoding.UrlDecode("%").IsErr()}")
+    let nine: Array<U8> = Bytes.FromString("123456789")
+    Console.Printf("%08X %08X\n", Digest.Crc32(nine), Digest.Adler32(Bytes.FromString("Wikipedia")))
+    Console.Println("${Digest.Crc32Update(Digest.Crc32(Bytes.FromString("12345")), Bytes.FromString("6789")) == Digest.Crc32(nine)} ${Digest.Crc32String("") }")
+    Console.Println(Digest.Sha256String("abc"))
+    Console.Println(Digest.Sha256String(""))
+    Console.Println(Digest.Sha256String("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"))
+    Console.Println(Digest.Sha256Hex(Array<U8>.Repeat(97, 1000)))
+    Console.Println(Encoding.HexEncode(Digest.HmacSha256(Bytes.FromString("key"), Bytes.FromString("The quick brown fox jumps over the lazy dog"))))
+    Console.Println(Encoding.HexEncode(Digest.HmacSha256(Array<U8>.Repeat(170, 131), Bytes.FromString("Test Using Larger Than Block-Size Key - Hash Key First"))))
+}

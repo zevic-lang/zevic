@@ -1,0 +1,106 @@
+module Zevic.Bytes
+
+// Bytes are an `Array<U8>`: everything an array can do works on them (Push, Slice, Concat, ==, loops).
+// This module turns them into text and back, and reads and writes whole numbers in a chosen byte order
+// (LE = little endian, BE = big endian). A position that is out of range makes the Read functions panic.
+
+extern "zevic" {
+    fn zevic_utf8_valid(p: *U8, n: I64) -> I32
+    fn zevic_bytes_to_str(p: *U8, n: I64, lossy: I32) -> String
+    fn zevic_bytes_from_str(dst: *U8, s: String)
+}
+
+// The UTF-8 bytes of a String.
+fn FromString(s: String) -> Array<U8> {
+    let out: Array<U8> = Array<U8>.Repeat(0, s.Len())
+    zevic_bytes_from_str(out.Ptr(), s)
+    out
+}
+
+// Is every byte part of well-formed UTF-8?
+fn IsUtf8(b: Array<U8>) -> Bool { zevic_utf8_valid(b.Ptr(), b.Len()) != 0 }
+
+// The bytes as a String; an error if they are not well-formed UTF-8.
+fn ToString(b: Array<U8>) -> Result<String, Error> {
+    if (zevic_utf8_valid(b.Ptr(), b.Len()) == 0) {
+        return Err(Error.New(ErrorKind.Invalid, "the bytes are not valid UTF-8"))
+    }
+    Ok(zevic_bytes_to_str(b.Ptr(), b.Len(), 0))
+}
+
+// The bytes as a String; every bad sequence becomes U+FFFD.
+fn ToStringLossy(b: Array<U8>) -> String { zevic_bytes_to_str(b.Ptr(), b.Len(), 1) }
+
+// `n` zero bytes.
+fn Zeros(n: I64) -> Array<U8> { Array<U8>.Repeat(0, n) }
+
+fn check(b: Array<U8>, at: I64, size: I64) {
+    if (at < 0 || at + size > b.Len()) {
+        Panic("Bytes: cannot read ${size} bytes at ${at} (length ${b.Len()})")
+    }
+}
+
+fn ReadU16BE(b: Array<U8>, at: I64) -> U16 {
+    check(b, at, 2)
+    (b[at].ToU16() << 8) | b[at + 1].ToU16()
+}
+
+fn ReadU16LE(b: Array<U8>, at: I64) -> U16 {
+    check(b, at, 2)
+    (b[at + 1].ToU16() << 8) | b[at].ToU16()
+}
+
+fn ReadU32BE(b: Array<U8>, at: I64) -> U32 {
+    check(b, at, 4)
+    (b[at].ToU32() << 24) | (b[at + 1].ToU32() << 16) | (b[at + 2].ToU32() << 8) | b[at + 3].ToU32()
+}
+
+fn ReadU32LE(b: Array<U8>, at: I64) -> U32 {
+    check(b, at, 4)
+    (b[at + 3].ToU32() << 24) | (b[at + 2].ToU32() << 16) | (b[at + 1].ToU32() << 8) | b[at].ToU32()
+}
+
+fn ReadU64BE(b: Array<U8>, at: I64) -> U64 {
+    check(b, at, 8)
+    (ReadU32BE(b, at).ToU64() << 32) | ReadU32BE(b, at + 4).ToU64()
+}
+
+fn ReadU64LE(b: Array<U8>, at: I64) -> U64 {
+    check(b, at, 8)
+    (ReadU32LE(b, at + 4).ToU64() << 32) | ReadU32LE(b, at).ToU64()
+}
+
+// Add the number at the end of the array.
+fn PushU16BE(mut b: Array<U8>, v: U16) {
+    b.Push((v >> 8).ToU8Wrap())
+    b.Push(v.ToU8Wrap())
+}
+
+fn PushU16LE(mut b: Array<U8>, v: U16) {
+    b.Push(v.ToU8Wrap())
+    b.Push((v >> 8).ToU8Wrap())
+}
+
+fn PushU32BE(mut b: Array<U8>, v: U32) {
+    b.Push((v >> 24).ToU8Wrap())
+    b.Push((v >> 16).ToU8Wrap())
+    b.Push((v >> 8).ToU8Wrap())
+    b.Push(v.ToU8Wrap())
+}
+
+fn PushU32LE(mut b: Array<U8>, v: U32) {
+    b.Push(v.ToU8Wrap())
+    b.Push((v >> 8).ToU8Wrap())
+    b.Push((v >> 16).ToU8Wrap())
+    b.Push((v >> 24).ToU8Wrap())
+}
+
+fn PushU64BE(mut b: Array<U8>, v: U64) {
+    PushU32BE(b, (v >> 32).ToU32Wrap())
+    PushU32BE(b, v.ToU32Wrap())
+}
+
+fn PushU64LE(mut b: Array<U8>, v: U64) {
+    PushU32LE(b, v.ToU32Wrap())
+    PushU32LE(b, (v >> 32).ToU32Wrap())
+}

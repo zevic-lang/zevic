@@ -1,0 +1,32 @@
+module Main
+
+import Zevic.Console
+import Zevic.Bytes
+import Zevic.Fs
+import Zevic.Path
+
+fn Main() {
+    let b: Array<U8> = Bytes.FromString("héllo")
+    Console.Println("${b.Len()} ${b[1]} ${b[2]} ${Bytes.IsUtf8(b)} ${Bytes.ToString(b).Unwrap()}")
+    let bad: Array<U8> = [104, 255, 105]
+    Console.Println("${Bytes.IsUtf8(bad)} ${Bytes.ToString(bad).IsErr()} ${Bytes.ToStringLossy(bad)}")
+    mut w: Array<U8> = []
+    Bytes.PushU16BE(w, 0x1234_U16)
+    Bytes.PushU16LE(w, 0x1234_U16)
+    Bytes.PushU32BE(w, 0xDEADBEEF_U32)
+    Bytes.PushU32LE(w, 0xDEADBEEF_U32)
+    Bytes.PushU64BE(w, 0x0102030405060708_U64)
+    Bytes.PushU64LE(w, 0x0102030405060708_U64)
+    Console.Println("${w.Len()} ${w[0]} ${w[1]} ${w[2]} ${w[3]} ${w[4]}")
+    Console.Println("${Bytes.ReadU16BE(w, 0)} ${Bytes.ReadU16LE(w, 2)} ${Bytes.ReadU32BE(w, 4)} ${Bytes.ReadU32LE(w, 8)} ${Bytes.ReadU64BE(w, 12)} ${Bytes.ReadU64LE(w, 20)}")
+    Console.Println("${Bytes.Zeros(3).Len()} ${Bytes.FromString("").Len()} ${Bytes.ToString([]).Unwrap().Len()}")
+
+    let dir: String = Fs.MakeTempDir("zevbytes-").Unwrap()
+    let file: String = Path.Join(dir, "blob.bin")
+    let blob: Array<U8> = [0, 1, 2, 255, 254, 0, 128, 10, 13]
+    Fs.WriteBytes(file, blob).Unwrap()
+    Fs.AppendBytes(file, [7, 0]).Unwrap()
+    let back: Array<U8> = Fs.ReadBytes(file).Unwrap()
+    Console.Println("${back.Len()} ${Fs.Size(file).Unwrap()} ${back == blob.Concat([7, 0])} ${back[3]} ${back[5]}")
+    Fs.RemoveAll(dir).Unwrap()
+}

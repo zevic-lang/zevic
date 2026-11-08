@@ -1,0 +1,58 @@
+module Zevic.Digest
+
+import Zevic.Bytes
+import Zevic.Encoding
+
+// Checksums and hashes of bytes. CRC-32 and Adler-32 find accidental damage; they are not secure.
+// SHA-256 and HMAC-SHA-256 are cryptographic. Text versions work on the UTF-8 bytes of a String.
+
+extern "zevic" {
+    fn zevic_crc32(p: *U8, n: I64, prev: U32) -> U32
+    fn zevic_adler32(p: *U8, n: I64, prev: U32) -> U32
+    fn zevic_sha256(out: *U8, p: *U8, n: I64)
+}
+
+// CRC-32 as used in zip and PNG: Crc32("123456789".Bytes) is 0xCBF43926.
+fn Crc32(b: Array<U8>) -> U32 { zevic_crc32(b.Ptr(), b.Len(), 0) }
+
+// Goes on with more bytes: Crc32Update(Crc32(a), b) is Crc32(a + b).
+fn Crc32Update(prev: U32, b: Array<U8>) -> U32 { zevic_crc32(b.Ptr(), b.Len(), prev) }
+
+fn Crc32String(s: String) -> U32 { Crc32(Bytes.FromString(s)) }
+
+fn Adler32(b: Array<U8>) -> U32 { zevic_adler32(b.Ptr(), b.Len(), 0) }
+
+fn Adler32String(s: String) -> U32 { Adler32(Bytes.FromString(s)) }
+
+// SHA-256: the 32 bytes of the hash.
+fn Sha256(b: Array<U8>) -> Array<U8> {
+    let out: Array<U8> = Bytes.Zeros(32)
+    zevic_sha256(out.Ptr(), b.Ptr(), b.Len())
+    out
+}
+
+// The hash as 64 lower case hex digits.
+fn Sha256Hex(b: Array<U8>) -> String { Encoding.HexEncode(Sha256(b)) }
+
+// The hash of a text, as hex.
+fn Sha256String(s: String) -> String { Sha256Hex(Bytes.FromString(s)) }
+
+// HMAC-SHA-256 (RFC 2104): the 32 bytes of the code for `msg` with the secret `key`.
+fn HmacSha256(key: Array<U8>, msg: Array<U8>) -> Array<U8> {
+    mut k: Array<U8> = key
+    if (k.Len() > 64) {
+        k = Sha256(k)
+    }
+    mut inner: Array<U8> = []
+    mut outer: Array<U8> = []
+    mut i: I64 = 0
+    while (i < 64) {
+        let kb: U8 = if (i < k.Len()) { k[i] } else { 0 }
+        inner.Push(kb ^ 0x36)
+        outer.Push(kb ^ 0x5C)
+        i += 1
+    }
+    inner.Extend(msg)
+    outer.Extend(Sha256(inner))
+    Sha256(outer)
+}

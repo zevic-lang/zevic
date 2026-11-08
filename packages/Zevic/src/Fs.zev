@@ -1,5 +1,6 @@
 module Zevic.Fs
 
+import Zevic.Bytes
 import Zevic.Path
 import Zevic.Text
 
@@ -23,6 +24,7 @@ extern "zevic" {
     fn zevic_fs_file_read_line(h: *CVoid) -> String
     fn zevic_fs_file_line_ok() -> I32
     fn zevic_fs_file_read_all(h: *CVoid) -> String
+    fn zevic_fs_write_bytes(path: String, p: *U8, n: I64, append: I32) -> I32
     fn zevic_fs_islink(path: String) -> I32
     fn zevic_fs_size(path: String) -> I64
     fn zevic_fs_mtime_ns(path: String) -> I64
@@ -110,6 +112,28 @@ fn List(path: String) -> Result<Array<String>, Error> {
         i += 1
     }
     Ok(names)
+}
+
+// The whole file as bytes (any file, not only text).
+fn ReadBytes(path: String) -> Result<Array<U8>, Error> {
+    let text: String = ReadAll(path)?
+    Ok(Bytes.FromString(text))
+}
+
+// Writes the bytes to a file (the file is replaced).
+fn WriteBytes(path: String, data: Array<U8>) -> Result<Unit, Error> {
+    if (zevic_fs_write_bytes(path, data.Ptr(), data.Len(), 0) == 0) {
+        return Err(failure("write", path))
+    }
+    Ok(())
+}
+
+// Adds the bytes at the end of a file (made if it is not there).
+fn AppendBytes(path: String, data: Array<U8>) -> Result<Unit, Error> {
+    if (zevic_fs_write_bytes(path, data.Ptr(), data.Len(), 1) == 0) {
+        return Err(failure("write to", path))
+    }
+    Ok(())
 }
 
 // The lines of a text file, without line endings (see `Text.Lines`).
