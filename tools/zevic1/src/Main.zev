@@ -6,6 +6,7 @@ import Zevic.Fs
 import Zevic.Text
 import Zevic1.Ast as Ast
 import Zevic1.Diag as Diag
+import Zevic1.Driver as Driver
 import Zevic1.Gen as Gen
 import Zevic1.Program as Program
 import Zevic1.Home as Home
@@ -310,7 +311,12 @@ fn baseNoExt(path: String) -> String {
     if (endsWith(b, ".zev")) { b.Slice(0, b.Len() - 4) } else { b }
 }
 
-// Compile Zevic files to LLVM IR (`--emit-ll`); building the executable is not ported yet.
+fn usage() {
+    Console.Eprintln("usage: zevic1 [options] <file.zev>... [-o output]")
+    Console.Eprintln("  --test  --lib  --emit-ll  --emit-header <f>  --keep-ll  -O0|-O1|-O2  -g  --cc <path>  --cxx <path>")
+    Console.Eprintln("  -l<lib> -L<dir> -I<dir> -D<name>  and .c .cpp .o .a files to link")
+}
+
 fn compile(args: Array<String>) -> I32 {
     mut files: Array<String> = []
     mut out: Option<String> = None
@@ -318,6 +324,7 @@ fn compile(args: Array<String>) -> I32 {
     mut testMode: Bool = false
     mut libMode: Bool = false
     mut emitLl: Bool = false
+    mut opts: Driver.BuildOpts = Driver.BuildOpts.New()
     mut i: I64 = 0
     while (i < args.Len()) {
         let a: String = args[i]
@@ -333,10 +340,36 @@ fn compile(args: Array<String>) -> I32 {
             testMode = true
         } else if (a == "--emit-ll") {
             emitLl = true
+        } else if (a == "--keep-ll") {
+            opts.KeepLl = true
+        } else if (a == "-O0" || a == "-O1" || a == "-O2") {
+            opts.Opt = Some(a)
+        } else if (a == "-g") {
+            opts.Debug = true
+        } else if (a == "--cc" && i + 1 < args.Len()) {
+            i += 1
+            opts.Cc = Some(args[i])
+        } else if (a == "--cxx" && i + 1 < args.Len()) {
+            i += 1
+            opts.Cxx = Some(args[i])
+        } else if (Text.StartsWith(a, "-l") && a.Len() > 2) {
+            opts.Libs.Push(a.Slice(2, a.Len()))
+        } else if (Text.StartsWith(a, "-L") && a.Len() > 2) {
+            opts.LibDirs.Push(a.Slice(2, a.Len()))
+        } else if (Text.StartsWith(a, "-I") && a.Len() > 2) {
+            opts.IncDirs.Push(a.Slice(2, a.Len()))
+        } else if (Text.StartsWith(a, "-D") && a.Len() > 2) {
+            opts.Defines.Push(a.Slice(2, a.Len()))
         } else if (endsWith(a, ".zev")) {
             files.Push(a)
+        } else if (endsWith(a, ".c") || endsWith(a, ".cpp") || endsWith(a, ".cc") || endsWith(a, ".o") || endsWith(a, ".a") || endsWith(a, ".obj") || endsWith(a, ".lib")) {
+            opts.Inputs.Push(a)
+        } else if (Text.StartsWith(a, "-")) {
+            Console.Eprintln("error: unknown option `${a}`")
+            usage()
+            return 1
         } else {
-            Console.Eprintln("error: unsupported argument `${a}`")
+            Console.Eprintln("error: don't know what to do with `${a}` (expected a .zev file)")
             return 1
         }
         i += 1
@@ -349,11 +382,7 @@ fn compile(args: Array<String>) -> I32 {
         files = kept
     }
     if (files.Len() == 0) {
-        Console.Eprintln("usage: zevic1 --emit-ll [-o out.ll] <file.zev>...")
-        return 1
-    }
-    if (!emitLl) {
-        Console.Eprintln("error: zevic1 can only write LLVM IR so far (use --emit-ll)")
+        usage()
         return 1
     }
     mut diag: Diag.Diag = Diag.Diag.New()
@@ -372,6 +401,7 @@ fn compile(args: Array<String>) -> I32 {
             return 1
         },
     }
+    let base: String = baseNoExt(files[0])
     match (headerPath) {
         Some(hp) => {
             match (Fs.WriteAll(hp, Program.GenHeader(g, guardOf(hp)))) {
@@ -384,17 +414,48 @@ fn compile(args: Array<String>) -> I32 {
         },
         None => {},
     }
-    let path: String = match (out) {
-        Some(o) => o,
-        None => "${baseNoExt(files[0])}.ll",
+    if (emitLl) {
+        let path: String = match (out) {
+            Some(o) => o,
+            None => "${base}.ll",
+        }
+        match (Fs.WriteAll(path, text)) {
+            Ok(_) => return 0,
+            Err(_) => {
+                Console.Eprintln("error: cannot write `${path}`")
+                return 2
+            },
+        }
     }
-    match (Fs.WriteAll(path, text)) {
-        Ok(_) => 0,
+    let clang: String = match (Driver.FindClang(opts.Cc)) {
+        Some(c) => c,
+        None => return 2,
+    }
+    let home: String = match (Home.Find()) {
+        Some(h) => h,
+        None => return 2,
+    }
+    let exe: String = match (out) {
+        Some(o) => o,
+        None => "${base}${if (Driver.IsWindows()) { ".exe" } else { "" }}",
+    }
+    let llPath: String = "${exe}.zevic.ll"
+    match (Fs.WriteAll(llPath, text)) {
+        Ok(_) => {},
         Err(_) => {
-            Console.Eprintln("error: cannot write `${path}`")
-            2
+            Console.Eprintln("error: cannot write `${llPath}`")
+            return 2
         },
     }
+    let rc: I32 = if (libMode) { Driver.BuildLib(clang, home, llPath, exe, opts) } else { Driver.Build(clang, home, llPath, exe, opts) }
+    if (!opts.KeepLl) {
+        let r: Result<Unit, Error> = Fs.Remove(llPath)
+    }
+    if (rc != 0) {
+        Console.Eprintln("error: clang failed (exit code ${rc}) while building `${exe}`")
+        return 2
+    }
+    0
 }
 
 fn Main(args: Array<String>) {
