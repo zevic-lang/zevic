@@ -1071,6 +1071,30 @@ int64_t zevic_time_unix_ns(void) {
 #endif
 }
 
+/* The local time zone's offset from UTC (seconds, east is positive) at a moment given as Unix seconds. It is
+ * found by reading the local calendar time and comparing it with the moment, so it needs no tm_gmtoff. */
+static int64_t rt_days_from_civil(int64_t y, int64_t m, int64_t d) {
+    y -= m <= 2;
+    int64_t era = (y >= 0 ? y : y - 399) / 400;
+    int64_t yoe = y - era * 400;
+    int64_t doy = (153 * (m + (m > 2 ? -3 : 9)) + 2) / 5 + d - 1;
+    int64_t doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    return era * 146097 + doe - 719468;
+}
+
+int32_t zevic_local_offset(int64_t unix_seconds) {
+    time_t t = (time_t)unix_seconds;
+    struct tm lt;
+#ifdef _WIN32
+    if (localtime_s(&lt, &t) != 0) return 0;
+#else
+    if (!localtime_r(&t, &lt)) return 0;
+#endif
+    int64_t as_utc = rt_days_from_civil(lt.tm_year + 1900, lt.tm_mon + 1, lt.tm_mday) * 86400 +
+                     lt.tm_hour * 3600 + lt.tm_min * 60 + lt.tm_sec;
+    return (int32_t)(as_utc - unix_seconds);
+}
+
 void zevic_sleep_ns(int64_t ns) {
     if (ns <= 0) return;
     fflush(stdout);
