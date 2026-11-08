@@ -78,6 +78,9 @@ class Gen {
     Noenv: Map<String, String> = Map.New()
     // the call being generated, for errors found while emitting it
     CallPos: Token.Pos = Token.Pos.New(0, 0, 0)
+    // method tables of interface values by "type|interface", and how many there are
+    Vtables: Map<String, String> = Map.New()
+    NVt: I64 = 0
 
     fn Init(pg: Resolve.Program, diag: Diag.Diag, longBytes: I64) {
         this.Pg = pg

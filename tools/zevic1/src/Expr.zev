@@ -309,11 +309,6 @@ fn unionIndex(u: Types.Type, m: Types.Type) -> I64 {
     -1
 }
 
-// TODO(port): the interface part of gen.c (`to_iface`) is ported with the calls.
-fn toIface(mut F: Ctx.FnCtx, pos: Token.Pos, v: Ctx.Val, it: Types.Type, what: String) -> Ctx.Val {
-    Panic("not ported yet: conversion to an interface value")
-}
-
 // Checks that `v` has type `want`; a value of type Never fits everywhere.
 fn coerce(mut F: Ctx.FnCtx, pos: Token.Pos, v: Ctx.Val, want: Types.Type, what: String) -> Ctx.Val {
     mut g: Gen.Gen = F.G
@@ -543,11 +538,6 @@ fn genFloatArith(mut F: Ctx.FnCtx, op: Token.Tk, a: Ctx.Val, b: Ctx.Val) -> Ctx.
     let r: String = F.Tmp()
     F.Emit("${r} = ${ins} ${F.LlOf(a.T)} ${a.V}, ${b.V}")
     Ctx.Val.New(a.T, r)
-}
-
-// TODO(port): equality of structs, tuples, enums and classes comes with the equality part of gen.c.
-fn genEq(mut F: Ctx.FnCtx, a: Ctx.Val, b: Ctx.Val, pos: Token.Pos) -> Ctx.Val {
-    Panic("not ported yet: equality of aggregates")
 }
 
 fn icmpPred(op: Token.Tk, sgn: Bool) -> String {
@@ -1839,7 +1829,6 @@ fn genStmt(mut F: Ctx.FnCtx, s: Ast.Node) {
 
 // ---- not ported yet ----
 fn genPrintf(mut F: Ctx.FnCtx, n: Ast.Node, toErr: Bool) -> Ctx.Val { Panic("not ported yet: genPrintf") }
-fn genIfaceMethod(mut F: Ctx.FnCtx, call: Ast.Node, p: Ctx.Place, recvNode: Ast.Node, name: String, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genIfaceMethod") }
 
 fn fnValueOf(mut F: Ctx.FnCtx, d: Resolve.Decl, pos: Token.Pos) -> Ctx.Val { Panic("not ported yet: fnValueOf") }
 fn genLambda(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { Panic("not ported yet: genLambda") }
@@ -5487,6 +5476,330 @@ fn genForIter(mut F: Ctx.FnCtx, n: Ast.Node) {
     }
     F.StartBlock(end)
     popScope(F)
+}
+
+// ---- equality of structs, tuples, enums and classes; interface values ----
+
+// Call method `fnNode` of type `t` with an already computed receiver and arguments.
+fn callMethodVals(mut F: Ctx.FnCtx, t: Types.Type, fnNode: Ast.Node, recvObj: Ctx.Val, args: Array<Ctx.Val>, pos: Token.Pos, expect: Option<Types.Type>) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    mut call: Ast.Node = Ast.Node.New(Ast.NK.Call, pos)
+    call.A = Some(mkIdent(pos, fnNode.Name))
+    for (a in args) {
+        let name: String = "$c${F.NTmp}"
+        F.NTmp += 1
+        let l: Ctx.Local = declareLocal(F, name, a.T, false, pos)
+        if (a.T.Id != g.Tt.Unit.Id) {
+            F.StoreTo(a.T, a, l.Ptr)
+        }
+        call.List.Push(mkIdent(pos, name))
+    }
+    let recv: Ctx.Val = Ctx.Val.New(g.Tt.Ptr(g.Tt.U8), recvObj.V)
+    genCallDecl(F, call, Gen.MethodDecl(g, t, fnNode), Some(t), None, expect, Some(recv))
+}
+
+// Compare the parts of two LLVM aggregates (a struct's fields or a tuple's elements).
+fn genEqParts(mut F: Ctx.FnCtx, types: Array<Types.Type>, a: Ctx.Val, b: Ctx.Val, pos: Token.Pos) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    mut acc: String = "true"
+    mut i: I64 = 0
+    while (i < types.Len()) {
+        let ft: Types.Type = types[i]
+        let xv: String = F.Tmp()
+        let yv: String = F.Tmp()
+        F.Emit("${xv} = extractvalue ${F.LlOf(a.T)} ${a.V}, ${i}")
+        F.Emit("${yv} = extractvalue ${F.LlOf(b.T)} ${b.V}, ${i}")
+        let e: Ctx.Val = genEq(F, Ctx.Val.New(ft, xv), Ctx.Val.New(ft, yv), pos)
+        if (g.IsErr(e.T)) {
+            return e
+        }
+        if (i == 0) {
+            acc = e.V
+        } else {
+            let r: String = F.Tmp()
+            F.Emit("${r} = and i1 ${acc}, ${e.V}")
+            acc = r
+        }
+        i += 1
+    }
+    Ctx.Val.New(g.Tt.Bool, acc)
+}
+
+fn genEqEnum(mut F: Ctx.FnCtx, a: Ctx.Val, b: Ctx.Val, pos: Token.Pos) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let t: Types.Type = a.T
+    g.Tt.Layout(t)
+    let pa: Ctx.Place = spill(F, a)
+    let pb: Ctx.Place = spill(F, b)
+    let ta: String = F.Tmp()
+    let tb: String = F.Tmp()
+    let tagok: String = F.Tmp()
+    F.Emit("${ta} = load i32, ptr ${tagPtr(F, t, pa.Ptr)}")
+    F.Emit("${tb} = load i32, ptr ${tagPtr(F, t, pb.Ptr)}")
+    F.Emit("${tagok} = icmp eq i32 ${ta}, ${tb}")
+    mut anyPayload: Bool = false
+    for (v in t.Variants) {
+        if (v.Payload.IsSome()) {
+            anyPayload = true
+        }
+    }
+    if (!anyPayload) {
+        return Ctx.Val.New(g.Tt.Bool, tagok)
+    }
+    let res: String = F.NewSlot(g.Tt.Bool)
+    F.Emit("store i1 false, ptr ${res}")
+    let cmp: String = F.NewLabel("eq.cmp")
+    let same: String = F.NewLabel("eq.same")
+    let done: String = F.NewLabel("eq.done")
+    F.CondBr(tagok, cmp, done)
+    F.StartBlock(cmp)
+    mut labels: Array<String> = []
+    mut sw: String = ""
+    for (v in t.Variants) {
+        if (v.Payload.IsSome()) {
+            let l: String = F.NewLabel("eq.variant")
+            labels.Push(l)
+            sw = "${sw} i32 ${v.Tag}, label %${l}"
+        } else {
+            labels.Push("")
+        }
+    }
+    F.Emit("switch i32 ${ta}, label %${same} [${sw} ]")
+    F.Term = true
+    mut i: I64 = 0
+    while (i < t.Variants.Len()) {
+        let v: Types.Variant = t.Variants[i]
+        if (labels[i] != "") {
+            F.StartBlock(labels[i])
+            let pl: Types.Type = variantPayload(v)
+            let xv: String = F.Tmp()
+            let yv: String = F.Tmp()
+            F.Emit("${xv} = load ${F.LlOf(pl)}, ptr ${payloadPtr(F, t, pa.Ptr)}")
+            F.Emit("${yv} = load ${F.LlOf(pl)}, ptr ${payloadPtr(F, t, pb.Ptr)}")
+            let e: Ctx.Val = genEqParts(F, pl.Args, Ctx.Val.New(pl, xv), Ctx.Val.New(pl, yv), pos)
+            if (g.IsErr(e.T)) {
+                return e
+            }
+            F.Emit("store i1 ${e.V}, ptr ${res}")
+            F.Br(done)
+        }
+        i += 1
+    }
+    F.StartBlock(same)
+    F.Emit("store i1 true, ptr ${res}")
+    F.Br(done)
+    F.StartBlock(done)
+    let r: String = F.Tmp()
+    F.Emit("${r} = load i1, ptr ${res}")
+    Ctx.Val.New(g.Tt.Bool, r)
+}
+
+// a == b for any type that has a value-style equality.
+fn genEq(mut F: Ctx.FnCtx, a: Ctx.Val, b: Ctx.Val, pos: Token.Pos) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let t: Types.Type = a.T
+    if (g.IsErr(t) || g.IsErr(b.T)) {
+        return F.ErrVal()
+    }
+    if (t.Kind == Types.TKind.Struct) {
+        Gen.EnsureMembers(g, t)
+        return genEqParts(F, objTuple(g, t).Args, a, b, pos)
+    }
+    if (t.Kind == Types.TKind.Tuple) {
+        return genEqParts(F, t.Args, a, b, pos)
+    }
+    if (t.Kind == Types.TKind.Enum) {
+        return genEqEnum(F, a, b, pos)
+    }
+    if (t.Kind == Types.TKind.Class) {
+        match (Gen.FindMember(g, t, "Equals")) {
+            Some(eq) => {
+                if (!eq.IsStatic) {
+                    return callMethodVals(F, t, eq, a, [b], pos, Some(g.Tt.Bool))
+                }
+            },
+            None => {},
+        }
+        let r: String = F.Tmp()
+        F.Emit("${r} = icmp eq ptr ${a.V}, ${b.V}")
+        return Ctx.Val.New(g.Tt.Bool, r)
+    }
+    if (t.Kind == Types.TKind.Ptr) {
+        let r: String = F.Tmp()
+        F.Emit("${r} = icmp eq ptr ${a.V}, ${b.V}")
+        return Ctx.Val.New(g.Tt.Bool, r)
+    }
+    genCompare(F, Token.Tk.EqEq, a, b, pos)
+}
+
+// The method table of type `t` for interface `it`.
+fn vtableFor(mut g: Gen.Gen, t: Types.Type, it: Types.Type) -> String {
+    let key: String = "${t.Name}|${it.Name}"
+    match (g.Vtables.Get(key)) {
+        Some(old) => return old,
+        None => {},
+    }
+    let name: String = "@.vt.${g.NVt}"
+    g.NVt += 1
+    g.Vtables.Set(key, name)
+    mut all: Array<Gen.IMethod> = []
+    Gen.CollectIfaceMethods(g, it, all, 0)
+    mut e: String = ""
+    mut i: I64 = 0
+    while (i < all.Len()) {
+        let m: Gen.IMethod = all[i]
+        if (i > 0) {
+            e = "${e}, "
+        }
+        if (m.Fn.List2.Len() > 0) {
+            // a generic method has no table slot
+            e = "${e}ptr null"
+        } else {
+            let implFn: Option<Ast.Node> = Gen.FindMember(g, t, m.Fn.Name)
+            mut d: Option<Resolve.Decl> = None
+            match (implFn) {
+                Some(im) => { d = Some(Gen.MethodDecl(g, t, im)) },
+                None => {
+                    let (dm, conflict): (Option<Gen.IMethod>, Bool) = Gen.FindDefault(g, t, m.Fn.Name)
+                    match (dm) {
+                        Some(x) => { d = Some(Gen.DefaultDecl(g, t, x)) },
+                        None => {},
+                    }
+                },
+            }
+            match (d) {
+                Some(dd) => {
+                    let inst: Gen.Inst = Gen.GetInst(g, dd, Some(t), None)
+                    e = "${e}ptr @\"${inst.Name}\""
+                },
+                None => { e = "${e}ptr null" },
+            }
+        }
+        i += 1
+    }
+    g.Globals.Put("${name} = private unnamed_addr constant [${all.Len()} x ptr] [${e}]\n")
+    name
+}
+
+// A value of a type that implements `it`, as an interface value { object, method table }.
+fn toIface(mut F: Ctx.FnCtx, pos: Token.Pos, v: Ctx.Val, it: Types.Type, what: String) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    if (!Gen.TypeImplements(g, v.T, it)) {
+        F.TypeError(pos, it, v.T, what)
+        g.Diag.Note("`${v.T.Name}` does not implement `${it.Name}`")
+        return F.ErrVal()
+    }
+    mut obj: String = ""
+    if (v.T.Kind == Types.TKind.Class) {
+        obj = v.V
+    } else {
+        // a struct or enum goes to the heap, so the interface value can point at it
+        rtDecl(F, "zevic_alloc", "declare ptr @zevic_alloc(i64)")
+        obj = F.Tmp()
+        F.Emit("${obj} = call ptr @zevic_alloc(i64 ${g.Tt.SizeOf(v.T)})")
+        F.StoreTo(v.T, v, obj)
+    }
+    let vt: String = vtableFor(g, v.T, it)
+    let a: String = F.Tmp()
+    let b: String = F.Tmp()
+    F.Emit("${a} = insertvalue { ptr, ptr } undef, ptr ${obj}, 0")
+    F.Emit("${b} = insertvalue { ptr, ptr } ${a}, ptr ${vt}, 1")
+    Ctx.Val.New(it, b)
+}
+
+// iface.Method(args): look the function up in the method table.
+fn genIfaceMethod(mut F: Ctx.FnCtx, call: Ast.Node, p: Ctx.Place, recvNode: Ast.Node, name: String, expect: Option<Types.Type>) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let it: Types.Type = p.T
+    mut all: Array<Gen.IMethod> = []
+    Gen.CollectIfaceMethods(g, it, all, 0)
+    mut idx: I64 = -1
+    mut i: I64 = 0
+    while (i < all.Len()) {
+        if (all[i].Fn.Name == name) {
+            idx = i
+        }
+        i += 1
+    }
+    if (idx < 0) {
+        g.Diag.Error(call.Pos, "interface `${it.Name}` has no method `${name}`")
+        genArgsForErrors(F, call)
+        return F.ErrVal()
+    }
+    let m: Gen.IMethod = all[idx]
+    let fnNode: Ast.Node = m.Fn
+    if (fnNode.List2.Len() > 0) {
+        g.Diag.Error(call.Pos, "`${name}` is generic, so it cannot be called on an interface value of type `${it.Name}`")
+        return F.ErrVal()
+    }
+    if (fnNode.IsMutFn && !p.Mut) {
+        g.Diag.Error(call.Pos, "cannot call `mut fn ${name}` because `${rootName(recvNode)}` is not `mut`")
+        return F.ErrVal()
+    }
+    mut nparams: I64 = 0
+    for (pm in fnNode.List) {
+        if (!pm.Flag3) {
+            nparams += 1
+        }
+    }
+    if (call.List.Len() != nparams) {
+        g.Diag.Error(call.Pos, "`${name}` takes ${nparams} argument(s), but ${call.List.Len()} were given")
+        return F.ErrVal()
+    }
+    let env: Gen.Env = Gen.IfaceEnv(g, m.Owner, it)
+    let ownerFile: Resolve.FileInfo = match (Gen.DeclOfType(g, m.Owner)) {
+        Some(od) => od.FileInfo(),
+        None => F.File,
+    }
+    mut args: String = ""
+    mut never: Bool = false
+    mut k: I64 = 0
+    while (k < nparams) {
+        let pn: Ast.Node = fnNode.List[k]
+        let pt: Types.Type = Gen.ResolveType(g, ownerFile, env, nn(pn.A))
+        mut v: Ctx.Val = genExpr(F, call.List[k], Some(pt))
+        if (v.T.Id == g.Tt.Never.Id) {
+            never = true
+        } else {
+            v = coerce(F, call.List[k].Pos, v, pt, "argument ${k + 1} of `${name}`")
+            if (g.IsErr(v.T)) {
+                return F.ErrVal()
+            }
+            args = "${args}, ${F.LlOf(pt)} ${v.V}"
+        }
+        k += 1
+    }
+    if (never) {
+        return F.NeverVal(expect)
+    }
+    let ret: Types.Type = match (fnNode.A) {
+        Some(ra) => Gen.ResolveType(g, ownerFile, env, ra),
+        None => g.Tt.Unit,
+    }
+    if (g.IsErr(ret)) {
+        return F.ErrVal()
+    }
+    let recv: Ctx.Val = loadPlace(F, p)
+    let obj: String = F.Tmp()
+    let vt: String = F.Tmp()
+    let slot: String = F.Tmp()
+    let fp: String = F.Tmp()
+    F.Emit("${obj} = extractvalue { ptr, ptr } ${recv.V}, 0")
+    F.Emit("${vt} = extractvalue { ptr, ptr } ${recv.V}, 1")
+    F.Emit("${slot} = getelementptr inbounds ptr, ptr ${vt}, i64 ${idx}")
+    F.Emit("${fp} = load ptr, ptr ${slot}")
+    if (ret.Id == g.Tt.Unit.Id || ret.Id == g.Tt.Never.Id) {
+        F.Emit("call void ${fp}(ptr ${obj}${args})")
+        if (ret.Id == g.Tt.Never.Id) {
+            F.Emit("unreachable")
+            F.Term = true
+            return F.NeverVal(None)
+        }
+        return F.UnitVal()
+    }
+    let r: String = F.Tmp()
+    F.Emit("${r} = call ${F.LlOf(ret)} ${fp}(ptr ${obj}${args})")
+    Ctx.Val.New(ret, r)
 }
 
 fn mkIdent(pos: Token.Pos, name: String) -> Ast.Node {
