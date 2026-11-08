@@ -6262,3 +6262,13 @@ fn byteStr(c: U8) -> String {
     }
     "?"
 }
+
+// ---- exported for Program.zev ----
+
+fn CollectLambdaNames(n: Option<Ast.Node>, mut heap: Map<String, Bool>) { collectLambdaNames(n, heap) }
+fn ThisType(F: Ctx.FnCtx) -> Types.Type { thisType(F) }
+fn CExtAttr(t: Types.Type) -> String { cExtAttr(t) }
+fn DeclareLocal(mut F: Ctx.FnCtx, name: String, t: Types.Type, isMut: Bool, pos: Token.Pos) -> Ctx.Local { declareLocal(F, name, t, isMut, pos) }
+fn GenBlock(mut F: Ctx.FnCtx, blk: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val { genBlock(F, blk, expect) }
+fn Coerce(mut F: Ctx.FnCtx, pos: Token.Pos, v: Ctx.Val, want: Types.Type, what: String) -> Ctx.Val { coerce(F, pos, v, want, what) }
+fn ConstPtr(c: String) -> String { constPtr(c) }
