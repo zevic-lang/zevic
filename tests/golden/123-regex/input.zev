@@ -1,0 +1,87 @@
+module Main
+
+import Zevic.Console
+import Zevic.Regex
+
+fn Find(pattern: String, text: String) {
+    match (Regex.Compile(pattern)) {
+        Err(e) => Console.Println("${pattern} => ${e.Message()}"),
+        Ok(re) => {
+            match (re.Find(text)) {
+                Some(m) => Console.Println("${pattern} on ${text}: [${m.Text()}] ${m.Start()}-${m.End()}"),
+                None => Console.Println("${pattern} on ${text}: no match"),
+            }
+        },
+    }
+}
+
+fn Main() {
+    Find("abc", "xxabcxx")
+    Find("a.c", "abc")
+    Find("a.c", "a\nc")
+    Find("(?s)a.c", "a\nc")
+    Find("^abc$", "abc")
+    Find("^abc$", "abcd")
+    Find("a+", "caaat")
+    Find("a+?", "caaat")
+    Find("a*", "baaa")
+    Find("a{2,3}", "aaaa")
+    Find("a{2,3}?", "aaaa")
+    Find("a{3}", "aa")
+    Find("(a|ab)(c|bcd)", "abcd")
+    Find("colou?r", "my color")
+    Find("[a-c]+", "xxabcabcxx")
+    Find("[^a-c]+", "abcxyzabc")
+    Find("[\\d.]+", "v1.25.3b")
+    Find("\\bcat\\b", "concat cat")
+    Find("\\Bcat", "concat cat")
+    Find("(?i)HeLLo", "say hello")
+    Find("[a-z]+", "ABC def")
+    Find("(?i)[a-z]+", "ABC def")
+    Find("\\w+@\\w+\\.com", "mail bob@example.com now")
+    Find("\\x41\\x{1F600}", "A😀")
+    Find("日本.", "こんにちは日本語です")
+    Find("(a*)*b", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac")
+    Find("(x+x+)+y", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+    Find("a|b|", "c")
+    Find("(?:ab)+", "ababab")
+    Find("\\.\\*\\+", "a.*+")
+    Find("a{,3}", "a{,3}")
+    Find("x{2}{3}", "xxxxxx")
+    Find("(", "a")
+    Find(")", "a")
+    Find("*a", "a")
+    Find("[a", "a")
+    Find("a{3,2}", "a")
+    Find("\\q", "q")
+    Find("(?P<n", "q")
+    Find("a**", "a")
+    Find("^*", "a")
+    Find("[z-a]", "a")
+    Find("(?z)", "a")
+
+    let date: Regex.Regex = Regex.Compile("(?P<y>\\d{4})-(\\d{2})-(\\d{2})").Unwrap()
+    let m: Regex.Match = date.Find("due 2026-11-09 or 2027-01-02").Unwrap()
+    Console.Println("${m.Group(0).Unwrap()} ${m.Group(1).Unwrap()} ${m.Group(2).Unwrap()} ${m.Group(3).Unwrap()} ${m.Named("y").Unwrap()} ${m.Named("zz").IsNone()} ${m.Group(4).IsNone()} ${m.GroupCount()} ${date.GroupCount()}")
+    Console.Println(date.ReplaceAll("due 2026-11-09 or 2027-01-02", "$3/$2/$1 (\${y}) $$ $9 \${nope}!"))
+    Console.Println(date.Replace("2026-11-09 2027-01-02", "<$0>"))
+    Console.Println("${date.FindAll("1999-01-01 and 2000-02-02 and x").Len()} ${date.IsMatch("nothing")} ${date.IsMatch("2026-11-09")}")
+    let opt: Regex.Regex = Regex.Compile("(a)|(b)").Unwrap()
+    let om: Regex.Match = opt.Find("b").Unwrap()
+    Console.Println("${om.Group(1).IsNone()} ${om.Group(2).Unwrap()}")
+    let words: Regex.Regex = Regex.Compile("\\s*,\\s*").Unwrap()
+    Console.Println(words.Split("a , b,c ,   d").Join("|"))
+    Console.Println(Regex.Compile("").Unwrap().Split("abc").Join("|"))
+    Console.Println(Regex.Compile("a*").Unwrap().FindAll("baaac").Map((x: Regex.Match) => "[${x.Text()}]").Join(""))
+    Console.Println(Regex.Compile("\\d+").Unwrap().ReplaceAll("a1b22c333", "#"))
+    Console.Println(Regex.Compile("^\\w+", ).Unwrap().ReplaceAll("hello world", "X"))
+    Console.Println(Regex.Compile("(?m)^\\w+").Unwrap().ReplaceAll("hello world\nbye now", "X"))
+    Console.Println(Regex.Compile("(?m)\\w+$").Unwrap().FindAll("hello world\nbye now").Map((x: Regex.Match) => x.Text()).Join(","))
+    Console.Println("${Regex.Compile("\\A\\w+").Unwrap().FindAll("ab cd").Len()}")
+    Console.Println("${Regex.IsMatch("^[a-z]+$", "hello").Unwrap()} ${Regex.IsMatch("[", "x").IsErr()}")
+    let lit: String = "1+1=2 (really?) [yes] a.b"
+    Console.Println("${Regex.Escape(lit)} ${Regex.IsMatch(Regex.Escape(lit), lit).Unwrap()}")
+    let big: Regex.Regex = Regex.Compile("(\\w+)\\s(\\w+)").Unwrap()
+    Console.Println(big.ReplaceAll("hello world foo bar", "$2 $1"))
+    Console.Println(Regex.Compile("é+").Unwrap().ReplaceAll("caféé au lait", "e"))
+}

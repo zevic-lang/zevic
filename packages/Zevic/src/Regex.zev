@@ -1,0 +1,976 @@
+module Zevic.Regex
+
+// Regular expressions that run in time proportional to the text times the pattern (a Pike VM: no backtracking, so
+// no pattern can make the match run for ever).
+//
+//     let re: Regex.Regex = Regex.Compile("(?P<year>\\d{4})-(\\d{2})-(\\d{2})")?
+//     match (re.Find("due 2026-11-09")) {
+//         Some(m) => Console.Println(m.Named("year").Unwrap()),     // 2026
+//         None => {},
+//     }
+//     Console.Println(re.ReplaceAll("2026-11-09", "$3/$2/$1"))      // 09/11/2026
+//
+// Syntax: literals, `.` (any character but a line break), `[a-z0-9_]` `[^...]`, `\d \w \s` (and `\D \W \S`),
+// `\b \B` word edges, `^ $` (line edges with `(?m)`), `\A \z` (edges of the whole text), `( )` groups, `(?: )`
+// groups that do not capture, `(?P<name> )` or `(?<name> )` named groups, `|`, `* + ? {n} {n,} {n,m}` and the lazy
+// forms `*? +? ?? {n,m}?`, the escapes `\n \t \r \f \v \0 \xHH \x{H...}`, and `\` before a symbol. The flags
+// `(?i)` ignore case, `(?m)` multi-line and `(?s)` dot matches line breaks apply to the whole pattern wherever
+// they are written. Letters and digits are compared as they are (case folding is for ASCII letters only). Matches
+// are the leftmost ones, preferring what the pattern lists first (like Perl and Rust). Positions are byte positions
+// in the text, so `text.Slice(m.Start(), m.End())` is the match.
+
+import Zevic.Chars
+import Zevic.Text
+
+let kEmpty: I32 = 0
+let kChar: I32 = 1
+let kAny: I32 = 2
+let kClass: I32 = 3
+let kConcat: I32 = 4
+let kAlt: I32 = 5
+let kRepeat: I32 = 6
+let kGroup: I32 = 7
+let kBegin: I32 = 8
+let kEnd: I32 = 9
+let kWordB: I32 = 10
+let kNotWordB: I32 = 11
+let kTextBegin: I32 = 12
+let kTextEnd: I32 = 13
+
+// How many copies a counted repeat like {n,m} may make.
+let maxRepeat: I64 = 1000
+
+class Node {
+    kind: I32
+    ch: U32 = 0
+    cls: I64 = 0
+    kids: Array<Node> = []
+    min: I64 = 0
+    max: I64 = 0
+    greedy: Bool = true
+    group: I64 = 0
+
+    fn Init(kind: I32) { this.kind = kind }
+}
+
+// A set of characters: pairs `lo, hi` in `ranges`, taken as they are or, with `negated`, as everything else.
+class CharClass {
+    ranges: Array<U32> = []
+    negated: Bool = false
+
+    mut fn Add(lo: U32, hi: U32) {
+        this.ranges.Push(lo)
+        this.ranges.Push(hi)
+    }
+
+    fn has(c: U32) -> Bool {
+        mut i: I64 = 0
+        while (i < this.ranges.Len()) {
+            if (c >= this.ranges[i] && c <= this.ranges[i + 1]) { return true }
+            i += 2
+        }
+        false
+    }
+}
+
+fn fold(c: U32) -> U32 { if (c >= 65_U32 && c <= 90_U32) { c + 32_U32 } else { c } }
+
+fn isWordChar(c: U32) -> Bool {
+    (c >= 48_U32 && c <= 57_U32) || (c >= 65_U32 && c <= 90_U32) || (c >= 97_U32 && c <= 122_U32) || c == 95_U32
+}
+
+// The ranges of \d, \w and \s (sorted, so that they can be inverted).
+fn shorthand(letter: U8) -> Array<U32> {
+    if (letter == b'd') { return [48_U32, 57_U32] }
+    if (letter == b'w') { return [48_U32, 57_U32, 65_U32, 90_U32, 95_U32, 95_U32, 97_U32, 122_U32] }
+    [9_U32, 13_U32, 32_U32, 32_U32]
+}
+
+// Everything the sorted, separate ranges do not cover.
+fn complement(rs: Array<U32>) -> Array<U32> {
+    mut out: Array<U32> = []
+    mut next: U32 = 0
+    mut i: I64 = 0
+    while (i < rs.Len()) {
+        if (rs[i] > next) {
+            out.Push(next)
+            out.Push(rs[i] - 1)
+        }
+        next = rs[i + 1] + 1
+        i += 2
+    }
+    if (next <= 0x10FFFF_U32) {
+        out.Push(next)
+        out.Push(0x10FFFF_U32)
+    }
+    out
+}
+
+class Parser {
+    src: Array<U32>
+    pos: I64 = 0
+    groups: I64 = 0
+    names: Map<String, I64> = Map.New()
+    classes: Array<CharClass> = []
+    ignoreCase: Bool = false
+    multiline: Bool = false
+    dotAll: Bool = false
+
+    fn Init(src: Array<U32>) { this.src = src }
+
+    fn Fail(msg: String) -> Error {
+        Error.New(ErrorKind.Invalid, "regex: ${msg} (at position ${this.pos})")
+    }
+
+    fn AtEnd() -> Bool { this.pos >= this.src.Len() }
+
+    fn Peek() -> U32 { if (this.pos < this.src.Len()) { this.src[this.pos] } else { 0_U32 } }
+
+    fn PeekAt(k: I64) -> U32 { if (this.pos + k < this.src.Len()) { this.src[this.pos + k] } else { 0_U32 } }
+
+    // Is the next text exactly `s`?
+    fn Looking(s: String) -> Bool {
+        let cs: Array<Char> = Text.ToChars(s)
+        mut i: I64 = 0
+        while (i < cs.Len()) {
+            if (this.PeekAt(i) != cs[i].ToU32() || this.pos + i >= this.src.Len()) { return false }
+            i += 1
+        }
+        true
+    }
+
+    mut fn Alt() -> Result<Node, Error> {
+        mut branches: Array<Node> = [this.Concat()?]
+        while (this.Peek() == 124_U32 && !this.AtEnd()) {
+            this.pos += 1
+            branches.Push(this.Concat()?)
+        }
+        if (branches.Len() == 1) { return Ok(branches[0]) }
+        mut n: Node = Node.New(kAlt)
+        n.kids = branches
+        Ok(n)
+    }
+
+    mut fn Concat() -> Result<Node, Error> {
+        mut items: Array<Node> = []
+        while (!this.AtEnd() && this.Peek() != 124_U32 && this.Peek() != 41_U32) {
+            items.Push(this.Repeat()?)
+        }
+        if (items.Len() == 0) { return Ok(Node.New(kEmpty)) }
+        if (items.Len() == 1) { return Ok(items[0]) }
+        mut n: Node = Node.New(kConcat)
+        n.kids = items
+        Ok(n)
+    }
+
+    fn isAssertion(n: Node) -> Bool { n.kind == kEmpty || (n.kind >= kBegin && n.kind != kGroup) }
+
+    // A whole number at the current position; None if there is no digit.
+    mut fn Number() -> Option<I64> {
+        mut v: I64 = 0
+        mut n: I64 = 0
+        while (this.Peek() >= 48_U32 && this.Peek() <= 57_U32 && !this.AtEnd()) {
+            v = v * 10 + (this.Peek() - 48_U32).ToI64()
+            if (v > 100000) { v = 100000 }
+            this.pos += 1
+            n += 1
+        }
+        if (n == 0) { None } else { Some(v) }
+    }
+
+    // `{n}`, `{n,}` or `{n,m}` at the current position: (min, max) with -1 for no limit; None (position unchanged)
+    // if it is not that form, in which case the `{` is an ordinary character.
+    mut fn Braces() -> Option<(I64, I64)> {
+        let save: I64 = this.pos
+        this.pos += 1
+        match (this.Number()) {
+            Some(lo) => {
+                if (this.Peek() == 125_U32 && !this.AtEnd()) {
+                    this.pos += 1
+                    return Some((lo, lo))
+                }
+                if (this.Peek() == 44_U32 && !this.AtEnd()) {
+                    this.pos += 1
+                    if (this.Peek() == 125_U32 && !this.AtEnd()) {
+                        this.pos += 1
+                        return Some((lo, -1))
+                    }
+                    match (this.Number()) {
+                        Some(hi) => {
+                            if (this.Peek() == 125_U32 && !this.AtEnd()) {
+                                this.pos += 1
+                                return Some((lo, hi))
+                            }
+                        },
+                        None => {},
+                    }
+                }
+            },
+            None => {},
+        }
+        this.pos = save
+        None
+    }
+
+    mut fn Repeat() -> Result<Node, Error> {
+        mut atom: Node = this.Atom()?
+        loop {
+            if (this.AtEnd()) { break }
+            let c: U32 = this.Peek()
+            mut lo: I64 = 0
+            mut hi: I64 = -1
+            if (c == 42_U32) {
+                this.pos += 1
+            } else if (c == 43_U32) {
+                lo = 1
+                this.pos += 1
+            } else if (c == 63_U32) {
+                hi = 1
+                this.pos += 1
+            } else if (c == 123_U32) {
+                match (this.Braces()) {
+                    Some((a, b)) => {
+                        lo = a
+                        hi = b
+                        if (hi != -1 && hi < lo) { return Err(this.Fail("the repeat {${lo},${hi}} has a maximum below its minimum")) }
+                        if (lo > maxRepeat || hi > maxRepeat) { return Err(this.Fail("a repeat count may not be above ${maxRepeat}")) }
+                    },
+                    None => break,
+                }
+            } else {
+                break
+            }
+            if (this.isAssertion(atom)) { return Err(this.Fail("there is nothing to repeat")) }
+            mut r: Node = Node.New(kRepeat)
+            r.kids = [atom]
+            r.min = lo
+            r.max = hi
+            if (this.Peek() == 63_U32 && !this.AtEnd()) {
+                r.greedy = false
+                this.pos += 1
+            }
+            atom = r
+        }
+        Ok(atom)
+    }
+
+    fn charNode(c: U32) -> Node {
+        mut n: Node = Node.New(kChar)
+        n.ch = c
+        n
+    }
+
+    // A class made of one shorthand (\d, \W ...).
+    mut fn shorthandNode(letter: U8) -> Node {
+        mut cc: CharClass = CharClass.New()
+        let lower: U8 = letter | 32
+        let rs: Array<U32> = shorthand(lower)
+        if (letter == lower) {
+            cc.ranges = rs
+        } else {
+            cc.ranges = complement(rs)
+        }
+        this.classes.Push(cc)
+        mut n: Node = Node.New(kClass)
+        n.cls = this.classes.Len() - 1
+        n
+    }
+
+    // One or more hex digits as a number: exactly `count` of them, or (count 0) the ones inside {}.
+    mut fn Hex(count: I64) -> Result<U32, Error> {
+        mut v: U32 = 0
+        mut seen: I64 = 0
+        let braced: Bool = count == 0
+        if (braced) {
+            if (this.Peek() != 123_U32) { return Err(this.Fail("\\x needs two hex digits or {digits}")) }
+            this.pos += 1
+        }
+        loop {
+            if (this.AtEnd()) { return Err(this.Fail("a hex escape is not finished")) }
+            let c: U32 = this.Peek()
+            if (braced && c == 125_U32) {
+                this.pos += 1
+                break
+            }
+            match (Chars.DigitValue(c.ToCharUnchecked(), 16)) {
+                Some(d) => {
+                    v = v * 16 + d.ToU32Wrap()
+                    if (v > 0x10FFFF_U32) { return Err(this.Fail("the hex escape is not a character")) }
+                },
+                None => return Err(this.Fail("the hex escape has a character that is not a hex digit")),
+            }
+            this.pos += 1
+            seen += 1
+            if (!braced && seen == count) { break }
+        }
+        if (seen == 0) { return Err(this.Fail("a hex escape needs digits")) }
+        Ok(v)
+    }
+
+    // The character an escape stands for (after the backslash): None if it is not a plain character escape.
+    mut fn CharEscape(e: U32) -> Result<Option<U32>, Error> {
+        if (e == 110_U32) { return Ok(Some(10_U32)) }
+        if (e == 116_U32) { return Ok(Some(9_U32)) }
+        if (e == 114_U32) { return Ok(Some(13_U32)) }
+        if (e == 102_U32) { return Ok(Some(12_U32)) }
+        if (e == 118_U32) { return Ok(Some(11_U32)) }
+        if (e == 48_U32) { return Ok(Some(0_U32)) }
+        if (e == 120_U32) {
+            if (this.Peek() == 123_U32) { return Ok(Some(this.Hex(0)?)) }
+            return Ok(Some(this.Hex(2)?))
+        }
+        if (e < 128_U32 && !Chars.IsAlphaNumeric(e.ToCharUnchecked())) { return Ok(Some(e)) }
+        if (e >= 128_U32) { return Ok(Some(e)) }
+        Ok(None)
+    }
+
+    mut fn Class() -> Result<Node, Error> {
+        this.pos += 1
+        mut cc: CharClass = CharClass.New()
+        if (this.Peek() == 94_U32) {
+            cc.negated = true
+            this.pos += 1
+        }
+        mut first: Bool = true
+        loop {
+            if (this.AtEnd()) { return Err(this.Fail("a [ class is not closed")) }
+            let c: U32 = this.Peek()
+            if (c == 93_U32 && !first) {
+                this.pos += 1
+                break
+            }
+            first = false
+            this.pos += 1
+            mut lo: U32 = c
+            if (c == 92_U32) {
+                if (this.AtEnd()) { return Err(this.Fail("a backslash at the end")) }
+                let e: U32 = this.Peek()
+                this.pos += 1
+                let el: U32 = e | 32_U32
+                if (e < 128_U32 && (el == 100_U32 || el == 119_U32 || el == 115_U32)) {
+                    // \d \w \s or the negated forms inside a class
+                    let rs: Array<U32> = shorthand(el.ToU8Wrap())
+                    let use: Array<U32> = if (e == el) { rs } else { complement(rs) }
+                    mut j: I64 = 0
+                    while (j < use.Len()) {
+                        cc.Add(use[j], use[j + 1])
+                        j += 2
+                    }
+                    continue
+                }
+                if (e == 98_U32) {
+                    lo = 8_U32
+                } else {
+                    match (this.CharEscape(e)?) {
+                        Some(v) => { lo = v },
+                        None => return Err(this.Fail("unknown escape \\${e.ToCharUnchecked()} in a class")),
+                    }
+                }
+            }
+            // a range lo-hi
+            if (this.Peek() == 45_U32 && this.PeekAt(1) != 93_U32 && this.pos + 1 < this.src.Len()) {
+                this.pos += 1
+                mut hi: U32 = this.Peek()
+                this.pos += 1
+                if (hi == 92_U32) {
+                    if (this.AtEnd()) { return Err(this.Fail("a backslash at the end")) }
+                    let e: U32 = this.Peek()
+                    this.pos += 1
+                    match (this.CharEscape(e)?) {
+                        Some(v) => { hi = v },
+                        None => return Err(this.Fail("a range cannot end with a class escape")),
+                    }
+                }
+                if (hi < lo) { return Err(this.Fail("the range has its end below its start")) }
+                cc.Add(lo, hi)
+            } else {
+                cc.Add(lo, lo)
+            }
+        }
+        this.classes.Push(cc)
+        mut n: Node = Node.New(kClass)
+        n.cls = this.classes.Len() - 1
+        Ok(n)
+    }
+
+    // The name of a group, up to the closing `>`.
+    mut fn GroupName() -> Result<String, Error> {
+        mut sb: StringBuilder = StringBuilder.New()
+        loop {
+            if (this.AtEnd()) { return Err(this.Fail("a group name is not closed")) }
+            let c: U32 = this.Peek()
+            this.pos += 1
+            if (c == 62_U32) { break }
+            if (!isWordChar(c)) { return Err(this.Fail("a group name may only have letters, digits and _")) }
+            sb.AppendChar(c.ToCharUnchecked())
+        }
+        let name: String = sb.ToString()
+        if (name.IsEmpty()) { return Err(this.Fail("a group name is empty")) }
+        Ok(name)
+    }
+
+    mut fn Atom() -> Result<Node, Error> {
+        let c: U32 = this.Peek()
+        this.pos += 1
+        if (c == 46_U32) { return Ok(Node.New(kAny)) }
+        if (c == 94_U32) { return Ok(Node.New(kBegin)) }
+        if (c == 36_U32) { return Ok(Node.New(kEnd)) }
+        if (c == 91_U32) {
+            this.pos -= 1
+            return this.Class()
+        }
+        if (c == 40_U32) {
+            mut capture: Bool = true
+            mut name: String = ""
+            if (this.Peek() == 63_U32) {
+                this.pos += 1
+                let k: U32 = this.Peek()
+                if (k == 58_U32) {
+                    capture = false
+                    this.pos += 1
+                } else if (k == 80_U32 || k == 60_U32) {
+                    // (?P<name>...) or (?<name>...)
+                    if (k == 80_U32) { this.pos += 1 }
+                    if (this.Peek() != 60_U32) { return Err(this.Fail("a group name was expected after (?P")) }
+                    this.pos += 1
+                    name = this.GroupName()?
+                } else {
+                    // flags: (?i) (?m) (?s) (?ims)
+                    loop {
+                        let f: U32 = this.Peek()
+                        if (this.AtEnd()) { return Err(this.Fail("the flags are not closed")) }
+                        this.pos += 1
+                        if (f == 105_U32) { this.ignoreCase = true }
+                        else if (f == 109_U32) { this.multiline = true }
+                        else if (f == 115_U32) { this.dotAll = true }
+                        else if (f == 41_U32) { break }
+                        else { return Err(this.Fail("unknown flag \"${f.ToCharUnchecked()}\"")) }
+                    }
+                    return Ok(Node.New(kEmpty))
+                }
+            }
+            mut index: I64 = 0
+            if (capture) {
+                this.groups += 1
+                index = this.groups
+                if (!name.IsEmpty()) {
+                    if (this.names.Contains(name)) { return Err(this.Fail("the group name \"${name}\" is used twice")) }
+                    this.names.Set(name, index)
+                }
+            }
+            let inner: Node = this.Alt()?
+            if (this.Peek() != 41_U32 || this.AtEnd()) { return Err(this.Fail("a ( group is not closed")) }
+            this.pos += 1
+            if (!capture) { return Ok(inner) }
+            mut g: Node = Node.New(kGroup)
+            g.kids = [inner]
+            g.group = index
+            return Ok(g)
+        }
+        if (c == 41_U32) {
+            this.pos -= 1
+            return Err(this.Fail("a ) has no ( before it"))
+        }
+        if (c == 42_U32 || c == 43_U32 || c == 63_U32) {
+            this.pos -= 1
+            return Err(this.Fail("there is nothing to repeat"))
+        }
+        if (c == 92_U32) {
+            if (this.AtEnd()) { return Err(this.Fail("a backslash at the end")) }
+            let e: U32 = this.Peek()
+            this.pos += 1
+            let el: U32 = e | 32_U32
+            if (e < 128_U32 && (el == 100_U32 || el == 119_U32 || el == 115_U32)) {
+                return Ok(this.shorthandNode(e.ToU8Wrap()))
+            }
+            if (e == 98_U32) { return Ok(Node.New(kWordB)) }
+            if (e == 66_U32) { return Ok(Node.New(kNotWordB)) }
+            if (e == 65_U32) { return Ok(Node.New(kTextBegin)) }
+            if (e == 122_U32) { return Ok(Node.New(kTextEnd)) }
+            match (this.CharEscape(e)?) {
+                Some(v) => return Ok(this.charNode(v)),
+                None => return Err(this.Fail("unknown escape \\${e.ToCharUnchecked()}")),
+            }
+        }
+        Ok(this.charNode(c))
+    }
+}
+
+let opChar: I32 = 0
+let opAny: I32 = 1
+let opClass: I32 = 2
+let opSplit: I32 = 3
+let opJmp: I32 = 4
+let opSave: I32 = 5
+let opBegin: I32 = 6
+let opEnd: I32 = 7
+let opWordB: I32 = 8
+let opNotWordB: I32 = 9
+let opTextBegin: I32 = 10
+let opTextEnd: I32 = 11
+let opMatch: I32 = 12
+
+// The program: instruction number `i` is `ops[i]` with the operands `xs[i]` and `ys[i]`.
+class Compiler {
+    ops: Array<I32> = []
+    xs: Array<I64> = []
+    ys: Array<I64> = []
+
+    mut fn Emit(op: I32, x: I64, y: I64) {
+        this.ops.Push(op)
+        this.xs.Push(x)
+        this.ys.Push(y)
+    }
+
+    // The number of the instruction written last.
+    fn Last() -> I64 { this.ops.Len() - 1 }
+
+    fn Here() -> I64 { this.ops.Len() }
+
+    // Put a Split's two targets: the preferred one first (the other way round for a lazy repeat).
+    mut fn SetSplit(at: I64, first: I64, second: I64, greedy: Bool) {
+        if (greedy) {
+            this.xs[at] = first
+            this.ys[at] = second
+        } else {
+            this.xs[at] = second
+            this.ys[at] = first
+        }
+    }
+
+    mut fn Gen(n: Node) {
+        let k: I32 = n.kind
+        if (k == kEmpty) { return }
+        if (k == kChar) { this.Emit(opChar, n.ch.ToI64(), 0) }
+        else if (k == kAny) { this.Emit(opAny, 0, 0) }
+        else if (k == kClass) { this.Emit(opClass, n.cls, 0) }
+        else if (k == kBegin) { this.Emit(opBegin, 0, 0) }
+        else if (k == kEnd) { this.Emit(opEnd, 0, 0) }
+        else if (k == kWordB) { this.Emit(opWordB, 0, 0) }
+        else if (k == kNotWordB) { this.Emit(opNotWordB, 0, 0) }
+        else if (k == kTextBegin) { this.Emit(opTextBegin, 0, 0) }
+        else if (k == kTextEnd) { this.Emit(opTextEnd, 0, 0) }
+        else if (k == kConcat) {
+            for (kid in n.kids) { this.Gen(kid) }
+        } else if (k == kGroup) {
+            this.Emit(opSave, n.group * 2, 0)
+            this.Gen(n.kids[0])
+            this.Emit(opSave, n.group * 2 + 1, 0)
+        } else if (k == kAlt) {
+            // Split L1, next; L1: a; Jmp end; next: Split ...
+            mut jumps: Array<I64> = []
+            mut i: I64 = 0
+            while (i < n.kids.Len()) {
+                if (i < n.kids.Len() - 1) {
+                    this.Emit(opSplit, 0, 0)
+                    let sp: I64 = this.Last()
+                    this.xs[sp] = this.Here()
+                    this.Gen(n.kids[i])
+                    this.Emit(opJmp, 0, 0)
+                    jumps.Push(this.Last())
+                    this.ys[sp] = this.Here()
+                } else {
+                    this.Gen(n.kids[i])
+                }
+                i += 1
+            }
+            for (j in jumps) { this.xs[j] = this.Here() }
+        } else if (k == kRepeat) {
+            let body: Node = n.kids[0]
+            mut i: I64 = 0
+            while (i < n.min) {
+                this.Gen(body)
+                i += 1
+            }
+            if (n.max == -1) {
+                // L: Split body, out; body; Jmp L
+                this.Emit(opSplit, 0, 0)
+                let sp: I64 = this.Last()
+                this.Gen(body)
+                this.Emit(opJmp, sp, 0)
+                this.SetSplit(sp, sp + 1, this.Here(), n.greedy)
+            } else {
+                // each optional copy can jump straight to the end
+                mut splits: Array<I64> = []
+                mut j: I64 = n.min
+                while (j < n.max) {
+                    this.Emit(opSplit, 0, 0)
+                    splits.Push(this.Last())
+                    this.Gen(body)
+                    j += 1
+                }
+                for (sp in splits) { this.SetSplit(sp, sp + 1, this.Here(), n.greedy) }
+            }
+        }
+    }
+}
+
+class Thread {
+    pc: I64
+    caps: Array<I64>
+
+    fn Init(pc: I64, caps: Array<I64>) {
+        this.pc = pc
+        this.caps = caps
+    }
+}
+
+class Match {
+    text: String
+    caps: Array<I64>
+    names: Map<String, I64>
+
+    fn Init(text: String, caps: Array<I64>, names: Map<String, I64>) {
+        this.text = text
+        this.caps = caps
+        this.names = names
+    }
+
+    // The byte position where the match starts, and where it ends (after its last byte).
+    fn Start() -> I64 { this.caps[0] }
+
+    fn End() -> I64 { this.caps[1] }
+
+    // The matched text.
+    fn Text() -> String { this.text.Slice(this.caps[0], this.caps[1]) }
+
+    // How many groups the pattern has (not counting the whole match, group 0).
+    fn GroupCount() -> I64 { this.caps.Len() / 2 - 1 }
+
+    // Group `i` (0 is the whole match); None if the group did not take part in the match.
+    fn Group(i: I64) -> Option<String> {
+        if (i < 0 || i >= this.caps.Len() / 2) { return None }
+        let a: I64 = this.caps[i * 2]
+        let b: I64 = this.caps[i * 2 + 1]
+        if (a < 0 || b < 0) { None } else { Some(this.text.Slice(a, b)) }
+    }
+
+    // The byte range (start, end) of group `i`.
+    fn GroupRange(i: I64) -> Option<(I64, I64)> {
+        if (i < 0 || i >= this.caps.Len() / 2) { return None }
+        let a: I64 = this.caps[i * 2]
+        let b: I64 = this.caps[i * 2 + 1]
+        if (a < 0 || b < 0) { None } else { Some((a, b)) }
+    }
+
+    // A named group (`(?P<name>...)`).
+    fn Named(name: String) -> Option<String> {
+        match (this.names.Get(name)) {
+            Some(i) => this.Group(i),
+            None => None,
+        }
+    }
+}
+
+class Regex {
+    pattern: String
+    ops: Array<I32>
+    xs: Array<I64>
+    ys: Array<I64>
+    classes: Array<CharClass>
+    names: Map<String, I64>
+    groups: I64
+    ignoreCase: Bool
+    multiline: Bool
+    dotAll: Bool
+
+    fn Init(pattern: String, c: Compiler, p: Parser) {
+        this.pattern = pattern
+        this.ops = c.ops
+        this.xs = c.xs
+        this.ys = c.ys
+        this.classes = p.classes
+        this.names = p.names
+        this.groups = p.groups
+        this.ignoreCase = p.ignoreCase
+        this.multiline = p.multiline
+        this.dotAll = p.dotAll
+    }
+
+    // The pattern text this was made from.
+    fn Pattern() -> String { this.pattern }
+
+    // How many capturing groups there are (not counting the whole match).
+    fn GroupCount() -> I64 { this.groups }
+
+    fn isLineBreak(c: U32) -> Bool { c == 10_U32 }
+
+    fn charEq(a: U32, b: U32) -> Bool {
+        if (this.ignoreCase) { fold(a) == fold(b) } else { a == b }
+    }
+
+    fn classHas(idx: I64, c: U32) -> Bool {
+        let cc: CharClass = this.classes[idx]
+        mut hit: Bool = cc.has(c)
+        if (!hit && this.ignoreCase) {
+            let lower: U32 = fold(c)
+            hit = cc.has(lower)
+            if (!hit && lower >= 97_U32 && lower <= 122_U32) { hit = cc.has(lower - 32_U32) }
+        }
+        hit != cc.negated
+    }
+
+    fn wordAt(input: Array<U32>, i: I64) -> Bool {
+        i >= 0 && i < input.Len() && isWordChar(input[i])
+    }
+
+    // Add the thread for instruction `pc` at text position `pos` to `list`, following the instructions that do not
+    // read a character (jumps, saves, assertions). `marks` keeps one thread per instruction for each position.
+    fn add(pc: I64, pos: I64, caps: Array<I64>, mut list: Array<Thread>, mut marks: Array<I64>, step: I64, input: Array<U32>) {
+        if (marks[pc] == step) { return }
+        marks[pc] = step
+        let op: I32 = this.ops[pc]
+        if (op == opJmp) {
+            this.add(this.xs[pc], pos, caps, list, marks, step, input)
+        } else if (op == opSplit) {
+            this.add(this.xs[pc], pos, caps, list, marks, step, input)
+            this.add(this.ys[pc], pos, caps, list, marks, step, input)
+        } else if (op == opSave) {
+            mut c: Array<I64> = caps.Slice(0, caps.Len())
+            c[this.xs[pc]] = pos
+            this.add(pc + 1, pos, c, list, marks, step, input)
+        } else if (op == opBegin) {
+            if (pos == 0 || (this.multiline && this.isLineBreak(input[pos - 1]))) {
+                this.add(pc + 1, pos, caps, list, marks, step, input)
+            }
+        } else if (op == opEnd) {
+            if (pos == input.Len() || (this.multiline && this.isLineBreak(input[pos]))) {
+                this.add(pc + 1, pos, caps, list, marks, step, input)
+            }
+        } else if (op == opTextBegin) {
+            if (pos == 0) { this.add(pc + 1, pos, caps, list, marks, step, input) }
+        } else if (op == opTextEnd) {
+            if (pos == input.Len()) { this.add(pc + 1, pos, caps, list, marks, step, input) }
+        } else if (op == opWordB) {
+            if (this.wordAt(input, pos - 1) != this.wordAt(input, pos)) { this.add(pc + 1, pos, caps, list, marks, step, input) }
+        } else if (op == opNotWordB) {
+            if (this.wordAt(input, pos - 1) == this.wordAt(input, pos)) { this.add(pc + 1, pos, caps, list, marks, step, input) }
+        } else {
+            list.Push(Thread.New(pc, caps))
+        }
+    }
+
+    // The leftmost match at or after character `start`: the capture positions as character indexes (-1 if unset).
+    fn exec(input: Array<U32>, start: I64) -> Option<Array<I64>> {
+        let n: I64 = input.Len()
+        mut marks: Array<I64> = Array<I64>.Repeat(-1, this.ops.Len())
+        mut clist: Array<Thread> = []
+        mut found: Option<Array<I64>> = None
+        let fresh: Array<I64> = Array<I64>.Repeat(-1, (this.groups + 1) * 2)
+        mut p: I64 = start
+        while (p <= n) {
+            if (found.IsNone()) {
+                // a new thread that starts here has the lowest priority
+                this.add(0, p, fresh, clist, marks, p + 1, input)
+            }
+            if (clist.IsEmpty()) {
+                if (found.IsSome()) { break }
+                p += 1
+                continue
+            }
+            mut nlist: Array<Thread> = []
+            for (t in clist) {
+                let op: I32 = this.ops[t.pc]
+                if (op == opMatch) {
+                    found = Some(t.caps)
+                    break
+                }
+                if (p >= n) { continue }
+                let c: U32 = input[p]
+                mut ok: Bool = false
+                if (op == opChar) { ok = this.charEq(c, this.xs[t.pc].ToU32Wrap()) }
+                else if (op == opAny) { ok = this.dotAll || !this.isLineBreak(c) }
+                else if (op == opClass) { ok = this.classHas(this.xs[t.pc], c) }
+                if (ok) { this.add(t.pc + 1, p + 1, t.caps, nlist, marks, p + 2, input) }
+            }
+            clist = nlist
+            p += 1
+        }
+        found
+    }
+
+    // The characters of the text, and where each one starts in bytes (one more entry for the end).
+    fn decode(text: String) -> (Array<U32>, Array<I64>) {
+        mut chars: Array<U32> = []
+        mut offs: Array<I64> = []
+        let cs: Array<Char> = Text.ToChars(text)
+        mut at: I64 = 0
+        for (c in cs) {
+            chars.Push(c.ToU32())
+            offs.Push(at)
+            at += Chars.Utf8Len(c)
+        }
+        offs.Push(at)
+        (chars, offs)
+    }
+
+    fn toMatch(text: String, caps: Array<I64>, offs: Array<I64>) -> Match {
+        let bytes: Array<I64> = caps.Map((c: I64) => if (c < 0) { -1 } else { offs[c] })
+        Match.New(text, bytes, this.names)
+    }
+
+    fn findFrom(text: String, chars: Array<U32>, offs: Array<I64>, from: I64) -> Option<Match> {
+        match (this.exec(chars, from)) {
+            Some(caps) => Some(this.toMatch(text, caps, offs)),
+            None => None,
+        }
+    }
+
+    // Is there a match anywhere in the text?
+    fn IsMatch(text: String) -> Bool {
+        let (chars, _): (Array<U32>, Array<I64>) = this.decode(text)
+        this.exec(chars, 0).IsSome()
+    }
+
+    // The first match.
+    fn Find(text: String) -> Option<Match> {
+        let (chars, offs): (Array<U32>, Array<I64>) = this.decode(text)
+        this.findFrom(text, chars, offs, 0)
+    }
+
+    // All the matches that do not overlap, from the left. (After an empty match the search goes on one character
+    // further, so "a*" on "baac" gives "", "aa", "" , "".)
+    fn FindAll(text: String) -> Array<Match> {
+        let (chars, offs): (Array<U32>, Array<I64>) = this.decode(text)
+        mut out: Array<Match> = []
+        mut from: I64 = 0
+        mut prevEnd: I64 = -1
+        while (from <= chars.Len()) {
+            match (this.exec(chars, from)) {
+                Some(caps) => {
+                    let s: I64 = caps[0]
+                    let e: I64 = caps[1]
+                    if (e == s && s == prevEnd) {
+                        // an empty match right after the previous match does not count
+                        from = s + 1
+                        continue
+                    }
+                    out.Push(this.toMatch(text, caps, offs))
+                    prevEnd = e
+                    from = if (e == s) { e + 1 } else { e }
+                },
+                None => break,
+            }
+        }
+        out
+    }
+
+    // `template` with `$0`, `$1`, `${1}` and `${name}` replaced by groups (an unknown or unset group is empty) and `$$` by a `$`.
+    fn expand(template: String, m: Match) -> String {
+        mut sb: StringBuilder = StringBuilder.New()
+        let n: I64 = template.Len()
+        mut i: I64 = 0
+        while (i < n) {
+            let c: U8 = template.ByteAt(i)
+            if (c != b'$' || i + 1 >= n) {
+                let start: I64 = i
+                i += 1
+                while (i < n && template.ByteAt(i) != b'$') { i += 1 }
+                sb.Append(template.Slice(start, i))
+                continue
+            }
+            let d: U8 = template.ByteAt(i + 1)
+            if (d == b'$') {
+                sb.Append("$")
+                i += 2
+            } else if (d == b'{') {
+                match (Text.IndexOf(template.Slice(i + 2, n), "}")) {
+                    Some(k) => {
+                        let name: String = template.Slice(i + 2, i + 2 + k)
+                        match (name.ToI64()) {
+                            Ok(g) => sb.Append(m.Group(g).UnwrapOr("")),
+                            Err(_) => sb.Append(m.Named(name).UnwrapOr("")),
+                        }
+                        i += k + 3
+                    },
+                    None => {
+                        sb.Append("$")
+                        i += 1
+                    },
+                }
+            } else if (d >= b'0' && d <= b'9') {
+                mut j: I64 = i + 1
+                while (j < n && template.ByteAt(j) >= b'0' && template.ByteAt(j) <= b'9') { j += 1 }
+                match (template.Slice(i + 1, j).ToI64()) {
+                    Ok(g) => sb.Append(m.Group(g).UnwrapOr("")),
+                    Err(_) => {},
+                }
+                i = j
+            } else if (isWordChar(d.ToU32())) {
+                mut j: I64 = i + 1
+                while (j < n && isWordChar(template.ByteAt(j).ToU32())) { j += 1 }
+                sb.Append(m.Named(template.Slice(i + 1, j)).UnwrapOr(""))
+                i = j
+            } else {
+                sb.Append("$")
+                i += 1
+            }
+        }
+        sb.ToString()
+    }
+
+    // The text with the first match replaced (see `expand` for the `$1` forms in `template`).
+    fn Replace(text: String, template: String) -> String {
+        match (this.Find(text)) {
+            Some(m) => text.Slice(0, m.Start()) + this.expand(template, m) + text.Slice(m.End(), text.Len()),
+            None => text,
+        }
+    }
+
+    // The text with every match replaced.
+    fn ReplaceAll(text: String, template: String) -> String {
+        mut sb: StringBuilder = StringBuilder.New()
+        mut last: I64 = 0
+        for (m in this.FindAll(text)) {
+            sb.Append(text.Slice(last, m.Start()))
+            sb.Append(this.expand(template, m))
+            last = m.End()
+        }
+        sb.Append(text.Slice(last, text.Len()))
+        sb.ToString()
+    }
+
+    // The text between the matches.
+    fn Split(text: String) -> Array<String> {
+        mut out: Array<String> = []
+        mut last: I64 = 0
+        for (m in this.FindAll(text)) {
+            out.Push(text.Slice(last, m.Start()))
+            last = m.End()
+        }
+        out.Push(text.Slice(last, text.Len()))
+        out
+    }
+}
+
+// Makes a `Regex` from a pattern; an error says what is wrong with the pattern and where.
+fn Compile(pattern: String) -> Result<Regex, Error> {
+    let cs: Array<Char> = Text.ToChars(pattern)
+    mut p: Parser = Parser.New(cs.Map((c: Char) => c.ToU32()))
+    let root: Node = p.Alt()?
+    if (!p.AtEnd()) {
+        return Err(p.Fail("a ) has no ( before it"))
+    }
+    mut c: Compiler = Compiler.New()
+    c.Emit(opSave, 0, 0)
+    c.Gen(root)
+    c.Emit(opSave, 1, 0)
+    c.Emit(opMatch, 0, 0)
+    Ok(Regex.New(pattern, c, p))
+}
+
+// Is there a match of `pattern` in `text`? An error if the pattern is not valid.
+fn IsMatch(pattern: String, text: String) -> Result<Bool, Error> {
+    let re: Regex = Compile(pattern)?
+    Ok(re.IsMatch(text))
+}
+
+// `text` with the characters that have a meaning in a pattern escaped, so that a pattern made from it matches the text itself.
+fn Escape(text: String) -> String {
+    mut sb: StringBuilder = StringBuilder.New()
+    for (c in Text.ToChars(text)) {
+        if (c.ToU32() < 128_U32 && !Chars.IsAlphaNumeric(c) && c != '_' && c != ' ') { sb.Append("\\") }
+        sb.AppendChar(c)
+    }
+    sb.ToString()
+}

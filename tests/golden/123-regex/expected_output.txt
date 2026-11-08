@@ -1,0 +1,64 @@
+abc on xxabcxx: [abc] 2-5
+a.c on abc: [abc] 0-3
+a.c on a
+c: no match
+(?s)a.c on a
+c: [a
+c] 0-3
+^abc$ on abc: [abc] 0-3
+^abc$ on abcd: no match
+a+ on caaat: [aaa] 1-4
+a+? on caaat: [a] 1-2
+a* on baaa: [] 0-0
+a{2,3} on aaaa: [aaa] 0-3
+a{2,3}? on aaaa: [aa] 0-2
+a{3} on aa: no match
+(a|ab)(c|bcd) on abcd: [abcd] 0-4
+colou?r on my color: [color] 3-8
+[a-c]+ on xxabcabcxx: [abcabc] 2-8
+[^a-c]+ on abcxyzabc: [xyz] 3-6
+[\d.]+ on v1.25.3b: [1.25.3] 1-7
+\bcat\b on concat cat: [cat] 7-10
+\Bcat on concat cat: [cat] 3-6
+(?i)HeLLo on say hello: [hello] 4-9
+[a-z]+ on ABC def: [def] 4-7
+(?i)[a-z]+ on ABC def: [ABC] 0-3
+\w+@\w+\.com on mail bob@example.com now: [bob@example.com] 5-20
+\x41\x{1F600} on A😀: [A😀] 0-5
+日本. on こんにちは日本語です: [日本語] 15-24
+(a*)*b on aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac: no match
+(x+x+)+y on xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx: no match
+a|b| on c: [] 0-0
+(?:ab)+ on ababab: [ababab] 0-6
+\.\*\+ on a.*+: [.*+] 1-4
+a{,3} on a{,3}: [a{,3}] 0-5
+x{2}{3} on xxxxxx: [xxxxxx] 0-6
+( => regex: a ( group is not closed (at position 1)
+) => regex: a ) has no ( before it (at position 0)
+*a => regex: there is nothing to repeat (at position 0)
+[a => regex: a [ class is not closed (at position 2)
+a{3,2} => regex: the repeat {3,2} has a maximum below its minimum (at position 6)
+\q => regex: unknown escape \q (at position 2)
+(?P<n => regex: a group name is not closed (at position 5)
+a** on a: [a] 0-1
+^* => regex: there is nothing to repeat (at position 2)
+[z-a] => regex: the range has its end below its start (at position 4)
+(?z) => regex: unknown flag "z" (at position 3)
+2026-11-09 2026 11 09 2026 true true 3 3
+due 09/11/2026 (2026) $  ! or 02/01/2027 (2027) $  !
+<2026-11-09> 2027-01-02
+2 false true
+true b
+a|b|c|d
+|a|b|c|
+[][aaa][]
+a#b#c#
+X world
+X world
+X now
+world,now
+1
+true true
+1\+1\=2 \(really\?\) \[yes\] a\.b true
+world hello bar foo
+cafe au lait
