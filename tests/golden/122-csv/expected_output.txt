@@ -1,0 +1,26 @@
+[3] <a><b><c>
+[3] <1><2><3>
+[2] <a><b>
+[2] <x, y><say "hi">
+[2] <multi
+line><z>
+[3] <a><><c>
+[2] <><>
+[2] <last><>
+[2] <k><v>
+[2] <世界><é>
+[3] <a><b	c><d;e>
+[2] <a><b>
+[2] <1><2>
+true true true true
+2 Taro 25 false true 0
+plain,"with,comma","with ""quote"""
+," lead","line
+break"
+日本語,a;b,x
+true
+"a;b";c,d
+name,age
+Taro,30
+Hanako,25
+true

@@ -1,0 +1,37 @@
+module Main
+
+import Zevic.Console
+import Zevic.Csv
+import Zevic.Fs
+import Zevic.Path
+
+fn Show(rows: Array<Array<String>>) {
+    for (r in rows) {
+        Console.Println("[${r.Len()}] " + r.Map((f: String) => "<${f}>").Join(""))
+    }
+}
+
+fn Main() {
+    Show(Csv.Parse("a,b,c\n1,2,3\n").Unwrap())
+    Show(Csv.Parse("a,b\r\n\"x, y\",\"say \"\"hi\"\"\"\r\n\"multi\nline\",z").Unwrap())
+    Show(Csv.Parse("a,,c\n,\n\n\nlast,").Unwrap())
+    Show(Csv.Parse("").Unwrap())
+    Show(Csv.Parse("\n\n").Unwrap())
+    Show(Csv.Parse("\u{FEFF}k,v\n世界,é").Unwrap())
+    Show(Csv.ParseWith("a;b\tc;\"d;e\"", ";").Unwrap())
+    Show(Csv.ParseWith("a\tb\n1\t2", "\t").Unwrap())
+    Console.Println("${Csv.Parse("a,\"b").IsErr()} ${Csv.Parse("\"a\"x,b").IsErr()} ${Csv.ParseWith("a", "ab").IsErr()} ${Csv.ParseWith("a", "\"").IsErr()}")
+    let recs: Array<Map<String, String>> = Csv.ParseRecords("name,age,city\nTaro,30,Tokyo\nHanako,25\n").Unwrap()
+    Console.Println("${recs.Len()} ${recs[0]["name"]} ${recs[1]["age"]} ${recs[1].Contains("city")} ${Csv.ParseRecords("a,b\n1,2,3").IsErr()} ${Csv.ParseRecords("").Unwrap().Len()}")
+    let rows: Array<Array<String>> = [["plain", "with,comma", "with \"quote\""], ["", " lead", "line\nbreak"], ["日本語", "a;b", "x"]]
+    let text: String = Csv.Stringify(rows)
+    Console.Print(text)
+    Console.Println("${Csv.Parse(text).Unwrap() == rows}")
+    Console.Print(Csv.StringifyWith([["a;b", "c,d"]], ";"))
+    Console.Print(Csv.StringifyRecords(["name", "age"], recs))
+    let dir: String = Fs.MakeTempDir("zevcsv-").Unwrap()
+    let file: String = Path.Join(dir, "t.csv")
+    Csv.WriteFile(file, rows).Unwrap()
+    Console.Println("${Csv.ReadFile(file).Unwrap() == rows}")
+    Fs.RemoveAll(dir).Unwrap()
+}

@@ -1,0 +1,178 @@
+module Zevic.Csv
+
+// CSV (RFC 4180): `Parse` text into rows of fields, `Stringify` rows back into text.
+//
+//     let rows: Array<Array<String>> = Csv.Parse("name,age\n\"Smith, J\",42\n")?
+//     let people: Array<Map<String, String>> = Csv.ParseRecords("name,age\nTaro,30")?     // by header
+//
+// A field in double quotes can hold the separator, line breaks and `""` for a quote. Lines end with `\n` or `\r\n`.
+// Empty lines are skipped. A different separator (tab, semicolon) can be given with the `With` functions.
+
+import Zevic.Fs
+import Zevic.Text
+
+fn invalid(msg: String) -> Error { Error.New(ErrorKind.Invalid, msg) }
+
+fn lineOf(text: String, pos: I64) -> I64 {
+    mut line: I64 = 1
+    mut i: I64 = 0
+    while (i < pos && i < text.Len()) {
+        if (text.ByteAt(i) == b'\n') { line += 1 }
+        i += 1
+    }
+    line
+}
+
+// Rows of fields, separated by `sep` (one character).
+fn ParseWith(text: String, sep: String) -> Result<Array<Array<String>>, Error> {
+    if (sep.Len() != 1 || sep == "\"" || sep == "\n" || sep == "\r") {
+        return Err(invalid("the CSV separator must be one character that is not a quote or a line break"))
+    }
+    let d: U8 = sep.ByteAt(0)
+    let n: I64 = text.Len()
+    mut rows: Array<Array<String>> = []
+    mut row: Array<String> = []
+    mut i: I64 = 0
+    // a UTF-8 byte order mark at the start is skipped
+    if (Text.StartsWith(text, "\u{FEFF}")) { i = 3 }
+    while (i < n) {
+        // an empty line (no fields yet)
+        if (row.IsEmpty() && (text.ByteAt(i) == b'\n' || text.ByteAt(i) == b'\r')) {
+            i += 1
+            continue
+        }
+        mut field: String = ""
+        if (text.ByteAt(i) == b'"') {
+            mut sb: StringBuilder = StringBuilder.New()
+            let openAt: I64 = i
+            i += 1
+            loop {
+                if (i >= n) {
+                    return Err(invalid("CSV line ${lineOf(text, openAt)}: a quoted field is not closed"))
+                }
+                if (text.ByteAt(i) == b'"') {
+                    if (i + 1 < n && text.ByteAt(i + 1) == b'"') {
+                        sb.Append("\"")
+                        i += 2
+                        continue
+                    }
+                    i += 1
+                    break
+                }
+                let start: I64 = i
+                while (i < n && text.ByteAt(i) != b'"') { i += 1 }
+                sb.Append(text.Slice(start, i))
+            }
+            field = sb.ToString()
+            if (i < n && text.ByteAt(i) != d && text.ByteAt(i) != b'\n' && text.ByteAt(i) != b'\r') {
+                return Err(invalid("CSV line ${lineOf(text, i)}: text after the closing quote of a field"))
+            }
+        } else {
+            let start: I64 = i
+            while (i < n && text.ByteAt(i) != d && text.ByteAt(i) != b'\n' && text.ByteAt(i) != b'\r') { i += 1 }
+            field = text.Slice(start, i)
+        }
+        row.Push(field)
+        if (i >= n) { break }
+        if (text.ByteAt(i) == d) {
+            i += 1
+            // a separator at the very end means one more, empty field
+            if (i >= n) { row.Push("") }
+            continue
+        }
+        // end of the row: \n or \r\n
+        if (text.ByteAt(i) == b'\r') { i += 1 }
+        if (i < n && text.ByteAt(i) == b'\n') { i += 1 }
+        rows.Push(row)
+        row = []
+    }
+    if (!row.IsEmpty()) { rows.Push(row) }
+    Ok(rows)
+}
+
+// Rows of fields, separated by commas.
+fn Parse(text: String) -> Result<Array<Array<String>>, Error> { ParseWith(text, ",") }
+
+// Rows as maps from the header names (the first row) to the fields. A row with fewer fields than the header
+// leaves the missing ones out; a row with more is an error.
+fn ParseRecordsWith(text: String, sep: String) -> Result<Array<Map<String, String>>, Error> {
+    let rows: Array<Array<String>> = ParseWith(text, sep)?
+    mut out: Array<Map<String, String>> = []
+    if (rows.IsEmpty()) { return Ok(out) }
+    let header: Array<String> = rows[0]
+    mut r: I64 = 1
+    while (r < rows.Len()) {
+        let row: Array<String> = rows[r]
+        if (row.Len() > header.Len()) {
+            return Err(invalid("CSV record ${r} has ${row.Len()} fields but the header has ${header.Len()}"))
+        }
+        mut rec: Map<String, String> = Map.New()
+        mut c: I64 = 0
+        while (c < row.Len()) {
+            rec.Set(header[c], row[c])
+            c += 1
+        }
+        out.Push(rec)
+        r += 1
+    }
+    Ok(out)
+}
+
+fn ParseRecords(text: String) -> Result<Array<Map<String, String>>, Error> { ParseRecordsWith(text, ",") }
+
+fn needsQuotes(f: String, d: U8) -> Bool {
+    if (f.IsEmpty()) { return false }
+    if (f.ByteAt(0) == b' ' || f.ByteAt(f.Len() - 1) == b' ') { return true }
+    mut i: I64 = 0
+    while (i < f.Len()) {
+        let c: U8 = f.ByteAt(i)
+        if (c == d || c == b'"' || c == b'\n' || c == b'\r') { return true }
+        i += 1
+    }
+    false
+}
+
+// One field as written in a file: in quotes when it has to be.
+fn quoteWith(f: String, sep: String) -> String {
+    if (needsQuotes(f, sep.ByteAt(0))) { "\"" + Text.Replace(f, "\"", "\"\"") + "\"" } else { f }
+}
+
+// The text of the rows, each line ending with `\n`.
+fn StringifyWith(rows: Array<Array<String>>, sep: String) -> String {
+    if (sep.Len() != 1) {
+        Panic("Csv.Stringify: the separator must be one character")
+    }
+    mut sb: StringBuilder = StringBuilder.New()
+    for (row in rows) {
+        mut first: Bool = true
+        for (f in row) {
+            if (!first) { sb.Append(sep) }
+            first = false
+            sb.Append(quoteWith(f, sep))
+        }
+        sb.Append("\n")
+    }
+    sb.ToString()
+}
+
+fn Stringify(rows: Array<Array<String>>) -> String { StringifyWith(rows, ",") }
+
+// Records as rows: the header names, then each record's fields in that order (a missing field is empty).
+fn StringifyRecords(header: Array<String>, records: Array<Map<String, String>>) -> String {
+    mut rows: Array<Array<String>> = [header]
+    for (rec in records) {
+        rows.Push(header.Map((h: String) => rec.GetOr(h, "")))
+    }
+    Stringify(rows)
+}
+
+// Reads a CSV file.
+fn ReadFile(path: String) -> Result<Array<Array<String>>, Error> {
+    let text: String = Fs.ReadAll(path)?
+    ParseWith(text, ",")
+}
+
+// Writes rows to a CSV file (replaced).
+fn WriteFile(path: String, rows: Array<Array<String>>) -> Result<Unit, Error> {
+    Fs.WriteAll(path, Stringify(rows))
+}
