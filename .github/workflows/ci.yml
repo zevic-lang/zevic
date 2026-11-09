@@ -51,23 +51,26 @@ jobs:
       - name: Show clang version
         run: clang --version
 
+      # the seed compiler comes from the committed LLVM IR with clang alone; it builds the compiler from its sources
       - name: Build zevic
         run: |
-          mkdir -p build
+          E="${{ matrix.exe }}"
           VERSION="$(cat VERSION)"
-          clang -std=c11 -O2 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -DZEVIC_VERSION="\"$VERSION\"" zevic0/*.c -o "build/zevic${{ matrix.exe }}"
-          # zevpm is written in Zevic (tools/zevpm); the C version (zevpm/) is the frozen one for bootstrapping
-          clang -std=c11 -O2 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -DZEVPM_VERSION="\"$VERSION\"" zevpm/*.c zevic0/util.c -o "build/zevpm-c${{ matrix.exe }}"
+          export ZEVIC_HOME="$PWD"
+          SRC=$(ls tools/zevic1/src/*.zev | sort)
+          grep -q "\"$VERSION\"" tools/zevic1/src/Version.zev
           grep -q "\"$VERSION\"" tools/zevpm/src/Version.zev
           grep -q "^version = \"$VERSION\"" packages/Zevic/zevic.toml
-          "build/zevic${{ matrix.exe }}" tools/zevpm/src/*.zev -o "build/zevpm${{ matrix.exe }}"
-          "build/zevic${{ matrix.exe }}" --version
-          "build/zevpm${{ matrix.exe }}" --version
-          # zevfmt is written in Zevic too (tools/zevfmt)
-          "build/zevic${{ matrix.exe }}" tools/zevfmt/src/*.zev -o "build/zevfmt${{ matrix.exe }}"
-          # the test runner is C too
+          mkdir -p build
+          sh tools/bootstrap-build.sh "build/zevic-seed$E"
+          "build/zevic-seed$E" $SRC -o "build/zevic$E"
+          "build/zevic$E" --version
+          "build/zevic$E" tools/zevpm/src/*.zev -o "build/zevpm$E"
+          "build/zevpm$E" --version
+          "build/zevic$E" tools/zevfmt/src/*.zev -o "build/zevfmt$E"
+          # the test runner is C
           if [ "${{ runner.os }}" = "Windows" ]; then PTHREAD=""; else PTHREAD="-pthread"; fi
-          clang -std=c11 -O1 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function $PTHREAD tests/zevtest.c -o "build/zevtest${{ matrix.exe }}"
+          clang -std=c11 -O1 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function $PTHREAD tests/zevtest.c -o "build/zevtest$E"
 
       - name: Test
         run: |
@@ -75,34 +78,21 @@ jobs:
           T="build/zevtest${{ matrix.exe }}"
           "$T" golden
           "$T" zevpm
-          ZEVPM="build/zevpm-c${{ matrix.exe }}" "$T" zevpm
           "$T" examples
           "$T" zevfmt
           "$T" install
           "build/zevfmt${{ matrix.exe }}" -check packages examples tools
 
-      # self-hosting: zevic builds zevic1 (written in Zevic), zevic1 builds zevic2, zevic2 builds zevic3;
-      # they must all write the same LLVM IR
-      - name: Self-hosting
+      # the fixed point: the compiler built by the seed writes the IR the seed came from
+      - name: Bootstrap check
         run: |
           E="${{ matrix.exe }}"
           SRC=$(ls tools/zevic1/src/*.zev | sort)
-          grep -q "\"$(cat VERSION)\"" tools/zevic1/src/Version.zev
-          "build/zevic$E" $SRC -o "build/zevic1$E"
-          "build/zevic1$E" $SRC -o "build/zevic2$E"
-          "build/zevic1$E" --emit-ll $SRC -o build/zevic1.ll
+          "build/zevic$E" $SRC -o "build/zevic2$E"
+          "build/zevic$E" --emit-ll $SRC -o build/zevic1.ll
           "build/zevic2$E" --emit-ll $SRC -o build/zevic2.ll
           cmp build/zevic1.ll build/zevic2.ll
-          if [ "${{ runner.os }}" = "Linux" ]; then
-            cmp build/zevic2.ll bootstrap/zevic.ll
-            # the committed IR rebuilds the compiler with clang alone
-            sh tools/bootstrap-build.sh build/zevic-from-ll
-            ZEVIC_HOME="$PWD" build/zevic-from-ll --emit-ll $SRC -o build/zevic-from-ll.ll
-            cmp build/zevic-from-ll.ll bootstrap/zevic.ll
-            ZEVIC="$PWD/build/zevic2" ZEVPM="build/zevpm" ZEVFMT="build/zevfmt" "build/zevtest" golden
-          else
-            ZEVIC="$PWD/build/zevic2$E" "build/zevtest$E" golden
-          fi
+          cmp build/zevic2.ll bootstrap/zevic.ll
 
       - name: Package
         id: pkg

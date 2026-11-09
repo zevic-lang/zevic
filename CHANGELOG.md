@@ -22,6 +22,8 @@ New modules:
 
 Tools and examples:
 
+- the C implementation (`zevic0/`, the C `zevpm/`) moved to its own repository, zevic-lang/zevic-c. This repository builds with `make` from `bootstrap/zevic.ll` and clang alone (the seed compiler builds `tools/zevic1`); `make bootstrap` checks the fixed point; CI no longer needs a C compiler for Zevic
+
 - `zevic --lib --pic` (also in `zevic1`): the library archive is position independent, so it can go into a shared library (Python `ctypes`)
 - `examples/interop/`: C++, Rust, Go and Python call a Zevic library, and Zevic calls Rust and C++ (`make test-interop`)
 - `zevfmt` compares operators by bytes, so non-ASCII sources no longer panic

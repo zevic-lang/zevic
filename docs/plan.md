@@ -349,7 +349,7 @@ zevic2       ─コンパイル→ zevic3
 
 - [x] `zevfmt`(`tools/zevfmt/`。コメントと改行を保つ。冪等、AST不変をテスト。構文チェックは `zevic --dump-ast` でコンパイラのパーサを使い回す)
 - [x] `zevpm` を Zevic で書き直す(`tools/zevpm/`。C 版 `zevpm/` は凍結版として残し、同じ結合テストを両方に通す)
-- [ ] `zevic0`(C版)は残すが、**新機能は Zevic 版にだけ入れる**。C版は、ブートストラップのための凍結版にする
+- [x] `zevic0`(C版)は v0.4.1 で別リポジトリ(zevic-lang/zevic-c)に分離。この本体は `bootstrap/zevic.ll` と clang だけでビルドする
 
 ### 7-5. 言語と標準ライブラリの追加(提案が先)
 
@@ -390,7 +390,7 @@ zevic2       ─コンパイル→ zevic3
 
 ```
 zevic/
-  zevic0/                 C製コンパイラ(凍結版)
+  tools/zevic1/           Zevic製コンパイラ(C製の zevic0 は zevic-lang/zevic-c に分離)
   compiler/               Zevic製コンパイラ(セルフホスト版)
   runtime/
     zevic_rt.c  ...       ランタイム

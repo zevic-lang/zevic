@@ -5,7 +5,7 @@ Zevic(仮称)は、Cの資産をそのまま使える、小さくて書きやす
 
 - 言語仕様: [`docs/spec/zevic-spec.md`](docs/spec/zevic-spec.md)
 - 実装計画: [`docs/plan.md`](docs/plan.md)
-- 最初のコンパイラ `zevic0` は C(C11)で書かれています(`zevic0/`)
+- コンパイラは Zevic 自身で書かれています(`tools/zevic1/`)。最初に作った C(C11)版 `zevic0` は別リポジトリ [zevic-lang/zevic-c](https://github.com/zevic-lang/zevic-c) に分離しました(v0.4.1)
 
 ```
 module Main
@@ -19,7 +19,7 @@ fn Main() {
 
 ## ビルド
 
-必要なもの: C コンパイラ、`make`、そして **clang 15 以上**(`zevic` が生成した LLVM IR をビルドするために使います)。
+必要なもの: `make` と **clang 15 以上**。最初のコンパイラ(seed)は、コミット済みの LLVM IR(`bootstrap/zevic.ll`)を clang でビルドして作ります。C 版のコンパイラは要りません。
 
 ### LLVM(clang)のインストール
 
@@ -35,7 +35,8 @@ fn Main() {
 
 
 ```sh
-make            # build/zevic と build/zevpm を作る(`make zevfmt` で整形ツール)
+make            # build/zevic(seed → コンパイラ)、build/zevpm2、build/zevfmt を作る
+make bootstrap  # コンパイラが bootstrap/zevic.ll と同じ IR を出す(固定点)ことを確かめる
 make test       # ゴールデンテスト、zevpm のテスト、examples を実行
 ./build/zevic examples/01_hello.zev -o hello && ./hello
 ```
@@ -85,7 +86,7 @@ zevpm build --release    # build/ に出力(ライブラリは .a と include/<N
 
 v0.4.1: 型、`struct`/`class`/`enum`、ユニオン型(`A | B`、`is`、型パターン)、`interface`、ジェネリクス、クロージャ、`defer`、GC、C との連携、
 `test` ブロック、ループのラベル(`break@名前`)、`async`/`await`、HTTP(`Zevic.Http`、TLSなし)、`zevpm`、標準ライブラリ(`Fs` `Env` `Text` `Math` `Time` `Process` `Random` `Json` `Path` `DateTime` `Regex` `Csv` `Toml` `Net` `Zip` `Gzip` など)まで動きます。
-`zevfmt`(整形: `zevfmt -w .`、検査: `zevfmt -check .`)も動きます。コンパイラ自身も Zevic で書かれており(`tools/zevic1/`)、自分自身をビルドできます(`make bootstrap`)。計画は [`docs/plan.md`](docs/plan.md)。
+`zevfmt`(整形: `zevfmt -w .`、検査: `zevfmt -check .`)も動きます。計画は [`docs/plan.md`](docs/plan.md)。
 
 仕様書は草案です。実装の進み具合は [`CHANGELOG.md`](CHANGELOG.md) を参照してください。
 
