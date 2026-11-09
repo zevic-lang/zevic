@@ -9,6 +9,8 @@ SEED    := build/zevic-seed
 BIN     := build/zevic
 export ZEVIC_HOME := $(CURDIR)
 
+all: build/zevic build/zevpm2 build/zevfmt
+
 .PHONY: test-interop all test clean install zevpm zevfmt fmt fmt-check bootstrap bootstrap-update
 
 $(SEED): bootstrap/zevic.ll runtime/zevic_rt.c
@@ -36,8 +38,6 @@ $(FMT): $(BIN) $(wildcard tools/zevfmt/src/*.zev) $(wildcard packages/Zevic/src/
 	./$(BIN) tools/zevfmt/src/*.zev -o $@
 
 zevfmt: $(FMT)
-
-all: $(BIN) $(PM2) $(FMT)
 
 FMT_DIRS := packages examples tools
 
