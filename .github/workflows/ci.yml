@@ -182,6 +182,7 @@ jobs:
           zevic "$GITHUB_WORKSPACE/examples/01_hello.zev" -o hello && ./hello
           zevpm new app && cd app && zevpm run && zevpm test
           sudo apt-get remove -y zevic
+          hash -r
           ! command -v zevic
       - name: Smoke test the .pkg (macOS)
         if: runner.os == 'macOS'
