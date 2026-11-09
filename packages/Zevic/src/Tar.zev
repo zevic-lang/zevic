@@ -1,0 +1,406 @@
+module Zevic.Tar
+
+import Zevic.Bytes
+import Zevic.DateTime
+import Zevic.Fs
+import Zevic.Gzip
+import Zevic.Path
+import Zevic.Text
+import Zevic.Zip
+
+// Reading and writing tar archives (the ustar format; `.tar`, and `.tar.gz` through Gzip).
+//
+//     mut w: Tar.TarWriter = Tar.TarWriter.New()
+//     w.AddString("hello.txt", "hello")?
+//     w.AddTree("src", "project")?
+//     Fs.WriteBytes("out.tar.gz", w.FinishGz()?)?
+//
+//     let t: Tar.Archive = Tar.OpenFile("out.tar.gz")?          // .gz is recognised by its first bytes
+//     for (e in t.Entries()) { Console.Println("${e.Name} ${e.Size}") }
+//
+// Names longer than 100 bytes are written with the ustar prefix field when they can be split at a "/". Reading
+// also understands GNU long names ("L" entries) and the path and size of PAX headers. Hard links, devices and
+// other special files are listed but not extracted.
+
+let Block: I64 = 512
+
+fn bad(why: String) -> Error { Error.New(ErrorKind.InvalidFormat, "tar: ${why}") }
+
+enum Kind {
+    File,
+    Dir,
+    Symlink,
+    Hardlink,
+    Other,
+}
+
+// One entry of an archive.
+struct Entry {
+    Name: String
+    Size: I64
+    Mode: I64
+    MTime: I64
+    Kind: Kind
+    LinkName: String
+    Offset: I64
+
+    fn Init(name: String, size: I64, mode: I64, mtime: I64, kind: Kind, link: String, offset: I64) {
+        this.Name = name
+        this.Size = size
+        this.Mode = mode
+        this.MTime = mtime
+        this.Kind = kind
+        this.LinkName = link
+        this.Offset = offset
+    }
+
+    fn IsDir() -> Bool { this.Kind == Kind.Dir }
+
+    fn IsFile() -> Bool { this.Kind == Kind.File }
+
+    // The modification time (UTC).
+    fn Modified() -> DateTime.DateTime { DateTime.FromUnixSeconds(this.MTime) }
+}
+
+// A text field: the bytes up to the first zero.
+fn textField(b: Array<U8>, at: I64, len: I64) -> String {
+    mut n: I64 = 0
+    while (n < len && b[at + n] != 0) { n += 1 }
+    Bytes.ToStringLossy(b.Slice(at, at + n))
+}
+
+// An octal number field (digits, with spaces or zero bytes around them).
+fn octalField(b: Array<U8>, at: I64, len: I64) -> Result<I64, Error> {
+    mut v: I64 = 0
+    mut seen: Bool = false
+    for (k in 0..len) {
+        let c: U8 = b[at + k]
+        if (c >= 48 && c <= 55) {
+            v = v * 8 + (c - 48).ToI64()
+            seen = true
+        } else if (c == 0 || c == 32) {
+            if (seen) { break }
+        } else {
+            return Err(bad("a number field holds \"${Bytes.ToStringLossy(b.Slice(at, at + len))}\" (base-256 numbers are not supported)"))
+        }
+    }
+    Ok(v)
+}
+
+fn isZeroBlock(b: Array<U8>, at: I64) -> Bool {
+    for (k in 0..Block) {
+        if (b[at + k] != 0) { return false }
+    }
+    true
+}
+
+fn checksum(b: Array<U8>, at: I64) -> I64 {
+    mut sum: I64 = 0
+    for (k in 0..Block) {
+        sum += if (k >= 148 && k < 156) { 32 } else { b[at + k].ToI64() }
+    }
+    sum
+}
+
+fn kindOf(flag: U8) -> Kind {
+    if (flag == 0 || flag == 48 || flag == 55) { Kind.File } else if (flag == 53) { Kind.Dir } else if (flag == 50) { Kind.Symlink } else if (flag == 49) { Kind.Hardlink } else { Kind.Other }
+}
+
+// Reads the records of a PAX header ("27 path=some/long/name\n") into a map.
+fn paxRecords(data: Array<U8>) -> Map<String, String> {
+    mut out: Map<String, String> = Map<String, String>.New()
+    mut p: I64 = 0
+    while (p < data.Len()) {
+        mut sp: I64 = p
+        while (sp < data.Len() && data[sp] != 32) { sp += 1 }
+        let len: I64 = Bytes.ToStringLossy(data.Slice(p, sp)).ToI64().UnwrapOr(0)
+        if (len <= 0 || p + len > data.Len()) { break }
+        let rec: String = Bytes.ToStringLossy(data.Slice(sp + 1, p + len - 1))
+        match (Text.IndexOf(rec, "=")) {
+            Some(eq) => out.Set(rec.Slice(0, eq), rec.Slice(eq + 1, rec.Len())),
+            None => {},
+        }
+        p += len
+    }
+    out
+}
+
+// An opened archive (kept in memory).
+class Archive {
+    data: Array<U8>
+    entries: Array<Entry>
+
+    fn Init(data: Array<U8>, entries: Array<Entry>) {
+        this.data = data
+        this.entries = entries
+    }
+
+    fn Entries() -> Array<Entry> { this.entries }
+
+    fn Names() -> Array<String> { this.entries.Map((e: Entry) => e.Name) }
+
+    fn Len() -> I64 { this.entries.Len() }
+
+    fn Find(name: String) -> Option<Entry> {
+        for (e in this.entries) {
+            if (e.Name == name) { return Some(e) }
+        }
+        None
+    }
+
+    // The content of a file entry.
+    fn Read(e: Entry) -> Result<Array<U8>, Error> {
+        if (e.Kind != Kind.File) {
+            return Err(Error.New(ErrorKind.Invalid, "tar: \"${e.Name}\" is not a file"))
+        }
+        Ok(this.data.Slice(e.Offset, e.Offset + e.Size))
+    }
+
+    fn ReadFile(name: String) -> Result<Array<U8>, Error> {
+        match (this.Find(name)) {
+            Some(e) => this.Read(e),
+            None => Err(Error.New(ErrorKind.NotFound, "tar: no entry \"${name}\"")),
+        }
+    }
+
+    fn ReadString(name: String) -> Result<String, Error> { Bytes.ToString(this.ReadFile(name)?) }
+
+    // Writes everything below `dir` (made if needed) and gives the number of files written. A name that would
+    // leave `dir` is an error; links and special files are skipped.
+    fn ExtractAll(dir: String) -> Result<I64, Error> {
+        Fs.CreateDirAll(dir)?
+        mut files: I64 = 0
+        for (e in this.entries) {
+            if (e.Kind != Kind.File && e.Kind != Kind.Dir) { continue }
+            let safe: String = match (Zip.SafeName(e.Name)) {
+                Some(s) => s,
+                None => return Err(Error.New(ErrorKind.Invalid, "tar: the entry name \"${e.Name}\" is not allowed")),
+            }
+            let target: String = Path.Join(dir, safe)
+            if (!Path.IsInside(dir, target)) {
+                return Err(Error.New(ErrorKind.Invalid, "tar: the entry name \"${e.Name}\" leaves the directory"))
+            }
+            if (e.Kind == Kind.Dir) {
+                Fs.CreateDirAll(target)?
+            } else {
+                Fs.CreateDirAll(Path.Parent(target))?
+                Fs.WriteBytes(target, this.Read(e)?)?
+                files += 1
+            }
+        }
+        Ok(files)
+    }
+}
+
+// Reads the entries of a tar held in memory. Gzip data is unpacked first.
+fn Open(input: Array<U8>) -> Result<Archive, Error> {
+    let b: Array<U8> = if (Gzip.IsGzip(input)) { Gzip.Decompress(input)? } else { input }
+    mut entries: Array<Entry> = []
+    mut p: I64 = 0
+    mut longName: Option<String> = None
+    mut pax: Map<String, String> = Map<String, String>.New()
+    while (p + Block <= b.Len()) {
+        if (isZeroBlock(b, p)) { break }
+        let stored: I64 = octalField(b, p + 148, 8)?
+        if (stored != checksum(b, p)) {
+            return Err(bad("the header at byte ${p} has a wrong checksum (not a tar file?)"))
+        }
+        let flag: U8 = b[p + 156]
+        mut size: I64 = octalField(b, p + 124, 12)?
+        let isUstar: Bool = textField(b, p + 257, 5) == "ustar"
+        mut name: String = textField(b, p, 100)
+        if (isUstar && b[p + 345] != 0) {
+            name = textField(b, p + 345, 155) + "/" + name
+        }
+        let dataAt: I64 = p + Block
+        if (flag == 76 || flag == 120 || flag == 103) {
+            // L: GNU long name, x: PAX header for the next entry, g: global PAX header (ignored)
+            if (dataAt + size > b.Len()) { return Err(bad("cut off in a header's data")) }
+            let content: Array<U8> = b.Slice(dataAt, dataAt + size)
+            if (flag == 76) {
+                longName = Some(textField(content, 0, content.Len()))
+            } else if (flag == 120) {
+                pax = paxRecords(content)
+            }
+            p = dataAt + (size + Block - 1) / Block * Block
+            continue
+        }
+        match (longName) {
+            Some(n) => { name = n },
+            None => {},
+        }
+        match (pax.Get("path")) {
+            Some(n) => { name = n },
+            None => {},
+        }
+        match (pax.Get("size")) {
+            Some(s) => { size = s.ToI64().UnwrapOr(size) },
+            None => {},
+        }
+        longName = None
+        pax = Map<String, String>.New()
+        let kind: Kind = kindOf(flag)
+        if (kind == Kind.File && dataAt + size > b.Len()) {
+            return Err(bad("the data of \"${name}\" is cut off"))
+        }
+        let mode: I64 = octalField(b, p + 100, 8)?
+        let mtime: I64 = octalField(b, p + 136, 12)?
+        let link: String = textField(b, p + 157, 100)
+        // GNU tar writes "./name" and "./" for the top directory itself
+        mut clean: String = name
+        while (Text.StartsWith(clean, "./")) { clean = clean.Slice(2, clean.Len()) }
+        while (Text.EndsWith(clean, "/")) { clean = clean.Slice(0, clean.Len() - 1) }
+        let span: I64 = if (kind == Kind.File || kind == Kind.Other) { (size + Block - 1) / Block * Block } else { 0 }
+        if (clean == "." || clean == "") {
+            p = dataAt + span
+            continue
+        }
+        entries.Push(Entry.New(clean, if (kind == Kind.File) { size } else { 0 }, mode, mtime, kind, link, dataAt))
+        p = dataAt + span
+    }
+    Ok(Archive.New(b, entries))
+}
+
+fn OpenFile(path: String) -> Result<Archive, Error> { Open(Fs.ReadBytes(path)?) }
+
+fn putText(mut h: Array<U8>, at: I64, s: Array<U8>) {
+    for (k in 0..s.Len()) { h[at + k] = s[k] }
+}
+
+fn putOctal(mut h: Array<U8>, at: I64, width: I64, v: I64) {
+    mut x: I64 = v
+    mut k: I64 = width - 2
+    while (k >= 0) {
+        h[at + k] = (48 + x % 8).ToU8Wrap()
+        x = x / 8
+        k -= 1
+    }
+}
+
+// Builds a tar in memory.
+class TarWriter {
+    out: Array<U8> = []
+    seen: Set<String> = Set<String>.New()
+    count: I64 = 0
+
+    fn Init() {}
+
+    fn Len() -> I64 { this.count }
+
+    // Adds a file (mode 0644, time 0, so the same input gives the same archive).
+    mut fn Add(name: String, data: Array<U8>) -> Result<Unit, Error> { this.put(name, data, 420, 0, false) }
+
+    mut fn AddString(name: String, text: String) -> Result<Unit, Error> { this.put(name, Bytes.FromString(text), 420, 0, false) }
+
+    mut fn AddAt(name: String, data: Array<U8>, time: DateTime.DateTime) -> Result<Unit, Error> {
+        this.put(name, data, 420, time.ToUnixSeconds(), false)
+    }
+
+    mut fn AddDir(name: String) -> Result<Unit, Error> { this.put(name, [], 493, 0, true) }
+
+    mut fn AddFile(path: String, name: String) -> Result<Unit, Error> {
+        let data: Array<U8> = Fs.ReadBytes(path)?
+        let ms: I64 = Fs.ModifiedMillis(path)?
+        this.put(name, data, 420, ms / 1000, false)
+    }
+
+    // Adds a directory with everything in it, named `prefix` + the path below `dir`. Symbolic links are left out.
+    mut fn AddTree(dir: String, prefix: String) -> Result<Unit, Error> {
+        let base: String = if (prefix == "" || Text.EndsWith(prefix, "/")) { prefix } else { prefix + "/" }
+        if (prefix != "") { this.AddDir(prefix)? }
+        for (full in Fs.Walk(dir)?) {
+            let rel: String = Text.Replace(Path.Relative(dir, full).UnwrapOr(full), "\\", "/")
+            if (Fs.IsSymlink(full)) {
+                continue
+            }
+            if (Fs.IsDir(full)) {
+                this.AddDir(base + rel)?
+            } else {
+                this.AddFile(full, base + rel)?
+            }
+        }
+        Ok(())
+    }
+
+    mut fn put(name: String, data: Array<U8>, mode: I64, mtime: I64, isDir: Bool) -> Result<Unit, Error> {
+        let clean: String = match (Zip.SafeName(name)) {
+            Some(s) => s,
+            None => return Err(Error.New(ErrorKind.Invalid, "tar: the name \"${name}\" is not allowed (it must be relative, with no \"..\")")),
+        }
+        let full: String = if (isDir) { clean + "/" } else { clean }
+        if (this.seen.Contains(full)) {
+            return Err(Error.New(ErrorKind.Invalid, "tar: the name \"${full}\" is used twice"))
+        }
+        if (data.Len() > 8589934591) {
+            return Err(Error.New(ErrorKind.OutOfRange, "tar: a file of 8 GiB or more does not fit a ustar header"))
+        }
+        let nameBytes: Array<U8> = Bytes.FromString(full)
+        mut namePart: Array<U8> = nameBytes
+        mut prefixPart: Array<U8> = []
+        if (nameBytes.Len() > 100) {
+            // split at a "/" so that the prefix has at most 155 bytes and the rest at most 100
+            mut cut: I64 = -1
+            for (k in 0..nameBytes.Len() - 1) {
+                if (nameBytes[k] == 47 && k <= 155 && nameBytes.Len() - k - 1 <= 100) {
+                    cut = k
+                    break
+                }
+            }
+            if (cut < 0) {
+                return Err(Error.New(ErrorKind.OutOfRange, "tar: the name \"${full}\" is too long for a ustar header"))
+            }
+            prefixPart = nameBytes.Slice(0, cut)
+            namePart = nameBytes.Slice(cut + 1, nameBytes.Len())
+        }
+        mut h: Array<U8> = Bytes.Zeros(Block)
+        putText(h, 0, namePart)
+        putOctal(h, 100, 8, mode)
+        putOctal(h, 108, 8, 0)
+        putOctal(h, 116, 8, 0)
+        putOctal(h, 124, 12, data.Len())
+        putOctal(h, 136, 12, if (mtime < 0) { 0 } else { mtime })
+        h[156] = if (isDir) { 53 } else { 48 }
+        putText(h, 257, Bytes.FromString("ustar"))
+        h[263] = 48
+        h[264] = 48
+        putText(h, 345, prefixPart)
+        for (k in 148..156) { h[k] = 32 }
+        let sum: I64 = checksum(h, 0)
+        putOctal(h, 148, 7, sum)
+        h[154] = 0
+        h[155] = 32
+        this.out.Extend(h)
+        this.out.Extend(data)
+        let pad: I64 = (Block - data.Len() % Block) % Block
+        this.out.Extend(Bytes.Zeros(pad))
+        this.seen.Add(full)
+        this.count += 1
+        Ok(())
+    }
+
+    // The finished archive (two empty blocks end it).
+    fn Finish() -> Array<U8> {
+        mut r: Array<U8> = this.out
+        r.Extend(Bytes.Zeros(2 * Block))
+        r
+    }
+
+    // The finished archive, gzipped (a .tar.gz).
+    fn FinishGz() -> Array<U8> { Gzip.Compress(this.Finish()) }
+
+    // Writes the archive; it is gzipped if the name ends with ".gz" or ".tgz".
+    fn WriteTo(path: String) -> Result<Unit, Error> {
+        let gz: Bool = Text.EndsWith(path, ".gz") || Text.EndsWith(path, ".tgz")
+        Fs.WriteBytes(path, if (gz) { this.FinishGz() } else { this.Finish() })
+    }
+}
+
+// Makes a tar of a directory (gzipped when `to` ends with ".gz" or ".tgz"): `TarDir("src", "src.tar.gz")`.
+fn TarDir(dir: String, to: String) -> Result<Unit, Error> {
+    mut w: TarWriter = TarWriter.New()
+    w.AddTree(dir, "")?
+    w.WriteTo(to)
+}
+
+// Unpacks a .tar or .tar.gz file into a directory; gives the number of files written.
+fn Untar(file: String, dir: String) -> Result<I64, Error> { OpenFile(file)?.ExtractAll(dir) }

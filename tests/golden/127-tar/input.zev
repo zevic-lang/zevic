@@ -1,0 +1,95 @@
+module Main
+
+import Zevic.Bytes
+import Zevic.Console
+import Zevic.DateTime
+import Zevic.Digest
+import Zevic.Encoding
+import Zevic.Fs
+import Zevic.Gzip
+import Zevic.Path
+import Zevic.Tar
+import Zevic.Text
+
+fn Why(e: Error) -> String { "${e.Kind().ToString()}" }
+
+fn Main() {
+    let big: String = Text.Repeat("tar me, tar me again. ", 100)
+    mut w: Tar.TarWriter = Tar.TarWriter.New()
+    w.AddString("hello.txt", "hello").Unwrap()
+    w.AddDir("docs").Unwrap()
+    w.AddString("docs/big.txt", big).Unwrap()
+    w.Add("docs/bin.dat", [0, 1, 2, 255, 254]).Unwrap()
+    w.AddString("日本語/ファイル.txt", "utf-8 name").Unwrap()
+    w.AddAt("dated.txt", Bytes.FromString("x"), DateTime.Make(2024, 5, 17, 13, 45, 30).Unwrap()).Unwrap()
+    let longDir: String = Text.Repeat("directory/", 12) + "end"
+    w.AddString("${longDir}/file-with-a-long-name.txt", "long").Unwrap()
+    match (w.AddString("hello.txt", "again")) {
+        Ok(_x) => Console.Println("dup: ok?"),
+        Err(e) => Console.Println("dup: ${Why(e)}"),
+    }
+    match (w.AddString("../evil", "x")) {
+        Ok(_x) => Console.Println("evil: ok?"),
+        Err(e) => Console.Println("evil: ${Why(e)}"),
+    }
+    match (w.AddString(Text.Repeat("x", 120), "x")) {
+        Ok(_x) => Console.Println("toolong: ok?"),
+        Err(e) => Console.Println("toolong: ${Why(e)}"),
+    }
+    let bytes: Array<U8> = w.Finish()
+    Console.Println("entries ${w.Len()} size ${bytes.Len()} blocks ${bytes.Len() % 512} crc ${Digest.Crc32(bytes)}")
+
+    let t: Tar.Archive = Tar.Open(bytes).Unwrap()
+    for (e in t.Entries()) {
+        Console.Println("${e.Name.Len()} ${e.Name.Slice(0, if (e.Name.Len() > 30) { 30 } else { e.Name.Len() })} size=${e.Size} kind=${e.IsDir()} mode=${e.Mode} time=${e.Modified().ToIso()}")
+    }
+    Console.Println(t.ReadString("hello.txt").Unwrap())
+    Console.Println("big ${t.ReadString("docs/big.txt").Unwrap() == big}")
+    Console.Println("bin ${Encoding.HexEncode(t.ReadFile("docs/bin.dat").Unwrap())}")
+    Console.Println(t.ReadString("日本語/ファイル.txt").Unwrap())
+    Console.Println(t.ReadString("${longDir}/file-with-a-long-name.txt").Unwrap())
+    match (t.ReadFile("nothing")) {
+        Ok(_x) => Console.Println("missing: ok?"),
+        Err(e) => Console.Println("missing: ${Why(e)}"),
+    }
+    match (t.ReadFile("docs")) {
+        Ok(_x) => Console.Println("dir read: ok?"),
+        Err(e) => Console.Println("dir read: ${Why(e)}"),
+    }
+
+    // gzip
+    let gz: Array<U8> = w.FinishGz()
+    Console.Println("gz ${Gzip.IsGzip(gz)} smaller ${gz.Len() < bytes.Len()}")
+    Console.Println("gz names ${Tar.Open(gz).Unwrap().Len()}")
+
+    // damage
+    mut dmg: Array<U8> = bytes
+    dmg[10] = dmg[10] ^ 255
+    match (Tar.Open(dmg)) {
+        Ok(_x) => Console.Println("damaged: ok?"),
+        Err(e) => Console.Println("damaged: ${Why(e)}"),
+    }
+    match (Tar.Open(bytes.Slice(0, 700))) {
+        Ok(_x) => Console.Println("cut: ok?"),
+        Err(e) => Console.Println("cut: ${Why(e)}"),
+    }
+    Console.Println("empty ${Tar.Open([]).Unwrap().Len()} ${Tar.Open(Bytes.Zeros(1024)).Unwrap().Len()}")
+
+    // files on disk
+    let root: String = Fs.MakeTempDir("zevtar").Unwrap()
+    let src: String = Path.Join(root, "src")
+    Fs.CreateDirAll(Path.Join(src, "sub/deep")).Unwrap()
+    Fs.WriteAll(Path.Join(src, "a.txt"), "file a").Unwrap()
+    Fs.WriteAll(Path.Join(src, "sub/b.txt"), big).Unwrap()
+    Fs.WriteAll(Path.Join(src, "sub/deep/c.txt"), "c").Unwrap()
+    for (name in ["src.tar", "src.tar.gz"]) {
+        let archive: String = Path.Join(root, name)
+        Tar.TarDir(src, archive).Unwrap()
+        let out: String = Path.Join(root, "out-${name}")
+        Console.Println("${name}: extracted ${Tar.Untar(archive, out).Unwrap()} files, c=${Fs.ReadAll(Path.Join(out, "sub/deep/c.txt")).Unwrap()} b=${Fs.ReadAll(Path.Join(out, "sub/b.txt")).Unwrap() == big}")
+    }
+    for (n in Tar.OpenFile(Path.Join(root, "src.tar")).Unwrap().Names()) {
+        Console.Println("in tar: ${n}")
+    }
+    Fs.RemoveAll(root).Unwrap()
+}

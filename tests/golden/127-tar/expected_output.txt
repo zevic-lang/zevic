@@ -1,0 +1,30 @@
+dup: Invalid
+evil: Invalid
+toolong: OutOfRange
+entries 7 size 9728 blocks 0 crc 1033142064
+9 hello.txt size=5 kind=false mode=420 time=1970-01-01T00:00:00Z
+4 docs size=0 kind=true mode=493 time=1970-01-01T00:00:00Z
+12 docs/big.txt size=2200 kind=false mode=420 time=1970-01-01T00:00:00Z
+12 docs/bin.dat size=5 kind=false mode=420 time=1970-01-01T00:00:00Z
+26 日本語/ファイル.txt size=10 kind=false mode=420 time=1970-01-01T00:00:00Z
+9 dated.txt size=1 kind=false mode=420 time=2024-05-17T13:45:30Z
+149 directory/directory/directory/ size=4 kind=false mode=420 time=1970-01-01T00:00:00Z
+hello
+big true
+bin 000102fffe
+utf-8 name
+long
+missing: NotFound
+dir read: Invalid
+gz true smaller true
+gz names 7
+damaged: InvalidFormat
+cut: InvalidFormat
+empty 0 0
+src.tar: extracted 3 files, c=c b=true
+src.tar.gz: extracted 3 files, c=c b=true
+in tar: a.txt
+in tar: sub
+in tar: sub/b.txt
+in tar: sub/deep
+in tar: sub/deep/c.txt
