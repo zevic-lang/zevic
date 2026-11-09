@@ -1999,13 +1999,17 @@ typedef int zevic_sock;
 #endif
 
 static _Thread_local int g_net_failed;
+static _Thread_local int g_net_timeout; /* the last failure was a time limit */
 static _Thread_local char g_net_msg[256];
 
 static void net_fail(const char *what) {
     g_net_failed = 1;
 #ifdef _WIN32
-    snprintf(g_net_msg, sizeof g_net_msg, "%s (error %d)", what, WSAGetLastError());
+    int e = WSAGetLastError();
+    g_net_timeout = e == WSAETIMEDOUT || e == WSAEWOULDBLOCK;
+    snprintf(g_net_msg, sizeof g_net_msg, "%s (error %d)", what, e);
 #else
+    g_net_timeout = errno == EAGAIN || errno == EWOULDBLOCK || errno == ETIMEDOUT;
     snprintf(g_net_msg, sizeof g_net_msg, "%s: %s", what, strerror(errno));
 #endif
 }
@@ -2024,6 +2028,9 @@ static void net_init(void) {
 }
 
 int32_t zevic_net_failed(void) { return g_net_failed; }
+
+/* After a failure: was it a time limit (SetTimeout) that ran out? */
+int32_t zevic_net_timed_out(void) { return g_net_failed && g_net_timeout; }
 
 void zevic_net_errmsg(zevic_str *out) { str_set(out, g_net_msg, (int64_t)strlen(g_net_msg)); }
 
@@ -2050,6 +2057,7 @@ int64_t zevic_net_listen(const char *hp, int64_t hn, int64_t port) {
     free(host);
     if (rc != 0 || !ai) {
         g_net_failed = 1;
+        g_net_timeout = 0;
         snprintf(g_net_msg, sizeof g_net_msg, "cannot resolve the address");
         return -1;
     }
@@ -2204,6 +2212,7 @@ int64_t zevic_net_connect(const char *hp, int64_t hn, int64_t port, int64_t time
     int rc = net_resolve(host, port, 0, &ai);
     if (rc != 0 || !ai) {
         g_net_failed = 1;
+        g_net_timeout = 0;
         snprintf(g_net_msg, sizeof g_net_msg, "cannot find the host \"%.200s\"", host);
         free(host);
         return -1;
@@ -2278,4 +2287,172 @@ void zevic_net_shutdown(int64_t fd) {
 void zevic_net_close(int64_t fd) {
     zevic_sock_close((zevic_sock)fd);
     shut_clear(fd);
+}
+
+/* ---- UDP and name lookup (Zevic.Net) ---- */
+
+static _Thread_local char g_peer_host[128];
+static _Thread_local int64_t g_peer_port;
+
+/* A UDP socket bound to host:port (host "" is every address; port 0 picks a free one). */
+int64_t zevic_udp_bind(const char *hp, int64_t hn, int64_t port) {
+    net_init();
+    g_net_failed = 0;
+    g_net_timeout = 0;
+    char *host = nul_copy(hp, hn);
+    struct addrinfo hints, *ai = NULL;
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_flags = AI_PASSIVE;
+    char ps[16];
+    snprintf(ps, sizeof ps, "%d", (int)port);
+    int rc = getaddrinfo(host[0] ? host : NULL, ps, &hints, &ai);
+    free(host);
+    if (rc != 0 || !ai) {
+        g_net_failed = 1;
+        snprintf(g_net_msg, sizeof g_net_msg, "cannot resolve the address");
+        return -1;
+    }
+    zevic_sock s = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+    if (s == ZEVIC_BAD_SOCK) {
+        net_fail("cannot create a socket");
+        freeaddrinfo(ai);
+        return -1;
+    }
+    if (bind(s, ai->ai_addr, (int)ai->ai_addrlen) != 0) {
+        net_fail("cannot bind");
+        zevic_sock_close(s);
+        freeaddrinfo(ai);
+        return -1;
+    }
+    freeaddrinfo(ai);
+    return (int64_t)s;
+}
+
+/* Sends one datagram to host:port from this socket. 1 on success. */
+int32_t zevic_udp_send_to(int64_t fd, const char *hp, int64_t hn, int64_t port, const char *d, int64_t dn) {
+    g_net_failed = 0;
+    g_net_timeout = 0;
+    struct sockaddr_storage ss;
+    socklen_t sl = sizeof ss;
+    if (getsockname((zevic_sock)fd, (struct sockaddr *)&ss, &sl) != 0) {
+        net_fail("cannot send");
+        return 0;
+    }
+    char *host = nul_copy(hp, hn);
+    struct addrinfo hints, *ai = NULL;
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = ss.ss_family;
+    hints.ai_socktype = SOCK_DGRAM;
+    char ps[16];
+    snprintf(ps, sizeof ps, "%d", (int)port);
+    int rc = getaddrinfo(host, ps, &hints, &ai);
+    if (rc != 0 || !ai) {
+        g_net_failed = 1;
+        snprintf(g_net_msg, sizeof g_net_msg, "cannot find the host \"%.200s\"", host);
+        free(host);
+        return 0;
+    }
+    free(host);
+    int64_t n;
+    do {
+        n = (int64_t)sendto((zevic_sock)fd, d, (int)dn, 0, ai->ai_addr, (int)ai->ai_addrlen);
+    } while (n < 0 && NET_INTR());
+    freeaddrinfo(ai);
+    if (n != dn) {
+        net_fail("cannot send");
+        return 0;
+    }
+    return 1;
+}
+
+/* Receives one datagram (at most `max` bytes; more is cut off). On failure the result is empty and
+ * zevic_net_failed() is true; an empty datagram is a success. The sender is in zevic_udp_peer_*. */
+void zevic_udp_recv(zevic_str *out, int64_t fd, int64_t max) {
+    g_net_failed = 0;
+    g_net_timeout = 0;
+    if (max > 65535) max = 65535;
+    if (max < 1) max = 1;
+    char *buf = malloc((size_t)max);
+    if (!buf) exit(101);
+    struct sockaddr_storage ss;
+    socklen_t sl;
+    int64_t n;
+    do {
+        sl = sizeof ss;
+        n = (int64_t)recvfrom((zevic_sock)fd, buf, (int)max, 0, (struct sockaddr *)&ss, &sl);
+    } while (n < 0 && NET_INTR());
+    if (n < 0) {
+        net_fail("cannot receive");
+        n = 0;
+        g_peer_host[0] = 0;
+        g_peer_port = 0;
+    } else {
+        char serv[16];
+        if (getnameinfo((struct sockaddr *)&ss, sl, g_peer_host, sizeof g_peer_host, serv, sizeof serv,
+                        NI_NUMERICHOST | NI_NUMERICSERV) != 0) {
+            g_peer_host[0] = 0;
+            g_peer_port = 0;
+        } else {
+            g_peer_port = atoi(serv);
+        }
+    }
+    str_set(out, buf, n);
+    free(buf);
+}
+
+void zevic_udp_peer_host(zevic_str *out) { str_set(out, g_peer_host, (int64_t)strlen(g_peer_host)); }
+
+int64_t zevic_udp_peer_port(void) { return g_peer_port; }
+
+/* The addresses of a host name, as numbers, one per line (no repeats). */
+void zevic_net_resolve(zevic_str *out, const char *hp, int64_t hn) {
+    net_init();
+    g_net_failed = 0;
+    g_net_timeout = 0;
+    char *host = nul_copy(hp, hn);
+    struct addrinfo hints, *ai = NULL;
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    int rc = getaddrinfo(host, NULL, &hints, &ai);
+    if (rc != 0 || !ai) {
+        g_net_failed = 1;
+        snprintf(g_net_msg, sizeof g_net_msg, "cannot find the host \"%.200s\"", host);
+        free(host);
+        str_set(out, "", 0);
+        return;
+    }
+    free(host);
+    size_t cap = 1024, len = 0;
+    char *res = malloc(cap);
+    if (!res) exit(101);
+    res[0] = 0;
+    for (struct addrinfo *a = ai; a; a = a->ai_next) {
+        char h[128];
+        if (getnameinfo(a->ai_addr, (socklen_t)a->ai_addrlen, h, sizeof h, NULL, 0, NI_NUMERICHOST) != 0) continue;
+        size_t hl = strlen(h);
+        /* skip an address already in the list */
+        int dup = 0;
+        for (const char *q = res; *q;) {
+            const char *e = strchr(q, '\n');
+            size_t ql = e ? (size_t)(e - q) : strlen(q);
+            if (ql == hl && memcmp(q, h, hl) == 0) dup = 1;
+            q = e ? e + 1 : q + ql;
+        }
+        if (dup) continue;
+        if (len + hl + 2 > cap) {
+            cap = (len + hl + 2) * 2;
+            res = realloc(res, cap);
+            if (!res) exit(101);
+        }
+        if (len) res[len++] = '\n';
+        memcpy(res + len, h, hl);
+        len += hl;
+        res[len] = 0;
+    }
+    freeaddrinfo(ai);
+    str_set(out, res, (int64_t)len);
+    free(res);
 }

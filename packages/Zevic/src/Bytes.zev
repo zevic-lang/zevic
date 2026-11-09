@@ -104,3 +104,8 @@ fn PushU64LE(mut b: Array<U8>, v: U64) {
     PushU32LE(b, v.ToU32Wrap())
     PushU32LE(b, (v >> 32).ToU32Wrap())
 }
+
+// Copies the bytes into a String without checking for UTF-8. Meant for
+// handing binary data to byte-oriented APIs (sockets); the result may not be
+// valid text, so do not print or slice it by characters.
+fn ToStringRaw(b: Array<U8>) -> String { zevic_bytes_to_str(b.Ptr(), b.Len(), 0) }
