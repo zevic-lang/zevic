@@ -1489,6 +1489,11 @@ Handle<T>.New(x: T) -> Handle<T>   // h.Id() / h.Release() / Handle.Get<T>(id)
 | `Zevic.Async` | 非同期処理 |
 | `Zevic.Json` | JSONの読み書き |
 | `Zevic.Random` | 乱数 |
+| `Zevic.Path` `Zevic.Bytes` `Zevic.Chars` | パス操作、バイト列(`Array<U8>`)、文字(`Char`)の分類と変換(v0.4.1) |
+| `Zevic.Encoding` `Zevic.Digest` | 16進・Base64・URLエンコード、CRC-32・Adler-32・SHA-256・HMAC-SHA-256(v0.4.1) |
+| `Zevic.DateTime` `Zevic.Log` `Zevic.Cli` | 日時(固定オフセット)、ログ、コマンドライン引数の解析(v0.4.1) |
+| `Zevic.Regex` `Zevic.Csv` `Zevic.Toml` | 正規表現(Pike VM)、CSV(RFC 4180)、TOML 1.0(v0.4.1) |
+| `Zevic.Deflate` `Zevic.Zlib` `Zevic.Gzip` `Zevic.Zip` `Zevic.Tar` | 圧縮と展開、zip・tarアーカイブの読み書き(zip-slip対策つき)(v0.4.1) |
 | `Zevic.Test` | テスト用のアサーション(テストの章を参照)。実際の実装は実装順⑥で、第2段より先に入る |
 
 - 並行処理(`Thread` / `Async`)のモデルは未決。GCとの相性(Boehmのスレッド対応)を見て決める

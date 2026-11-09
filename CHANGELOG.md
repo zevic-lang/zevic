@@ -1,10 +1,32 @@
 # Changelog
 
-## Unreleased
+## 0.4.1
 
-Standard library growth for 0.4.1.
+Standard library growth, and examples for other languages.
 
-- `Text.Format("%5d|%-8s|%.2f", ...)` (proposal 0008): C-style formatting that returns a `String`. Like `Printf`, the format is a string literal and the compiler checks the number and the types of the values. `Printf` / `Eprintf` / `Format` now also accept `%o %e %E %g %G`. Both compilers (`zevic0`, `zevic1`) implement it; the runtime collects the pieces in a per-thread buffer
+Language and prelude:
+
+- `Text.Format("%5d|%-8s|%.2f", ...)` (proposal 0008): C-style formatting that returns a `String`. Like `Printf`, the format is a string literal and the compiler checks the number and the types of the values. `Printf` / `Eprintf` / `Format` now also accept `%o %e %E %g %G`. Both compilers implement it; the runtime collects the pieces in a per-thread buffer
+- `StringBuilder` in the prelude
+- `Iterable`: `Take` `Skip` `TakeWhile` `SkipWhile` `FlatMap` `Zip` `Chunk` `Partition` `GroupBy` `Distinct` `Min` `Max` `MinBy` `MaxBy`; `Array`: `Repeat` `Reversed` `Sorted` `SortedBy` `Swap` `Fill` `RetainWhere` `IndexWhere` `BinarySearch`; `Map`: `GetOr` `GetOrInsert` `Update` `Extend` `RemoveWhere` `Entries` `FromPairs`; `Set`: `FromArray` `AddAll` `Union` `Intersect` `Difference` `SymmetricDifference` `IsSubset` `IsSuperset` `IsDisjoint` `Equals`
+- `Text`: UTF-8 aware `ToChars` `FromChars` `CharAt` `SliceChars` `Reverse`, `PadLeft` `PadRight` `Center`, `TrimPrefix` `TrimSuffix` `IsBlank` `LastIndexOf` `Count` `SplitN` `Words` `ReplaceFirst` `EqualsIgnoreCase` `Capitalize` `Truncate`; `StartsWith` / `EndsWith` compare bytes (they panicked on some non-ASCII text)
+
+New modules:
+
+- `Zevic.Chars`, `Zevic.Path`, `Zevic.Bytes`, `Zevic.Encoding` (hex, Base64, URL, form), `Zevic.Digest` (CRC-32, Adler-32, SHA-256, HMAC-SHA-256; checked against the NIST and RFC 4231 vectors)
+- `Zevic.DateTime` (calendar, fixed-offset zones, arithmetic, ISO 8601 and pattern formatting and parsing), `Zevic.Log` (levels, text and JSON lines, fields, sinks), `Zevic.Cli` (flags, options, positionals, subcommands, generated help)
+- `Zevic.Regex` (Pike VM: groups, named groups, lazy repeats, replace, split), `Zevic.Csv` (RFC 4180), `Zevic.Toml` (TOML 1.0)
+- `Zevic.Net`: TCP streams and listeners, UDP sockets, `Resolve`, timeouts
+- archives: `Zevic.Deflate` / `Zlib` / `Gzip` (RFC 1951/1950/1952, with a decompression size limit), `Zevic.Zip` and `Zevic.Tar` (read, write, extract with zip-slip protection, `ZipDir` / `Unzip` / `TarDir` / `Untar`, `.tar.gz`)
+- `Fs`: `ReadBytes` `WriteBytes` `AppendBytes` `ReadLines` `WriteLines` `Size` `ModifiedMillis` `IsSymlink` `Copy` `CreateDirAll` `RemoveAll` `Walk` `CopyDir` `MakeTempDir`; `Env.OS`; `Json.Quote`
+
+Tools and examples:
+
+- `zevic --lib --pic` (also in `zevic1`): the library archive is position independent, so it can go into a shared library (Python `ctypes`)
+- `examples/interop/`: C++, Rust, Go and Python call a Zevic library, and Zevic calls Rust and C++ (`make test-interop`)
+- `zevfmt` compares operators by bytes, so non-ASCII sources no longer panic
+
+Known limits: DateTime zones are fixed offsets only; TOML date-times stay as text; regex flags apply to the whole pattern; the Windows branches of `Path` and the runtime are not run on Windows here (CI covers them).
 
 ## 0.4.0
 

@@ -79,12 +79,12 @@ zevpm build --release    # build/ に出力(ライブラリは .a と include/<N
 
 ## 例
 
-- [`examples/`](examples/) — Hello、FizzBuzz、階乗、電卓、`interface`、C との連携(`06_c_interop/`)、ファイル、外部プログラム、統計、コレクション(`07`〜`10`)、`async`(`11`)、HTTP(`12`)、`zevpm` パッケージ(`apps/wordcount/`)
+- [`examples/`](examples/) — Hello、FizzBuzz、階乗、電卓、`interface`、C との連携(`06_c_interop/`)、他言語との連携(`interop/`)、ファイル、外部プログラム、統計、コレクション(`07`〜`10`)、`async`(`11`)、HTTP(`12`)、`zevpm` パッケージ(`apps/wordcount/`)
 
 ## 状態
 
-v0.4.0: 型、`struct`/`class`/`enum`、ユニオン型(`A | B`、`is`、型パターン)、`interface`、ジェネリクス、クロージャ、`defer`、GC、C との連携、
-`test` ブロック、ループのラベル(`break@名前`)、`async`/`await`、HTTP(`Zevic.Http`、TLSなし)、`zevpm`、標準ライブラリ(`Fs` `Env` `Text` `Math` `Time` `Process` `Random` `Json` など)まで動きます。
+v0.4.1: 型、`struct`/`class`/`enum`、ユニオン型(`A | B`、`is`、型パターン)、`interface`、ジェネリクス、クロージャ、`defer`、GC、C との連携、
+`test` ブロック、ループのラベル(`break@名前`)、`async`/`await`、HTTP(`Zevic.Http`、TLSなし)、`zevpm`、標準ライブラリ(`Fs` `Env` `Text` `Math` `Time` `Process` `Random` `Json` `Path` `DateTime` `Regex` `Csv` `Toml` `Net` `Zip` `Gzip` など)まで動きます。
 `zevfmt`(整形: `zevfmt -w .`、検査: `zevfmt -check .`)も動きます。コンパイラ自身も Zevic で書かれており(`tools/zevic1/`)、自分自身をビルドできます(`make bootstrap`)。計画は [`docs/plan.md`](docs/plan.md)。
 
 仕様書は草案です。実装の進み具合は [`CHANGELOG.md`](CHANGELOG.md) を参照してください。
