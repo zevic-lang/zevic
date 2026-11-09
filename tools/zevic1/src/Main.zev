@@ -313,7 +313,7 @@ fn baseNoExt(path: String) -> String {
 
 fn usage() {
     Console.Eprintln("usage: zevic1 [options] <file.zev>... [-o output]")
-    Console.Eprintln("  --test  --lib  --emit-ll  --emit-header <f>  --keep-ll  -O0|-O1|-O2  -g  --cc <path>  --cxx <path>")
+    Console.Eprintln("  --test  --lib  --pic  --emit-ll  --emit-header <f>  --keep-ll  -O0|-O1|-O2  -g  --cc <path>  --cxx <path>")
     Console.Eprintln("  -l<lib> -L<dir> -I<dir> -D<name>  and .c .cpp .o .a files to link")
 }
 
@@ -336,6 +336,8 @@ fn compile(args: Array<String>) -> I32 {
             headerPath = Some(args[i])
         } else if (a == "--lib") {
             libMode = true
+        } else if (a == "--pic") {
+            opts.Pic = true
         } else if (a == "--test") {
             testMode = true
         } else if (a == "--emit-ll") {

@@ -19,6 +19,7 @@ static void usage(void) {
           "  -o <file>          output file\n"
           "  --test             build the test runner (every `test` block) instead of the program\n"
           "  --lib              build a static library (with --emit-header for the C header)\n"
+          "  --pic              with --lib: position independent code, so the archive can be linked into a shared library\n"
           "  --emit-ll          write the LLVM IR and stop\n"
           "  --emit-header <f>  also write a C header for the `export \"C\"` functions\n"
           "  -O0 -O1 -O2        optimisation level (default -O1)\n"
@@ -318,6 +319,8 @@ int main(int argc, char **argv) {
             header_path = argv[++i];
         } else if (strcmp(a, "--lib") == 0) {
             lib_mode = true;
+        } else if (strcmp(a, "--pic") == 0) {
+            opts.pic = true;
         } else if (strcmp(a, "--test") == 0) {
             test_mode = true;
         } else if (strcmp(a, "--emit-ll") == 0) {

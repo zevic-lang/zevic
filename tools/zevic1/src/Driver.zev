@@ -16,6 +16,7 @@ class BuildOpts {
     Opt: Option<String> = None
     Debug: Bool = false
     KeepLl: Bool = false
+    Pic: Bool = false
     Cc: Option<String> = None
     Cxx: Option<String> = None
     Libs: Array<String> = []
@@ -274,7 +275,7 @@ class Runtime {
     GcObj: Option<String> = None
 }
 
-fn prepareRuntime(clang: String, home: String) -> Runtime {
+fn prepareRuntime(clang: String, home: String, pic: Bool) -> Runtime {
     mut rt: Runtime = Runtime.New()
     rt.Inc = "${home}/runtime/third_party/bgc/include"
     rt.RtSrc = "${home}/runtime/zevic_rt.c"
@@ -283,6 +284,7 @@ fn prepareRuntime(clang: String, home: String) -> Runtime {
     for (f in threadFlags()) {
         cflags.Push(f)
     }
+    if (pic) { cflags.Push("-fPIC") }
     cflags.Push("-I${rt.Inc}")
     rt.RtObj = cachedObject(clang, "zevic_rt", rt.RtSrc, [rt.RtSrc, "${home}/runtime/zevic_rt.h"], cflags)
     rt.GcObj = cachedObject(clang, "bgc", rt.GcSrc, ["${home}/runtime/third_party/bgc/VENDORED.txt"], cflags)
@@ -298,7 +300,7 @@ fn Build(clang: String, home: String, llPath: String, outPath: String, o: BuildO
     mut args: Array<String> = [match (o.Opt) { Some(x) => x, None => "-O1" }, "-w", "-Wno-override-module"]
     if (o.Debug) { args.Push("-g") }
     args.Push(llPath)
-    let rt: Runtime = prepareRuntime(clang, home)
+    let rt: Runtime = prepareRuntime(clang, home, false)
     match (rt.RtObj) {
         Some(x) => args.Push(x),
         None => {
@@ -365,6 +367,7 @@ fn siblingTool(clang: String, name: String) -> Option<String> {
 fn compileObject(driver: String, o: BuildOpts, src: String, obj: String, forceC: Bool) -> I32 {
     mut args: Array<String> = ["-c", "-w", "-Wno-override-module", match (o.Opt) { Some(x) => x, None => "-O1" }]
     if (o.Debug) { args.Push("-g") }
+    if (o.Pic) { args.Push("-fPIC") }
     if (forceC) {
         args.Push("-x")
         args.Push("c")
@@ -407,9 +410,10 @@ fn BuildLib(clang: String, home: String, llPath: String, outPath: String, o: Bui
         i += 1
     }
     // the runtime and the garbage collector travel with the library, so the C side needs nothing else
-    let rt: Runtime = prepareRuntime(clang, home)
+    let rt: Runtime = prepareRuntime(clang, home, o.Pic)
     mut rtOpts: BuildOpts = BuildOpts.New()
     rtOpts.Opt = Some("-O2")
+    rtOpts.Pic = o.Pic
     rtOpts.IncDirs.Push(rt.Inc)
     let rtObj: String = match (rt.RtObj) {
         Some(x) => x,

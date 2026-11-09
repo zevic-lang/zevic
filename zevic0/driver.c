@@ -323,7 +323,7 @@ int driver_build(const char *clang, const char *home, const char *ll_path, const
     char *gc_inc = zsprintf("%s/runtime/third_party/bgc/include", home);
     char *rt_src = zsprintf("%s/runtime/zevic_rt.c", home);
     char *gc_src = zsprintf("%s/runtime/third_party/bgc/extra/gc.c", home);
-    char *cflags = zsprintf("-O2 -w " ZEVIC_THREAD_CFLAGS " -I%s", quote(gc_inc));
+    char *cflags = zsprintf("-O2 -w " ZEVIC_THREAD_CFLAGS "%s -I%s", o->pic ? " -fPIC" : "", quote(gc_inc));
     const char *rt_keys[] = {rt_src, zsprintf("%s/runtime/zevic_rt.h", home), NULL};
     const char *gc_keys[] = {zsprintf("%s/runtime/third_party/bgc/VENDORED.txt", home), NULL};
     char *rt_obj = cached_object(clang, "zevic_rt", rt_src, rt_keys, cflags);
@@ -373,6 +373,7 @@ static int compile_object(const char *driver, BuildOpts *o, const char *src, con
     SB cmd = {0};
     sb_printf(&cmd, "%s -c -w -Wno-override-module %s", quote(driver), o->opt ? o->opt : "-O1");
     if (o->debug) sb_puts(&cmd, " -g");
+    if (o->pic) sb_puts(&cmd, " -fPIC");
     if (force_c) sb_puts(&cmd, " -x c");
     sb_printf(&cmd, " %s", quote(src));
     for (int i = 0; i < o->incdirs.n; i++) sb_printf(&cmd, " -I%s", quote(o->incdirs.v[i]));
@@ -410,13 +411,14 @@ int driver_build_lib(const char *clang, const char *home, const char *ll_path, c
     char *gc_inc = zsprintf("%s/runtime/third_party/bgc/include", home);
     char *rt_src = zsprintf("%s/runtime/zevic_rt.c", home);
     char *gc_src = zsprintf("%s/runtime/third_party/bgc/extra/gc.c", home);
-    char *cflags = zsprintf("-O2 -w " ZEVIC_THREAD_CFLAGS " -I%s", quote(gc_inc));
+    char *cflags = zsprintf("-O2 -w " ZEVIC_THREAD_CFLAGS "%s -I%s", o->pic ? " -fPIC" : "", quote(gc_inc));
     const char *rt_keys[] = {rt_src, zsprintf("%s/runtime/zevic_rt.h", home), NULL};
     const char *gc_keys[] = {zsprintf("%s/runtime/third_party/bgc/VENDORED.txt", home), NULL};
     char *rt_obj = cached_object(clang, "zevic_rt", rt_src, rt_keys, cflags);
     char *gc_obj = cached_object(clang, "bgc", gc_src, gc_keys, cflags);
     BuildOpts rt_opts = {0};
     rt_opts.opt = "-O2";
+    rt_opts.pic = o->pic;
     vec_push(&rt_opts.incdirs, gc_inc);
     if (!rt_obj) {
         rt_obj = zsprintf("%s/zevic_rt.o", base);

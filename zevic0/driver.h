@@ -12,6 +12,7 @@ typedef struct {
     Vec inputs;          /* extra files for the link: .c .cpp .o .a ... */
     Vec libs, libdirs, incdirs, defines;
     bool keep_ll;
+    bool pic;            /* --pic: position independent code (for a shared library) */
 } BuildOpts;
 
 /* The directory that holds `packages/Zevic/` and `runtime/`, or NULL. */
