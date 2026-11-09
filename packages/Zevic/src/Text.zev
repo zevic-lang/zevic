@@ -5,6 +5,7 @@ module Zevic.Text
 
 extern "zevic" {
     fn zevic_str_index(s: String, q: String, from: I64) -> I64
+    fn zevic_str_has_at(s: String, q: String, at: I64) -> I32
     fn zevic_str_upper(s: String) -> String
     fn zevic_str_lower(s: String) -> String
 }
@@ -30,16 +31,9 @@ fn IndexFrom(s: String, sub: String, from: I64) -> Option<I64> {
 
 fn Contains(s: String, sub: String) -> Bool { zevic_str_index(s, sub, 0) >= 0 }
 
-fn StartsWith(s: String, prefix: String) -> Bool {
-    let n: I64 = prefix.Len()
-    n <= s.Len() && s.Slice(0, n) == prefix
-}
+fn StartsWith(s: String, prefix: String) -> Bool { zevic_str_has_at(s, prefix, 0) != 0 }
 
-fn EndsWith(s: String, suffix: String) -> Bool {
-    let n: I64 = suffix.Len()
-    let m: I64 = s.Len()
-    n <= m && s.Slice(m - n, m) == suffix
-}
+fn EndsWith(s: String, suffix: String) -> Bool { zevic_str_has_at(s, suffix, s.Len() - suffix.Len()) != 0 }
 
 // The pieces between the separators. "a,b,,c" split by "," is ["a", "b", "", "c"].
 fn Split(s: String, sep: String) -> Array<String> {

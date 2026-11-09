@@ -1026,6 +1026,12 @@ int64_t zevic_str_index(const char *p, int64_t n, const char *q, int64_t m, int6
     return -1;
 }
 
+/* Do the bytes of q sit in p at byte position `at`? (No character boundaries are needed.) */
+int32_t zevic_str_has_at(const char *p, int64_t n, const char *q, int64_t m, int64_t at) {
+    if (at < 0 || at + m > n) return 0;
+    return m == 0 || memcmp(p + at, q, (size_t)m) == 0;
+}
+
 /* ASCII case conversion: letters outside ASCII are left as they are. */
 void zevic_str_upper(zevic_str *out, const char *p, int64_t n) {
     char *b = zevic_alloc_atomic(n + 1);
