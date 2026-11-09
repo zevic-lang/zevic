@@ -7,7 +7,7 @@ PM      := build/zevpm
 PMSRC   := $(wildcard zevpm/*.c) zevic0/util.c
 VERSION := $(shell cat VERSION)
 
-.PHONY: all test clean install zevpm2 zevfmt fmt fmt-check zevic1 bootstrap bootstrap-update test-selfhost
+.PHONY: test-interop all test clean install zevpm2 zevfmt fmt fmt-check zevic1 bootstrap bootstrap-update test-selfhost
 
 all: $(BIN) $(PM)
 
@@ -43,6 +43,9 @@ FMT_DIRS := packages examples tools
 
 fmt: $(FMT)
 	./$(FMT) -w $(FMT_DIRS)
+
+test-interop: $(BIN)
+	sh examples/interop/run.sh $(BIN)
 
 fmt-check: $(FMT)
 	./$(FMT) -check $(FMT_DIRS)

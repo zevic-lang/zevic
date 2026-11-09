@@ -1,0 +1,12 @@
+module Main
+
+import Zevic.Console
+
+extern "C" {
+    fn rs_fib(n: CUInt) -> CULongLong
+}
+
+fn Main() {
+    let v: U64 = rs_fib(50.ToCUInt()).ToU64()
+    Console.Println("fib(50) = ${v}")
+}

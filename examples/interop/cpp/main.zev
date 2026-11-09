@@ -1,0 +1,12 @@
+module Main
+
+import Zevic.Console
+
+extern "C" {
+    fn cpp_median(xs: *F64, n: CSizeT) -> CDouble
+}
+
+fn Main() {
+    let xs: Array<F64> = [9.0, 1.0, 5.0, 3.0]
+    Console.Println("median = ${cpp_median(xs.Ptr(), 4.ToCSizeT()).ToF64()}")
+}

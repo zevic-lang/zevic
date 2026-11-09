@@ -1,0 +1,22 @@
+module WordLib
+
+// A small Zevic library for other languages: `zevic --lib` turns it into a
+// static archive (the Zevic runtime travels inside) and a C header.
+
+import Zevic.Text
+
+export "C" fn zv_word_count(s: CString) -> CInt {
+    let n: I32 = Text.Words(String.FromC(s)).Len().ToI32Wrap()
+    n.ToCInt()
+}
+
+export "C" fn zv_clamp(x: CInt, lo: CInt, hi: CInt) -> CInt {
+    let v: I32 = x.ToI32()
+    if (v < lo.ToI32()) {
+        return lo
+    }
+    if (v > hi.ToI32()) {
+        return hi
+    }
+    x
+}
