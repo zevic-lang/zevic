@@ -2456,3 +2456,351 @@ void zevic_net_resolve(zevic_str *out, const char *hp, int64_t hn) {
     str_set(out, res, (int64_t)len);
     free(res);
 }
+
+/* ---- Deflate / Inflate (RFC 1951) ---------------------------------------
+ * Inflate is a full decoder (stored, fixed and dynamic blocks). Deflate finds
+ * matches with hash chains and writes fixed-Huffman blocks, or stored blocks
+ * when that is smaller. The status of the last call is read with
+ * zevic_flate_status(): 0 ok, 1 corrupt or cut-off data, 2 over the limit. */
+
+static int32_t g_flate_status = 0;
+static int64_t g_flate_consumed = 0;
+
+int32_t zevic_flate_status(void) { return g_flate_status; }
+int64_t zevic_flate_consumed(void) { return g_flate_consumed; }
+
+typedef struct {
+    uint8_t *b;
+    int64_t n, cap;
+} flate_buf;
+
+static int flate_put(flate_buf *o, const void *p, int64_t n) {
+    if (o->n + n > o->cap) {
+        int64_t c = o->cap ? o->cap : 4096;
+        while (c < o->n + n) c *= 2;
+        uint8_t *nb = realloc(o->b, (size_t)c);
+        if (!nb) return 0;
+        o->b = nb;
+        o->cap = c;
+    }
+    if (n) memcpy(o->b + o->n, p, (size_t)n);
+    o->n += n;
+    return 1;
+}
+
+static void flate_finish(zevic_str *out, flate_buf *o) {
+    char *r = zevic_alloc_atomic(o->n + 1);
+    if (o->n) memcpy(r, o->b, (size_t)o->n);
+    r[o->n] = 0;
+    out->p = r;
+    out->n = o->n;
+    free(o->b);
+}
+
+typedef struct {
+    const uint8_t *p;
+    int64_t n, pos;
+    uint32_t bits;
+    int cnt;
+} flate_in;
+
+static int flate_getbits(flate_in *s, int need, uint32_t *v) {
+    while (s->cnt < need) {
+        if (s->pos >= s->n) return 0;
+        s->bits |= (uint32_t)s->p[s->pos++] << s->cnt;
+        s->cnt += 8;
+    }
+    *v = s->bits & ((1u << need) - 1);
+    s->bits >>= need;
+    s->cnt -= need;
+    return 1;
+}
+
+typedef struct {
+    uint16_t count[16];
+    uint16_t sym[288];
+} flate_huff;
+
+static int flate_build(flate_huff *h, const uint8_t *len, int n) {
+    memset(h->count, 0, sizeof h->count);
+    for (int i = 0; i < n; i++) h->count[len[i]]++;
+    if (h->count[0] == n) return 1;
+    int left = 1;
+    for (int l = 1; l < 16; l++) {
+        left <<= 1;
+        left -= h->count[l];
+        if (left < 0) return 0;
+    }
+    uint16_t offs[16];
+    offs[1] = 0;
+    for (int l = 1; l < 15; l++) offs[l + 1] = offs[l] + h->count[l];
+    for (int i = 0; i < n; i++)
+        if (len[i]) h->sym[offs[len[i]]++] = (uint16_t)i;
+    return 1;
+}
+
+static int flate_decode(flate_in *s, const flate_huff *h) {
+    int code = 0, first = 0, index = 0;
+    for (int l = 1; l < 16; l++) {
+        uint32_t b;
+        if (!flate_getbits(s, 1, &b)) return -1;
+        code |= (int)b;
+        int c = h->count[l];
+        if (code - c < first) return h->sym[index + (code - first)];
+        index += c;
+        first += c;
+        first <<= 1;
+        code <<= 1;
+    }
+    return -1;
+}
+
+static const uint16_t k_len_base[29] = {3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258};
+static const uint8_t k_len_extra[29] = {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0};
+static const uint16_t k_dist_base[30] = {1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577};
+static const uint8_t k_dist_extra[30] = {0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13};
+
+/* returns 0 ok, 1 corrupt, 2 over the limit */
+static int flate_codes(flate_in *s, flate_buf *o, const flate_huff *lit, const flate_huff *dist, int64_t limit) {
+    for (;;) {
+        int sym = flate_decode(s, lit);
+        if (sym < 0) return 1;
+        if (sym < 256) {
+            if (o->n + 1 > limit) return 2;
+            uint8_t c = (uint8_t)sym;
+            if (!flate_put(o, &c, 1)) return 2;
+        } else if (sym == 256) {
+            return 0;
+        } else {
+            sym -= 257;
+            if (sym >= 29) return 1;
+            uint32_t e;
+            if (!flate_getbits(s, k_len_extra[sym], &e)) return 1;
+            int64_t len = k_len_base[sym] + (int64_t)e;
+            int ds = flate_decode(s, dist);
+            if (ds < 0 || ds >= 30) return 1;
+            if (!flate_getbits(s, k_dist_extra[ds], &e)) return 1;
+            int64_t d = k_dist_base[ds] + (int64_t)e;
+            if (d > o->n) return 1;
+            if (o->n + len > limit) return 2;
+            if (!flate_put(o, NULL, 0)) return 2;
+            for (int64_t i = 0; i < len; i++) {
+                uint8_t c = o->b[o->n - d];
+                if (!flate_put(o, &c, 1)) return 2;
+            }
+        }
+    }
+}
+
+void zevic_inflate(zevic_str *out, const uint8_t *p, int64_t n, int64_t limit) {
+    flate_in s = {p, n, 0, 0, 0};
+    flate_buf o = {0, 0, 0};
+    int st = 0;
+    uint32_t last = 0;
+    do {
+        uint32_t type;
+        if (!flate_getbits(&s, 1, &last) || !flate_getbits(&s, 2, &type)) { st = 1; break; }
+        if (type == 0) {
+            s.bits = 0;
+            s.cnt = 0;
+            if (s.pos + 4 > s.n) { st = 1; break; }
+            uint32_t len = s.p[s.pos] | (uint32_t)s.p[s.pos + 1] << 8;
+            uint32_t nlen = s.p[s.pos + 2] | (uint32_t)s.p[s.pos + 3] << 8;
+            s.pos += 4;
+            if ((len ^ 0xffff) != nlen || s.pos + len > s.n) { st = 1; break; }
+            if (o.n + len > limit) { st = 2; break; }
+            if (!flate_put(&o, s.p + s.pos, len)) { st = 2; break; }
+            s.pos += len;
+        } else if (type == 1) {
+            uint8_t l[288];
+            int i = 0;
+            for (; i < 144; i++) l[i] = 8;
+            for (; i < 256; i++) l[i] = 9;
+            for (; i < 280; i++) l[i] = 7;
+            for (; i < 288; i++) l[i] = 8;
+            flate_huff lit, dist;
+            flate_build(&lit, l, 288);
+            uint8_t dl[30];
+            for (i = 0; i < 30; i++) dl[i] = 5;
+            flate_build(&dist, dl, 30);
+            st = flate_codes(&s, &o, &lit, &dist, limit);
+            if (st) break;
+        } else if (type == 2) {
+            uint32_t nlen, ndist, ncode;
+            if (!flate_getbits(&s, 5, &nlen) || !flate_getbits(&s, 5, &ndist) || !flate_getbits(&s, 4, &ncode)) { st = 1; break; }
+            nlen += 257;
+            ndist += 1;
+            ncode += 4;
+            if (nlen > 286 || ndist > 30) { st = 1; break; }
+            static const uint8_t order[19] = {16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15};
+            uint8_t lens[320];
+            memset(lens, 0, sizeof lens);
+            int bad = 0;
+            for (uint32_t i = 0; i < ncode; i++) {
+                uint32_t v;
+                if (!flate_getbits(&s, 3, &v)) { bad = 1; break; }
+                lens[order[i]] = (uint8_t)v;
+            }
+            flate_huff cl;
+            if (bad || !flate_build(&cl, lens, 19)) { st = 1; break; }
+            uint8_t all[320];
+            memset(all, 0, sizeof all);
+            uint32_t idx = 0;
+            while (idx < nlen + ndist) {
+                int sym = flate_decode(&s, &cl);
+                if (sym < 0) { bad = 1; break; }
+                if (sym < 16) {
+                    all[idx++] = (uint8_t)sym;
+                } else {
+                    uint32_t rep, v;
+                    uint8_t prev = 0;
+                    if (sym == 16) {
+                        if (idx == 0 || !flate_getbits(&s, 2, &v)) { bad = 1; break; }
+                        prev = all[idx - 1];
+                        rep = 3 + v;
+                    } else if (sym == 17) {
+                        if (!flate_getbits(&s, 3, &v)) { bad = 1; break; }
+                        rep = 3 + v;
+                    } else {
+                        if (!flate_getbits(&s, 7, &v)) { bad = 1; break; }
+                        rep = 11 + v;
+                    }
+                    if (idx + rep > nlen + ndist) { bad = 1; break; }
+                    while (rep--) all[idx++] = prev;
+                }
+            }
+            flate_huff lit, dist;
+            if (bad || all[256] == 0 || !flate_build(&lit, all, (int)nlen) || !flate_build(&dist, all + nlen, (int)ndist)) { st = 1; break; }
+            st = flate_codes(&s, &o, &lit, &dist, limit);
+            if (st) break;
+        } else {
+            st = 1;
+            break;
+        }
+    } while (!last);
+    g_flate_status = st;
+    g_flate_consumed = s.pos;
+    flate_finish(out, &o);
+}
+
+typedef struct {
+    flate_buf *o;
+    uint32_t acc;
+    int cnt;
+} flate_out;
+
+static void flate_wbits(flate_out *w, uint32_t v, int n) {
+    w->acc |= v << w->cnt;
+    w->cnt += n;
+    while (w->cnt >= 8) {
+        uint8_t c = (uint8_t)w->acc;
+        flate_put(w->o, &c, 1);
+        w->acc >>= 8;
+        w->cnt -= 8;
+    }
+}
+
+static uint32_t flate_rev(uint32_t v, int n) {
+    uint32_t r = 0;
+    for (int i = 0; i < n; i++) {
+        r = (r << 1) | (v & 1);
+        v >>= 1;
+    }
+    return r;
+}
+
+/* fixed-Huffman literal/length symbol */
+static void flate_wsym(flate_out *w, int sym) {
+    if (sym < 144) flate_wbits(w, flate_rev(0x30 + sym, 8), 8);
+    else if (sym < 256) flate_wbits(w, flate_rev(0x190 + (sym - 144), 9), 9);
+    else if (sym < 280) flate_wbits(w, flate_rev(sym - 256, 7), 7);
+    else flate_wbits(w, flate_rev(0xc0 + (sym - 280), 8), 8);
+}
+
+void zevic_deflate(zevic_str *out, const uint8_t *p, int64_t n, int32_t level) {
+    flate_buf o = {0, 0, 0};
+    g_flate_status = 0;
+    if (level < 0) level = 6;
+    if (level > 9) level = 9;
+    if (level > 0) {
+        flate_out w = {&o, 0, 0};
+        flate_wbits(&w, 1, 1);
+        flate_wbits(&w, 1, 2);
+        enum { HB = 15, HS = 1 << HB };
+        int64_t *head = malloc(sizeof(int64_t) * HS);
+        int64_t *prev = n ? malloc(sizeof(int64_t) * (size_t)n) : NULL;
+        if (!head || (n && !prev)) {
+            free(head);
+            free(prev);
+            g_flate_status = 2;
+            flate_finish(out, &o);
+            return;
+        }
+        for (int i = 0; i < HS; i++) head[i] = -1;
+        int chain = level * level * 2 + 4;
+        int64_t i = 0;
+        while (i < n) {
+            int64_t best = 0, bestd = 0;
+            if (i + 3 <= n) {
+                uint32_t h = ((uint32_t)p[i] << 10 ^ (uint32_t)p[i + 1] << 5 ^ p[i + 2]) & (HS - 1);
+                int64_t c = head[h];
+                int tries = chain;
+                int64_t maxl = n - i < 258 ? n - i : 258;
+                while (c >= 0 && i - c <= 32768 && tries--) {
+                    int64_t l = 0;
+                    while (l < maxl && p[c + l] == p[i + l]) l++;
+                    if (l > best) {
+                        best = l;
+                        bestd = i - c;
+                        if (l == maxl) break;
+                    }
+                    c = prev[c];
+                }
+            }
+            int64_t adv = 1;
+            if (best >= 3) {
+                int ls = 0;
+                while (ls < 28 && k_len_base[ls + 1] <= best) ls++;
+                flate_wsym(&w, 257 + ls);
+                flate_wbits(&w, (uint32_t)(best - k_len_base[ls]), k_len_extra[ls]);
+                int ds = 0;
+                while (ds < 29 && k_dist_base[ds + 1] <= bestd) ds++;
+                flate_wbits(&w, flate_rev((uint32_t)ds, 5), 5);
+                flate_wbits(&w, (uint32_t)(bestd - k_dist_base[ds]), k_dist_extra[ds]);
+                adv = best;
+            } else {
+                flate_wsym(&w, p[i]);
+            }
+            for (int64_t k = 0; k < adv; k++) {
+                if (i + k + 3 <= n) {
+                    uint32_t h = ((uint32_t)p[i + k] << 10 ^ (uint32_t)p[i + k + 1] << 5 ^ p[i + k + 2]) & (HS - 1);
+                    prev[i + k] = head[h];
+                    head[h] = i + k;
+                } else if (prev) {
+                    prev[i + k] = -1;
+                }
+            }
+            i += adv;
+        }
+        flate_wsym(&w, 256);
+        if (w.cnt) flate_wbits(&w, 0, 8 - w.cnt);
+        free(head);
+        free(prev);
+        if (o.n < n + 5 * (n / 65535 + 1)) {
+            flate_finish(out, &o);
+            return;
+        }
+        free(o.b);
+        o.b = NULL;
+        o.n = o.cap = 0;
+    }
+    int64_t pos = 0;
+    do {
+        int64_t len = n - pos > 65535 ? 65535 : n - pos;
+        uint8_t hdr[5] = {(uint8_t)(pos + len >= n ? 1 : 0), (uint8_t)len, (uint8_t)(len >> 8), (uint8_t)~len, (uint8_t)(~len >> 8)};
+        flate_put(&o, hdr, 5);
+        flate_put(&o, p + pos, len);
+        pos += len;
+    } while (pos < n);
+    flate_finish(out, &o);
+}
