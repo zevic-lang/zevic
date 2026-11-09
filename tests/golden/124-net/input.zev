@@ -1,0 +1,100 @@
+module Main
+
+import Zevic.Async
+import Zevic.Bytes
+import Zevic.Console
+import Zevic.Net
+
+fn Why(e: Error) -> String { "${e.Kind().ToString()}" }
+
+fn Main() {
+    // DNS
+    let addrs: Array<String> = Net.Resolve("localhost").Unwrap()
+    Console.Println("localhost resolves: ${addrs.Len() > 0}")
+    match (Net.Resolve("host.invalid")) {
+        Ok(_x) => Console.Println("resolve invalid: ok?"),
+        Err(_e) => Console.Println("resolve invalid: error"),
+    }
+
+    // TCP echo
+    mut listener: Net.TcpListener = Net.Listen("127.0.0.1", 0).Unwrap()
+    let port: I64 = listener.Port()
+    Console.Println("port ok: ${port > 0}")
+    let server: Async.Task<I64> = async {
+        mut peer: Net.TcpStream = listener.Accept().Unwrap()
+        mut total: I64 = 0
+        loop {
+            match (peer.ReadLine().Unwrap()) {
+                Some(line) => {
+                    total += line.Len()
+                    let w: Result<Unit, Error> = peer.WriteString("echo:${line}\n")
+                    if (line == "quit") { break }
+                },
+                None => { break },
+            }
+        }
+        let bin: Array<U8> = peer.ReadExact(4).Unwrap()
+        let w2: Result<Unit, Error> = peer.WriteBytes(bin)
+        peer.Close()
+        total
+    }
+    mut c: Net.TcpStream = Net.Connect("127.0.0.1", port).Unwrap()
+    c.SetTimeout(5000)
+    let w: Result<Unit, Error> = c.WriteString("hello\r\nworld\nquit\n")
+    Console.Println(c.ReadLine().Unwrap().Unwrap())
+    Console.Println(c.ReadLine().Unwrap().Unwrap())
+    Console.Println(c.ReadLine().Unwrap().Unwrap())
+    let raw: Array<U8> = [0, 255, 128, 10]
+    let w3: Result<Unit, Error> = c.WriteBytes(raw)
+    let back: Array<U8> = c.ReadExact(4).Unwrap()
+    Console.Println("binary roundtrip: ${back == raw} ${back.Len()}")
+    match (c.ReadLine().Unwrap()) {
+        Some(_l) => Console.Println("eof: no"),
+        None => Console.Println("eof: yes"),
+    }
+    c.Close()
+    Console.Println("server total ${await server}")
+    listener.Close()
+
+    // timeout
+    mut l2: Net.TcpListener = Net.Listen("127.0.0.1", 0).Unwrap()
+    let silent: Async.Task<Unit> = async {
+        mut p: Net.TcpStream = l2.Accept().Unwrap()
+        let r: Result<Option<String>, Error> = p.ReadLine()
+        p.Close()
+    }
+    mut c2: Net.TcpStream = Net.Connect("127.0.0.1", l2.Port()).Unwrap()
+    c2.SetTimeout(100)
+    match (c2.ReadLine()) {
+        Ok(_x) => Console.Println("timeout: no"),
+        Err(e) => Console.Println("timeout: ${Why(e)}"),
+    }
+    c2.Close()
+    await silent
+    l2.Close()
+
+    // refused
+    match (Net.ConnectTimeout("127.0.0.1", 1, 2000)) {
+        Ok(_s) => Console.Println("refused: connected?"),
+        Err(_e) => Console.Println("refused: error"),
+    }
+
+    // UDP
+    mut a: Net.UdpSocket = Net.BindUdp("127.0.0.1", 0).Unwrap()
+    mut b: Net.UdpSocket = Net.BindUdp("127.0.0.1", 0).Unwrap()
+    let s1: Result<Unit, Error> = a.SendString("127.0.0.1", b.Port(), "ping")
+    b.SetTimeout(3000)
+    let p: Net.Packet = b.Receive(100).Unwrap()
+    Console.Println("udp got ${p.Text()} from ${p.FromHost()} port ok ${p.FromPort() == a.Port()}")
+    let s2: Result<Unit, Error> = b.SendBytes(p.FromHost(), p.FromPort(), [1, 0, 2])
+    a.SetTimeout(3000)
+    let q: Net.Packet = a.Receive(100).Unwrap()
+    Console.Println("udp back ${q.Bytes().Len()} ${q.Bytes()[1]}")
+    a.SetTimeout(50)
+    match (a.Receive(10)) {
+        Ok(_x) => Console.Println("udp timeout: no"),
+        Err(e) => Console.Println("udp timeout: ${Why(e)}"),
+    }
+    a.Close()
+    b.Close()
+}

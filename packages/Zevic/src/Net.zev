@@ -1,0 +1,273 @@
+module Zevic.Net
+
+import Zevic.Bytes
+import Zevic.Text
+
+// TCP and UDP sockets (IPv4 and IPv6). Calls wait until they are done (use `async` to do other things in the
+// meantime). Every failure is an `Error`; a read or write that ran past the limit of `SetTimeout` is
+// `ErrorKind.Timeout`.
+//
+//     let listener: Net.TcpListener = Net.Listen("127.0.0.1", 0)?       // port 0: any free port
+//     let conn: Net.TcpStream = Net.Connect("127.0.0.1", listener.Port())?
+//     conn.WriteString("hello\n")?
+//     let peer: Net.TcpStream = listener.Accept()?
+//     Console.Println(peer.ReadLine()?.Unwrap())                          // hello
+
+extern "zevic" {
+    fn zevic_net_failed() -> I32
+    fn zevic_net_timed_out() -> I32
+    fn zevic_net_errmsg() -> String
+    fn zevic_net_listen(host: String, port: I64) -> I64
+    fn zevic_net_port(fd: I64) -> I64
+    fn zevic_net_accept(fd: I64) -> I64
+    fn zevic_net_connect(host: String, port: I64, timeout_ms: I64) -> I64
+    fn zevic_net_timeout(fd: I64, ms: I64)
+    fn zevic_net_read(fd: I64, max: I64) -> String
+    fn zevic_net_write(fd: I64, data: String) -> I32
+    fn zevic_net_shutdown(fd: I64)
+    fn zevic_net_close(fd: I64)
+    fn zevic_net_resolve(host: String) -> String
+    fn zevic_udp_bind(host: String, port: I64) -> I64
+    fn zevic_udp_send_to(fd: I64, host: String, port: I64, data: String) -> I32
+    fn zevic_udp_recv(fd: I64, max: I64) -> String
+    fn zevic_udp_peer_host() -> String
+    fn zevic_udp_peer_port() -> I64
+}
+
+// The error for the failure that just happened.
+fn netError(what: String) -> Error {
+    let kind: ErrorKind = if (zevic_net_timed_out() != 0) { ErrorKind.Timeout } else { ErrorKind.Io }
+    Error.New(kind, "${what}: ${zevic_net_errmsg()}")
+}
+
+// How long connecting may take unless told otherwise (milliseconds).
+let DefaultConnectTimeoutMs: I64 = 30000
+
+// The numeric addresses of a host name ("localhost" gives "127.0.0.1" and maybe "::1").
+fn Resolve(host: String) -> Result<Array<String>, Error> {
+    let text: String = zevic_net_resolve(host)
+    if (zevic_net_failed() != 0) {
+        return Err(netError("cannot look up \"${host}\""))
+    }
+    Ok(Text.Split(text, "\n"))
+}
+
+// A TCP connection. Reading and writing wait for the other side. Close it when you are done.
+class TcpStream {
+    fd: I64
+    pending: String = ""
+    closed: Bool = false
+
+    fn Init(fd: I64) { this.fd = fd }
+
+    // Limits how long one read or write may wait, in milliseconds (0: for ever).
+    fn SetTimeout(ms: I64) { zevic_net_timeout(this.fd, ms) }
+
+    // Reads what is there, at most `max` bytes, as a String; an empty String means the other side has closed.
+    // The text is whatever bytes arrived, so only treat it as text if the other side sends text.
+    mut fn ReadString(max: I64) -> Result<String, Error> {
+        if (!this.pending.IsEmpty()) {
+            let n: I64 = if (this.pending.Len() < max) { this.pending.Len() } else { max }
+            let out: String = this.pending.Slice(0, n)
+            this.pending = this.pending.Slice(n, this.pending.Len())
+            return Ok(out)
+        }
+        let data: String = zevic_net_read(this.fd, max)
+        if (zevic_net_failed() != 0) {
+            return Err(netError("cannot read"))
+        }
+        Ok(data)
+    }
+
+    // Like ReadString, as bytes. An empty array means the other side has closed.
+    mut fn ReadBytes(max: I64) -> Result<Array<U8>, Error> {
+        let s: String = this.ReadString(max)?
+        Ok(Bytes.FromString(s))
+    }
+
+    // Reads exactly `n` bytes; an error if the other side closes first.
+    mut fn ReadExact(n: I64) -> Result<Array<U8>, Error> {
+        mut out: Array<U8> = []
+        while (out.Len() < n) {
+            let part: Array<U8> = this.ReadBytes(n - out.Len())?
+            if (part.IsEmpty()) {
+                return Err(Error.New(ErrorKind.Io, "the connection closed after ${out.Len()} of ${n} bytes"))
+            }
+            out.Extend(part)
+        }
+        Ok(out)
+    }
+
+    // The next line without its line break (`\n` or `\r\n`); None at the end of the stream. A last line with no
+    // line break is returned as it is.
+    mut fn ReadLine() -> Result<Option<String>, Error> {
+        loop {
+            match (Text.IndexOf(this.pending, "\n")) {
+                Some(i) => {
+                    mut line: String = this.pending.Slice(0, i)
+                    this.pending = this.pending.Slice(i + 1, this.pending.Len())
+                    if (Text.EndsWith(line, "\r")) { line = line.Slice(0, line.Len() - 1) }
+                    return Ok(Some(line))
+                },
+                None => {},
+            }
+            let data: String = zevic_net_read(this.fd, 4096)
+            if (zevic_net_failed() != 0) {
+                return Err(netError("cannot read"))
+            }
+            if (data.IsEmpty()) {
+                if (this.pending.IsEmpty()) { return Ok(None) }
+                let rest: String = this.pending
+                this.pending = ""
+                return Ok(Some(rest))
+            }
+            this.pending = this.pending + data
+        }
+    }
+
+    // Sends all of `s`.
+    fn WriteString(s: String) -> Result<Unit, Error> {
+        if (zevic_net_write(this.fd, s) == 0) {
+            return Err(netError("cannot write"))
+        }
+        Ok(())
+    }
+
+    // Sends all of `b`.
+    fn WriteBytes(b: Array<U8>) -> Result<Unit, Error> {
+        this.WriteString(Bytes.ToStringRaw(b))
+    }
+
+    // Stops the connection: a read or accept waiting in another thread returns.
+    fn Shutdown() { zevic_net_shutdown(this.fd) }
+
+    mut fn Close() {
+        if (!this.closed) {
+            this.closed = true
+            zevic_net_close(this.fd)
+        }
+    }
+}
+
+// A socket that waits for TCP connections.
+class TcpListener {
+    fd: I64
+    closed: Bool = false
+
+    fn Init(fd: I64) { this.fd = fd }
+
+    // The port that is listened on (the one picked, if 0 was asked for).
+    fn Port() -> I64 { zevic_net_port(this.fd) }
+
+    // Waits for the next connection. An error once the listener is closed.
+    fn Accept() -> Result<TcpStream, Error> {
+        let c: I64 = zevic_net_accept(this.fd)
+        if (c < 0) {
+            return Err(netError("cannot accept"))
+        }
+        Ok(TcpStream.New(c))
+    }
+
+    // Stops the listener: an `Accept` waiting in another thread returns an error.
+    mut fn Close() {
+        if (!this.closed) {
+            this.closed = true
+            zevic_net_shutdown(this.fd)
+            zevic_net_close(this.fd)
+        }
+    }
+}
+
+// Listens for TCP connections on `host` ("127.0.0.1" for this computer only, "0.0.0.0" for every network). Port 0 picks a free port.
+fn Listen(host: String, port: I64) -> Result<TcpListener, Error> {
+    let fd: I64 = zevic_net_listen(host, port)
+    if (fd < 0) {
+        return Err(netError("cannot listen on ${host}:${port}"))
+    }
+    Ok(TcpListener.New(fd))
+}
+
+// Connects to a TCP server, waiting at most `timeoutMs` milliseconds (the limit also holds for later reads and writes, until `SetTimeout`).
+fn ConnectTimeout(host: String, port: I64, timeoutMs: I64) -> Result<TcpStream, Error> {
+    let fd: I64 = zevic_net_connect(host, port, timeoutMs)
+    if (fd < 0) {
+        return Err(netError("cannot connect to ${host}:${port}"))
+    }
+    Ok(TcpStream.New(fd))
+}
+
+fn Connect(host: String, port: I64) -> Result<TcpStream, Error> {
+    ConnectTimeout(host, port, DefaultConnectTimeoutMs)
+}
+
+// A datagram that arrived: what it holds and who sent it.
+class Packet {
+    data: String
+    host: String
+    port: I64
+
+    fn Init(data: String, host: String, port: I64) {
+        this.data = data
+        this.host = host
+        this.port = port
+    }
+
+    fn Text() -> String { this.data }
+
+    fn Bytes() -> Array<U8> { Bytes.FromString(this.data) }
+
+    // The address and port of the sender, as numbers.
+    fn FromHost() -> String { this.host }
+
+    fn FromPort() -> I64 { this.port }
+}
+
+// A UDP socket: it sends and receives single datagrams. (Messages may be lost, doubled or reordered.)
+class UdpSocket {
+    fd: I64
+    closed: Bool = false
+
+    fn Init(fd: I64) { this.fd = fd }
+
+    fn Port() -> I64 { zevic_net_port(this.fd) }
+
+    // Limits how long `Receive` may wait, in milliseconds (0: for ever).
+    fn SetTimeout(ms: I64) { zevic_net_timeout(this.fd, ms) }
+
+    // Sends one datagram. Over about 65000 bytes it will not go through.
+    fn SendString(host: String, port: I64, data: String) -> Result<Unit, Error> {
+        if (zevic_udp_send_to(this.fd, host, port, data) == 0) {
+            return Err(netError("cannot send to ${host}:${port}"))
+        }
+        Ok(())
+    }
+
+    fn SendBytes(host: String, port: I64, data: Array<U8>) -> Result<Unit, Error> {
+        this.SendString(host, port, Bytes.ToStringRaw(data))
+    }
+
+    // Waits for one datagram of at most `max` bytes (more is cut off).
+    fn Receive(max: I64) -> Result<Packet, Error> {
+        let data: String = zevic_udp_recv(this.fd, max)
+        if (zevic_net_failed() != 0) {
+            return Err(netError("cannot receive"))
+        }
+        Ok(Packet.New(data, zevic_udp_peer_host(), zevic_udp_peer_port()))
+    }
+
+    mut fn Close() {
+        if (!this.closed) {
+            this.closed = true
+            zevic_net_close(this.fd)
+        }
+    }
+}
+
+// A UDP socket bound to `host` (use "" for every address) and `port` (0 picks a free port).
+fn BindUdp(host: String, port: I64) -> Result<UdpSocket, Error> {
+    let fd: I64 = zevic_udp_bind(host, port)
+    if (fd < 0) {
+        return Err(netError("cannot bind ${host}:${port}"))
+    }
+    Ok(UdpSocket.New(fd))
+}

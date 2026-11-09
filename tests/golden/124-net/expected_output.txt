@@ -1,0 +1,14 @@
+localhost resolves: true
+resolve invalid: error
+port ok: true
+echo:hello
+echo:world
+echo:quit
+binary roundtrip: true 4
+eof: yes
+server total 14
+timeout: Timeout
+refused: error
+udp got ping from 127.0.0.1 port ok true
+udp back 3 0
+udp timeout: Timeout
