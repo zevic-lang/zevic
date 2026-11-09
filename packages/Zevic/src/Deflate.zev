@@ -1,0 +1,63 @@
+module Zevic.Deflate
+
+import Zevic.Bytes
+
+// Deflate (RFC 1951), the compression inside zip, gzip, zlib and PNG. These are raw deflate streams, with no
+// header. Gzip, Zlib and Zip use them for you.
+//
+//     let packed: Array<U8> = Deflate.Compress(Bytes.FromString(text))
+//     let back: Array<U8> = Deflate.Decompress(packed)?
+//
+// The compressor looks for repeated runs (LZ77) and writes them with the fixed Huffman code, or stores the data
+// as it is when that is smaller. The decompressor reads every kind of deflate stream.
+
+extern "zevic" {
+    fn zevic_inflate(p: *U8, n: I64, limit: I64) -> String
+    fn zevic_deflate(p: *U8, n: I64, level: I32) -> String
+    fn zevic_flate_status() -> I32
+    fn zevic_flate_consumed() -> I64
+}
+
+// How much a Decompress may produce unless told otherwise (1 GiB), as a guard against "zip bombs".
+let DefaultLimit: I64 = 1073741824
+
+// The result of reading a deflate stream: the data, and how many input bytes the stream took up.
+struct Inflated {
+    Data: Array<U8>
+    Used: I64
+
+    fn Init(data: Array<U8>, used: I64) {
+        this.Data = data
+        this.Used = used
+    }
+}
+
+// Compresses with level 6.
+fn Compress(b: Array<U8>) -> Array<U8> { CompressLevel(b, 6) }
+
+// Level 0 only stores; 1 is the fastest, 9 searches the hardest (levels below 0 or above 9 are cut to 0 and 9).
+fn CompressLevel(b: Array<U8>, level: I32) -> Array<U8> {
+    let lv: I32 = if (level < 0) { 0 } else if (level > 9) { 9 } else { level }
+    Bytes.FromString(zevic_deflate(b.Ptr(), b.Len(), lv))
+}
+
+// Reads one deflate stream from the start of `b`; anything after the end of the stream is left alone and
+// reported in `used`. An error if the data is damaged or cut off, or would come out longer than `limit`.
+fn InflatePrefix(b: Array<U8>, limit: I64) -> Result<Inflated, Error> {
+    let out: String = zevic_inflate(b.Ptr(), b.Len(), limit)
+    let st: I32 = zevic_flate_status()
+    if (st == 2) {
+        return Err(Error.New(ErrorKind.OutOfRange, "the data is longer than ${limit} bytes when decompressed"))
+    }
+    if (st != 0) {
+        return Err(Error.New(ErrorKind.InvalidFormat, "the deflate data is damaged or cut off"))
+    }
+    Ok(Inflated.New(Bytes.FromString(out), zevic_flate_consumed()))
+}
+
+fn DecompressLimit(b: Array<U8>, limit: I64) -> Result<Array<U8>, Error> {
+    let r: Inflated = InflatePrefix(b, limit)?
+    Ok(r.Data)
+}
+
+fn Decompress(b: Array<U8>) -> Result<Array<U8>, Error> { DecompressLimit(b, DefaultLimit) }

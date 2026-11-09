@@ -1,0 +1,39 @@
+module Zevic.Zlib
+
+import Zevic.Bytes
+import Zevic.Deflate
+import Zevic.Digest
+
+// The zlib format (RFC 1950): a deflate stream with a two byte header and an Adler-32 check at the end.
+
+fn Compress(b: Array<U8>) -> Array<U8> { CompressLevel(b, 6) }
+
+fn CompressLevel(b: Array<U8>, level: I32) -> Array<U8> {
+    mut out: Array<U8> = [0x78, 0x9C]
+    out.Extend(Deflate.CompressLevel(b, level))
+    Bytes.PushU32BE(out, Digest.Adler32(b))
+    out
+}
+
+fn Decompress(b: Array<U8>) -> Result<Array<U8>, Error> {
+    if (b.Len() < 6) {
+        return Err(Error.New(ErrorKind.InvalidFormat, "too short for zlib data"))
+    }
+    let cmf: I32 = b[0].ToI32()
+    let flg: I32 = b[1].ToI32()
+    if (cmf % 16 != 8 || (cmf * 256 + flg) % 31 != 0) {
+        return Err(Error.New(ErrorKind.InvalidFormat, "not zlib data"))
+    }
+    if (flg / 32 % 2 == 1) {
+        return Err(Error.New(ErrorKind.InvalidFormat, "zlib data that needs a preset dictionary is not supported"))
+    }
+    let r: Deflate.Inflated = Deflate.InflatePrefix(b.Slice(2, b.Len()), Deflate.DefaultLimit)?
+    let at: I64 = 2 + r.Used
+    if (at + 4 > b.Len()) {
+        return Err(Error.New(ErrorKind.InvalidFormat, "the zlib data has no checksum"))
+    }
+    if (Bytes.ReadU32BE(b, at) != Digest.Adler32(r.Data)) {
+        return Err(Error.New(ErrorKind.InvalidFormat, "the zlib checksum does not match"))
+    }
+    Ok(r.Data)
+}

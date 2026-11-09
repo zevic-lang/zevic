@@ -1,0 +1,20 @@
+deflate 9000 -> 120 smaller true
+roundtrip true
+level 0: 9005 ok true
+level 1: 120 ok true
+level 6: 120 ok true
+level 9: 120 ok true
+empty 2 0
+one 7
+known hello hello hello hello
+random true true
+bad: InvalidFormat
+limit: OutOfRange
+zlib head 789c ok true
+zlib known hello
+zlib bad: InvalidFormat
+gzip head 1f8b0800 ok true
+members one two
+gzip bad: InvalidFormat
+tool hello
+is gzip true false

@@ -1,0 +1,88 @@
+module Zevic.Gzip
+
+import Zevic.Bytes
+import Zevic.Deflate
+import Zevic.Digest
+import Zevic.Fs
+
+// The gzip format (RFC 1952): deflate with a header and a CRC-32 check, as made by the `gzip` tool (.gz files).
+//
+//     let gz: Array<U8> = Gzip.Compress(Bytes.FromString("hello"))
+//     let text: String = Gzip.DecompressString(gz)?
+//
+// Several members one after the other (what `cat a.gz b.gz` makes) are read as one stream.
+
+fn Compress(b: Array<U8>) -> Array<U8> { CompressLevel(b, 6) }
+
+// Writes no file name and no time, so the same input always gives the same bytes.
+fn CompressLevel(b: Array<U8>, level: I32) -> Array<U8> {
+    let xfl: U8 = if (level >= 9) { 2 } else if (level == 1) { 4 } else { 0 }
+    mut out: Array<U8> = [0x1F, 0x8B, 8, 0, 0, 0, 0, 0, xfl, 255]
+    out.Extend(Deflate.CompressLevel(b, level))
+    Bytes.PushU32LE(out, Digest.Crc32(b))
+    Bytes.PushU32LE(out, b.Len().ToU32Wrap())
+    out
+}
+
+fn CompressString(s: String) -> Array<U8> { Compress(Bytes.FromString(s)) }
+
+fn bad(why: String) -> Error { Error.New(ErrorKind.InvalidFormat, "gzip: ${why}") }
+
+// Is this the start of gzip data?
+fn IsGzip(b: Array<U8>) -> Bool { b.Len() >= 3 && b[0] == 0x1F && b[1] == 0x8B && b[2] == 8 }
+
+// One member from `at`: the data, and where the next member starts.
+fn member(b: Array<U8>, at: I64, limit: I64) -> Result<Deflate.Inflated, Error> {
+    if (at + 18 > b.Len() || !IsGzip(b.Slice(at, b.Len()))) {
+        return Err(bad("not gzip data"))
+    }
+    let flags: I64 = b[at + 3].ToI64()
+    if (flags % 256 / 32 != 0) {
+        return Err(bad("reserved flags are set"))
+    }
+    mut p: I64 = at + 10
+    if (flags / 4 % 2 == 1) {
+        if (p + 2 > b.Len()) { return Err(bad("cut off in the header")) }
+        p += 2 + Bytes.ReadU16LE(b, p).ToI64()
+    }
+    // file name, then comment: each ends with a zero byte
+    for (bit in [8, 16]) {
+        if (flags / bit % 2 == 1) {
+            while (p < b.Len() && b[p] != 0) { p += 1 }
+            p += 1
+        }
+    }
+    if (flags / 2 % 2 == 1) { p += 2 }
+    if (p >= b.Len()) { return Err(bad("cut off in the header")) }
+    let r: Deflate.Inflated = Deflate.InflatePrefix(b.Slice(p, b.Len()), limit)?
+    let end: I64 = p + r.Used
+    if (end + 8 > b.Len()) { return Err(bad("cut off before the checksum")) }
+    if (Bytes.ReadU32LE(b, end) != Digest.Crc32(r.Data)) { return Err(bad("the checksum does not match")) }
+    if (Bytes.ReadU32LE(b, end + 4) != r.Data.Len().ToU32Wrap()) { return Err(bad("the length does not match")) }
+    Ok(Deflate.Inflated.New(r.Data, end + 8))
+}
+
+fn DecompressLimit(b: Array<U8>, limit: I64) -> Result<Array<U8>, Error> {
+    mut out: Array<U8> = []
+    mut at: I64 = 0
+    while (at < b.Len()) {
+        let m: Deflate.Inflated = member(b, at, limit - out.Len())?
+        out.Extend(m.Data)
+        at = m.Used
+    }
+    if (at == 0) { return Err(bad("no data")) }
+    Ok(out)
+}
+
+fn Decompress(b: Array<U8>) -> Result<Array<U8>, Error> { DecompressLimit(b, Deflate.DefaultLimit) }
+
+fn DecompressString(b: Array<U8>) -> Result<String, Error> { Bytes.ToString(Decompress(b)?) }
+
+// Reads a file and writes `to` with the gzip of it.
+fn CompressFile(from: String, to: String) -> Result<Unit, Error> {
+    Fs.WriteBytes(to, Compress(Fs.ReadBytes(from)?))
+}
+
+fn DecompressFile(from: String, to: String) -> Result<Unit, Error> {
+    Fs.WriteBytes(to, Decompress(Fs.ReadBytes(from)?)?)
+}

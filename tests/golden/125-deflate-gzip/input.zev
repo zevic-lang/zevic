@@ -1,0 +1,74 @@
+module Main
+
+import Zevic.Bytes
+import Zevic.Console
+import Zevic.Deflate
+import Zevic.Digest
+import Zevic.Encoding
+import Zevic.Gzip
+import Zevic.Text
+import Zevic.Zlib
+
+fn Main() {
+    let text: String = Text.Repeat("the quick brown fox jumps over the lazy dog. ", 200)
+    let raw: Array<U8> = Bytes.FromString(text)
+    let packed: Array<U8> = Deflate.Compress(raw)
+    Console.Println("deflate ${raw.Len()} -> ${packed.Len()} smaller ${packed.Len() < raw.Len() / 10}")
+    Console.Println("roundtrip ${Deflate.Decompress(packed).Unwrap() == raw}")
+    let levels: Array<I32> = [0, 1, 6, 9]
+    for (lv in levels) {
+        let p: Array<U8> = Deflate.CompressLevel(raw, lv)
+        Console.Println("level ${lv}: ${p.Len()} ok ${Deflate.Decompress(p).Unwrap() == raw}")
+    }
+    // empty and tiny
+    Console.Println("empty ${Deflate.Compress([]).Len()} ${Deflate.Decompress(Deflate.Compress([])).Unwrap().Len()}")
+    Console.Println("one ${Deflate.Decompress(Deflate.Compress([7])).Unwrap()[0]}")
+    // known vector (zlib/gzip made): deflate of "hello hello hello hello" with dynamic or fixed block
+    let known: Array<U8> = Encoding.HexDecode("cb48cdc9c957c8402701").Unwrap()
+    Console.Println("known ${Bytes.ToString(Deflate.Decompress(known).Unwrap()).Unwrap()}")
+    // dynamic huffman stream (python zlib.compress level 9 of a text, raw)
+    // pseudo random data is stored
+    mut rnd: Array<U8> = []
+    mut x: I64 = 12345
+    for (i in 0..5000) {
+        x = (x * 1103515245 + 12345) & 2147483647
+        rnd.Push((x >> 16).ToU8Wrap())
+    }
+    let rp: Array<U8> = Deflate.Compress(rnd)
+    Console.Println("random ${rp.Len() <= rnd.Len() + 20} ${Deflate.Decompress(rp).Unwrap() == rnd}")
+    // damaged data and the limit
+    match (Deflate.Decompress([0xFF, 0xFF, 0xFF])) {
+        Ok(_x) => Console.Println("bad: ok?"),
+        Err(e) => Console.Println("bad: ${e.Kind().ToString()}"),
+    }
+    match (Deflate.DecompressLimit(packed, 100)) {
+        Ok(_x) => Console.Println("limit: ok?"),
+        Err(e) => Console.Println("limit: ${e.Kind().ToString()}"),
+    }
+    // zlib
+    let z: Array<U8> = Zlib.Compress(raw)
+    Console.Println("zlib head ${Encoding.HexEncode(z.Slice(0, 2))} ok ${Zlib.Decompress(z).Unwrap() == raw}")
+    Console.Println("zlib known ${Bytes.ToString(Zlib.Decompress(Encoding.HexDecode("789ccb48cdc9c90700062c0215").Unwrap()).Unwrap()).Unwrap()}")
+    mut zz: Array<U8> = Zlib.Compress(raw)
+    zz[zz.Len() - 1] = 0
+    match (Zlib.Decompress(zz)) {
+        Ok(_x) => Console.Println("zlib bad: ok?"),
+        Err(e) => Console.Println("zlib bad: ${e.Kind().ToString()}"),
+    }
+    // gzip
+    let g: Array<U8> = Gzip.Compress(raw)
+    Console.Println("gzip head ${Encoding.HexEncode(g.Slice(0, 4))} ok ${Gzip.Decompress(g).Unwrap() == raw}")
+    mut two: Array<U8> = Gzip.CompressString("one ")
+    two.Extend(Gzip.CompressString("two"))
+    Console.Println("members ${Gzip.DecompressString(two).Unwrap()}")
+    mut gg: Array<U8> = Gzip.Compress(raw)
+    gg[gg.Len() - 6] = 1
+    match (Gzip.Decompress(gg)) {
+        Ok(_x) => Console.Println("gzip bad: ok?"),
+        Err(e) => Console.Println("gzip bad: ${e.Kind().ToString()}"),
+    }
+    // gzip made by the gzip tool: "hello\n"
+    let tool: Array<U8> = Encoding.HexDecode("1f8b0800000000000003cb48cdc9c9e7020020303a3606000000").Unwrap()
+    Console.Println("tool ${Text.Trim(Gzip.DecompressString(tool).Unwrap())}")
+    Console.Println("is gzip ${Gzip.IsGzip(g)} ${Gzip.IsGzip(raw)}")
+}
