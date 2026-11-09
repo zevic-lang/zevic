@@ -31,6 +31,9 @@ fn IndexFrom(s: String, sub: String, from: I64) -> Option<I64> {
 
 fn Contains(s: String, sub: String) -> Bool { zevic_str_index(s, sub, 0) >= 0 }
 
+// Does `sub` sit in `s` at byte position `at`? Unlike a Slice comparison it works at any byte position, also in the middle of a character.
+fn HasAt(s: String, sub: String, at: I64) -> Bool { zevic_str_has_at(s, sub, at) != 0 }
+
 fn StartsWith(s: String, prefix: String) -> Bool { zevic_str_has_at(s, prefix, 0) != 0 }
 
 fn EndsWith(s: String, suffix: String) -> Bool { zevic_str_has_at(s, suffix, s.Len() - suffix.Len()) != 0 }

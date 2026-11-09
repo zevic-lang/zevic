@@ -105,19 +105,18 @@ fn skipChar(s: String, start: I64) -> I64 {
 fn operatorAt(s: String, i: I64) -> String {
     let three: Array<String> = ["<<=", ">>=", "..=", "..."]
     let two: Array<String> = ["<<", ">>", "&&", "||", "==", "!=", "<=", ">=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "->", "=>", ".."]
-    if (i + 3 <= s.Len()) {
-        let t: String = s.Slice(i, i + 3)
-        if (three.Contains(t)) {
-            return t
-        }
+    // compare bytes: a Slice here could cut a multi-byte character in half
+    for (t in three) {
+        if (Text.HasAt(s, t, i)) { return t }
     }
-    if (i + 2 <= s.Len()) {
-        let t: String = s.Slice(i, i + 2)
-        if (two.Contains(t)) {
-            return t
-        }
+    for (t in two) {
+        if (Text.HasAt(s, t, i)) { return t }
     }
-    s.Slice(i, i + 1)
+    // a character outside ASCII is taken whole
+    let lead: U8 = s.ByteAt(i)
+    let want: I64 = if (lead >= 240) { 4 } else if (lead >= 224) { 3 } else if (lead >= 192) { 2 } else { 1 }
+    let end: I64 = if (i + want > s.Len()) { s.Len() } else { i + want }
+    s.Slice(i, end)
 }
 
 // The pieces of a source text, in order.
