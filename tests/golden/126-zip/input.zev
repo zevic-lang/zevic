@@ -1,0 +1,131 @@
+module Main
+
+import Zevic.Bytes
+import Zevic.Console
+import Zevic.DateTime
+import Zevic.Digest
+import Zevic.Encoding
+import Zevic.Fs
+import Zevic.Path
+import Zevic.Text
+import Zevic.Zip
+
+fn Why(e: Error) -> String { "${e.Kind().ToString()}" }
+
+fn Main() {
+    // StartsWith and EndsWith cut no characters in half
+    Console.Println("affix ${Text.StartsWith("日本語", "ab")} ${Text.StartsWith("日本語", "日本")} ${Text.EndsWith("日本語", "ab")} ${Text.EndsWith("日本語", "語")} ${Text.StartsWith("a", "ab")} ${Text.EndsWith("", "x")}")
+    let big: String = Text.Repeat("zip me, zip me again. ", 500)
+    mut w: Zip.ZipWriter = Zip.ZipWriter.New()
+    w.SetComment("test archive")
+    w.AddString("hello.txt", "hello").Unwrap()
+    w.AddDir("docs").Unwrap()
+    w.AddString("docs/big.txt", big).Unwrap()
+    w.Add("docs/bin.dat", [0, 1, 2, 255, 254]).Unwrap()
+    w.AddString("日本語/ファイル.txt", "utf-8 name").Unwrap()
+    w.AddAt("dated.txt", Bytes.FromString("x"), DateTime.Make(2024, 5, 17, 13, 45, 30).Unwrap()).Unwrap()
+    match (w.AddString("hello.txt", "again")) {
+        Ok(_x) => Console.Println("dup: ok?"),
+        Err(e) => Console.Println("dup: ${Why(e)}"),
+    }
+    for (bad in ["../evil", "/abs", "a/../../b", "C:/x", ""]) {
+        match (w.AddString(bad, "x")) {
+            Ok(_x) => Console.Println("name ${bad}: ok?"),
+            Err(e) => Console.Println("name \"${bad}\": ${Why(e)}"),
+        }
+    }
+    let bytes: Array<U8> = w.Finish().Unwrap()
+    Console.Println("entries ${w.Len()} size ${bytes.Len()} crc ${Digest.Crc32(bytes)}")
+
+    let z: Zip.Archive = Zip.Open(bytes).Unwrap()
+    Console.Println("comment ${z.Comment()} len ${z.Len()}")
+    for (e in z.Entries()) {
+        Console.Println("${e.Name} size=${e.Size} packed=${e.CompressedSize} method=${e.Method} dir=${e.IsDir()} mode=${e.Mode()} time=${e.Modified().ToIso()}")
+    }
+    Console.Println(z.ReadString("hello.txt").Unwrap())
+    Console.Println("big ${z.ReadString("docs/big.txt").Unwrap() == big}")
+    Console.Println("bin ${Encoding.HexEncode(z.ReadFile("docs/bin.dat").Unwrap())}")
+    Console.Println(z.ReadString("日本語/ファイル.txt").Unwrap())
+    match (z.ReadFile("nothing")) {
+        Ok(_x) => Console.Println("missing: ok?"),
+        Err(e) => Console.Println("missing: ${Why(e)}"),
+    }
+
+    // reproducible
+    mut w2: Zip.ZipWriter = Zip.ZipWriter.New()
+    w2.AddString("a", "same").Unwrap()
+    mut w3: Zip.ZipWriter = Zip.ZipWriter.New()
+    w3.AddString("a", "same").Unwrap()
+    Console.Println("same bytes ${w2.Finish().Unwrap() == w3.Finish().Unwrap()}")
+
+    // stored only
+    mut w4: Zip.ZipWriter = Zip.ZipWriter.New()
+    w4.SetLevel(0)
+    w4.AddString("big", big).Unwrap()
+    let z4: Zip.Archive = Zip.Open(w4.Finish().Unwrap()).Unwrap()
+    Console.Println("stored method ${z4.Find("big").Unwrap().Method}")
+
+    // damage
+    mut dmg: Array<U8> = bytes
+    dmg[40] = dmg[40] ^ 255
+    let zd: Zip.Archive = Zip.Open(dmg).Unwrap()
+    mut hits: I64 = 0
+    for (e in zd.Entries()) {
+        match (zd.Read(e)) {
+            Ok(_x) => {},
+            Err(_e) => { hits += 1 },
+        }
+    }
+    Console.Println("damaged entries found: ${hits > 0}")
+    match (Zip.Open(Bytes.FromString("not a zip file at all, really not one"))) {
+        Ok(_x) => Console.Println("garbage: ok?"),
+        Err(e) => Console.Println("garbage: ${Why(e)}"),
+    }
+    match (Zip.Open(bytes.Slice(0, bytes.Len() - 30))) {
+        Ok(_x) => Console.Println("cut: ok?"),
+        Err(e) => Console.Println("cut: ${Why(e)}"),
+    }
+
+    // files on disk
+    let root: String = Fs.MakeTempDir("zevzip").Unwrap()
+    let src: String = Path.Join(root, "src")
+    Fs.CreateDirAll(Path.Join(src, "sub/deep")).Unwrap()
+    Fs.WriteAll(Path.Join(src, "a.txt"), "file a").Unwrap()
+    Fs.WriteAll(Path.Join(src, "sub/b.txt"), big).Unwrap()
+    Fs.WriteAll(Path.Join(src, "sub/deep/c.txt"), "c").Unwrap()
+    let archive: String = Path.Join(root, "src.zip")
+    Zip.ZipDir(src, archive).Unwrap()
+    let out: String = Path.Join(root, "out")
+    Console.Println("extracted ${Zip.Unzip(archive, out).Unwrap()} files")
+    Console.Println(Fs.ReadAll(Path.Join(out, "sub/deep/c.txt")).Unwrap())
+    Console.Println("b same ${Fs.ReadAll(Path.Join(out, "sub/b.txt")).Unwrap() == big}")
+    Console.Println("dir ${Fs.IsDir(Path.Join(out, "sub/deep"))}")
+    for (e in Zip.OpenFile(archive).Unwrap().Names()) {
+        Console.Println("in zip: ${e}")
+    }
+
+    // zip slip: build a hostile archive by hand
+    var_slip(root)
+    Fs.RemoveAll(root).Unwrap()
+}
+
+// A zip whose name is "../escape.txt": the writer refuses such names, so patch the bytes.
+fn var_slip(root: String) {
+    mut w: Zip.ZipWriter = Zip.ZipWriter.New()
+    w.AddString("xx/escape.txt", "gotcha").Unwrap()
+    mut b: Array<U8> = w.Finish().Unwrap()
+    // replace "xx/" with "../" in both the local and the central header
+    for (i in 0..b.Len() - 3) {
+        if (b[i] == 120 && b[i + 1] == 120 && b[i + 2] == 47) {
+            b[i] = 46
+            b[i + 1] = 46
+        }
+    }
+    let z: Zip.Archive = Zip.Open(b).Unwrap()
+    Console.Println("hostile name ${z.Entries()[0].Name}")
+    match (z.ExtractAll(Path.Join(root, "safe"))) {
+        Ok(_n) => Console.Println("slip: extracted?"),
+        Err(e) => Console.Println("slip: ${Why(e)}"),
+    }
+    Console.Println("escaped ${Fs.Exists(Path.Join(root, "escape.txt"))}")
+}

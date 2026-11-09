@@ -1,0 +1,37 @@
+affix false true false true false false
+dup: Invalid
+name "../evil": Invalid
+name "/abs": Invalid
+name "a/../../b": Invalid
+name "C:/x": Invalid
+name "": Invalid
+entries 6 size 764 crc 2563751832
+comment test archive len 6
+hello.txt size=5 packed=5 method=0 dir=false mode=33188 time=1980-01-01T00:00:00Z
+docs/ size=0 packed=0 method=0 dir=true mode=16877 time=1980-01-01T00:00:00Z
+docs/big.txt size=11000 packed=107 method=8 dir=false mode=33188 time=1980-01-01T00:00:00Z
+docs/bin.dat size=5 packed=5 method=0 dir=false mode=33188 time=1980-01-01T00:00:00Z
+日本語/ファイル.txt size=10 packed=10 method=0 dir=false mode=33188 time=1980-01-01T00:00:00Z
+dated.txt size=1 packed=1 method=0 dir=false mode=33188 time=2024-05-17T13:45:30Z
+hello
+big true
+bin 000102fffe
+utf-8 name
+missing: NotFound
+same bytes true
+stored method 0
+damaged entries found: true
+garbage: InvalidFormat
+cut: InvalidFormat
+extracted 3 files
+c
+b same true
+dir true
+in zip: a.txt
+in zip: sub/
+in zip: sub/b.txt
+in zip: sub/deep/
+in zip: sub/deep/c.txt
+hostile name ../escape.txt
+slip: Invalid
+escaped false

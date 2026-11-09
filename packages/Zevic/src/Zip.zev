@@ -1,0 +1,435 @@
+module Zevic.Zip
+
+import Zevic.Bytes
+import Zevic.DateTime
+import Zevic.Deflate
+import Zevic.Digest
+import Zevic.Fs
+import Zevic.Path
+import Zevic.Text
+
+// Reading and writing .zip archives (stored and deflated entries).
+//
+//     mut w: Zip.ZipWriter = Zip.ZipWriter.New()
+//     w.AddString("hello.txt", "hello")?
+//     w.AddDir("docs")?
+//     w.Add("docs/data.bin", bytes)?
+//     Fs.WriteBytes("out.zip", w.Finish()?)?
+//
+//     let z: Zip.Archive = Zip.OpenFile("out.zip")?
+//     for (e in z.Entries()) { Console.Println("${e.Name} ${e.Size}") }
+//     let text: String = z.ReadString("hello.txt")?
+//
+// Not supported: Zip64 (archives or files of 4 GiB and more, or more than 65535 entries), encryption, methods
+// other than stored and deflate, and archives split over several files. Names are read as UTF-8; names
+// from old tools that use another code page may show replacement characters.
+
+let SigLocal: I64 = 0x04034B50
+let SigCentral: I64 = 0x02014B50
+let SigEnd: I64 = 0x06054B50
+
+// 1 January 1980 00:00, the oldest time a zip can hold.
+let DosEpochDate: I64 = 33
+let UnixEpoch1980: I64 = 315532800
+
+fn bad(why: String) -> Error { Error.New(ErrorKind.InvalidFormat, "zip: ${why}") }
+
+fn u16(b: Array<U8>, at: I64) -> I64 { Bytes.ReadU16LE(b, at).ToI64() }
+
+fn u32(b: Array<U8>, at: I64) -> I64 { Bytes.ReadU32LE(b, at).ToI64() }
+
+fn p16(mut b: Array<U8>, v: I64) { Bytes.PushU16LE(b, v.ToU16Wrap()) }
+
+fn p32(mut b: Array<U8>, v: I64) { Bytes.PushU32LE(b, v.ToU32Wrap()) }
+
+// One file or directory in an archive.
+struct Entry {
+    Name: String
+    Size: I64
+    CompressedSize: I64
+    Crc: U32
+    Method: I64
+    DosDate: I64
+    DosTime: I64
+    Offset: I64
+    Attrs: I64
+    Host: I64
+
+    fn Init(name: String, size: I64, csize: I64, crc: U32, method: I64, date: I64, time: I64, offset: I64, attrs: I64, host: I64) {
+        this.Name = name
+        this.Size = size
+        this.CompressedSize = csize
+        this.Crc = crc
+        this.Method = method
+        this.DosDate = date
+        this.DosTime = time
+        this.Offset = offset
+        this.Attrs = attrs
+        this.Host = host
+    }
+
+    fn IsDir() -> Bool { Text.EndsWith(this.Name, "/") }
+
+    // The unix permission bits and file type (such as 0o100644 = 33188) if the archive was made on unix, else 0.
+    fn Mode() -> I64 { if (this.Host == 3) { this.Attrs / 65536 } else { 0 } }
+
+    fn IsSymlink() -> Bool { this.Mode() / 4096 == 10 }
+
+    // When the file was changed (zip times have no zone and a two second step; they are read as UTC).
+    fn Modified() -> DateTime.DateTime {
+        let year: I64 = 1980 + this.DosDate / 512
+        let month: I64 = this.DosDate / 32 % 16
+        let day: I64 = this.DosDate % 32
+        let hour: I64 = this.DosTime / 2048
+        let minute: I64 = this.DosTime / 32 % 64
+        let second: I64 = this.DosTime % 32 * 2
+        DateTime.Make(year.ToI32Wrap(), month.ToI32Wrap(), day.ToI32Wrap(), hour.ToI32Wrap(), minute.ToI32Wrap(), second.ToI32Wrap()).UnwrapOr(DateTime.FromUnixSeconds(UnixEpoch1980))
+    }
+}
+
+// Turns a name from an archive into a relative path that stays inside the target directory: backslashes count as
+// separators, empty and "." parts go, and a name that is absolute, has a drive letter, or has ".." is refused.
+fn SafeName(name: String) -> Option<String> {
+    let n: String = Text.Replace(name, "\\", "/")
+    if (Text.StartsWith(n, "/")) { return None }
+    match (Text.IndexOf(n, ":")) {
+        Some(1) => return None,
+        _ => {},
+    }
+    mut parts: Array<String> = []
+    for (part in Text.Split(n, "/")) {
+        if (part == "..") { return None }
+        if (part != "" && part != ".") { parts.Push(part) }
+    }
+    if (parts.IsEmpty()) { return None }
+    Some(Text.Join(parts, "/"))
+}
+
+// An opened archive. It keeps the whole archive in memory.
+class Archive {
+    data: Array<U8>
+    entries: Array<Entry>
+    comment: String
+
+    fn Init(data: Array<U8>, entries: Array<Entry>, comment: String) {
+        this.data = data
+        this.entries = entries
+        this.comment = comment
+    }
+
+    fn Entries() -> Array<Entry> { this.entries }
+
+    fn Names() -> Array<String> { this.entries.Map((e: Entry) => e.Name) }
+
+    fn Len() -> I64 { this.entries.Len() }
+
+    fn Comment() -> String { this.comment }
+
+    fn Find(name: String) -> Option<Entry> {
+        for (e in this.entries) {
+            if (e.Name == name) { return Some(e) }
+        }
+        None
+    }
+
+    // The content of an entry, checked against its size and CRC-32.
+    fn Read(e: Entry) -> Result<Array<U8>, Error> {
+        let b: Array<U8> = this.data
+        let at: I64 = e.Offset
+        if (at < 0 || at + 30 > b.Len() || u32(b, at) != SigLocal) {
+            return Err(bad("the entry \"${e.Name}\" has no local header"))
+        }
+        let start: I64 = at + 30 + u16(b, at + 26) + u16(b, at + 28)
+        let end: I64 = start + e.CompressedSize
+        if (end > b.Len()) {
+            return Err(bad("the entry \"${e.Name}\" is cut off"))
+        }
+        let raw: Array<U8> = b.Slice(start, end)
+        mut out: Array<U8> = []
+        if (e.Method == 0) {
+            out = raw
+        } else if (e.Method == 8) {
+            out = Deflate.DecompressLimit(raw, e.Size)?
+        } else {
+            return Err(Error.New(ErrorKind.Invalid, "zip: the entry \"${e.Name}\" uses compression method ${e.Method}, which is not supported"))
+        }
+        if (out.Len() != e.Size) {
+            return Err(bad("the entry \"${e.Name}\" has the wrong size"))
+        }
+        if (Digest.Crc32(out) != e.Crc) {
+            return Err(bad("the checksum of \"${e.Name}\" does not match"))
+        }
+        Ok(out)
+    }
+
+    fn ReadFile(name: String) -> Result<Array<U8>, Error> {
+        match (this.Find(name)) {
+            Some(e) => this.Read(e),
+            None => Err(Error.New(ErrorKind.NotFound, "zip: no entry \"${name}\"")),
+        }
+    }
+
+    fn ReadString(name: String) -> Result<String, Error> { Bytes.ToString(this.ReadFile(name)?) }
+
+    // Writes everything below `dir` (made if needed) and gives the number of files written. Names that would
+    // leave `dir` (absolute or with "..") are an error; symbolic links in the archive are skipped.
+    fn ExtractAll(dir: String) -> Result<I64, Error> {
+        Fs.CreateDirAll(dir)?
+        mut files: I64 = 0
+        for (e in this.entries) {
+            let safe: String = match (SafeName(e.Name)) {
+                Some(s) => s,
+                None => return Err(Error.New(ErrorKind.Invalid, "zip: the entry name \"${e.Name}\" is not allowed")),
+            }
+            let target: String = Path.Join(dir, safe)
+            if (!Path.IsInside(dir, target)) {
+                return Err(Error.New(ErrorKind.Invalid, "zip: the entry name \"${e.Name}\" leaves the directory"))
+            }
+            if (e.IsDir()) {
+                Fs.CreateDirAll(target)?
+            } else if (!e.IsSymlink()) {
+                Fs.CreateDirAll(Path.Parent(target))?
+                Fs.WriteBytes(target, this.Read(e)?)?
+                files += 1
+            }
+        }
+        Ok(files)
+    }
+}
+
+// Reads the table of contents of an archive held in memory.
+fn Open(b: Array<U8>) -> Result<Archive, Error> {
+    if (b.Len() < 22) {
+        return Err(bad("too short to be an archive"))
+    }
+    mut end: I64 = -1
+    mut i: I64 = b.Len() - 22
+    let lowest: I64 = if (b.Len() - 22 - 65535 > 0) { b.Len() - 22 - 65535 } else { 0 }
+    while (i >= lowest) {
+        if (u32(b, i) == SigEnd) {
+            end = i
+            break
+        }
+        i -= 1
+    }
+    if (end < 0) {
+        return Err(bad("no end-of-archive record (not a zip file?)"))
+    }
+    let total: I64 = u16(b, end + 10)
+    let cdSize: I64 = u32(b, end + 12)
+    let cdOffset: I64 = u32(b, end + 16)
+    let commentLen: I64 = u16(b, end + 20)
+    if (total == 65535 || cdOffset == 4294967295 || cdSize == 4294967295) {
+        return Err(Error.New(ErrorKind.Invalid, "zip: Zip64 archives are not supported"))
+    }
+    if (u16(b, end + 4) != 0 || u16(b, end + 6) != 0) {
+        return Err(Error.New(ErrorKind.Invalid, "zip: archives split over several files are not supported"))
+    }
+    if (cdOffset + cdSize > end) {
+        return Err(bad("the table of contents lies outside the file"))
+    }
+    mut entries: Array<Entry> = []
+    mut p: I64 = cdOffset
+    for (k in 0..total) {
+        if (p + 46 > b.Len() || u32(b, p) != SigCentral) {
+            return Err(bad("damaged table of contents at entry ${k}"))
+        }
+        let nameLen: I64 = u16(b, p + 28)
+        let extraLen: I64 = u16(b, p + 30)
+        let cmtLen: I64 = u16(b, p + 32)
+        if (p + 46 + nameLen + extraLen + cmtLen > b.Len()) {
+            return Err(bad("damaged table of contents at entry ${k}"))
+        }
+        let flags: I64 = u16(b, p + 8)
+        if (flags % 2 == 1) {
+            return Err(Error.New(ErrorKind.Invalid, "zip: encrypted entries are not supported"))
+        }
+        let name: String = Bytes.ToStringLossy(b.Slice(p + 46, p + 46 + nameLen))
+        entries.Push(Entry.New(name, u32(b, p + 24), u32(b, p + 20), Bytes.ReadU32LE(b, p + 16), u16(b, p + 10), u16(b, p + 14), u16(b, p + 12), u32(b, p + 42), u32(b, p + 38), u16(b, p + 4) / 256))
+        p += 46 + nameLen + extraLen + cmtLen
+    }
+    let cstart: I64 = end + 22
+    let comment: String = Bytes.ToStringLossy(b.Slice(cstart, if (cstart + commentLen > b.Len()) { b.Len() } else { cstart + commentLen }))
+    Ok(Archive.New(b, entries, comment))
+}
+
+fn OpenFile(path: String) -> Result<Archive, Error> { Open(Fs.ReadBytes(path)?) }
+
+// Builds an archive in memory; `Finish` gives the bytes of the archive.
+class ZipWriter {
+    body: Array<U8> = []
+    central: Array<U8> = []
+    count: I64 = 0
+    level: I32 = 6
+    comment: String = ""
+    seen: Set<String> = Set<String>.New()
+
+    fn Init() {}
+
+    // The compression level, 0 (store only) to 9.
+    mut fn SetLevel(level: I32) { this.level = level }
+
+    mut fn SetComment(comment: String) { this.comment = comment }
+
+    fn Len() -> I64 { this.count }
+
+    // Adds a file with the time 1980-01-01 (so the same input gives the same archive).
+    mut fn Add(name: String, data: Array<U8>) -> Result<Unit, Error> {
+        this.addEntry(name, data, DosEpochDate, 0, false)
+    }
+
+    mut fn AddString(name: String, text: String) -> Result<Unit, Error> {
+        this.addEntry(name, Bytes.FromString(text), DosEpochDate, 0, false)
+    }
+
+    // Adds a file with a modification time.
+    mut fn AddAt(name: String, data: Array<U8>, time: DateTime.DateTime) -> Result<Unit, Error> {
+        let t: I64 = dosFrom(time)
+        this.addEntry(name, data, t / 65536, t % 65536, false)
+    }
+
+    // Adds an empty directory entry (a "/" is put at the end of the name).
+    mut fn AddDir(name: String) -> Result<Unit, Error> {
+        this.addEntry(if (Text.EndsWith(name, "/")) { name } else { name + "/" }, [], DosEpochDate, 0, true)
+    }
+
+    // Adds a file from disk under `name`, with its modification time.
+    mut fn AddFile(path: String, name: String) -> Result<Unit, Error> {
+        let data: Array<U8> = Fs.ReadBytes(path)?
+        let ms: I64 = Fs.ModifiedMillis(path)?
+        this.AddAt(name, data, DateTime.FromUnixMillis(ms))
+    }
+
+    // Adds a directory with everything in it. The entries are named `prefix` + the path below `dir` (use "" or a
+    // name like "project"); files and directories come in the order of Fs.Walk.
+    mut fn AddTree(dir: String, prefix: String) -> Result<Unit, Error> {
+        let base: String = if (prefix == "" || Text.EndsWith(prefix, "/")) { prefix } else { prefix + "/" }
+        if (prefix != "") { this.AddDir(prefix)? }
+        for (full in Fs.Walk(dir)?) {
+            let rel: String = Text.Replace(Path.Relative(dir, full).UnwrapOr(full), "\\", "/")
+            if (Fs.IsSymlink(full)) {
+                continue
+            }
+            if (Fs.IsDir(full)) {
+                this.AddDir(base + rel)?
+            } else {
+                this.AddFile(full, base + rel)?
+            }
+        }
+        Ok(())
+    }
+
+    mut fn addEntry(name: String, data: Array<U8>, date: I64, time: I64, isDir: Bool) -> Result<Unit, Error> {
+        let clean: String = match (SafeName(name)) {
+            Some(s) => s,
+            None => return Err(Error.New(ErrorKind.Invalid, "zip: the name \"${name}\" is not allowed (it must be relative, with no \"..\")")),
+        }
+        let stored: String = if (isDir) { clean + "/" } else { clean }
+        if (this.seen.Contains(stored)) {
+            return Err(Error.New(ErrorKind.Invalid, "zip: the name \"${stored}\" is used twice"))
+        }
+        let nameBytes: Array<U8> = Bytes.FromString(stored)
+        if (nameBytes.Len() > 65535) {
+            return Err(Error.New(ErrorKind.OutOfRange, "zip: the name is too long"))
+        }
+        if (this.count >= 65535 || data.Len() >= 4294967295 || this.body.Len() + data.Len() + 200000 >= 4294967295) {
+            return Err(Error.New(ErrorKind.OutOfRange, "zip: the archive is too big (Zip64 is not supported)"))
+        }
+        let crc: U32 = Digest.Crc32(data)
+        mut method: I64 = 0
+        mut packed: Array<U8> = data
+        if (this.level > 0 && data.Len() > 0) {
+            let tried: Array<U8> = Deflate.CompressLevel(data, this.level)
+            if (tried.Len() < data.Len()) {
+                method = 8
+                packed = tried
+            }
+        }
+        let offset: I64 = this.body.Len()
+        let need: I64 = if (method == 8) { 20 } else { 10 }
+        let mode: I64 = if (isDir) { 16877 } else { 33188 }
+        let attrs: I64 = mode * 65536 + (if (isDir) { 16 } else { 0 })
+        mut h: Array<U8> = []
+        p32(h, SigLocal)
+        p16(h, need)
+        p16(h, 2048)
+        p16(h, method)
+        p16(h, time)
+        p16(h, date)
+        Bytes.PushU32LE(h, crc)
+        p32(h, packed.Len())
+        p32(h, data.Len())
+        p16(h, nameBytes.Len())
+        p16(h, 0)
+        h.Extend(nameBytes)
+        this.body.Extend(h)
+        this.body.Extend(packed)
+
+        mut c: Array<U8> = this.central
+        p32(c, SigCentral)
+        p16(c, 3 * 256 + 20)
+        p16(c, need)
+        p16(c, 2048)
+        p16(c, method)
+        p16(c, time)
+        p16(c, date)
+        Bytes.PushU32LE(c, crc)
+        p32(c, packed.Len())
+        p32(c, data.Len())
+        p16(c, nameBytes.Len())
+        p16(c, 0)
+        p16(c, 0)
+        p16(c, 0)
+        p16(c, 0)
+        p32(c, attrs)
+        p32(c, offset)
+        c.Extend(nameBytes)
+        this.central = c
+        this.seen.Add(stored)
+        this.count += 1
+        Ok(())
+    }
+
+    // The finished archive.
+    fn Finish() -> Result<Array<U8>, Error> {
+        let commentBytes: Array<U8> = Bytes.FromString(this.comment)
+        if (commentBytes.Len() > 65535) {
+            return Err(Error.New(ErrorKind.OutOfRange, "zip: the comment is too long"))
+        }
+        mut out: Array<U8> = this.body
+        let cdOffset: I64 = out.Len()
+        out.Extend(this.central)
+        p32(out, SigEnd)
+        p16(out, 0)
+        p16(out, 0)
+        p16(out, this.count)
+        p16(out, this.count)
+        p32(out, this.central.Len())
+        p32(out, cdOffset)
+        p16(out, commentBytes.Len())
+        out.Extend(commentBytes)
+        Ok(out)
+    }
+
+    // Writes the archive to a file.
+    fn WriteTo(path: String) -> Result<Unit, Error> { Fs.WriteBytes(path, this.Finish()?) }
+}
+
+// date * 65536 + time in the DOS format of zip, for a time from 1980 on (earlier ones become 1980-01-01).
+fn dosFrom(t: DateTime.DateTime) -> I64 {
+    let y: I64 = t.Year().ToI64()
+    if (y < 1980 || y > 2107) { return DosEpochDate * 65536 }
+    let date: I64 = (y - 1980) * 512 + t.Month().ToI64() * 32 + t.Day().ToI64()
+    let time: I64 = t.Hour().ToI64() * 2048 + t.Minute().ToI64() * 32 + t.Second().ToI64() / 2
+    date * 65536 + time
+}
+
+// Makes an archive of a directory: `ZipDir("src", "src.zip")` stores src/a.txt as "a.txt".
+fn ZipDir(dir: String, to: String) -> Result<Unit, Error> {
+    mut w: ZipWriter = ZipWriter.New()
+    w.AddTree(dir, "")?
+    w.WriteTo(to)
+}
+
+// Unpacks an archive file into a directory; gives the number of files written.
+fn Unzip(file: String, dir: String) -> Result<I64, Error> { OpenFile(file)?.ExtractAll(dir) }
