@@ -1,6 +1,6 @@
 # Zevic
 
-Zevic(仮称)は、Cの資産をそのまま使える、小さくて書きやすいネイティブ言語です。
+Zevicは、Cの資産をそのまま使える、小さくて書きやすいネイティブ言語です。
 ソースを **テキストの LLVM IR** に変換し、`clang` で機械語にします。
 
 - 言語仕様: [`docs/spec/zevic-spec.md`](docs/spec/zevic-spec.md)
