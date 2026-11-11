@@ -227,6 +227,7 @@ fn Main() {
 - [ ] Generating `zevic.h` when there is an `export "C"`
 
 ### Tools
+
 - [ ] The full set of `zevic` options (`-l`, `-L`, `-I`, `-D`, `--cc`, `--cxx`)
 - [ ] The search order for clang, guidance when it is not found, and the version check
 
