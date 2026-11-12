@@ -17,6 +17,18 @@ fn Main() {
 }
 ```
 
+## Installing
+
+Each of these installs clang together with zevic.
+
+| OS | Command |
+| --- | --- |
+| Ubuntu / Debian | `curl -fsSL https://zevic-lang.github.io/zevic/zevic.gpg \| sudo tee /usr/share/keyrings/zevic.gpg >/dev/null`<br>`echo "deb [signed-by=/usr/share/keyrings/zevic.gpg] https://zevic-lang.github.io/zevic stable main" \| sudo tee /etc/apt/sources.list.d/zevic.list`<br>`sudo apt update && sudo apt install zevic` |
+| Windows | `winget install zevic-lang.Zevic` (also installs `LLVM.LLVM`; the Visual Studio Build Tools are needed for linking) |
+| macOS | the `.pkg` or `install.sh` from the [releases](https://github.com/zevic-lang/zevic/releases) (`brew install llvm` first) |
+
+Maintainers: see [`packaging/README.md`](packaging/README.md) for how the apt repository and the winget manifests are published.
+
 ## Building
 
 You need `make` and **clang 15 or newer**. The first compiler (the seed) is built by clang from the committed LLVM IR (`bootstrap/zevic.ll`). The C compiler is not needed.

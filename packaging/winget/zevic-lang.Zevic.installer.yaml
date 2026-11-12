@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.6.0.schema.json
+PackageIdentifier: zevic-lang.Zevic
+PackageVersion: __VERSION__
+InstallerType: inno
+Scope: user
+InstallModes:
+  - interactive
+  - silent
+  - silentWithProgress
+UpgradeBehavior: install
+Dependencies:
+  PackageDependencies:
+    - PackageIdentifier: LLVM.LLVM
+ReleaseDate: __DATE__
+Installers:
+  - Architecture: x64
+    InstallerUrl: https://github.com/zevic-lang/zevic/releases/download/v__VERSION__/zevic-__VERSION__-windows-x64-setup.exe
+    InstallerSha256: __SHA256__
+ManifestType: installer
+ManifestVersion: 1.6.0
