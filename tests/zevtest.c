@@ -831,7 +831,7 @@ static void test_golden(const char *pattern) {
 static char *spec_sample(void) {
     char *spec = slurp("docs/spec/zevic-spec.md");
     if (!spec) return NULL;
-    char *p = strstr(spec, "## 付録B");
+    char *p = strstr(spec, "## Appendix B");
     if (!p) return NULL;
     p = strstr(p, "```\n");
     if (!p) return NULL;
