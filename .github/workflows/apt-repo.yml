@@ -1,0 +1,51 @@
+name: apt repository
+
+# Publishes the .deb files of a release to the gh-pages branch as a signed apt repository.
+# Run it by hand (Actions -> apt repository -> Run workflow) after setting APT_GPG_PRIVATE_KEY,
+# or to republish a tag. The same steps run automatically for every v* tag in ci.yml.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag whose .deb is published (for example v0.4.1)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download the .deb of the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download "${{ inputs.tag }}" --repo "$GITHUB_REPOSITORY" --pattern '*.deb' --dir artifacts
+
+      - name: Fetch the current repository (gh-pages)
+        run: |
+          git fetch origin gh-pages:gh-pages 2>/dev/null && git worktree add repo gh-pages \
+            || { git worktree add --detach repo && cd repo && git checkout --orphan gh-pages && git rm -rf . >/dev/null 2>&1 || true; }
+
+      - name: Build and sign
+        env:
+          KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
+          APT_GPG_PASSPHRASE: ${{ secrets.APT_GPG_PASSPHRASE }}
+        run: |
+          if [ -z "$KEY" ]; then echo "::error::APT_GPG_PRIVATE_KEY is not set"; exit 1; fi
+          if printf '%s' "$KEY" | grep -q 'BEGIN PGP'; then
+            printf '%s\n' "$KEY" | gpg --batch --import
+          else
+            printf '%s' "$KEY" | tr -d ' \r\n' | base64 -d | gpg --batch --import
+          fi
+          gpg --list-secret-keys --with-colons | grep -q '^sec' || { echo "::error::APT_GPG_PRIVATE_KEY holds no secret key. Use: gpg --export-secret-keys <id> | base64 -w0"; exit 1; }
+          export APT_GPG_KEY_ID="$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr/{print $10; exit}')"
+          sh packaging/make-apt-repo.sh artifacts/*.deb -- repo
+          cd repo
+          git config user.name "zevic release"
+          git config user.email "release@zevic-lang.invalid"
+          git add -A
+          git commit -m "apt repository for ${{ inputs.tag }}" || exit 0
+          git push origin HEAD:gh-pages

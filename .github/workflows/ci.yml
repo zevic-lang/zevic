@@ -298,7 +298,13 @@ jobs:
           APT_GPG_PASSPHRASE: ${{ secrets.APT_GPG_PASSPHRASE }}
         run: |
           if [ -z "$KEY" ]; then echo "APT_GPG_PRIVATE_KEY is not set: skipping the apt repository"; exit 0; fi
-          echo "$KEY" | gpg --batch --import
+          # the secret is either an armored key or the same key as one base64 line (which survives any paste)
+          if printf '%s' "$KEY" | grep -q 'BEGIN PGP'; then
+            printf '%s\n' "$KEY" | gpg --batch --import
+          else
+            printf '%s' "$KEY" | tr -d ' \r\n' | base64 -d | gpg --batch --import
+          fi
+          gpg --list-secret-keys --with-colons | grep -q '^sec' || { echo "::error::APT_GPG_PRIVATE_KEY holds no secret key. Use: gpg --export-secret-keys <id> | base64 -w0"; exit 1; }
           export APT_GPG_KEY_ID="$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr/{print $10; exit}')"
           sh packaging/make-apt-repo.sh artifacts/*.deb -- repo
           cd repo

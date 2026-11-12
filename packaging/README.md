@@ -14,7 +14,7 @@
 apt (published to the `gh-pages` branch by the `apt-repo` job on every `v*` tag):
 
 1. `gpg --quick-generate-key "Zevic <you@example.com>" rsa3072 sign never`
-2. `gpg --armor --export-secret-keys <id>` goes into the repository secret `APT_GPG_PRIVATE_KEY`
+2. `gpg --export-secret-keys <id> | base64 -w0` (one line; an armored key works too) goes into the repository secret `APT_GPG_PRIVATE_KEY`
    (`APT_GPG_PASSPHRASE` too, if the key has one).
 3. Settings → Pages → deploy from the `gh-pages` branch (the first tag creates the branch).
 
