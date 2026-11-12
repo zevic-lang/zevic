@@ -1,0 +1,35 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+Origin: Zevic
+Label: Zevic
+Suite: stable
+Codename: stable
+Architectures: amd64 arm64
+Components: main
+Description: Zevic programming language packages
+Date: Thu, 12 Nov 2026 09:36:29 UTC
+MD5Sum:
+ 5ce435cf55a74043b76cbce086be314f              649 main/binary-amd64/Packages
+ 2d7aa9c4a4e1e7c07ca5220d7f025fa8              447 main/binary-amd64/Packages.gz
+ d41d8cd98f00b204e9800998ecf8427e                0 main/binary-arm64/Packages
+ 4a4dd3598707603b3f76a2378a4504aa               20 main/binary-arm64/Packages.gz
+SHA256:
+ 6ae357f94d7f182d2dcb77cf5cc93c43b91ec05b124f960414979aadc5266008              649 main/binary-amd64/Packages
+ 9553f315225ccc3d7d0ee4a83a1c15f56ad966ac9114e4c221b3740131ceb2d3              447 main/binary-amd64/Packages.gz
+ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855                0 main/binary-arm64/Packages
+ f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec               20 main/binary-arm64/Packages.gz
+-----BEGIN PGP SIGNATURE-----
+
+iQGzBAEBCgAdFiEExwc/L0xwYcfOSfSB5tl30tJghYMFAmr1iJ0ACgkQ5tl30tJg
+hYNeuwv/aEhK+1tmiUmEm9HUa4n8feeBGgbg/ivbFZHhHLFrgPuJ798bq66cNOVc
+1iMVaWG5FUU23NzgfdRm9OzmAKY4KADMCEgbr5mrSTJFFc+WwWCh9c+lEmYiP8M0
+NOclZZb5L+yUQISSzuzAB/o86aYrVXJ9LfsWQ2AWB+LfEJPcAg+WLhN46S7xFazn
+yWIio7cqAEdws57O4TlopxZJbmZKgTEN/vgS1/USxyFYoDfYxNHGOvjfB9v3SjTY
+9+/hJVL3Sw1Eij+2SVPOI57gu2xDthRvoCp0IuMcwlWW1tWxCMhl4aVf8uos4Ku9
+pe7r2Pf5qQzMmLYUG9wgFtGOaf7zP3In338F7/1mXanRDodhOs0gh5I0QA0P6pe5
+gvQzWdhOro4zY1NI3DRws+BrhqK/Ff2c2k0ZRu7F84U9bZ5tGcoLnXvSQy4aTYzR
+Bq1d1oi1DiKX2npNa8i1s3UkLT5NLHQUkw/vj/7gRTd/aod0i3H/9lo+Tbtli3LT
+X7Tl4apX
+=41Jr
+-----END PGP SIGNATURE-----

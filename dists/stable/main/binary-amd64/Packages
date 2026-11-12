@@ -1,0 +1,18 @@
+Package: zevic
+Version: 0.4.1
+Architecture: amd64
+Maintainer: rimsky-yamatov <ja.yamatov.dev@gmail.com>
+Installed-Size: 3964
+Depends: clang (>= 1:15)
+Filename: pool/main/z/zevic/zevic_0.4.1_amd64.deb
+Size: 822514
+MD5sum: 8c3fa1460b3501381add9667c5a342ab
+SHA1: c45a78fd8ca8a383777592ed6340350d575c12ac
+SHA256: 5d1eb47ebee5a4e2cf1f1f204ba81de56a30aad328cabc10fca58f4315284c2a
+Section: devel
+Priority: optional
+Description: Zevic programming language: compiler, package manager and formatter
+ zevic compiles Zevic to LLVM IR and builds it with clang; zevpm is the
+ package manager and zevfmt the formatter. The standard library is the
+ Zevic package.
+

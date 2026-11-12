@@ -1,0 +1,11 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Zevic apt repository</title>
+<h1>Zevic apt repository</h1>
+<pre>
+curl -fsSL https://zevic-lang.github.io/zevic/zevic.gpg | sudo tee /usr/share/keyrings/zevic.gpg &gt;/dev/null
+echo "deb [signed-by=/usr/share/keyrings/zevic.gpg] https://zevic-lang.github.io/zevic stable main" | sudo tee /etc/apt/sources.list.d/zevic.list
+sudo apt update
+sudo apt install zevic
+</pre>
+<p>This also installs clang, which zevic needs. See <a href="https://github.com/zevic-lang/zevic">zevic-lang/zevic</a>.</p>
