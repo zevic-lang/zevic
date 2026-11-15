@@ -8,28 +8,28 @@ Codename: stable
 Architectures: amd64 arm64
 Components: main
 Description: Zevic programming language packages
-Date: Sun, 15 Nov 2026 06:02:55 UTC
+Date: Sun, 15 Nov 2026 06:13:45 UTC
 MD5Sum:
- 5ce435cf55a74043b76cbce086be314f              649 main/binary-amd64/Packages
- 2d7aa9c4a4e1e7c07ca5220d7f025fa8              447 main/binary-amd64/Packages.gz
+ 2973503dcef4ec87a16644cbb3d9f63d              649 main/binary-amd64/Packages
+ ed891055d1d5e1677fe8b60cbd6d637b              451 main/binary-amd64/Packages.gz
  d41d8cd98f00b204e9800998ecf8427e                0 main/binary-arm64/Packages
  4a4dd3598707603b3f76a2378a4504aa               20 main/binary-arm64/Packages.gz
 SHA256:
- 6ae357f94d7f182d2dcb77cf5cc93c43b91ec05b124f960414979aadc5266008              649 main/binary-amd64/Packages
- 9553f315225ccc3d7d0ee4a83a1c15f56ad966ac9114e4c221b3740131ceb2d3              447 main/binary-amd64/Packages.gz
+ 0ccfdfbed1529fcd78307a57a662005f2583a7cd01081e642824501dda179827              649 main/binary-amd64/Packages
+ ab163522511fb2a030db0affdf4649ccfb63e8a25af951f809ab2ebc021d2648              451 main/binary-amd64/Packages.gz
  e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855                0 main/binary-arm64/Packages
  f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec               20 main/binary-arm64/Packages.gz
 -----BEGIN PGP SIGNATURE-----
 
-iQGzBAEBCgAdFiEExwc/L0xwYcfOSfSB5tl30tJghYMFAmr5SxAACgkQ5tl30tJg
-hYN74wv+M22tcaQXc4hnU8c+UKofuYU0U0XIt3gWPdyjZcFIfZktpAIvrymC9cru
-pxn8NTVnL0SYU8gH9aC4QnKZm9Rtl3U8JGIcI/HLjRzoFVaMNsxocLGPJ31vTzwi
-BmQdhexrin+pUfCDK66HKoh/6Zo2e4TSL8RIFQRZkL11IYEBkmpAO1CvtnV6rhee
-x2q2F1ZagF2nrc6FvFO+5hEZos48kL1kNCcMSRHa0uMdgkrKFg7cClkTVIp+Sy+O
-F1AXc9e3folY/EQpE0WfpPQU5FIxCVTNKZZ8zYwVLuFMYY6D23YydyDxISU7jS2H
-DxeVq2Tp+OXtWl6+VruDDpMlFdzRaEwGH32AlfHYQ7xrGYKvXGSSTPBsuUpfniwD
-j7nWqeE64nmnyDq85XFvb90G0H8VmC7FlTg3l05LncbwekWBoO2jFYcWk5hyhLD6
-NiKheH+IrAjOnMLHP5XLzPF+9DbnuiEm2zMCAYDMEB28La9UwzrTDNhCTDN5qFgA
-cy6lEeBQ
-=IXyO
+iQGzBAEBCgAdFiEExwc/L0xwYcfOSfSB5tl30tJghYMFAmr5TZkACgkQ5tl30tJg
+hYNhZgv9Fsz6D6gYYjjS8o3/W67HZvc63KKy6auJxIxQrrqGj/pVD7W0aXy9zfXx
+G/7qDJvMdXYJvqb91QP72FhtcbUr14GhhkfpNkxjMovC1Z1S5T4vDtdzgG7FbgSg
+AJzExnQNDTOpDBsFIVKG4lFZKZClMbkFQ3EaKUsxFmoQLM5EQrjzfBRo3ekCINeV
+C1PG+kcX+eQgwnnLcJdE8AHIDoybuOM7z5NmgLltk8GLHwL0jeaCyqFPblC8GfPt
+BL2Uq4O9BHlJntdggDyR/1wk9R7v5z7WwQACYqZkxl1YPgaFGAjaalTzsoW2/3n5
+ENirWdY90A+poyQxVWyD/0B6FzrUK9aRmHlkbsY5d4KWQT0in2H1Oai3LT9fGr+f
+A3FkA5POWhIaGKqMX1qoQuj8738EhQRlpL8KtZcqMBr+p1IzIqEQg2tn09i76+fm
+OZaF4AO/ZsVHWqZqYmqP6peS60RnRLiBWs7HrbIIlasNOrvldVEokLYUb06GFoTH
+s7yNh+up
+=+ZSM
 -----END PGP SIGNATURE-----
