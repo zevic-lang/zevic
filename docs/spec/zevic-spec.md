@@ -1495,12 +1495,12 @@ After the first batch works, the second and third batches are implemented in tha
 
 - **Concurrency** uses OS threads ([proposal 0002](../proposals/0002-async.md)). `Thread` holds the threads themselves, and `Async` builds tasks, channels and mutexes on top of them.
 - **`BigInt`** is not a language type. Operators are not overloaded for it, so arithmetic is written with methods. `==` and `<` work because `BigInt` implements `Equatable` and `Comparable`.
-- `Async`, `Http`, `Json`, `Random`, `Net` and `Test` are implemented. `Thread` and `BigInt` are not yet. The function names below are provisional. If they change at implementation time, this block is updated too.
+- `Thread`, `Async`, `Http`, `Json`, `Random`, `Net` and `Test` are implemented. `BigInt` is not yet. The function names below are provisional. If they change at implementation time, this block is updated too.
 
 ```
-// Zevic.Thread (OS threads)
-Thread.Spawn(f: () -> Unit) -> Thread
-t.Join() -> Unit                                  // waits for the end. A Panic stops the process
+// Zevic.Thread (OS threads; implemented)
+Thread.Spawn(f: fn() -> Unit) -> Thread.Thread    // Thread.Thread is the class of a thread
+t.Join()                                          // waits for the end; t is declared with mut. Joining twice is a Panic
 Thread.Yield()
 
 // Zevic.Net (TCP and UDP; implemented, see the chapter on the standard library)
