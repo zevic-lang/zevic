@@ -1494,7 +1494,7 @@ After the first batch works, the second and third batches are implemented in tha
 | `Zevic.Test` | assertions for tests (see the chapter on tests). Implemented in stage 6. |
 
 - **Concurrency** uses OS threads ([proposal 0002](../proposals/0002-async.md)). `Thread` holds the threads themselves, and `Async` builds tasks, channels and mutexes on top of them.
-- **`BigInt`** is not a language type. Operators are not overloaded for it, so arithmetic is written with methods. The type is `BigInt.BigInt` (module `Zevic.BigInt`, the same form as `Random.Rng`). It implements `Equatable` (`==`) and `Comparable` (`Compare`). The ordering operators `<` and so on on a struct that implements `Comparable` are the intended rule, but the compiler does not yet support them for structs; use `Compare` until it does.
+- **`BigInt`** is not a language type. Operators are not overloaded for it, so arithmetic is written with methods. The type is `BigInt.BigInt` (module `Zevic.BigInt`, the same form as `Random.Rng`). It implements `Equatable` (`==`) and `Comparable` (`Compare`). On a struct or class that implements `Comparable`, `<`, `<=`, `>` and `>=` call its `Compare` method and compare the result with 0.
 - All the modules in this table are implemented. The function names below are the implemented ones. If they change later, this block is updated too.
 
 ```

@@ -622,6 +622,28 @@ fn genCompare(mut F: Ctx.FnCtx, op: Token.Tk, a: Ctx.Val, b: Ctx.Val, pos: Token
         F.Emit("${n} = xor i1 ${e.V}, true")
         return Ctx.Val.New(g.Tt.Bool, n)
     }
+    // A struct or class that implements Comparable: a < b is a.Compare(b) < 0.
+    if (t.Kind == Types.TKind.Struct || t.Kind == Types.TKind.Class) {
+        match (Gen.FindMember(g, t, "Compare")) {
+            Some(cmp) => {
+                if (!cmp.IsStatic) {
+                    let c: Ctx.Val = callMethodVals(F, t, cmp, structRecv(F, a), [b], pos, Some(g.Tt.I32))
+                    if (g.IsErr(c.T)) {
+                        return c
+                    }
+                    let p: String = match (op) {
+                        Token.Tk.Lt => "slt",
+                        Token.Tk.Le => "sle",
+                        Token.Tk.Gt => "sgt",
+                        _ => "sge",
+                    }
+                    F.Emit("${r} = icmp ${p} i32 ${c.V}, 0")
+                    return res
+                }
+            },
+            None => {},
+        }
+    }
     if (op == Token.Tk.EqEq || op == Token.Tk.Neq) {
         g.Diag.Error(pos, "values of type `${t.Name}` cannot be compared with `${op.Name()}`")
     } else {
@@ -5495,6 +5517,15 @@ fn callMethodVals(mut F: Ctx.FnCtx, t: Types.Type, fnNode: Ast.Node, recvObj: Ct
     genCallDecl(F, call, Gen.MethodDecl(g, t, fnNode), Some(t), None, expect, Some(recv))
 }
 
+// A struct's methods take `this` by pointer: put the value in memory and pass its address.
+fn structRecv(mut F: Ctx.FnCtx, a: Ctx.Val) -> Ctx.Val {
+    if (a.T.Kind != Types.TKind.Struct) {
+        return a
+    }
+    let pl: Ctx.Place = spill(F, a)
+    Ctx.Val.New(a.T, pl.Ptr)
+}
+
 // Compare the parts of two LLVM aggregates (a struct's fields or a tuple's elements).
 fn genEqParts(mut F: Ctx.FnCtx, types: Array<Types.Type>, a: Ctx.Val, b: Ctx.Val, pos: Token.Pos) -> Ctx.Val {
     mut g: Gen.Gen = F.G
@@ -5600,6 +5631,15 @@ fn genEq(mut F: Ctx.FnCtx, a: Ctx.Val, b: Ctx.Val, pos: Token.Pos) -> Ctx.Val {
     }
     if (t.Kind == Types.TKind.Struct) {
         Gen.EnsureMembers(g, t)
+        // A struct that implements Equatable compares with its own Equals.
+        match (Gen.FindMember(g, t, "Equals")) {
+            Some(eq) => {
+                if (!eq.IsStatic) {
+                    return callMethodVals(F, t, eq, structRecv(F, a), [b], pos, Some(g.Tt.Bool))
+                }
+            },
+            None => {},
+        }
         return genEqParts(F, objTuple(g, t).Args, a, b, pos)
     }
     if (t.Kind == Types.TKind.Tuple) {

@@ -19,7 +19,7 @@ fn Main() {
     Console.Println(x.Mul(x).ToString())
     Console.Println(BigInt.FromI64(-3).Pow(3).ToString())
     Console.Println("eq=${BigInt.Parse("100").Unwrap() == BigInt.FromI64(100)}")
-    Console.Println("lt=${BigInt.FromI64(-1).Compare(BigInt.FromI64(0)) < 0}")
+    Console.Println("lt=${BigInt.FromI64(-1) < BigInt.FromI64(0)}")
     Console.Println("i64min=${BigInt.FromI64(-9223372036854775807 - 1).ToI64().UnwrapOr(0)}")
     Console.Println("overflow=${big.ToI64().UnwrapOr(-1)}")
     Console.Println("bad=${BigInt.Parse("12x").UnwrapOr(BigInt.FromI64(7)).ToString()}")
