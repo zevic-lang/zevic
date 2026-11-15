@@ -14,7 +14,7 @@ source_filename = "zevic"
 @.str.10 = private unnamed_addr constant [11 x i8] c"--dump-ast\00"
 @.str.11 = private unnamed_addr constant [13 x i8] c"--dump-types\00"
 @.str.12 = private unnamed_addr constant [15 x i8] c"--dump-modules\00"
-@.str.13 = private unnamed_addr constant [82 x i8] c"usage: zevic1 --dump-tokens <file> | --dump-ast <file> | --dump-modules <file>...\00"
+@.str.13 = private unnamed_addr constant [81 x i8] c"usage: zevic --dump-tokens <file> | --dump-ast <file> | --dump-modules <file>...\00"
 @.str.14 = private unnamed_addr constant [17 x i8] c"integer overflow\00"
 @.str.15 = private unnamed_addr constant [14 x i8] c"Zevic/Env.zev\00"
 @.str.16 = private unnamed_addr constant [9 x i8] c"TypeName\00"
@@ -1206,7 +1206,7 @@ source_filename = "zevic"
 @.str.1202 = private unnamed_addr constant [7 x i8] c" bits \00"
 @.str.1203 = private unnamed_addr constant [7 x i8] c"ZEVIC_\00"
 @.str.1204 = private unnamed_addr constant [5 x i8] c".zev\00"
-@.str.1205 = private unnamed_addr constant [50 x i8] c"usage: zevic1 [options] <file.zev>... [-o output]\00"
+@.str.1205 = private unnamed_addr constant [49 x i8] c"usage: zevic [options] <file.zev>... [-o output]\00"
 @.str.1206 = private unnamed_addr constant [108 x i8] c"  --test  --lib  --pic  --emit-ll  --emit-header <f>  --keep-ll  -O0|-O1|-O2  -g  --cc <path>  --cxx <path>\00"
 @.str.1207 = private unnamed_addr constant [68 x i8] c"  -l<lib> -L<dir> -I<dir> -D<name>  and .c .cpp .o .a files to link\00"
 @.str.1208 = private unnamed_addr constant [14 x i8] c"--emit-header\00"
@@ -1800,7 +1800,7 @@ then.49:
   call void @"zevic_Zevic_Env_Exit"(i32 %t134)
   unreachable
 endif.51:
-  call void @"zevic_Zevic_Console_Eprintln"({ ptr, i64 } { ptr @.str.13, i64 81 })
+  call void @"zevic_Zevic_Console_Eprintln"({ ptr, i64 } { ptr @.str.13, i64 80 })
   call void @"zevic_Zevic_Env_Exit"(i32 2)
   unreachable
 }
@@ -85628,7 +85628,7 @@ panic.22:
 
 define void @"zevic_Main_usage"() {
 entry:
-  call void @"zevic_Zevic_Console_Eprintln"({ ptr, i64 } { ptr @.str.1205, i64 49 })
+  call void @"zevic_Zevic_Console_Eprintln"({ ptr, i64 } { ptr @.str.1205, i64 48 })
   call void @"zevic_Zevic_Console_Eprintln"({ ptr, i64 } { ptr @.str.1206, i64 107 })
   call void @"zevic_Zevic_Console_Eprintln"({ ptr, i64 } { ptr @.str.1207, i64 67 })
   ret void
