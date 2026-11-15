@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.3
 
 - `<`, `<=`, `>` and `>=` work on a struct or class that implements `Comparable`: they call its `Compare` method
 - `==` on a struct that implements `Equatable` calls its `Equals` method (it used to compare the fields)
