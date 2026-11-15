@@ -5,6 +5,7 @@
 - `<`, `<=`, `>` and `>=` work on a struct or class that implements `Comparable`: they call its `Compare` method
 - `==` on a struct that implements `Equatable` calls its `Equals` method (it used to compare the fields)
 - Usage messages name `zevic`
+- `Async.Spawn` now starts its task on a `Thread.Thread` (detached), and `Thread` has `Detach()`
 
 ## 0.4.2
 

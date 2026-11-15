@@ -10,6 +10,7 @@ module Zevic.Thread
 extern "zevic" {
     fn zevic_thread_spawn(f: fn() -> Unit) -> *CVoid
     fn zevic_thread_join(h: *CVoid)
+    fn zevic_thread_detach(h: *CVoid)
     fn zevic_thread_yield()
 }
 
@@ -29,6 +30,15 @@ class Thread {
             Panic("thread already joined")
         }
         zevic_thread_join(this.handle)
+        this.joined = true
+    }
+
+    // Lets the thread run on its own: nothing waits for it, and it cannot be joined afterwards.
+    mut fn Detach() {
+        if (this.joined) {
+            Panic("thread already joined")
+        }
+        zevic_thread_detach(this.handle)
         this.joined = true
     }
 }

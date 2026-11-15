@@ -1944,6 +1944,7 @@ void zevic_thread_join(void *h) {
     CloseHandle(h);
 }
 void zevic_thread_yield(void) { SwitchToThread(); }
+void zevic_thread_detach(void *h) { CloseHandle(h); }
 
 void *zevic_mutex_new(void) {
     CRITICAL_SECTION *m = malloc(sizeof *m);
@@ -2003,6 +2004,10 @@ void zevic_thread_join(void *h) {
     free(h);
 }
 void zevic_thread_yield(void) { sched_yield(); }
+void zevic_thread_detach(void *h) {
+    pthread_detach(*(pthread_t *)h);
+    free(h);
+}
 
 void *zevic_mutex_new(void) {
     pthread_mutex_t *m = malloc(sizeof *m);
