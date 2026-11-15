@@ -1494,8 +1494,8 @@ After the first batch works, the second and third batches are implemented in tha
 | `Zevic.Test` | assertions for tests (see the chapter on tests). Implemented in stage 6. |
 
 - **Concurrency** uses OS threads ([proposal 0002](../proposals/0002-async.md)). `Thread` holds the threads themselves, and `Async` builds tasks, channels and mutexes on top of them.
-- **`BigInt`** is not a language type. Operators are not overloaded for it, so arithmetic is written with methods. `==` and `<` work because `BigInt` implements `Equatable` and `Comparable`.
-- `Thread`, `Async`, `Http`, `Json`, `Random`, `Net` and `Test` are implemented. `BigInt` is not yet. The function names below are provisional. If they change at implementation time, this block is updated too.
+- **`BigInt`** is not a language type. Operators are not overloaded for it, so arithmetic is written with methods. The type is `BigInt.BigInt` (module `Zevic.BigInt`, the same form as `Random.Rng`). It implements `Equatable` (`==`) and `Comparable` (`Compare`). The ordering operators `<` and so on on a struct that implements `Comparable` are the intended rule, but the compiler does not yet support them for structs; use `Compare` until it does.
+- All the modules in this table are implemented. The function names below are the implemented ones. If they change later, this block is updated too.
 
 ```
 // Zevic.Thread (OS threads; implemented)
@@ -1514,14 +1514,15 @@ u.SendString(host: String, port: I64, data: String) -> Result<Unit, Error>
 u.Receive(max: I64) -> Result<Packet, Error>       // Packet has Text(), Bytes(), FromHost() and FromPort()
 
 // Zevic.BigInt (arbitrary-precision signed integers; values are immutable)
-BigInt.FromI64(x: I64) -> BigInt
-BigInt.Parse(s: String) -> Result<BigInt, Error>  // decimal; a leading - is allowed
+BigInt.FromI64(x: I64) -> BigInt.BigInt
+BigInt.Parse(s: String) -> Result<BigInt.BigInt, Error>  // decimal; an optional + or - comes first
 b.ToString() -> String
 b.ToI64() -> Result<I64, Error>                   // Err when out of range
-a.Add(b) / a.Sub(b) / a.Mul(b) -> BigInt
-a.DivRem(b) -> (BigInt, BigInt)                   // quotient truncated toward 0; division by 0 is a Panic
-a.Pow(e: I64) -> BigInt                           // e < 0 is a Panic
-a == b   a < b                                    // via Equatable and Comparable
+a.Add(b) / a.Sub(b) / a.Mul(b) -> BigInt.BigInt
+a.Neg() / a.Abs() / a.IsZero()
+a.DivRem(b) -> (BigInt.BigInt, BigInt.BigInt)    // quotient truncated toward 0; the remainder has the sign of a; division by 0 is a Panic
+a.Pow(e: I64) -> BigInt.BigInt                    // e < 0 is a Panic
+a == b   a.Compare(b) -> I32                      // via Equatable and Comparable
 ```
 
 ### Naming rules
