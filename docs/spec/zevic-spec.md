@@ -226,7 +226,7 @@ The types of Zevic are the fixed-width numeric types, `Bool`, `Char`, `String` a
 
 - If integer arithmetic goes out of range, it is a `Panic` (no wrapping). Integer division by zero is also a `Panic`.
 - An integer literal without a written type takes the type of the context. Without context it is `I64`, and a decimal is `F64`.
-- An arbitrary-precision integer (`Integer`) does not exist now.
+- Arbitrary-precision integers are not a language type. They are provided by the standard library as the `BigInt` type of `Zevic.BigInt` (see "Standard library, second and third batches").
 
 ### Composite types
 
@@ -1074,7 +1074,7 @@ defer f.Close()
 
 ### Threads and the GC
 
-- Threads (`Zevic.Async`) use the thread-aware build of the Boehm GC. Threads are created through a wrapper of the runtime.
+- Threads (`Zevic.Thread` and `Zevic.Async`) use the thread-aware build of the Boehm GC. Threads are created through a wrapper of the runtime.
 - The state of the runtime (error numbers, the working values for starting processes, the target of the test `longjmp`) is kept per thread.
 
 ### Settings
@@ -1480,9 +1480,10 @@ After the first batch works, the second and third batches are implemented in tha
 
 | Module | Role |
 | --- | --- |
-| `Zevic.Net` | TCP and UDP, an HTTP client |
-| `Zevic.Thread` | threads, mutexes and channels |
-| `Zevic.Async` | asynchronous processing |
+| `Zevic.Net` | TCP and UDP sockets (HTTP is `Zevic.Http`) |
+| `Zevic.Thread` | OS threads (the base of `Async`) |
+| `Zevic.Async` | tasks, channels and mutexes, built on `Thread` |
+| `Zevic.BigInt` | arbitrary-precision integers (the `BigInt` type) |
 | `Zevic.Json` | reading and writing JSON |
 | `Zevic.Random` | random numbers |
 | `Zevic.Path` `Zevic.Bytes` `Zevic.Chars` | path operations, byte strings (`Array<U8>`), classification and conversion of characters (`Char`) (v0.4.1) |
@@ -1490,9 +1491,38 @@ After the first batch works, the second and third batches are implemented in tha
 | `Zevic.DateTime` `Zevic.Log` `Zevic.Cli` | dates and times (fixed offsets), logging, parsing command-line arguments (v0.4.1) |
 | `Zevic.Regex` `Zevic.Csv` `Zevic.Toml` | regular expressions (a Pike VM), CSV (RFC 4180), TOML 1.0 (v0.4.1) |
 | `Zevic.Deflate` `Zevic.Zlib` `Zevic.Gzip` `Zevic.Zip` `Zevic.Tar` | compression and decompression, reading and writing zip and tar archives (with zip-slip protection) (v0.4.1) |
-| `Zevic.Test` | assertions for tests (see the chapter on tests). The real implementation is in implementation stage 6, ahead of the second batch. |
+| `Zevic.Test` | assertions for tests (see the chapter on tests). Implemented in stage 6. |
 
-- The model of concurrency (`Thread` / `Async`) is undecided. It will be decided after looking at how it works with the GC (the thread support of Boehm).
+- **Concurrency** uses OS threads ([proposal 0002](../proposals/0002-async.md)). `Thread` holds the threads themselves, and `Async` builds tasks, channels and mutexes on top of them.
+- **`BigInt`** is not a language type. Operators are not overloaded for it, so arithmetic is written with methods. `==` and `<` work because `BigInt` implements `Equatable` and `Comparable`.
+- `Async`, `Http`, `Json`, `Random`, `Net` and `Test` are implemented. `Thread` and `BigInt` are not yet. The function names below are provisional. If they change at implementation time, this block is updated too.
+
+```
+// Zevic.Thread (OS threads)
+Thread.Spawn(f: () -> Unit) -> Thread
+t.Join() -> Unit                                  // waits for the end. A Panic stops the process
+Thread.Yield()
+
+// Zevic.Net (TCP and UDP; implemented, see the chapter on the standard library)
+Net.Connect(host: String, port: I64) -> Result<TcpStream, Error>
+Net.Listen(host: String, port: I64) -> Result<TcpListener, Error>
+l.Accept() -> Result<TcpStream, Error>
+s.ReadString(max: I64) / s.ReadBytes(max: I64) -> Result<..., Error>   // 0 bytes means the peer has closed
+s.WriteString(s: String) / s.WriteBytes(b: Array<U8>) -> Result<Unit, Error>
+Net.BindUdp(host: String, port: I64) -> Result<UdpSocket, Error>
+u.SendString(host: String, port: I64, data: String) -> Result<Unit, Error>
+u.Receive(max: I64) -> Result<Packet, Error>       // Packet has Text(), Bytes(), FromHost() and FromPort()
+
+// Zevic.BigInt (arbitrary-precision signed integers; values are immutable)
+BigInt.FromI64(x: I64) -> BigInt
+BigInt.Parse(s: String) -> Result<BigInt, Error>  // decimal; a leading - is allowed
+b.ToString() -> String
+b.ToI64() -> Result<I64, Error>                   // Err when out of range
+a.Add(b) / a.Sub(b) / a.Mul(b) -> BigInt
+a.DivRem(b) -> (BigInt, BigInt)                   // quotient truncated toward 0; division by 0 is a Panic
+a.Pow(e: I64) -> BigInt                           // e < 0 is a Panic
+a == b   a < b                                    // via Equatable and Comparable
+```
 
 ### Naming rules
 
@@ -1850,9 +1880,7 @@ To grow the language over a long time, it is run as a GitHub organization. The n
 
 | Item | Status |
 | --- | --- |
-| Concurrency | The model of `Thread` and `Async`. To be decided after looking at how it works with the Boehm GC. |
 | Generic constraints | To be added in implementation stage 5. The policy is not to provide `where`. |
-| `Integer` (arbitrary precision) | Whether to add it, and how to write literals |
 | A `Main` that returns a `Result` | Not allowed for now. To be reconsidered when needed. |
 | Reading and writing through pointers | The syntax `*p`. For now pointers are only passed. |
 | Formats in string interpolation | Whether to add format specifiers such as `"${x:5.2}"` |
@@ -2030,6 +2058,6 @@ test "Parse rejects an unknown command" {
 }
 ```
 
-- This sample is the same as `examples/apps/wordcount/src/Main.zev` and runs as it is with the compiler implementation (`tests/examples_test.py` checks that they match).
+- This sample is the same as `examples/apps/wordcount/src/Main.zev` and runs as it is with the compiler implementation (`tests/zevtest.c`, mode `examples`, checks that they match).
 - The `Zevic` of the standard library can be omitted (`Console.Println` and `Zevic.Console.Println` are the same).
 - The first goal of implementation stage 1 is not this program but "Hello World" (`module Main` / `Console.Println`).
