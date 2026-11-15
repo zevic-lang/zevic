@@ -1495,7 +1495,7 @@ After the first batch works, the second and third batches are implemented in tha
 
 - **Concurrency** uses OS threads ([proposal 0002](../proposals/0002-async.md)). `Thread` holds the threads themselves, and `Async` builds tasks, channels and mutexes on top of them.
 - **`BigInt`** is not a language type. Operators are not overloaded for it, so arithmetic is written with methods. `==` and `<` work because `BigInt` implements `Equatable` and `Comparable`.
-- `Async`, `Http`, `Json`, `Random` and `Test` are implemented. `Thread`, `Net` and `BigInt` are not yet. The function names below are provisional. If they change at implementation time, this block is updated too.
+- `Async`, `Http`, `Json`, `Random`, `Net` and `Test` are implemented. `Thread` and `BigInt` are not yet. The function names below are provisional. If they change at implementation time, this block is updated too.
 
 ```
 // Zevic.Thread (OS threads)
@@ -1503,16 +1503,15 @@ Thread.Spawn(f: () -> Unit) -> Thread
 t.Join() -> Unit                                  // waits for the end. A Panic stops the process
 Thread.Yield()
 
-// Zevic.Net (sockets)
-Net.Connect(host: String, port: I32) -> Result<Socket, Error>
-Net.Listen(host: String, port: I32) -> Result<Listener, Error>
-l.Accept() -> Result<Socket, Error>
-s.Read(max: I64) -> Result<Array<U8>, Error>      // 0 bytes means the peer has closed
-s.Write(bytes: Array<U8>) -> Result<Unit, Error>
-s.Close()
-Net.UdpBind(host: String, port: I32) -> Result<UdpSocket, Error>
-u.SendTo(bytes: Array<U8>, host: String, port: I32) -> Result<Unit, Error>
-u.RecvFrom(max: I64) -> Result<Datagram, Error>   // Datagram has From and Bytes
+// Zevic.Net (TCP and UDP; implemented, see the chapter on the standard library)
+Net.Connect(host: String, port: I64) -> Result<TcpStream, Error>
+Net.Listen(host: String, port: I64) -> Result<TcpListener, Error>
+l.Accept() -> Result<TcpStream, Error>
+s.ReadString(max: I64) / s.ReadBytes(max: I64) -> Result<..., Error>   // 0 bytes means the peer has closed
+s.WriteString(s: String) / s.WriteBytes(b: Array<U8>) -> Result<Unit, Error>
+Net.BindUdp(host: String, port: I64) -> Result<UdpSocket, Error>
+u.SendString(host: String, port: I64, data: String) -> Result<Unit, Error>
+u.Receive(max: I64) -> Result<Packet, Error>       // Packet has Text(), Bytes(), FromHost() and FromPort()
 
 // Zevic.BigInt (arbitrary-precision signed integers; values are immutable)
 BigInt.FromI64(x: I64) -> BigInt
