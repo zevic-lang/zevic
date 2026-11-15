@@ -8,7 +8,7 @@ Codename: stable
 Architectures: amd64 arm64
 Components: main
 Description: Zevic programming language packages
-Date: Thu, 12 Nov 2026 09:36:29 UTC
+Date: Sun, 15 Nov 2026 06:02:55 UTC
 MD5Sum:
  5ce435cf55a74043b76cbce086be314f              649 main/binary-amd64/Packages
  2d7aa9c4a4e1e7c07ca5220d7f025fa8              447 main/binary-amd64/Packages.gz
@@ -21,15 +21,15 @@ SHA256:
  f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec               20 main/binary-arm64/Packages.gz
 -----BEGIN PGP SIGNATURE-----
 
-iQGzBAEBCgAdFiEExwc/L0xwYcfOSfSB5tl30tJghYMFAmr1iJ0ACgkQ5tl30tJg
-hYNeuwv/aEhK+1tmiUmEm9HUa4n8feeBGgbg/ivbFZHhHLFrgPuJ798bq66cNOVc
-1iMVaWG5FUU23NzgfdRm9OzmAKY4KADMCEgbr5mrSTJFFc+WwWCh9c+lEmYiP8M0
-NOclZZb5L+yUQISSzuzAB/o86aYrVXJ9LfsWQ2AWB+LfEJPcAg+WLhN46S7xFazn
-yWIio7cqAEdws57O4TlopxZJbmZKgTEN/vgS1/USxyFYoDfYxNHGOvjfB9v3SjTY
-9+/hJVL3Sw1Eij+2SVPOI57gu2xDthRvoCp0IuMcwlWW1tWxCMhl4aVf8uos4Ku9
-pe7r2Pf5qQzMmLYUG9wgFtGOaf7zP3In338F7/1mXanRDodhOs0gh5I0QA0P6pe5
-gvQzWdhOro4zY1NI3DRws+BrhqK/Ff2c2k0ZRu7F84U9bZ5tGcoLnXvSQy4aTYzR
-Bq1d1oi1DiKX2npNa8i1s3UkLT5NLHQUkw/vj/7gRTd/aod0i3H/9lo+Tbtli3LT
-X7Tl4apX
-=41Jr
+iQGzBAEBCgAdFiEExwc/L0xwYcfOSfSB5tl30tJghYMFAmr5SxAACgkQ5tl30tJg
+hYN74wv+M22tcaQXc4hnU8c+UKofuYU0U0XIt3gWPdyjZcFIfZktpAIvrymC9cru
+pxn8NTVnL0SYU8gH9aC4QnKZm9Rtl3U8JGIcI/HLjRzoFVaMNsxocLGPJ31vTzwi
+BmQdhexrin+pUfCDK66HKoh/6Zo2e4TSL8RIFQRZkL11IYEBkmpAO1CvtnV6rhee
+x2q2F1ZagF2nrc6FvFO+5hEZos48kL1kNCcMSRHa0uMdgkrKFg7cClkTVIp+Sy+O
+F1AXc9e3folY/EQpE0WfpPQU5FIxCVTNKZZ8zYwVLuFMYY6D23YydyDxISU7jS2H
+DxeVq2Tp+OXtWl6+VruDDpMlFdzRaEwGH32AlfHYQ7xrGYKvXGSSTPBsuUpfniwD
+j7nWqeE64nmnyDq85XFvb90G0H8VmC7FlTg3l05LncbwekWBoO2jFYcWk5hyhLD6
+NiKheH+IrAjOnMLHP5XLzPF+9DbnuiEm2zMCAYDMEB28La9UwzrTDNhCTDN5qFgA
+cy6lEeBQ
+=IXyO
 -----END PGP SIGNATURE-----
