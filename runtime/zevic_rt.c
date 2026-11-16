@@ -1911,9 +1911,19 @@ int32_t zevic_test_main(void) {
 typedef struct { HANDLE h; } zevic_thread;
 typedef struct { void (*fn)(void *); void *env; } zevic_thread_start_info;
 
+/* Threads made with CreateThread are not known to the collector, so each one registers itself:
+   otherwise the collector could miss its stack and free objects it still uses. */
 static DWORD WINAPI zevic_thread_main(LPVOID p) {
     zevic_thread_start_info *si = p;
+    struct GC_stack_base sb;
+    int registered = 0;
+    if (GC_get_stack_base(&sb) == GC_SUCCESS && GC_register_my_thread(&sb) == GC_SUCCESS) {
+        registered = 1;
+    }
     si->fn(si->env);
+    if (registered) {
+        GC_unregister_my_thread();
+    }
     return 0;
 }
 
