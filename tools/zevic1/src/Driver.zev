@@ -297,7 +297,7 @@ fn Build(clang: String, home: String, llPath: String, outPath: String, o: BuildO
         if (isCppFile(f)) { hasCpp = true }
     }
     let driver: String = if (hasCpp) { match (o.Cxx) { Some(x) => x, None => siblingCxx(clang) } } else { clang }
-    mut args: Array<String> = [match (o.Opt) { Some(x) => x, None => "-O1" }, "-w", "-Wno-override-module"]
+    mut args: Array<String> = [match (o.Opt) { Some(x) => x, None => "-O0" }, "-w", "-Wno-override-module"]
     if (o.Debug) { args.Push("-g") }
     args.Push(llPath)
     let rt: Runtime = prepareRuntime(clang, home, false)
@@ -365,7 +365,7 @@ fn siblingTool(clang: String, name: String) -> Option<String> {
 }
 
 fn compileObject(driver: String, o: BuildOpts, src: String, obj: String, forceC: Bool) -> I32 {
-    mut args: Array<String> = ["-c", "-w", "-Wno-override-module", match (o.Opt) { Some(x) => x, None => "-O1" }]
+    mut args: Array<String> = ["-c", "-w", "-Wno-override-module", match (o.Opt) { Some(x) => x, None => "-O0" }]
     if (o.Debug) { args.Push("-g") }
     if (o.Pic) { args.Push("-fPIC") }
     if (forceC) {

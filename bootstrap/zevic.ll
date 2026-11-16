@@ -220,7 +220,7 @@ source_filename = "zevic"
 @.str.216 = private unnamed_addr constant [20 x i8] c"/runtime/zevic_rt.h\00"
 @.str.217 = private unnamed_addr constant [4 x i8] c"bgc\00"
 @.str.218 = private unnamed_addr constant [38 x i8] c"/runtime/third_party/bgc/VENDORED.txt\00"
-@.str.219 = private unnamed_addr constant [4 x i8] c"-O1\00"
+@.str.219 = private unnamed_addr constant [4 x i8] c"-O0\00"
 @.str.220 = private unnamed_addr constant [21 x i8] c"-Wno-override-module\00"
 @.str.221 = private unnamed_addr constant [3 x i8] c"-g\00"
 @.str.222 = private unnamed_addr constant [5 x i8] c"none\00"
@@ -1207,7 +1207,7 @@ source_filename = "zevic"
 @.str.1203 = private unnamed_addr constant [7 x i8] c"ZEVIC_\00"
 @.str.1204 = private unnamed_addr constant [5 x i8] c".zev\00"
 @.str.1205 = private unnamed_addr constant [49 x i8] c"usage: zevic [options] <file.zev>... [-o output]\00"
-@.str.1206 = private unnamed_addr constant [108 x i8] c"  --test  --lib  --pic  --emit-ll  --emit-header <f>  --keep-ll  -O0|-O1|-O2  -g  --cc <path>  --cxx <path>\00"
+@.str.1206 = private unnamed_addr constant [122 x i8] c"  --test  --lib  --pic  --emit-ll  --emit-header <f>  --keep-ll  -O0|-O1|-O2 (default -O0)  -g  --cc <path>  --cxx <path>\00"
 @.str.1207 = private unnamed_addr constant [68 x i8] c"  -l<lib> -L<dir> -I<dir> -D<name>  and .c .cpp .o .a files to link\00"
 @.str.1208 = private unnamed_addr constant [14 x i8] c"--emit-header\00"
 @.str.1209 = private unnamed_addr constant [6 x i8] c"--lib\00"
@@ -1215,7 +1215,7 @@ source_filename = "zevic"
 @.str.1211 = private unnamed_addr constant [7 x i8] c"--test\00"
 @.str.1212 = private unnamed_addr constant [10 x i8] c"--emit-ll\00"
 @.str.1213 = private unnamed_addr constant [10 x i8] c"--keep-ll\00"
-@.str.1214 = private unnamed_addr constant [4 x i8] c"-O0\00"
+@.str.1214 = private unnamed_addr constant [4 x i8] c"-O1\00"
 @.str.1215 = private unnamed_addr constant [5 x i8] c"--cc\00"
 @.str.1216 = private unnamed_addr constant [6 x i8] c"--cxx\00"
 @.str.1217 = private unnamed_addr constant [5 x i8] c".obj\00"
@@ -85920,7 +85920,7 @@ panic.22:
 define void @"zevic_Main_usage"() {
 entry:
   call void @"zevic_Zevic_Console_Eprintln"({ ptr, i64 } { ptr @.str.1205, i64 48 })
-  call void @"zevic_Zevic_Console_Eprintln"({ ptr, i64 } { ptr @.str.1206, i64 107 })
+  call void @"zevic_Zevic_Console_Eprintln"({ ptr, i64 } { ptr @.str.1206, i64 121 })
   call void @"zevic_Zevic_Console_Eprintln"({ ptr, i64 } { ptr @.str.1207, i64 67 })
   ret void
 }
@@ -86257,14 +86257,14 @@ else.34:
   %t154 = load { ptr, i64 }, ptr %s14
   %t156 = extractvalue { ptr, i64 } %t154, 0
   %t157 = extractvalue { ptr, i64 } %t154, 1
-  %t158 = call i32 @zevic_str_eq(ptr %t156, i64 %t157, ptr @.str.1214, i64 3)
+  %t158 = call i32 @zevic_str_eq(ptr %t156, i64 %t157, ptr @.str.219, i64 3)
   %t155 = icmp ne i32 %t158, 0
   br i1 %t155, label %or.end.37, label %or.rhs.36
 or.rhs.36:
   %t159 = load { ptr, i64 }, ptr %s14
   %t161 = extractvalue { ptr, i64 } %t159, 0
   %t162 = extractvalue { ptr, i64 } %t159, 1
-  %t163 = call i32 @zevic_str_eq(ptr %t161, i64 %t162, ptr @.str.219, i64 3)
+  %t163 = call i32 @zevic_str_eq(ptr %t161, i64 %t162, ptr @.str.1214, i64 3)
   %t160 = icmp ne i32 %t163, 0
   br label %or.end.37
 or.end.37:
