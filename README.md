@@ -45,7 +45,7 @@ You need `make` and **clang 15 or newer**. The first compiler (the seed) is buil
 If clang is missing or too old, it prints the installation instructions above and exits.
 
 ```sh
-make            # builds build/zevic (seed -> compiler), build/zevpm2 and build/zevfmt
+make            # builds build/zevic, build/zevpm and build/zevfmt (build/bootstrap/zevic is an internal seed)
 make bootstrap  # checks that the compiler emits the same IR as bootstrap/zevic.ll (the fixed point)
 make test       # runs the golden tests, the zevpm tests and the examples
 ./build/zevic examples/01_hello.zev -o hello && ./hello
