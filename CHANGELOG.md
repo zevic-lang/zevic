@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.5
+
+- Termux and other systems without a writable `/tmp`: the compiler writes its process output under `$TMPDIR` (falling back to `/tmp`). Before, every process call failed there and clang was reported as not found
+- Local builds: `make` produces `build/zevpm` (was `build/zevpm2`); the internal seed compiler moved to `build/bootstrap/zevic`
+
 ## 0.4.4
 
 - Windows: threads started by `Thread.Spawn` (and `Async.Spawn`) register with the Boehm GC, so they can allocate and be collected safely
