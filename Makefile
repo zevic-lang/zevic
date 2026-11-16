@@ -5,11 +5,13 @@ CC      ?= clang
 # before lives in zevic-lang/zevic-c.
 VERSION := $(shell cat VERSION)
 Z1SRC   := $(sort $(wildcard tools/zevic1/src/*.zev))
-SEED    := build/zevic-seed
+# SEED: the first compiler, built from bootstrap/zevic.ll by clang alone. It only builds build/zevic
+# and is not a deliverable; keep it under build/bootstrap/.
+SEED    := build/bootstrap/zevic
 BIN     := build/zevic
 export ZEVIC_HOME := $(CURDIR)
 
-all: build/zevic build/zevpm2 build/zevfmt
+all: build/zevic build/zevpm build/zevfmt
 
 .PHONY: test-interop all test clean install zevpm zevfmt fmt fmt-check bootstrap bootstrap-update
 
@@ -23,7 +25,7 @@ $(BIN): $(SEED) $(Z1SRC) tools/zevic1/src/Version.zev $(wildcard packages/Zevic/
 	./$(SEED) $(Z1SRC) -o $@
 
 # zevpm written in Zevic (tools/zevpm), built by zevic
-PM2     := build/zevpm2
+PM2     := build/zevpm
 tools/zevpm/src/Version.zev: VERSION
 	@printf 'module Zevpm.Version\n\n// Generated from the file VERSION by `make` (do not edit).\nlet Current: String = "%s"\n' "$(VERSION)" > $@
 
