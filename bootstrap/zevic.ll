@@ -3,7 +3,7 @@ source_filename = "zevic"
 
 @.str.0 = private unnamed_addr constant [10 x i8] c"--version\00"
 @.str.1 = private unnamed_addr constant [7 x i8] c"zevic \00"
-@.str.2 = private unnamed_addr constant [6 x i8] c"0.4.3\00"
+@.str.2 = private unnamed_addr constant [6 x i8] c"0.4.4\00"
 @.str.3 = private unnamed_addr constant [15 x i8] c"--print-stdlib\00"
 @.str.4 = private unnamed_addr constant [16 x i8] c"/packages/Zevic\00"
 @.str.5 = private unnamed_addr constant [53 x i8] c"zevic: error: cannot find the Zevic standard library\00"

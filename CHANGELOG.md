@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.4
+
+- Windows: threads started by `Thread.Spawn` (and `Async.Spawn`) register with the Boehm GC, so they can allocate and be collected safely
+- Optimisation: `zevic` and `zevpm` build with `-O0` by default (fast builds for development). `zevpm build --release` keeps `-O2`; `zevic -O2` opts in explicitly
+
 ## 0.4.3
 
 - `<`, `<=`, `>` and `>=` work on a struct or class that implements `Comparable`: they call its `Compare` method
