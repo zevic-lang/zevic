@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Error messages: after an unknown name, an unknown function or a missing module member, the compiler suggests the closest name (`note: did you mean `Println`?`)
+
 ## 0.4.5
 
 - Termux and other systems without a writable `/tmp`: the compiler writes its process output under `$TMPDIR` (falling back to `/tmp`). Before, every process call failed there and clang was reported as not found
