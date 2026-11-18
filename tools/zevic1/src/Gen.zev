@@ -143,6 +143,7 @@ fn FindDecl(mut g: Gen, f: Resolve.FileInfo, segs: Array<String>, pos: Token.Pos
                     },
                     None => {
                         g.Diag.Error(pos, "module `${m.Name}` has no member `${segs[k]}`")
+                        g.Diag.DidYouMean(segs[k], m.Decls.Keys())
                         return (None, -1)
                     },
                 }
