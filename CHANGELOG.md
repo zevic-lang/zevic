@@ -1,11 +1,8 @@
 # Changelog
 
-## Unreleased
-
-- Examples: every example under `examples/` is now a package of its own (`zevic.toml`, `src/Main.zev`, `native/` for C and C++ files); run one with `zevpm run` inside its directory
-
 ## 0.4.6
 
+- Examples: every example under `examples/` is now a package of its own (`zevic.toml`, `src/Main.zev`, `native/` for C and C++ files); run one with `zevpm run` inside its directory
 - Error messages: after an unknown name, an unknown function or a missing module member, the compiler suggests the closest name (`note: did you mean `Println`?`)
 - Error messages: `null` explains that Zevic has no null and points to `Option`; passing a number, `Bool` or `Char` where a `String` is expected suggests string interpolation
 - Error messages: a function that does not end with a value points at its closing `}` instead of the opening `{`
