@@ -243,6 +243,9 @@ class FnCtx {
         mut g: Gen.Gen = this.G
         let w: String = if (what != "") { " in ${what}" } else { "" }
         g.Diag.Error(pos, "type mismatch${w}: expected `${want.Name}`, found `${got.Name}`")
+        if (want.Kind == Types.TKind.Str && (got.IsInt() || got.IsFloat() || got.Kind == Types.TKind.Bool || got.Kind == Types.TKind.Char)) {
+            g.Diag.Note("to use it as text, put it in a string: `\"\${...}\"` (for example `Console.Println(\"\${value}\")`)")
+        }
     }
 
     mut fn LoadLocal(l: Local) -> Val {
