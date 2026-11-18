@@ -1,7 +1,7 @@
 /* zevtest.c - the test runner of the repository (C11; builds with clang or gcc on Linux, macOS and Windows).
  *
  *   zevtest golden   [pattern]   compile and run every program of tests/golden
- *   zevtest examples             build and run examples/, run `zevpm test` of the packages in examples/apps
+ *   zevtest examples             build and run each package in examples/, run `zevpm test` of the packages in examples/apps
  *   zevtest zevfmt               zevfmt: same meaning, idempotent, repository formatted
  *   zevtest zevpm                zevpm: packages, dependencies (git, path), lock file, tests, libraries
  *   zevtest install              the release layout: only `bin` on PATH, started from another directory
@@ -844,35 +844,23 @@ static char *spec_sample(void) {
     return strip(code);
 }
 
-static char *check_single(const char *name, List *sources) {
-    char *tmp = temp_dir("example");
-    char *exe = join(tmp, "prog" EXE);
-    List cmd = {0};
-    push(&cmd, g_zevic);
-    for (int i = 0; i < sources->n; i++) push(&cmd, sources->v[i]);
-    push(&cmd, "-o");
-    push(&cmd, exe);
-    Run c = run_list(NULL, &cmd, NULL);
+static char *check_package(const char *name, const char *dir) {
+    Run p = run_cwd(dir, g_zevpm, "run", NULL);
     char *res = NULL;
-    if (c.code != 0) {
-        res = fmt("compilation failed\n%s", c.err);
+    if (p.code != 0) {
+        res = fmt("zevpm run failed (exit %d)\n%s%s", p.code, p.out, p.err);
     } else {
-        Run p = run_cwd(tmp, exe, NULL);
-        if (p.code != 0) {
-            res = fmt("exit code %d\n%s", p.code, p.err);
+        char *want_path = fmt("tests/examples_expected/%s.txt", name);
+        char *got = no_cr(p.out);
+        if (getenv("UPDATE_EXPECTED")) {
+            spit(want_path, got);
         } else {
-            char *want_path = fmt("tests/examples_expected/%s.txt", name);
-            char *got = no_cr(p.out);
-            if (getenv("UPDATE_EXPECTED")) {
-                spit(want_path, got);
-            } else {
-                char *want = slurp(want_path);
-                if (!want) res = fmt("missing %s", want_path);
-                else if (strcmp(got, no_cr(want)) != 0) res = fmt("output differs from %s: %s", want_path, first_diff(no_cr(want), got));
-            }
+            char *want = slurp(want_path);
+            if (!want) res = fmt("missing %s", want_path);
+            else if (strcmp(got, no_cr(want)) != 0) res = fmt("output differs from %s: %s", want_path, first_diff(no_cr(want), got));
         }
     }
-    rmrf(tmp);
+    run_cwd(dir, g_zevpm, "clean", NULL);
     return res;
 }
 
@@ -886,24 +874,11 @@ static void test_examples(void) {
     List names = list_dir("examples");
     for (int i = 0; i < names.n; i++) {
         char *p = join("examples", names.v[i]);
-        List src = {0};
-        char *name;
-        if (is_file(p) && ends_with(p, ".zev")) {
-            push(&src, absolute(p));
-            name = xstrdup(names.v[i]);
-            name[strlen(name) - 4] = 0;
-        } else if (is_dir(p) && isdigit((unsigned char)names.v[i][0]) && strchr(names.v[i], '_')) {
-            List in = list_dir(p);
-            for (int k = 0; k < in.n; k++)
-                if (ends_with(in.v[k], ".zev")) push(&src, absolute(join(p, in.v[k])));
-            for (int k = 0; k < in.n; k++)
-                if (ends_with(in.v[k], ".c")) push(&src, absolute(join(p, in.v[k])));
-            name = names.v[i];
-        } else {
-            continue;
+        if (is_dir(p) && isdigit((unsigned char)names.v[i][0]) && strchr(names.v[i], '_')) {
+            /* each numbered example is a package: `zevpm run` builds and runs it */
+            char *err = check_package(names.v[i], absolute(p));
+            report(names.v[i], err == NULL, err);
         }
-        char *err = check_single(name, &src);
-        report(name, err == NULL, err);
     }
     char *apps = "examples/apps";
     List pk = list_dir(apps);
@@ -1318,8 +1293,8 @@ static void sc_install(const char *tmp) {
     expect(f5.code == 0 && contains(f5.out, "module Main"), "zevfmt prints the formatted file:\n%s%s", f5.out, f5.err);
 
     /* an example of the release builds */
-    Run e = sh(work, false, "zevic", join(root, "examples/01_hello.zev"), "-o", "ex" EXE, NULL);
-    expect(e.code == 0, "zevic examples/01_hello.zev:\n%s%s", e.out, e.err);
+    Run e = sh(work, false, "zevic", join(root, "examples/01_hello/src/Main.zev"), "-o", "ex" EXE, NULL);
+    expect(e.code == 0, "zevic examples/01_hello/src/Main.zev:\n%s%s", e.out, e.err);
 
     /* started by its full path, without PATH */
     set_env("PATH", oldpath);
