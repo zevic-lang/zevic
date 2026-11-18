@@ -9,10 +9,10 @@ anything that exposes `extern "C"` functions.
 | Rust → Zevic | `extern "C"` block, `-l static=wordlib` | `rust/host.rs` |
 | Go → Zevic | cgo with `#include` of the header | `go/main.go` |
 | Python → Zevic | `--lib --pic`, make a shared library, `ctypes` | `python/host.py` |
-| Zevic → Rust | `rustc --crate-type staticlib`, pass the `.a` to `zevic` | `rust/fib.rs`, `rust/main.zev` |
-| Zevic → C++ | pass the `.cpp` to `zevic`; the door is `extern "C"` | `cpp/stats.cpp`, `cpp/main.zev` |
+| Zevic → Rust | `rustc --crate-type staticlib`, pass the `.a` to `zevic` | `rust/fib.rs`, `rust/src/Main.zev` |
+| Zevic → C++ | pass the `.cpp` to `zevic`; the door is `extern "C"` | `cpp/native/stats.cpp`, `cpp/src/Main.zev` |
 
-The Zevic library is `zevlib/wordlib.zev` (`export "C"` functions). The runtime and the garbage
+The Zevic library is `zevlib/src/WordLib.zev` (`export "C"` functions). The runtime and the garbage
 collector are inside the archive; the host calls `zevic_init(argc, argv)` once first.
 
 Run everything (a language whose toolchain is missing is skipped), from the repository root:

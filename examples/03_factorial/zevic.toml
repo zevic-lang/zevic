@@ -1,0 +1,5 @@
+[package]
+name = "Factorial"
+version = "0.4.6"
+kind = "bin"
+zevic = ">=0.4"
