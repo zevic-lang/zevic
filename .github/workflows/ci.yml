@@ -153,7 +153,7 @@ jobs:
           cd "$RUNNER_TEMP/smoke work"
           zevic --version
           zevpm --version
-          zevic "$PKG/examples/01_hello.zev" -o hello${{ matrix.exe }}
+          zevic "$PKG/examples/01_hello/src/Main.zev" -o hello${{ matrix.exe }}
           ./hello${{ matrix.exe }}
           zevpm new smoke
           cd smoke
@@ -171,7 +171,7 @@ jobs:
           unset ZEVIC ZEVIC_HOME ZEVPM ZEVFMT
           mkdir -p "$RUNNER_TEMP/inst work" && cd "$RUNNER_TEMP/inst work"
           zevic --version
-          zevic "$PKG/examples/01_hello.zev" -o hello && ./hello
+          zevic "$PKG/examples/01_hello/src/Main.zev" -o hello && ./hello
           zevpm new app && cd app && zevpm run && zevpm test
           sh "$PKG/install.sh" --uninstall --prefix "$RUNNER_TEMP/inst prefix"
           test ! -e "$RUNNER_TEMP/inst prefix/bin/zevic"
@@ -186,7 +186,7 @@ jobs:
           unset ZEVIC ZEVIC_HOME ZEVPM ZEVFMT
           mkdir -p "$RUNNER_TEMP/inst work" && cd "$RUNNER_TEMP/inst work"
           zevic --version
-          zevic "$PKG/examples/01_hello.zev" -o hello.exe && ./hello.exe
+          zevic "$PKG/examples/01_hello/src/Main.zev" -o hello.exe && ./hello.exe
           zevpm new app && cd app && zevpm run && zevpm test
           powershell -NoProfile -ExecutionPolicy Bypass -File "$WPKG\\install.ps1" -Uninstall -Prefix "$PREFIX"
       - name: Smoke test the .deb (Linux)
@@ -197,7 +197,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/deb work" && cd "$RUNNER_TEMP/deb work"
           command -v zevic
           zevic --version
-          zevic "$GITHUB_WORKSPACE/examples/01_hello.zev" -o hello && ./hello
+          zevic "$GITHUB_WORKSPACE/examples/01_hello/src/Main.zev" -o hello && ./hello
           zevpm new app && cd app && zevpm run && zevpm test
           sudo apt-get remove -y zevic
           hash -r
@@ -209,7 +209,7 @@ jobs:
           unset ZEVIC ZEVIC_HOME ZEVPM ZEVFMT
           mkdir -p "$RUNNER_TEMP/pkg work" && cd "$RUNNER_TEMP/pkg work"
           /usr/local/bin/zevic --version
-          /usr/local/bin/zevic "$GITHUB_WORKSPACE/examples/01_hello.zev" -o hello && ./hello
+          /usr/local/bin/zevic "$GITHUB_WORKSPACE/examples/01_hello/src/Main.zev" -o hello && ./hello
           export PATH="/usr/local/bin:$PATH"
           zevpm new app && cd app && zevpm run && zevpm test
 

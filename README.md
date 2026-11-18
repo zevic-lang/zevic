@@ -48,7 +48,7 @@ If clang is missing or too old, it prints the installation instructions above an
 make            # builds build/zevic, build/zevpm and build/zevfmt (build/bootstrap/zevic is an internal seed)
 make bootstrap  # checks that the compiler emits the same IR as bootstrap/zevic.ll (the fixed point)
 make test       # runs the golden tests, the zevpm tests and the examples
-./build/zevic examples/01_hello.zev -o hello && ./hello
+./build/zevic examples/01_hello/src/Main.zev -o hello && ./hello
 ```
 
 ## Usage
