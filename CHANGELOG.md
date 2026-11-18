@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Error messages: after an unknown name, an unknown function or a missing module member, the compiler suggests the closest name (`note: did you mean `Println`?`)
+- Error messages: `null` explains that Zevic has no null and points to `Option`; passing a number, `Bool` or `Char` where a `String` is expected suggests string interpolation
 
 ## 0.4.5
 
