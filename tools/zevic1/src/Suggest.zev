@@ -1,0 +1,83 @@
+module Zevic1.Suggest
+
+// "Did you mean ...?" for misspelled names: the closest candidate by edit distance.
+
+// The number of single-byte insertions, deletions and replacements that turn `a` into `b`.
+fn Distance(a: String, b: String) -> I64 {
+    let n: I64 = a.Len()
+    let m: I64 = b.Len()
+    mut prev: Array<I64> = []
+    mut j: I64 = 0
+    while (j <= m) {
+        prev.Push(j)
+        j += 1
+    }
+    mut i: I64 = 1
+    while (i <= n) {
+        mut cur: Array<I64> = [i]
+        j = 1
+        while (j <= m) {
+            let cost: I64 = if (a.ByteAt(i - 1) == b.ByteAt(j - 1)) { 0 } else { 1 }
+            mut best: I64 = prev[j - 1] + cost
+            if (prev[j] + 1 < best) {
+                best = prev[j] + 1
+            }
+            if (cur[j - 1] + 1 < best) {
+                best = cur[j - 1] + 1
+            }
+            cur.Push(best)
+            j += 1
+        }
+        prev = cur
+        i += 1
+    }
+    prev[m]
+}
+
+// How many bytes `a` and `b` share at the start plus at the end; used to choose between equally distant candidates
+// ("Printn" is nearer to "Println" than to "Printf" because both end in "n").
+fn sharedEnds(a: String, b: String) -> I64 {
+    let lim: I64 = if (a.Len() < b.Len()) { a.Len() } else { b.Len() }
+    mut p: I64 = 0
+    while (p < lim && a.ByteAt(p) == b.ByteAt(p)) {
+        p += 1
+    }
+    mut q: I64 = 0
+    while (q < lim - p && a.ByteAt(a.Len() - 1 - q) == b.ByteAt(b.Len() - 1 - q)) {
+        q += 1
+    }
+    p + q
+}
+
+// The closest of `candidates` to `name`, if it is close enough to be a likely typo.
+// A swapped pair of letters ("cuont" for "count") counts as two edits, so the limit is
+// a third of the length, at least 2 for names of 4 or more letters.
+fn Closest(name: String, candidates: Array<String>) -> Option<String> {
+    let len: I64 = name.Len()
+    if (len < 3) {
+        return None
+    }
+    mut limit: I64 = len / 3
+    if (limit < 2 && len >= 4) {
+        limit = 2
+    }
+    if (limit < 1) {
+        limit = 1
+    }
+    mut best: Option<String> = None
+    mut bestD: I64 = limit + 1
+    mut bestShared: I64 = -1
+    for (c in candidates) {
+        if (c == name) {
+            continue
+        }
+        let d: I64 = Distance(name, c)
+        let shared: I64 = sharedEnds(name, c)
+        if (d < bestD || (d == bestD && shared > bestShared)) {
+            bestD = d
+            bestShared = shared
+            best = Some(c)
+        }
+    }
+    best
+}

@@ -1,0 +1,11 @@
+module Main
+
+import Zevic.Console
+
+fn Greet(name: String) -> String {
+    "hello ${name}"
+}
+
+fn Main() {
+    Console.Println(Gret("zevic"))
+}

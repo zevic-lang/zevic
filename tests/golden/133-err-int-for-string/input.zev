@@ -1,0 +1,8 @@
+module Main
+
+import Zevic.Console
+
+fn Main() {
+    let name: String = 42
+    Console.Println(name)
+}

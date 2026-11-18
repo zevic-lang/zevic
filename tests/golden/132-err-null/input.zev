@@ -1,0 +1,8 @@
+module Main
+
+import Zevic.Console
+
+fn Main() {
+    let x: I32 = null
+    Console.Println("${x}")
+}

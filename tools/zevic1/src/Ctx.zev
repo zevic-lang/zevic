@@ -210,6 +210,32 @@ class FnCtx {
         }
     }
 
+    // Every name a plain identifier could have meant here: the locals in scope and the declarations of this module.
+    fn NameCandidates() -> Array<String> {
+        mut out: Array<String> = []
+        mut cur: Option<Scope> = this.Scope
+        loop {
+            match (cur) {
+                Some(s) => {
+                    for (l in s.Locals) {
+                        out.Push(l.Name)
+                    }
+                    cur = s.Up
+                },
+                None => break,
+            }
+        }
+        match (this.File.Mod) {
+            Some(m) => {
+                for (k in m.Decls.Keys()) {
+                    out.Push(k)
+                }
+            },
+            None => {},
+        }
+        out
+    }
+
     mut fn TypeError(pos: Token.Pos, want: Types.Type, got: Types.Type, what: String) {
         if (this.G.IsErr(want) || this.G.IsErr(got)) {
             return
@@ -217,6 +243,9 @@ class FnCtx {
         mut g: Gen.Gen = this.G
         let w: String = if (what != "") { " in ${what}" } else { "" }
         g.Diag.Error(pos, "type mismatch${w}: expected `${want.Name}`, found `${got.Name}`")
+        if (want.Kind == Types.TKind.Str && (got.IsInt() || got.IsFloat() || got.Kind == Types.TKind.Bool || got.Kind == Types.TKind.Char)) {
+            g.Diag.Note("to use it as text, put it in a string: `\"\${...}\"` (for example `Console.Println(\"\${value}\")`)")
+        }
     }
 
     mut fn LoadLocal(l: Local) -> Val {

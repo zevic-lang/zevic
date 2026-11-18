@@ -1098,6 +1098,7 @@ fn genIdent(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Va
         },
     }
     g.Diag.Error(n.Pos, "unknown name `${n.Name}`")
+    g.Diag.DidYouMean(n.Name, F.NameCandidates())
     F.ErrVal()
 }
 
@@ -3792,6 +3793,7 @@ fn genCall(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val
                     // a type or constant followed by more names is a method call on a value; a lone name is unknown
                     if (callee.Kind == Ast.NK.Ident) {
                         g.Diag.Error(callee.Pos, "unknown function `${head}`")
+                        g.Diag.DidYouMean(head, F.NameCandidates())
                         return F.ErrVal()
                     }
                 },
