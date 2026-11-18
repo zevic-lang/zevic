@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Examples: every example under `examples/` is now a package of its own (`zevic.toml`, `src/Main.zev`, `native/` for C and C++ files); run one with `zevpm run` inside its directory
+
 ## 0.4.6
 
 - Error messages: after an unknown name, an unknown function or a missing module member, the compiler suggests the closest name (`note: did you mean `Println`?`)
