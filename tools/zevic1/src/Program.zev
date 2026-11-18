@@ -66,7 +66,8 @@ fn emitFunction(mut g: Gen.Gen, mut inst: Gen.Inst) {
         } else if (inst.Ret.Id == g.Tt.Never.Id) {
             fc.Emit("unreachable")
         } else {
-            v = Expr.Coerce(fc, body.Pos, v, inst.Ret, "the function result (the body must end with a value or `return`)")
+            let at: Token.Pos = if (v.T.Id == g.Tt.Unit.Id) { body.EndPos } else { body.Pos }
+            v = Expr.Coerce(fc, at, v, inst.Ret, "the function result (the body must end with a value or `return`)")
             if (g.IsErr(v.T)) {
                 fc.Emit("unreachable")
             } else {

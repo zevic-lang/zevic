@@ -1,0 +1,11 @@
+module Main
+
+import Zevic.Console
+
+fn F(n: I32) -> I32 {
+    if (n > 0) {
+        return 1
+    }
+}
+
+fn Main() { Console.Println("${F(1)}") }

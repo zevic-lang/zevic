@@ -16,6 +16,8 @@ class Diag {
     texts: Array<String> = []
     // How many errors were reported.
     Errors: I64 = 0
+    // When set, errors are counted but not printed.
+    Quiet: Bool = false
 
     // Remembers a file and returns its number.
     mut fn AddSource(name: String, text: String) -> I32 {
@@ -62,7 +64,9 @@ class Diag {
     }
 
     mut fn Error(pos: Token.Pos, msg: String) {
-        Console.Eprint("${this.Name(pos.File)}:${pos.Line}:${pos.Col}: error: ${msg}\n${this.sourceLine(pos)}")
+        if (!this.Quiet) {
+            Console.Eprint("${this.Name(pos.File)}:${pos.Line}:${pos.Col}: error: ${msg}\n${this.sourceLine(pos)}")
+        }
         this.Errors += 1
     }
 

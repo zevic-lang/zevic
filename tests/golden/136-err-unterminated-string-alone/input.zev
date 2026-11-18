@@ -1,0 +1,11 @@
+module Main
+
+import Zevic.Console
+
+fn Main() {
+    mut i: I32 = 0
+    while (i < 3) {
+        i = i + 1
+    }
+    Console.Println("${i")
+}
