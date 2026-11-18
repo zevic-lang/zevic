@@ -433,7 +433,9 @@ class Lexer {
             },
             None => {},
         }
-        if (isFuture(word)) {
+        if (word == "null") {
+            this.diag.Error(pos, "Zevic has no `null`: use an `Option<T>` (`Some(value)` or `None`) for a value that may be missing, or `Null` for a C pointer")
+        } else if (isFuture(word)) {
             this.diag.Error(pos, "`${word}` is reserved for the future and cannot be used as a name (use `${word}` in backticks)")
         }
         mut t: Token.Token = this.push(Token.Tk.Ident, pos)
