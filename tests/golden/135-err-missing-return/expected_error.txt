@@ -1,0 +1,2 @@
+9:1: error: type mismatch in the function result
+1 error found

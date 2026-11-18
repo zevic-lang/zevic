@@ -161,6 +161,8 @@ enum NK {
 class Node {
     Kind: NK
     Pos: Token.Pos
+    // where a block's closing `}` is (a block only)
+    EndPos: Token.Pos
     // An identifier, string bytes, an alias, a label. `HasName` tells "no name" from the empty name.
     Name: String = ""
     HasName: Bool = false
@@ -189,6 +191,7 @@ class Node {
     fn Init(kind: NK, pos: Token.Pos) {
         this.Kind = kind
         this.Pos = pos
+        this.EndPos = pos
     }
 
     mut fn SetName(name: String) {
@@ -199,6 +202,7 @@ class Node {
     // a shallow copy: the children are shared
     fn Copy() -> Node {
         mut n: Node = Node.New(this.Kind, this.Pos)
+        n.EndPos = this.EndPos
         n.Name = this.Name
         n.HasName = this.HasName
         n.Name2 = this.Name2

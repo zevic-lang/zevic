@@ -1154,6 +1154,7 @@ class Parser {
             }
             this.skipNl()
         }
+        b.EndPos = this.toks[this.i].Pos
         this.next()
         if (!b.List.IsEmpty()) {
             let last: Ast.Node = b.List[b.List.Len() - 1]
@@ -1493,7 +1494,17 @@ class Parser {
 
 // Parses one source file. Errors go to `diag`; the result is never missing but may be incomplete.
 fn ParseFile(mut diag: Diag.Diag, file: I32, text: String) -> Ast.SourceFile {
+    let before: I64 = diag.Errors
     let toks: Array<T.Token> = Lexer.Lex(diag, file, text, 1, 1)
+    if (diag.Errors > before) {
+        // A lexical error (an unterminated string, say) leaves the token stream broken, so the
+        // parser would only report errors that follow from it. Parse into a scratch Diag.
+        mut scratch: Diag.Diag = Diag.Diag.New()
+        scratch.Quiet = true
+        scratch.AddSource("", text)
+        mut q: Parser = Parser.New(scratch, file, toks)
+        return q.ParseFile()
+    }
     mut p: Parser = Parser.New(diag, file, toks)
     p.ParseFile()
 }
