@@ -8,6 +8,7 @@ module Zevic1.Diag
 
 import Zevic.Console
 import Zevic.Text
+import Zevic1.Suggest as Suggest
 import Zevic1.Token as Token
 
 class Diag {
@@ -67,5 +68,13 @@ class Diag {
 
     fn Note(msg: String) {
         Console.Eprint("  note: ${msg}\n")
+    }
+
+    // After an error about an unknown name: suggests the closest of `candidates`, if there is one.
+    fn DidYouMean(name: String, candidates: Array<String>) {
+        match (Suggest.Closest(name, candidates)) {
+            Some(c) => this.Note("did you mean `${c}`?"),
+            None => {},
+        }
     }
 }
