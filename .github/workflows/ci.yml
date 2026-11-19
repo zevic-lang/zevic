@@ -18,14 +18,19 @@ jobs:
   build:
     name: build (${{ matrix.name }})
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental == true }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         include:
           - { name: linux-x64, os: ubuntu-latest, exe: "", archive: tar.gz }
+          - { name: linux-arm64, os: ubuntu-24.04-arm, exe: "", archive: tar.gz }
           - { name: macos-arm64, os: macos-latest, exe: "", archive: tar.gz }
+          - { name: macos-x64, os: macos-15-intel, exe: "", archive: tar.gz }
           - { name: windows-x64, os: windows-latest, exe: ".exe", archive: zip }
+          # new: a failure here does not stop the release; the archive is only published when the job passes
+          - { name: windows-arm64, os: windows-11-arm, exe: ".exe", archive: zip, experimental: true }
     defaults:
       run:
         shell: bash
@@ -136,10 +141,10 @@ jobs:
           $v = (Get-Content VERSION -Raw).Trim()
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress; }
-          & $iscc "/DAppVersion=$v" "/DSourceDir=$PWD\dist\zevic-$v-windows-x64" "/DOutputDir=$PWD\dist\extra" packaging\zevic.iss
+          & $iscc "/DAppVersion=$v" "/DSourceDir=$PWD\dist\zevic-$v-${{ matrix.name }}" "/DPlatform=${{ matrix.name }}" "/DArch=${{ matrix.name == 'windows-arm64' && 'arm64' || 'x64compatible' }}" "/DOutputDir=$PWD\dist\extra" packaging\zevic.iss
           if ($LASTEXITCODE -ne 0) { throw "iscc failed" }
           # silent install, then run the installed compiler, then uninstall
-          $setup = "$PWD\dist\extra\zevic-$v-windows-x64-setup.exe"
+          $setup = "$PWD\dist\extra\zevic-$v-${{ matrix.name }}-setup.exe"
           $dir = "$PWD\inst"
           Start-Process -Wait $setup -ArgumentList "/VERYSILENT","/NORESTART","/DIR=$dir"
           & "$dir\bin\zevic.exe" --version

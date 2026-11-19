@@ -4,6 +4,7 @@
 # Installs into /usr/local/zevic and links the tools into /usr/local/bin.
 set -eu
 SRC="$1"; OUT="$2"
+case "$(uname -m)" in arm64|aarch64) PLATFORM=macos-arm64 ;; *) PLATFORM=macos-x64 ;; esac
 VERSION="$(cat "$SRC/VERSION")"
 ROOT="$(mktemp -d)"
 SCRIPTS="$(mktemp -d)"
@@ -17,5 +18,5 @@ exit 0
 PI
 chmod +x "$SCRIPTS/postinstall"
 mkdir -p "$OUT"
-pkgbuild --root "$ROOT" --scripts "$SCRIPTS" --identifier dev.zevic.zevic --version "$VERSION" --install-location / "$OUT/zevic-${VERSION}-macos-arm64.pkg"
+pkgbuild --root "$ROOT" --scripts "$SCRIPTS" --identifier dev.zevic.zevic --version "$VERSION" --install-location / "$OUT/zevic-${VERSION}-${PLATFORM}.pkg"
 rm -rf "$ROOT" "$SCRIPTS"

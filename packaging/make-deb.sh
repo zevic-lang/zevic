@@ -3,6 +3,7 @@
 #   sh packaging/make-deb.sh RELEASE_DIR OUT_DIR
 set -eu
 SRC="$1"; OUT="$2"
+ARCH="$(dpkg --print-architecture)"   # amd64 or arm64
 VERSION="$(cat "$SRC/VERSION")"
 ROOT="$(mktemp -d)"
 mkdir -p "$ROOT/usr/lib/zevic" "$ROOT/usr/bin" "$ROOT/DEBIAN"
@@ -14,7 +15,7 @@ Package: zevic
 Version: $VERSION
 Section: devel
 Priority: optional
-Architecture: amd64
+Architecture: $ARCH
 Depends: clang (>= 1:15)
 Installed-Size: $SIZE
 Maintainer: rimsky-yamatov <ja.yamatov.dev@gmail.com>
@@ -24,5 +25,5 @@ Description: Zevic programming language: compiler, package manager and formatter
  Zevic package.
 CTL
 mkdir -p "$OUT"
-dpkg-deb --root-owner-group --build "$ROOT" "$OUT/zevic_${VERSION}_amd64.deb"
+dpkg-deb --root-owner-group --build "$ROOT" "$OUT/zevic_${VERSION}_${ARCH}.deb"
 rm -rf "$ROOT"

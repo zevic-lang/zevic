@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Releases: archives and installers for Linux arm64 (`linux-arm64`, with a `.deb` for arm64) and macOS Intel (`macos-x64`) join Linux x64, macOS Apple silicon and Windows x64. Windows on Arm (`windows-arm64`) is built as a first try, and is published only when its job passes. The `.pkg` and the Windows installer carry the platform in their file name
+
 ## 0.4.7
 
 - zevpm: `[native]` in `zevic.toml` accepts `lib_dirs`, `include_dirs` and `defines` (as the specification says), not only `libs`. They become `-L`, `-I` and `-D`; a relative directory is relative to the package that names them, an absolute one is used as it is, and the keys of dependencies are used too
