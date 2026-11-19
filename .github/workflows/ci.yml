@@ -98,16 +98,19 @@ jobs:
         if: failure() && matrix.name == 'windows-arm64'
         run: |
           export ZEVIC_HOME="$PWD"
+          W="$PWD"
           mkdir -p "$RUNNER_TEMP/dbg" && cd "$RUNNER_TEMP/dbg"
-          "$OLDPWD/build/zevpm.exe" new geo --lib && cd geo
+          "$W/build/zevpm.exe" new geo --lib && cd geo
           printf 'module Geo\n\nexport "C" fn geo_add(a: CInt, b: CInt) -> CInt {\n    (a.ToI32() + b.ToI32()).ToCInt()\n}\n' > src/Geo.zev
-          "$OLDPWD/../../build/zevpm.exe" build 2>&1 | tail -3 || true
+          "$W/build/zevpm.exe" build 2>&1 | tail -3 || true
           ls -l build
           AR="/c/Program Files/LLVM/bin/llvm-ar.exe"; NM="/c/Program Files/LLVM/bin/llvm-nm.exe"
           "$AR" --version | head -2
           "$AR" t build/Geo.lib
-          "$NM" --print-armap build/Geo.lib | head -20
-          "$NM" build/Geo.lib | grep -i "geo_add\|zevic_init" | head
+          "$NM" --print-armap build/Geo.lib | head -20 || true
+          "$NM" build/Geo.lib | grep -i "geo_add\|zevic_init" | head || true
+          true
+
       # the fixed point: the compiler built by the seed writes the IR the seed came from
       - name: Bootstrap check
         run: |
