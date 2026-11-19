@@ -29,6 +29,10 @@ class Manifest {
     ZevicReq: String = ""
     Deps: Array<Dep> = []
     Libs: Array<String> = []
+    // [native]: `lib_dirs` and `include_dirs` are relative to the package directory unless they are absolute
+    LibDirs: Array<String> = []
+    IncDirs: Array<String> = []
+    Defines: Array<String> = []
 
     fn Init(dir: String) {
         this.Dir = dir
@@ -354,13 +358,16 @@ fn Load(dir: String) -> Result<Manifest, Error> {
             }
             m.Deps.Push(makeDep(c, key, v)?)
         } else {
-            if (key != "libs") {
-                return Err(c.Fail("unknown key `${key}` in [native] (expected libs)"))
+            if (key != "libs" && key != "lib_dirs" && key != "include_dirs" && key != "defines") {
+                return Err(c.Fail("unknown key `${key}` in [native] (expected libs, lib_dirs, include_dirs or defines)"))
             }
             if (v.Kind != 1) {
-                return Err(c.Fail("`libs` must be a list of strings"))
+                return Err(c.Fail("`${key}` must be a list of strings"))
             }
-            m.Libs.Extend(v.Items)
+            if (key == "libs") { m.Libs.Extend(v.Items) }
+            else if (key == "lib_dirs") { m.LibDirs.Extend(v.Items) }
+            else if (key == "include_dirs") { m.IncDirs.Extend(v.Items) }
+            else { m.Defines.Extend(v.Items) }
         }
     }
     let c1: Cur = Cur.New(m.File, 1, "")

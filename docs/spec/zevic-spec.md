@@ -1260,7 +1260,7 @@ zevic hello.zev native/hello.c -o hello
 
 - Files listed on the command line are handled according to their **extension** (the table below).
 - In a package, the files under `native/` are added to the build automatically.
-- In `[native]` of `zevic.toml`, write the libraries to link and the search paths.
+- In `[native]` of `zevic.toml`, write the libraries to link and the search paths. `zevpm` turns them into `-l`, `-L`, `-I` and `-D` for `zevic`; `lib_dirs` and `include_dirs` are relative to the package that names them (a dependency's too), and the `[native]` of the dependencies is used as well.
 
 ```
 [native]
