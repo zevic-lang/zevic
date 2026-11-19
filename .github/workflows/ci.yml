@@ -44,8 +44,14 @@ jobs:
       - name: Install LLVM (Windows, winget)
         if: runner.os == 'Windows'
         run: |
-          if ! command -v clang >/dev/null 2>&1 && [ ! -x "/c/Program Files/LLVM/bin/clang.exe" ]; then
-            winget install --id LLVM.LLVM -e --silent --accept-package-agreements --accept-source-agreements
+          # The C++ headers of current Visual Studio need Clang 22 or newer; the runner image ships an older clang.
+          LLVM="/c/Program Files/LLVM/bin"
+          major=0
+          if [ -x "$LLVM/clang.exe" ]; then
+            major=$("$LLVM/clang.exe" --version | sed -n 's/.*clang version \([0-9]*\).*/\1/p' | head -n 1)
+          fi
+          if [ "${major:-0}" -lt 22 ]; then
+            winget install --id LLVM.LLVM -e --silent --force --accept-package-agreements --accept-source-agreements || true
           fi
           echo "C:\\Program Files\\LLVM\\bin" >> "$GITHUB_PATH"
       - name: Show clang version
