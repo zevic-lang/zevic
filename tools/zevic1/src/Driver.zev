@@ -380,6 +380,31 @@ fn compileObject(driver: String, o: BuildOpts, src: String, obj: String, forceC:
     run(driver, args)
 }
 
+// The static library. On Windows llvm-lib comes first: it writes the symbol table that lld-link needs for every COFF
+// machine (the `ar` of Git for Windows and llvm-ar leave it empty for Windows on Arm objects, and the library cannot be
+// linked). The tools are taken from the directory of clang when it is known, otherwise from PATH.
+fn makeArchive(clang: String, outPath: String, objs: Array<String>) -> I32 {
+    mut tools: Array<String> = []
+    if (isWindows()) {
+        match (siblingTool(clang, "llvm-lib")) { Some(x) => tools.Push(x), None => tools.Push("llvm-lib") }
+    }
+    match (siblingTool(clang, "llvm-ar")) { Some(x) => tools.Push(x), None => tools.Push(if (isWindows()) { "llvm-ar" } else { "ar" }) }
+    if (isWindows()) {
+        tools.Push("ar")
+    }
+    mut rc: I32 = 1
+    for (t in tools) {
+        if (rc != 0) {
+            let r0: Result<Unit, Error> = Fs.Remove(outPath)
+            let isLib: Bool = Text.Contains(t, "llvm-lib")
+            mut args: Array<String> = if (isLib) { ["/OUT:${outPath}"] } else { ["rcs", outPath] }
+            for (x in objs) { args.Push(x) }
+            rc = run(t, args)
+        }
+    }
+    rc
+}
+
 fn BuildLib(clang: String, home: String, llPath: String, outPath: String, o: BuildOpts) -> I32 {
     mut objs: Array<String> = []
     let base: String = "${outPath}.objs"
@@ -437,20 +462,9 @@ fn BuildLib(clang: String, home: String, llPath: String, outPath: String, o: Bui
     }
     objs.Push(rtObj)
     objs.Push(gcObj)
-    // On Windows the archive is made with llvm-lib, which writes the symbol table that lld-link needs for every
-    // COFF machine (llvm-ar leaves it empty for objects of Windows on Arm). Elsewhere: llvm-ar, or ar.
-    let lib: Option<String> = if (isWindows()) { siblingTool(clang, "llvm-lib") } else { None }
-    let ar: Option<String> = siblingTool(clang, "llvm-ar")
-    let r0: Result<Unit, Error> = Fs.Remove(outPath)
-    mut args: Array<String> = if (lib.IsSome()) { ["/OUT:${outPath}"] } else { ["rcs", outPath] }
-    for (x in objs) { args.Push(x) }
-    let tool: String = match (lib) {
-        Some(x) => x,
-        None => match (ar) { Some(x) => x, None => "ar" },
-    }
-    let rc: I32 = run(tool, args)
+    let rc: I32 = makeArchive(clang, outPath, objs)
     if (rc != 0) {
-        Console.Eprintln("error: cannot make the archive (`${if (lib.IsSome()) { "llvm-lib" } else if (ar.IsSome()) { "llvm-ar" } else { "ar" }}` failed; install binutils or LLVM)")
+        Console.Eprintln("error: cannot make the archive (`llvm-lib`, `llvm-ar` and `ar` all failed; install LLVM or binutils)")
     }
     if (!o.KeepLl) {
         let a: Result<Unit, Error> = Fs.Remove(mainObj)
