@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- zevpm: `[native]` in `zevic.toml` accepts `lib_dirs`, `include_dirs` and `defines` (as the specification says), not only `libs`. They become `-L`, `-I` and `-D`; the directories are relative to the package that names them, and the keys of dependencies are used too
 - `Zevic.Http`: an `https://` address is still an error, but the message now points to the Curl package (`zevpm get zevic-lang/curl`). The documentation says what each is for: `Zevic.Http` for servers and plain HTTP without dependencies, `Curl` for HTTPS
 
 ## 0.4.6
