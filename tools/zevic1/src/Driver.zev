@@ -437,14 +437,20 @@ fn BuildLib(clang: String, home: String, llPath: String, outPath: String, o: Bui
     }
     objs.Push(rtObj)
     objs.Push(gcObj)
+    // On Windows the archive is made with llvm-lib, which writes the symbol table that lld-link needs for every
+    // COFF machine (llvm-ar leaves it empty for objects of Windows on Arm). Elsewhere: llvm-ar, or ar.
+    let lib: Option<String> = if (isWindows()) { siblingTool(clang, "llvm-lib") } else { None }
     let ar: Option<String> = siblingTool(clang, "llvm-ar")
     let r0: Result<Unit, Error> = Fs.Remove(outPath)
-    mut args: Array<String> = ["rcs", outPath]
+    mut args: Array<String> = if (lib.IsSome()) { ["/OUT:${outPath}"] } else { ["rcs", outPath] }
     for (x in objs) { args.Push(x) }
-    let tool: String = match (ar) { Some(x) => x, None => "ar" }
+    let tool: String = match (lib) {
+        Some(x) => x,
+        None => match (ar) { Some(x) => x, None => "ar" },
+    }
     let rc: I32 = run(tool, args)
     if (rc != 0) {
-        Console.Eprintln("error: cannot make the archive (`${if (ar.IsSome()) { "llvm-ar" } else { "ar" }}` failed; install binutils or LLVM)")
+        Console.Eprintln("error: cannot make the archive (`${if (lib.IsSome()) { "llvm-lib" } else if (ar.IsSome()) { "llvm-ar" } else { "ar" }}` failed; install binutils or LLVM)")
     }
     if (!o.KeepLl) {
         let a: Result<Unit, Error> = Fs.Remove(mainObj)
