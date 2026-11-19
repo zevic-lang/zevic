@@ -1,5 +1,6 @@
-; Inno Setup script for the Windows installer (zevic-<version>-windows-x64-setup.exe).
-; Build:  iscc /DAppVersion=0.4.1 /DSourceDir=dist\zevic-0.4.1-windows-x64 /DOutputDir=dist\extra packaging\zevic.iss
+; Inno Setup script for the Windows installer (zevic-<version>-<platform>-setup.exe, platform windows-x64 or windows-arm64).
+; Build:  iscc /DAppVersion=0.4.1 /DPlatform=windows-x64 /DArch=x64compatible /DSourceDir=dist\zevic-0.4.1-windows-x64 /DOutputDir=dist\extra packaging\zevic.iss
+;         (/DPlatform=windows-arm64 /DArch=arm64 for Windows on Arm)
 ; Silent install (winget uses this):  zevic-setup.exe /VERYSILENT /NORESTART
 ; The install is per-user (no administrator rights) and adds {app}\bin to the user PATH.
 #ifndef AppVersion
@@ -25,11 +26,11 @@ PrivilegesRequired=lowest
 ChangesEnvironment=yes
 LicenseFile={#SourceDir}\LICENSE
 OutputDir={#OutputDir}
-OutputBaseFilename=zevic-{#AppVersion}-windows-x64-setup
+OutputBaseFilename=zevic-{#AppVersion}-{#Platform}-setup
 Compression=lzma2
 SolidCompression=yes
-ArchitecturesAllowed=x64compatible
-ArchitecturesInstallIn64BitMode=x64compatible
+ArchitecturesAllowed={#Arch}
+ArchitecturesInstallIn64BitMode={#Arch}
 UninstallDisplayName=Zevic {#AppVersion}
 WizardStyle=modern
 

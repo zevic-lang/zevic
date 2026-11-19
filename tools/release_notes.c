@@ -83,9 +83,12 @@ static char *section(const char *text, const char *heading) {
 static const char *describe(const char *name) {
     if (strstr(name, "SHA256SUMS")) return "SHA-256 checksums of every file";
     if (strstr(name, ".deb")) return "Debian / Ubuntu package (`sudo apt install ./<file>`)";
-    if (strstr(name, ".pkg")) return "macOS installer package";
-    if (strstr(name, "windows") && strstr(name, ".zip")) return "Windows: unzip and put `bin` on PATH (or run `install.ps1`)";
+    if (strstr(name, ".pkg")) return "macOS installer package (the name says Intel or Apple silicon)";
+    if (strstr(name, "windows-arm64") && strstr(name, ".zip")) return "Windows on Arm (arm64): unzip and put `bin` on PATH (or run `install.ps1`)";
+    if (strstr(name, "windows") && strstr(name, ".zip")) return "Windows (x64): unzip and put `bin` on PATH (or run `install.ps1`)";
+    if (strstr(name, "linux-arm64") && strstr(name, ".tar.gz")) return "Linux arm64: unpack and put `bin` on PATH (or run `install.sh`)";
     if (strstr(name, "linux") && strstr(name, ".tar.gz")) return "Linux x64: unpack and put `bin` on PATH (or run `install.sh`)";
+    if (strstr(name, "macos-x64") && strstr(name, ".tar.gz")) return "macOS (Intel): unpack and put `bin` on PATH (or run `install.sh`)";
     if (strstr(name, "macos") && strstr(name, ".tar.gz")) return "macOS (Apple silicon): unpack and put `bin` on PATH (or run `install.sh`)";
     if (strstr(name, "install.sh")) return "installer for Linux and macOS";
     if (strstr(name, "install.ps1")) return "installer for Windows (PowerShell)";

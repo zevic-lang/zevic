@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Releases: archives and installers for Linux arm64 (`linux-arm64`, with a `.deb` for arm64), macOS Intel (`macos-x64`) and Windows on Arm (`windows-arm64`, with its installer) join Linux x64, macOS Apple silicon and Windows x64. The `.pkg` and the Windows installer carry the platform in their file name
+- `zevic --lib` on Windows makes the static library with `llvm-lib` first (then `llvm-ar`, then `ar`), also when clang is found through PATH. The `ar` that was picked up there wrote an empty symbol table for Windows on Arm objects, so the library could not be linked
+
 ## 0.4.7
 
 - zevpm: `[native]` in `zevic.toml` accepts `lib_dirs`, `include_dirs` and `defines` (as the specification says), not only `libs`. They become `-L`, `-I` and `-D`; a relative directory is relative to the package that names them, an absolute one is used as it is, and the keys of dependencies are used too
