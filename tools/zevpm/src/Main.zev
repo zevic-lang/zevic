@@ -130,14 +130,19 @@ fn addSources(mut zev: Array<String>, mut native: Array<String>, pkgDir: String,
 // The flags for the `[native]` keys of one package: -L, -I and -D. A relative directory is relative to the package.
 fn nativeFlags(mut flags: Array<String>, m: Toml.Manifest) {
     for (d in m.LibDirs) {
-        addFlag(flags, "-L${Os.Join(m.Dir, d)}")
+        addFlag(flags, "-L${inPackage(m, d)}")
     }
     for (d in m.IncDirs) {
-        addFlag(flags, "-I${Os.Join(m.Dir, d)}")
+        addFlag(flags, "-I${inPackage(m, d)}")
     }
     for (d in m.Defines) {
         addFlag(flags, "-D${d}")
     }
+}
+
+// A directory of `[native]`: used as it is when absolute, otherwise relative to the package.
+fn inPackage(m: Toml.Manifest, d: String) -> String {
+    if (Os.IsAbsolute(d)) { Os.Slashes(d) } else { Os.Join(m.Dir, d) }
 }
 
 fn addFlag(mut flags: Array<String>, flag: String) {

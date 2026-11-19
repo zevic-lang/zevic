@@ -1078,14 +1078,17 @@ static void sc_native_in_dependency(const char *tmp) {
 }
 
 static void sc_native_keys(const char *tmp) {
-    /* include_dirs and defines of the app, and of a dependency (relative to that dependency); lib_dirs is accepted */
+    /* include_dirs (relative and absolute) and defines of a dependency, and lib_dirs of the app */
     char *nat = join(tmp, "nat");
     make_lib(nat, "Nat",
              "extern \"C\" {\n    fn nat_value() -> CInt\n}\n\nfn Value() -> I32 {\n    nat_value().ToI32()\n}",
              "", "native/nat.c",
-             "#include \"nat.h\"\n#ifndef NAT_BASE\n#error NAT_BASE is not defined\n#endif\nint nat_value(void) { return NAT_BASE + NAT_STEP; }\n");
-    wr(join(nat, "native/include/nat.h"), "#define NAT_STEP 2\n");
-    append_file(join(nat, "zevic.toml"), "\n[native]\ninclude_dirs = [\"native/include\"]\ndefines = [\"NAT_BASE=40\"]\n");
+             "#include \"nat.h\"\n#include \"extra.h\"\n#ifndef NAT_BASE\n#error NAT_BASE is not defined\n#endif\nint nat_value(void) { return NAT_BASE + NAT_STEP + NAT_EXTRA; }\n");
+    wr(join(nat, "native/include/nat.h"), "#define NAT_STEP 1\n");
+    char *extra = join(tmp, "extra-include"); /* an absolute directory outside the package */
+    wr(join(extra, "extra.h"), "#define NAT_EXTRA 1\n");
+    append_file(join(nat, "zevic.toml"),
+                fmt("\n[native]\ninclude_dirs = [\"native/include\", \"%s\"]\ndefines = [\"NAT_BASE=40\"]\n", extra));
     pm(tmp, true, "new", "app", NULL);
     char *app = join(tmp, "app");
     append_file(join(app, "zevic.toml"), "\n[deps]\nNat = { path = \"../nat\" }\n\n[native]\nlib_dirs = [\"no-such-dir\"]\n");
