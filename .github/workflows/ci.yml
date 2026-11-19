@@ -94,6 +94,27 @@ jobs:
           "$T" install
           "build/zevfmt${{ matrix.exe }}" -check packages examples tools
 
+      - name: DEBUG windows-arm64 library
+        if: failure() && matrix.name == 'windows-arm64'
+        run: |
+          export ZEVIC_HOME="$PWD"
+          W="$PWD"
+          B="/c/Program Files/LLVM/bin"
+          ls "$B" | grep -i "lib\|ar\.exe\|nm"
+          mkdir -p "$RUNNER_TEMP/dbg" && cd "$RUNNER_TEMP/dbg"
+          "$W/build/zevpm.exe" new geo --lib >/dev/null && cd geo
+          printf 'module Geo\n\nexport "C" fn geo_add(a: CInt, b: CInt) -> CInt {\n    (a.ToI32() + b.ToI32()).ToCInt()\n}\n' > src/Geo.zev
+          "$W/build/zevpm.exe" build 2>&1 | tail -2
+          cat build/include/Geo.h | head -20
+          "$B/llvm-nm.exe" --print-armap build/Geo.lib | head -5
+          printf '#include "build/include/Geo.h"\nint main(void){ zevic_init(0,0); return geo_add(1,2); }\n' > use.c
+          echo "--- plain"; clang use.c build/Geo.lib -o use1.exe 2>&1 | head -6
+          echo "--- wholearchive"; clang use.c -Wl,/wholearchive:build/Geo.lib -o use2.exe 2>&1 | head -6
+          mkdir x && cd x && "$B/llvm-ar.exe" x ../build/Geo.lib && "$B/llvm-lib.exe" /OUT:../t.lib *.o && cd ..
+          "$B/llvm-nm.exe" --print-armap t.lib | head -5
+          echo "--- llvm-lib by hand"; clang use.c t.lib -o use3.exe 2>&1 | head -6
+          true
+
       # the fixed point: the compiler built by the seed writes the IR the seed came from
       - name: Bootstrap check
         run: |
