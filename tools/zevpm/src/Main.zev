@@ -127,6 +127,25 @@ fn addSources(mut zev: Array<String>, mut native: Array<String>, pkgDir: String,
     native.Extend(Os.Walk(Os.Join(pkgDir, "native"), [".c", ".cpp", ".cc"]))
 }
 
+// The flags for the `[native]` keys of one package: -L, -I and -D. A relative directory is relative to the package.
+fn nativeFlags(mut flags: Array<String>, m: Toml.Manifest) {
+    for (d in m.LibDirs) {
+        addFlag(flags, "-L${Os.Join(m.Dir, d)}")
+    }
+    for (d in m.IncDirs) {
+        addFlag(flags, "-I${Os.Join(m.Dir, d)}")
+    }
+    for (d in m.Defines) {
+        addFlag(flags, "-D${d}")
+    }
+}
+
+fn addFlag(mut flags: Array<String>, flag: String) {
+    if (!flags.Contains(flag)) {
+        flags.Push(flag)
+    }
+}
+
 fn addLib(mut libs: Array<String>, name: String) {
     if (!libs.Contains(name)) {
         libs.Push(name)
@@ -141,12 +160,15 @@ fn build(m: Toml.Manifest, release: Bool, test: Bool) -> Result<String, Error> {
     mut zev: Array<String> = []
     mut native: Array<String> = []
     mut libs: Array<String> = []
+    mut flags: Array<String> = []
     addSources(zev, native, m.Dir, test)
+    nativeFlags(flags, m)
     for (l in m.Libs) {
         addLib(libs, l)
     }
     for (p in pkgs) {
         addSources(zev, native, p.Dir, false)
+        nativeFlags(flags, p.M)
         for (l in p.M.Libs) {
             addLib(libs, l)
         }
@@ -170,6 +192,7 @@ fn build(m: Toml.Manifest, release: Bool, test: Bool) -> Result<String, Error> {
     if (release) {
         a.Push("-O2")
     }
+    a.Extend(flags)
     for (l in libs) {
         a.Push("-l${l}")
     }

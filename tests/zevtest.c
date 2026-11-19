@@ -1077,6 +1077,27 @@ static void sc_native_in_dependency(const char *tmp) {
     expect(strcmp(out, "42") == 0, "the dependency's native/ is built: %s", out);
 }
 
+static void sc_native_keys(const char *tmp) {
+    /* include_dirs and defines of the app, and of a dependency (relative to that dependency); lib_dirs is accepted */
+    char *nat = join(tmp, "nat");
+    make_lib(nat, "Nat",
+             "extern \"C\" {\n    fn nat_value() -> CInt\n}\n\nfn Value() -> I32 {\n    nat_value().ToI32()\n}",
+             "", "native/nat.c",
+             "#include \"nat.h\"\n#ifndef NAT_BASE\n#error NAT_BASE is not defined\n#endif\nint nat_value(void) { return NAT_BASE + NAT_STEP; }\n");
+    wr(join(nat, "native/include/nat.h"), "#define NAT_STEP 2\n");
+    append_file(join(nat, "zevic.toml"), "\n[native]\ninclude_dirs = [\"native/include\"]\ndefines = [\"NAT_BASE=40\"]\n");
+    pm(tmp, true, "new", "app", NULL);
+    char *app = join(tmp, "app");
+    append_file(join(app, "zevic.toml"), "\n[deps]\nNat = { path = \"../nat\" }\n\n[native]\nlib_dirs = [\"no-such-dir\"]\n");
+    wr(join(app, "src/Main.zev"),
+       "module Main\n\nimport Nat\nimport Zevic.Console\n\nfn Main() {\n    Console.Println(\"${Nat.Value()}\")\n}\n");
+    Run p = pm(app, false, "run", NULL);
+    expect(p.code == 0 && strcmp(strip(p.out), "42") == 0, "include_dirs, defines and lib_dirs work: %s%s", p.out, p.err);
+    append_file(join(app, "zevic.toml"), "oops = [\"x\"]\n");
+    p = pm(app, false, "build", NULL);
+    expect(p.code != 0 && contains(p.err, "expected libs, lib_dirs, include_dirs or defines"), "an unknown [native] key: %s", p.err);
+}
+
 static void sc_library_for_c(const char *tmp) {
     pm(tmp, true, "new", "geo", "--lib", NULL);
     char *geo = join(tmp, "geo");
@@ -1215,6 +1236,7 @@ static void test_zevpm(void) {
     scenario("new_run_test_clean", sc_new_run_test_clean);
     scenario("path_dependency", sc_path_dependency);
     scenario("native_in_dependency", sc_native_in_dependency);
+    scenario("native_keys", sc_native_keys);
     scenario("library_for_c", sc_library_for_c);
     scenario("git_dependencies", sc_git_dependencies);
     scenario("git_update", sc_git_update);
