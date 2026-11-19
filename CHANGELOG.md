@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Releases: archives and installers for Linux arm64 (`linux-arm64`, with a `.deb` for arm64) and macOS Intel (`macos-x64`) join Linux x64, macOS Apple silicon and Windows x64. Windows on Arm (`windows-arm64`) is built as a first try, and is published only when its job passes. The `.pkg` and the Windows installer carry the platform in their file name
+- Releases: archives and installers for Linux arm64 (`linux-arm64`, with a `.deb` for arm64) and macOS Intel (`macos-x64`) and Windows on Arm (`windows-arm64`, with its installer) join Linux x64, macOS Apple silicon and Windows x64. The `.pkg` and the Windows installer carry the platform in their file name
 - `zevic --lib` on Windows makes the static library with `llvm-lib` first (then `llvm-ar`, then `ar`), also when clang is found through PATH. The `ar` that was picked up there wrote an empty symbol table for Windows on Arm objects, so the library could not be linked
 
 ## 0.4.7
