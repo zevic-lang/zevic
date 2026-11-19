@@ -95,7 +95,7 @@ Every time a build of `main` succeeds, `.github/workflows/ci.yml` publishes the 
 ## Status
 
 v0.4.1: types, `struct` / `class` / `enum`, union types (`A | B`, `is`, type patterns), `interface`, generics, closures, `defer`, the GC, working with C,
-`test` blocks, loop labels (`break@name`), `async` / `await`, HTTP (`Zevic.Http`, no TLS), `zevpm` and the standard library (`Fs` `Env` `Text` `Math` `Time` `Process` `Random` `Json` `Path` `DateTime` `Regex` `Csv` `Toml` `Net` `Zip` `Gzip` and more) all work.
+`test` blocks, loop labels (`break@name`), `async` / `await`, HTTP (`Zevic.Http`, no TLS; HTTPS is the [`curl`](https://github.com/zevic-lang/curl) package), `zevpm` and the standard library (`Fs` `Env` `Text` `Math` `Time` `Process` `Random` `Json` `Path` `DateTime` `Regex` `Csv` `Toml` `Net` `Zip` `Gzip` and more) all work.
 `zevfmt` (format with `zevfmt -w .`, check with `zevfmt -check .`) works too. The plan is in [`docs/plan.md`](docs/plan.md).
 
 See [`CHANGELOG.md`](CHANGELOG.md) for how far the implementation has come.

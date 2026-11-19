@@ -5,7 +5,8 @@ module Zevic.Http
 //     let r: Http.Response = Http.Get("http://localhost:8080/hello")?
 //     Console.Println("${r.Status} ${r.Body}")
 //
-// There is no TLS: `https://` addresses are an error. Every connection serves one request (`Connection: close`),
+// There is no TLS: `https://` addresses are an error (for HTTPS use the Curl package, https://github.com/zevic-lang/curl).
+// Zevic.Http is for servers, local programs and plain HTTP, and needs nothing but clang. Every connection serves one request (`Connection: close`),
 // redirects are not followed. The server starts one task (a thread) for each connection.
 
 import Zevic.Async
@@ -432,7 +433,7 @@ fn writeHeaders(fields: Array<Field>) -> String {
 // `http://host:port/target` -> (host, port, target).
 fn parseUrl(url: String) -> Result<(String, I64, String), Error> {
     if (Text.StartsWith(url, "https://")) {
-        return Err(Error.New(ErrorKind.Invalid, "https is not supported yet"))
+        return Err(Error.New(ErrorKind.Invalid, "https is not supported by Zevic.Http (it has no TLS): use the Curl package, `zevpm get zevic-lang/curl`"))
     }
     if (!Text.StartsWith(url, "http://")) {
         return Err(Error.New(ErrorKind.Invalid, "the address must start with http://: ${url}"))

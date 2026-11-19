@@ -599,7 +599,7 @@ let task: Async.Task<Result<Unit, Error>> = async {
 server.Close()                                                        // ends Serve
 ```
 
-- Only `http://`. `https://` is an `Err` (TLS is not supported). Redirects are not followed. Each connection is closed after one request.
+- Only `http://`. `https://` is an `Err` (TLS is not supported; the package [`zevic-lang/curl`](https://github.com/zevic-lang/curl) is the HTTPS client). Redirects are not followed. Each connection is closed after one request.
 - The body is handled with `Content-Length`, `chunked`, or until the connection closes. The limit is 16 MiB and the timeout is 30 seconds.
 - `Serve` creates one `async` task per connection. See `docs/proposals/0003-http.md` for details.
 

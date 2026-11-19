@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- `Zevic.Http`: an `https://` address is still an error, but the message now points to the Curl package (`zevpm get zevic-lang/curl`). The documentation says what each is for: `Zevic.Http` for servers and plain HTTP without dependencies, `Curl` for HTTPS
+
 ## 0.4.6
 
 - Examples: every example under `examples/` is now a package of its own (`zevic.toml`, `src/Main.zev`, `native/` for C and C++ files); run one with `zevpm run` inside its directory

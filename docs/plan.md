@@ -352,7 +352,7 @@ zevic2                -compile-> zevic3
 
 - [x] Loop labels and `break@label` / `continue@label` (proposal 0001)
 - [x] Asynchronous code (`async`, `await` and `Zevic.Async`) (proposal 0002)
-- [x] HTTP (`Zevic.Http`) (proposal 0003. HTTPS is not supported. Windows (Winsock) is unverified.)
+- [x] HTTP (`Zevic.Http`) (proposal 0003. HTTPS is the job of the `zevic-lang/curl` package. Windows (Winsock) is unverified.)
 
 **Done when**: the `.ll` of `zevic2` matches and CI passes. **v0.4.0**.
 
