@@ -151,11 +151,15 @@ jobs:
           # silent install, then run the installed compiler, then uninstall
           $setup = "$PWD\dist\extra\zevic-$v-${{ matrix.name }}-setup.exe"
           $dir = "$PWD\inst"
-          Start-Process -Wait $setup -ArgumentList "/VERYSILENT","/NORESTART","/DIR=$dir"
+          Start-Process -Wait $setup -ArgumentList "/VERYSILENT","/NORESTART","/DIR=$dir","/TASKS=zig"
           & "$dir\bin\zevic.exe" --version
+          if (-not (Test-Path "$dir\zig\zig.exe")) { throw "the zig task did not install Zig" }
+          & "$dir\bin\zevic.exe" --target linux-x64 "$PWD\examples\01_hello\src\Main.zev" -o "$PWD\hello-linux"
+          if ($LASTEXITCODE -ne 0) { throw "cross build with the installed Zig failed" }
           & "$dir\unins000.exe" /VERYSILENT | Out-Null
           Start-Sleep 3
           if (Test-Path "$dir\bin\zevic.exe") { throw "uninstall left files behind" }
+          if (Test-Path "$dir\zig") { throw "uninstall left Zig behind" }
 
       - name: Smoke test the package
         run: |

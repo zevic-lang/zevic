@@ -2,6 +2,7 @@
 ; Build:  iscc /DAppVersion=0.4.1 /DPlatform=windows-x64 /DArch=x64compatible /DSourceDir=dist\zevic-0.4.1-windows-x64 /DOutputDir=dist\extra packaging\zevic.iss
 ;         (/DPlatform=windows-arm64 /DArch=arm64 for Windows on Arm)
 ; Silent install (winget uses this):  zevic-setup.exe /VERYSILENT /NORESTART
+; Optional task "zig" (off by default; /TASKS="zig" when silent) downloads Zig for `zevic --target`.
 ; The install is per-user (no administrator rights) and adds {app}\bin to the user PATH.
 #ifndef AppVersion
   #define AppVersion "0.0.0"
@@ -34,6 +35,9 @@ ArchitecturesInstallIn64BitMode={#Arch}
 UninstallDisplayName=Zevic {#AppVersion}
 WizardStyle=modern
 
+[Tasks]
+Name: "zig"; Description: "Install Zig (downloaded, checked against ziglang.org's SHA-256) so that zevic can build for other systems (--target)"; Flags: unchecked
+
 [Files]
 Source: "{#SourceDir}\bin\*"; DestDir: "{app}\bin"; Flags: ignoreversion recursesubdirs
 Source: "{#SourceDir}\packages\*"; DestDir: "{app}\packages"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -43,6 +47,14 @@ Source: "{#SourceDir}\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\README.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\CHANGELOG.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\VERSION"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#SourceDir}\install.ps1"; DestDir: "{app}"; Flags: ignoreversion; Tasks: zig
+
+[Run]
+Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\install.ps1"" -ZigOnly -Prefix ""{app}"""; StatusMsg: "Downloading Zig..."; Flags: runhidden; Tasks: zig
+
+[UninstallDelete]
+Type: filesandordirs; Name: "{app}\zig"
+Type: files; Name: "{app}\install.ps1"
 
 [Registry]
 Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\bin"; Check: NeedsPath(ExpandConstant('{app}\bin'))
