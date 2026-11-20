@@ -37,6 +37,7 @@ if (-not (Get-Command clang -ErrorAction SilentlyContinue)) {
 }
 
 function Install-Zig {
+    $ProgressPreference = 'SilentlyContinue'   # the progress bar makes downloads many times slower
     $arch = if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') { 'aarch64' } else { 'x86_64' }
     $key = "$arch-windows"
     Write-Host "zig $ZigVersion ($key): looking up checksum"
@@ -51,7 +52,8 @@ function Install-Zig {
     $tmp = Join-Path ([IO.Path]::GetTempPath()) "zig-$ZigVersion"
     if (Test-Path $tmp) { Remove-Item -Recurse -Force $tmp }
     New-Item -ItemType Directory -Force $tmp | Out-Null
-    tar -xf $zip -C $tmp   # Expand-Archive takes ~10 minutes on Zig's thousands of files
+    # Windows' own bsdtar (Git's GNU tar cannot read C:\ paths); Expand-Archive takes ~10 minutes on Zig's files
+    & (Join-Path $env:SystemRoot 'System32\tar.exe') -xf $zip -C $tmp
     if ($LASTEXITCODE -ne 0) { throw 'cannot unpack the Zig archive' }
     Remove-Item $zip
     $zdir = Join-Path $Prefix 'zig'
