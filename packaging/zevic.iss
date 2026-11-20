@@ -55,6 +55,7 @@ Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -Fil
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\zig"
 Type: files; Name: "{app}\install.ps1"
+Type: files; Name: "{app}\zig-install.log"
 
 [Registry]
 Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\bin"; Check: NeedsPath(ExpandConstant('{app}\bin'))

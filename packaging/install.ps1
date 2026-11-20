@@ -37,7 +37,7 @@ function Install-Zig {
     Write-Host "zig $ZigVersion installed in $zdir; zevic uses it for --target"
 }
 if ($ZigOnly) {   # used by the Inno Setup installer's optional Zig task
-    Install-Zig
+    try { Install-Zig *>&1 | Out-File (Join-Path $Prefix 'zig-install.log') } catch { "$_" | Out-File (Join-Path $Prefix 'zig-install.log'); exit 1 }
     exit 0
 }
 function Get-UserPath { [Environment]::GetEnvironmentVariable('Path', 'User') }
