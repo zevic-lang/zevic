@@ -69,11 +69,48 @@ fn endsWith(s: String, suffix: String) -> Bool {
     s.Len() >= suffix.Len() && s.Slice(s.Len() - suffix.Len(), s.Len()) == suffix
 }
 
+// ---- zig cc ----
+
+// `zig cc` is accepted in place of clang (ZEVIC_CLANG=/path/to/zig): the program is run as
+// `zig cc`, and the LLVM triples that zevic passes become zig targets.
+fn isZig(path: String) -> Bool {
+    path == "zig" || path == "zig.exe" || endsWith(path, "/zig") || endsWith(path, "\\zig")
+        || endsWith(path, "/zig.exe") || endsWith(path, "\\zig.exe")
+}
+
+fn zigTarget(t: String) -> String {
+    mut cut: I64 = 0
+    while (cut < t.Len() && t.ByteAt(cut) != b'-') { cut += 1 }
+    mut arch: String = t.Slice(0, cut)
+    if (arch == "arm64") { arch = "aarch64" }
+    if (Text.Contains(t, "windows") || Text.Contains(t, "mingw")) { return "${arch}-windows-gnu" }
+    if (Text.Contains(t, "darwin") || Text.Contains(t, "apple")) { return "${arch}-macos" }
+    if (Text.Contains(t, "linux")) { return "${arch}-linux-gnu" }
+    t
+}
+
+fn zigArgs(args: Array<String>) -> Array<String> {
+    mut r: Array<String> = ["cc"]
+    mut i: I64 = 0
+    while (i < args.Len()) {
+        let a: String = args[i]
+        if (a.Len() > 9 && a.Slice(0, 9) == "--target=") {
+            r.Push("-target")
+            r.Push(zigTarget(a.Slice(9, a.Len())))
+        } else {
+            r.Push(a)
+        }
+        i += 1
+    }
+    r
+}
+
 // ---- clang ----
 
 // The major version, 0 when unknown, -1 when it does not run.
 fn clangMajor(path: String) -> I64 {
-    let out: Process.Output = match (Process.Run(path, ["--version"])) {
+    let probe: Array<String> = if (isZig(path)) { ["cc", "--version"] } else { ["--version"] }
+    let out: Process.Output = match (Process.Run(path, probe)) {
         Ok(o) => o,
         Err(_) => return -1,
     }
@@ -228,7 +265,7 @@ fn threadFlags(win: Bool) -> Array<String> {
 }
 
 fn run(cmd: String, args: Array<String>) -> I32 {
-    match (Process.Inherit(cmd, args)) {
+    match (Process.Inherit(cmd, if (isZig(cmd)) { zigArgs(args) } else { args })) {
         Ok(c) => c,
         Err(_) => 127,
     }

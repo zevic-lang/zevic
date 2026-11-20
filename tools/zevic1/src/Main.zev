@@ -451,12 +451,19 @@ fn compile(args: Array<String>) -> I32 {
         Console.Eprintln("error: --test builds a program that runs here, so it cannot be combined with --target")
         return 1
     }
-    let clang: String = match (Driver.FindClang(opts.Cc)) {
-        Some(c) => c,
-        None => return 2,
-    }
     let home: String = match (Home.Find()) {
         Some(h) => h,
+        None => return 2,
+    }
+    // For another target, the Zig that install.sh --with-zig put next to the compiler is used
+    // unless a C compiler was asked for.
+    mut cc: Option<String> = opts.Cc
+    if (opts.Target != "" && cc.IsNone() && Env.Get("ZEVIC_CLANG").IsNone()) {
+        let bundled: String = "${home}/zig/zig${if (Driver.IsWindows()) { ".exe" } else { "" }}"
+        if (Fs.Exists(bundled)) { cc = Some(bundled) }
+    }
+    let clang: String = match (Driver.FindClang(cc)) {
+        Some(c) => c,
         None => return 2,
     }
     let exe: String = match (out) {
@@ -478,7 +485,7 @@ fn compile(args: Array<String>) -> I32 {
     if (rc != 0) {
         Console.Eprintln("error: clang failed (exit code ${rc}) while building `${exe}`")
         if (opts.Target != "") {
-            Console.Eprintln("note: building for `${opts.Target}` needs that system's C headers and libraries: give `--sysroot <dir>` (or ZEVIC_SYSROOT), or a ZEVIC_CLANG that knows the target, such as a wrapper around `zig cc`")
+            Console.Eprintln("note: building for `${opts.Target}` needs that system's C headers and libraries: give `--sysroot <dir>` (or ZEVIC_SYSROOT), or Zig (`install.sh --with-zig`, or ZEVIC_CLANG=<path to zig>)")
         }
         return 2
     }
