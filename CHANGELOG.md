@@ -1,7 +1,8 @@
 # Changelog
 
 ## Unreleased
-- `install.sh --with-zig` (asked in a terminal, off by default) installs Zig, checked against ziglang.org's SHA-256, and a `zevic-cc` wrapper that turns zevic's LLVM triples into zig targets: `ZEVIC_CLANG=zevic-cc zevic --target windows-x64 ...`. `--no-zig` skips the question, `--zig-version` picks another Zig.
+- `zevic` accepts Zig as the C compiler (`ZEVIC_CLANG=/path/to/zig`, run as `zig cc`, LLVM triples turned into zig targets). With `--target`, the Zig installed next to zevic (`<home>/zig/zig`) is used when no compiler is named.
+- `install.sh --with-zig` and `install.ps1 -WithZig` (asked when interactive, off by default) install Zig, checked against ziglang.org's SHA-256, for `--target`. `--no-zig`/`-NoZig` skip the question; `--zig-version`/`-ZigVersion` pick another Zig.
 - `zevic --target <name|triple>` builds for another system (proposal 0010, first step): `linux-x64`, `linux-arm64`, `macos-x64`, `macos-arm64`, `windows-x64`, `windows-arm64`, `host`, or an LLVM triple. `--sysroot <dir>` (or `ZEVIC_SYSROOT`) gives the C headers and libraries of the target; a `ZEVIC_CLANG` that knows the target, such as a wrapper around `zig cc`, works too. The size of `CLong`, the `.exe` suffix, `-lws2_32` and the cached runtime objects follow the target. `--test` cannot be combined with `--target`
 - `zevpm build --target <name>` builds for another system into `build/<name>/`; `run` and `test` refuse `--target`, because they start the program here
 - Releases: archives and installers for Linux arm64 (`linux-arm64`, with a `.deb` for arm64), macOS Intel (`macos-x64`) and Windows on Arm (`windows-arm64`, with its installer) join Linux x64, macOS Apple silicon and Windows x64. The `.pkg` and the Windows installer carry the platform in their file name

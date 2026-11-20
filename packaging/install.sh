@@ -2,9 +2,9 @@
 # Install zevic from an unpacked release archive (Linux, macOS).
 #   sh install.sh [--prefix DIR] [--with-zig | --no-zig] [--zig-version V]
 #                                    default DIR: $HOME/.local
-# --with-zig  also installs Zig (checked against ziglang.org's SHA-256) and the
-#             zevic-cc wrapper, so `ZEVIC_CLANG=zevic-cc zevic --target windows-x64 ...`
-#             can cross-compile without clang cross toolchains. Asked in a terminal.
+# --with-zig  also installs Zig (checked against ziglang.org's SHA-256) next to zevic;
+#             `zevic --target windows-x64 ...` then cross-compiles without clang cross
+#             toolchains. Asked in a terminal.
 # Copies the release to DIR/lib/zevic and links zevic, zevpm, zevfmt into DIR/bin.
 # Uninstall: sh install.sh --uninstall [--prefix DIR]
 set -eu
@@ -26,7 +26,7 @@ done
 LIB="$PREFIX/lib/zevic"
 BIN="$PREFIX/bin"
 if [ "$UNINSTALL" = 1 ]; then
-    for t in zevic zevpm zevfmt zevic-cc; do rm -f "$BIN/$t"; done
+    for t in zevic zevpm zevfmt; do rm -f "$BIN/$t"; done
     rm -rf "$LIB"
     echo "zevic removed from $PREFIX"
     exit 0
@@ -69,32 +69,7 @@ install_zig() {
     [ "$got" = "$want" ] || { echo "zig: checksum mismatch (got $got, want $want)" >&2; return 1; }
     mkdir -p "$LIB/zig"
     tar -xJf "$tmp/zig.tar.xz" -C "$LIB/zig" --strip-components=1 || { echo "zig: cannot unpack (is xz installed?)" >&2; return 1; }
-    cat > "$LIB/bin/zevic-cc" <<W
-#!/bin/sh
-# zig cc as a C compiler for zevic: translates LLVM triples to zig targets.
-# usage: ZEVIC_CLANG=zevic-cc zevic --target windows-x64 prog.zev -o prog.exe
-n=\$#
-while [ \$n -gt 0 ]; do
-    a="\$1"; shift; n=\$((n - 1))
-    case "\$a" in
-        --target=*)
-            t="\${a#--target=}"; arch="\${t%%-*}"
-            [ "\$arch" = arm64 ] && arch=aarch64
-            case "\$t" in
-                *windows*|*mingw*) zt="\$arch-windows-gnu" ;;
-                *darwin*|*apple*) zt="\$arch-macos" ;;
-                *linux*) zt="\$arch-linux-gnu" ;;
-                *) zt="\$t" ;;
-            esac
-            set -- "\$@" -target "\$zt" ;;
-        *) set -- "\$@" "\$a" ;;
-    esac
-done
-exec "$LIB/zig/zig" cc "\$@"
-W
-    chmod +x "$LIB/bin/zevic-cc"
-    ln -sf "$LIB/bin/zevic-cc" "$BIN/zevic-cc"
-    echo "zig $ZIGVER installed in $LIB/zig; use ZEVIC_CLANG=zevic-cc with --target"
+    echo "zig $ZIGVER installed in $LIB/zig; zevic uses it for --target"
 }
 if [ "$ZIG" = ask ]; then
     ZIG=0

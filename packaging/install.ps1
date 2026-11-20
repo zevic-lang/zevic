@@ -2,8 +2,8 @@
 #   .\install.ps1 [-Prefix DIR]     default DIR: $env:LOCALAPPDATA\Zevic
 #   .\install.ps1 [-WithZig | -NoZig] [-ZigVersion V]
 #   .\install.ps1 -Uninstall
-# -WithZig installs Zig (checked against ziglang.org's SHA-256) and the zevic-cc wrapper for
-# cross-compiling: $env:ZEVIC_CLANG='zevic-cc'; zevic --target linux-x64 ... Asked when interactive.
+# -WithZig installs Zig (checked against ziglang.org's SHA-256) next to zevic; `zevic --target ...`
+# then cross-compiles with it. Asked when interactive.
 # Copies the release to DIR and adds DIR\bin to the user PATH.
 param([string]$Prefix = (Join-Path $env:LOCALAPPDATA 'Zevic'), [switch]$Uninstall, [switch]$WithZig, [switch]$NoZig, [string]$ZigVersion = '0.17.1')
 $ErrorActionPreference = 'Stop'
@@ -61,27 +61,7 @@ function Install-Zig {
     Move-Item (Get-ChildItem $tmp | Select-Object -First 1).FullName $zdir
     if (-not (Test-Path (Join-Path $zdir 'lib\libc'))) { throw 'the unpacked Zig is incomplete (lib\libc is missing)' }
     Remove-Item -Recurse -Force $tmp
-    $ps1 = @'
-param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Rest)
-# zig cc as a C compiler for zevic: translates LLVM triples to zig targets.
-$out = @()
-foreach ($a in $Rest) {
-    if ($a -like '--target=*') {
-        $t = $a.Substring(9); $arch = ($t -split '-')[0]
-        if ($arch -eq 'arm64') { $arch = 'aarch64' }
-        if ($t -match 'windows|mingw') { $zt = "$arch-windows-gnu" }
-        elseif ($t -match 'darwin|apple') { $zt = "$arch-macos" }
-        elseif ($t -match 'linux') { $zt = "$arch-linux-gnu" }
-        else { $zt = $t }
-        $out += '-target', $zt
-    } else { $out += $a }
-}
-& (Join-Path $PSScriptRoot '..\zig\zig.exe') cc @out
-exit $LASTEXITCODE
-'@
-    Set-Content -Path (Join-Path $bin 'zevic-cc.ps1') -Value $ps1
-    Set-Content -Path (Join-Path $bin 'zevic-cc.cmd') -Value "@powershell -NoProfile -ExecutionPolicy Bypass -File `"%~dp0zevic-cc.ps1`" %*"
-    Write-Host "zig $ZigVersion installed in $zdir; set ZEVIC_CLANG=zevic-cc to use it with --target"
+    Write-Host "zig $ZigVersion installed in $zdir; zevic uses it for --target"
 }
 if (-not $WithZig -and -not $NoZig -and [Environment]::UserInteractive -and -not [Console]::IsInputRedirected) {
     $ans = Read-Host 'Install Zig for cross-compiling (--target)? [y/N]'

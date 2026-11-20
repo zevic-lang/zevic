@@ -213,10 +213,10 @@ jobs:
           export PATH="$RUNNER_TEMP/zig prefix/bin:$PATH"
           unset ZEVIC ZEVIC_HOME ZEVPM ZEVFMT
           mkdir -p "$RUNNER_TEMP/zig work" && cd "$RUNNER_TEMP/zig work"
-          ZEVIC_CLANG=zevic-cc zevic --target windows-x64 "$PKG/examples/01_hello/src/Main.zev" -o hello.exe
+          zevic --target windows-x64 "$PKG/examples/01_hello/src/Main.zev" -o hello.exe
           file hello.exe | grep -q "PE32+"
           sh "$PKG/install.sh" --uninstall --prefix "$RUNNER_TEMP/zig prefix"
-          test ! -e "$RUNNER_TEMP/zig prefix/bin/zevic-cc"
+          test ! -e "$RUNNER_TEMP/zig prefix/lib/zevic/zig"
       - name: Smoke test -WithZig (Windows)
         if: runner.os == 'Windows'
         run: |
@@ -227,7 +227,7 @@ jobs:
           export PATH="$(cygpath -u "$PREFIX")/bin:$PATH"
           unset ZEVIC ZEVIC_HOME ZEVPM ZEVFMT
           mkdir -p "$RUNNER_TEMP/zig work" && cd "$RUNNER_TEMP/zig work"
-          ZEVIC_CLANG=zevic-cc zevic --target linux-x64 "$PKG/examples/01_hello/src/Main.zev" -o hello-linux
+          zevic --target linux-x64 "$PKG/examples/01_hello/src/Main.zev" -o hello-linux
           file hello-linux | grep -q "ELF 64-bit"
           powershell -NoProfile -ExecutionPolicy Bypass -File "$WPKG\\install.ps1" -Uninstall -Prefix "$PREFIX"
       - name: Smoke test the .deb (Linux)
