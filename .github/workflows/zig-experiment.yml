@@ -15,7 +15,30 @@ jobs:
       - run: pip install ziglang && python3 -m ziglang version
       - name: Cross-build hello for ${{ matrix.target }} with zig cc
         run: |
-          printf '#!/bin/sh\nexec python3 -m ziglang cc "$@"\n' > /tmp/zigcc && chmod +x /tmp/zigcc
+          cat > /tmp/zigcc <<'W'
+          #!/bin/sh
+          # zig names targets arch-os-abi; translate the LLVM triple that zevic passes
+          out=""
+          for a in "$@"; do
+            case "$a" in
+              --target=*)
+                t="${a#--target=}"
+                arch="${t%%-*}"
+                [ "$arch" = arm64 ] && arch=aarch64
+                case "$t" in
+                  *windows*|*mingw*) zt="$arch-windows-gnu" ;;
+                  *darwin*|*apple*) zt="$arch-macos" ;;
+                  *linux*) zt="$arch-linux-gnu" ;;
+                  *) zt="$t" ;;
+                esac
+                out="$out -target $zt" ;;
+              *) out="$out $a" ;;
+            esac
+          done
+          exec python3 -m ziglang cc $out
+          W
+          sed -i 's/^          //' /tmp/zigcc
+          chmod +x /tmp/zigcc
           export ZEVIC_CLANG=/tmp/zigcc
           build/zevic --target ${{ matrix.target }} examples/01_hello/src/Main.zev -o /tmp/hello-${{ matrix.target }} || true
           ls -l /tmp/hello-* 2>&1 | head
