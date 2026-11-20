@@ -20,7 +20,10 @@ function Install-Zig {
     $zip = Join-Path ([IO.Path]::GetTempPath()) "zig-$ZigVersion.zip"
     Write-Host "zig: downloading $($entry.tarball)"
     Invoke-WebRequest $entry.tarball -OutFile $zip
-    $got = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+    # .NET instead of Get-FileHash: a PowerShell started by the Inno Setup installer may not find that cmdlet
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    $fs = [System.IO.File]::OpenRead($zip)
+    try { $got = ([BitConverter]::ToString($sha.ComputeHash($fs)) -replace '-', '').ToLower() } finally { $fs.Dispose(); $sha.Dispose() }
     if ($got -ne $entry.shasum) { Remove-Item $zip; throw "checksum mismatch (got $got, want $($entry.shasum))" }
     $tmp = Join-Path ([IO.Path]::GetTempPath()) "zig-$ZigVersion"
     if (Test-Path $tmp) { Remove-Item -Recurse -Force $tmp }
