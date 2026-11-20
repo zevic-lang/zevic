@@ -50,11 +50,14 @@ function Install-Zig {
     if ($got -ne $entry.shasum) { Remove-Item $zip; throw "checksum mismatch (got $got, want $($entry.shasum))" }
     $tmp = Join-Path ([IO.Path]::GetTempPath()) "zig-$ZigVersion"
     if (Test-Path $tmp) { Remove-Item -Recurse -Force $tmp }
-    Expand-Archive $zip $tmp
+    New-Item -ItemType Directory -Force $tmp | Out-Null
+    tar -xf $zip -C $tmp   # Expand-Archive takes ~10 minutes on Zig's thousands of files
+    if ($LASTEXITCODE -ne 0) { throw 'cannot unpack the Zig archive' }
     Remove-Item $zip
     $zdir = Join-Path $Prefix 'zig'
-    New-Item -ItemType Directory -Force $zdir | Out-Null
-    Copy-Item -Recurse -Force (Join-Path (Get-ChildItem $tmp | Select-Object -First 1).FullName '*') $zdir
+    if (Test-Path $zdir) { Remove-Item -Recurse -Force $zdir }
+    Move-Item (Get-ChildItem $tmp | Select-Object -First 1).FullName $zdir
+    if (-not (Test-Path (Join-Path $zdir 'lib\libc'))) { throw 'the unpacked Zig is incomplete (lib\libc is missing)' }
     Remove-Item -Recurse -Force $tmp
     $ps1 = @'
 param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Rest)

@@ -73,8 +73,9 @@ install_zig() {
 #!/bin/sh
 # zig cc as a C compiler for zevic: translates LLVM triples to zig targets.
 # usage: ZEVIC_CLANG=zevic-cc zevic --target windows-x64 prog.zev -o prog.exe
-out=""
-for a in "\$@"; do
+n=\$#
+while [ \$n -gt 0 ]; do
+    a="\$1"; shift; n=\$((n - 1))
     case "\$a" in
         --target=*)
             t="\${a#--target=}"; arch="\${t%%-*}"
@@ -85,11 +86,11 @@ for a in "\$@"; do
                 *linux*) zt="\$arch-linux-gnu" ;;
                 *) zt="\$t" ;;
             esac
-            out="\$out -target \$zt" ;;
-        *) out="\$out \$a" ;;
+            set -- "\$@" -target "\$zt" ;;
+        *) set -- "\$@" "\$a" ;;
     esac
 done
-exec "$LIB/zig/zig" cc \$out
+exec "$LIB/zig/zig" cc "\$@"
 W
     chmod +x "$LIB/bin/zevic-cc"
     ln -sf "$LIB/bin/zevic-cc" "$BIN/zevic-cc"
