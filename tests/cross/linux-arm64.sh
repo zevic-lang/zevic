@@ -4,7 +4,7 @@
 # Usage: tests/cross/linux-arm64.sh [path-to-zevic]
 set -eu
 ZEVIC="${1:-build/zevic}"
-SYSROOT=/usr/aarch64-linux-gnu
+SYSROOT=/usr/aarch64-linux-gnu   # the run-time libraries for qemu; for the build clang finds the Debian cross layout through --gcc-install-dir
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 # clang needs to be told where the cross GCC keeps crtbegin.o and libgcc: a small wrapper is the ZEVIC_CLANG for this target
@@ -13,7 +13,7 @@ printf '#!/bin/sh\nexec clang --gcc-install-dir=%s "$@"\n' "$GCCDIR" > "$TMP/cla
 chmod +x "$TMP/clang-arm64"
 export ZEVIC_CLANG="$TMP/clang-arm64"
 for ex in 01_hello 02_fizzbuzz 03_factorial 05_shapes; do
-    "$ZEVIC" --target linux-arm64 --sysroot "$SYSROOT" "examples/$ex/src/Main.zev" -o "$TMP/$ex"
+    "$ZEVIC" --target linux-arm64 "examples/$ex/src/Main.zev" -o "$TMP/$ex"
     case "$(file -b "$TMP/$ex")" in
         *aarch64*|*ARM\ aarch64*) ;;
         *) echo "FAIL $ex: not an arm64 executable: $(file -b "$TMP/$ex")"; exit 1 ;;
