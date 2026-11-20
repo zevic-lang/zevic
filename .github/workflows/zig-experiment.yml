@@ -1,0 +1,22 @@
+name: zig experiment
+on:
+  push:
+    branches: [zig-experiment]
+jobs:
+  cross:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [windows-x64, windows-arm64, macos-arm64, macos-x64, linux-arm64]
+    steps:
+      - uses: actions/checkout@v4
+      - run: make
+      - run: pip install ziglang && python3 -m ziglang version
+      - name: Cross-build hello for ${{ matrix.target }} with zig cc
+        run: |
+          printf '#!/bin/sh\nexec python3 -m ziglang cc "$@"\n' > /tmp/zigcc && chmod +x /tmp/zigcc
+          export ZEVIC_CLANG=/tmp/zigcc
+          build/zevic --target ${{ matrix.target }} examples/01_hello/src/Main.zev -o /tmp/hello-${{ matrix.target }} || true
+          ls -l /tmp/hello-* 2>&1 | head
+          file /tmp/hello-${{ matrix.target }}* 2>&1 | head
