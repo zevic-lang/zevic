@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- `zevic --target <name|triple>` builds for another system (proposal 0010, first step): `linux-x64`, `linux-arm64`, `macos-x64`, `macos-arm64`, `windows-x64`, `windows-arm64`, `host`, or an LLVM triple. `--sysroot <dir>` (or `ZEVIC_SYSROOT`) gives the C headers and libraries of the target; a `ZEVIC_CLANG` that knows the target, such as a wrapper around `zig cc`, works too. The size of `CLong`, the `.exe` suffix, `-lws2_32` and the cached runtime objects follow the target. `--test` cannot be combined with `--target`
 - Releases: archives and installers for Linux arm64 (`linux-arm64`, with a `.deb` for arm64), macOS Intel (`macos-x64`) and Windows on Arm (`windows-arm64`, with its installer) join Linux x64, macOS Apple silicon and Windows x64. The `.pkg` and the Windows installer carry the platform in their file name
 - `zevic --lib` on Windows makes the static library with `llvm-lib` first (then `llvm-ar`, then `ar`), also when clang is found through PATH. The `ar` that was picked up there wrote an empty symbol table for Windows on Arm objects, so the library could not be linked
 

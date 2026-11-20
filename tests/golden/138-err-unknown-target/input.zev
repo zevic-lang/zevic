@@ -1,0 +1,7 @@
+module Main
+
+import Zevic.Console
+
+fn Main() {
+    Console.Println("Hello, World!")
+}

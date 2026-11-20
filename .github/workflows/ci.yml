@@ -92,6 +92,13 @@ jobs:
           "$T" install
           "build/zevfmt${{ matrix.exe }}" -check packages examples tools
 
+      - name: Cross-build for Linux arm64 and run it under qemu
+        if: matrix.name == 'linux-x64'
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q gcc-aarch64-linux-gnu libc6-dev-arm64-cross qemu-user lld
+          tests/cross/linux-arm64.sh build/zevic
+
       # the fixed point: the compiler built by the seed writes the IR the seed came from
       - name: Bootstrap check
         run: |
