@@ -7,6 +7,11 @@ ZEVIC="${1:-build/zevic}"
 SYSROOT=/usr/aarch64-linux-gnu
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
+# clang needs to be told where the cross GCC keeps crtbegin.o and libgcc: a small wrapper is the ZEVIC_CLANG for this target
+GCCDIR="$(ls -d /usr/lib/gcc-cross/aarch64-linux-gnu/* | sort -V | tail -n 1)"
+printf '#!/bin/sh\nexec clang --gcc-install-dir=%s "$@"\n' "$GCCDIR" > "$TMP/clang-arm64"
+chmod +x "$TMP/clang-arm64"
+export ZEVIC_CLANG="$TMP/clang-arm64"
 for ex in 01_hello 02_fizzbuzz 03_factorial 05_shapes; do
     "$ZEVIC" --target linux-arm64 --sysroot "$SYSROOT" "examples/$ex/src/Main.zev" -o "$TMP/$ex"
     case "$(file -b "$TMP/$ex")" in
