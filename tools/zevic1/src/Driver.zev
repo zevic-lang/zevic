@@ -25,6 +25,37 @@ class BuildOpts {
     Defines: Array<String> = []
     // .c .cpp .o .a ... files given on the command line
     Inputs: Array<String> = []
+    // The LLVM triple to build for; empty means the machine zevic runs on.
+    Target: String = ""
+    Sysroot: String = ""
+}
+
+// The triple of a target name (`linux-arm64`), or of a full triple given as it is. None for an unknown name.
+fn TargetTriple(name: String) -> Option<String> {
+    if (name == "host") { return Some("") }
+    if (name == "linux-x64") { return Some("x86_64-unknown-linux-gnu") }
+    if (name == "linux-arm64") { return Some("aarch64-unknown-linux-gnu") }
+    if (name == "macos-x64") { return Some("x86_64-apple-darwin") }
+    if (name == "macos-arm64") { return Some("arm64-apple-darwin") }
+    if (name == "windows-x64") { return Some("x86_64-pc-windows-msvc") }
+    if (name == "windows-arm64") { return Some("aarch64-pc-windows-msvc") }
+    // a full triple: arch-vendor-os(-env)
+    if (Text.Contains(name, "-") && !Text.Contains(name, " ") && !Text.Contains(name, "/")) { return Some(name) }
+    None
+}
+
+// True when the program is built for Windows (the host unless a target is given).
+fn TargetWindows(o: BuildOpts) -> Bool {
+    if (o.Target == "") { return isWindows() }
+    Text.Contains(o.Target, "windows") || Text.Contains(o.Target, "mingw")
+}
+
+// The clang options that name the target (and its sysroot).
+fn targetFlags(o: BuildOpts) -> Array<String> {
+    mut f: Array<String> = []
+    if (o.Target != "") { f.Push("--target=${o.Target}") }
+    if (o.Sysroot != "") { f.Push("--sysroot=${o.Sysroot}") }
+    f
 }
 
 fn isWindows() -> Bool {
@@ -189,8 +220,8 @@ fn cacheDir() -> Option<String> {
     }
 }
 
-fn threadFlags() -> Array<String> {
-    if (isWindows()) {
+fn threadFlags(win: Bool) -> Array<String> {
+    if (win) {
         return ["-DGC_THREADS", "-DGC_BUILTIN_ATOMIC", "-DNO_MSGBOX_ON_ERROR"]
     }
     ["-DGC_THREADS", "-DGC_BUILTIN_ATOMIC", "-pthread"]
@@ -275,13 +306,16 @@ class Runtime {
     GcObj: Option<String> = None
 }
 
-fn prepareRuntime(clang: String, home: String, pic: Bool) -> Runtime {
+fn prepareRuntime(clang: String, home: String, pic: Bool, o: BuildOpts) -> Runtime {
     mut rt: Runtime = Runtime.New()
     rt.Inc = "${home}/runtime/third_party/bgc/include"
     rt.RtSrc = "${home}/runtime/zevic_rt.c"
     rt.GcSrc = "${home}/runtime/third_party/bgc/extra/gc.c"
     mut cflags: Array<String> = ["-O2", "-w"]
-    for (f in threadFlags()) {
+    for (f in threadFlags(TargetWindows(o))) {
+        cflags.Push(f)
+    }
+    for (f in targetFlags(o)) {
         cflags.Push(f)
     }
     if (pic) { cflags.Push("-fPIC") }
@@ -299,8 +333,10 @@ fn Build(clang: String, home: String, llPath: String, outPath: String, o: BuildO
     let driver: String = if (hasCpp) { match (o.Cxx) { Some(x) => x, None => siblingCxx(clang) } } else { clang }
     mut args: Array<String> = [match (o.Opt) { Some(x) => x, None => "-O0" }, "-w", "-Wno-override-module"]
     if (o.Debug) { args.Push("-g") }
+    for (f in targetFlags(o)) { args.Push(f) }
+    if (o.Target != "") { args.Push("-fuse-ld=lld") }
     args.Push(llPath)
-    let rt: Runtime = prepareRuntime(clang, home, false)
+    let rt: Runtime = prepareRuntime(clang, home, false, o)
     match (rt.RtObj) {
         Some(x) => args.Push(x),
         None => {
@@ -341,7 +377,7 @@ fn Build(clang: String, home: String, llPath: String, outPath: String, o: BuildO
     for (l in o.Libs) { args.Push("-l${l}") }
     args.Push("-o")
     args.Push(outPath)
-    if (isWindows()) {
+    if (TargetWindows(o)) {
         args.Push("-lws2_32")
     } else {
         args.Push("-lm")
@@ -368,6 +404,7 @@ fn compileObject(driver: String, o: BuildOpts, src: String, obj: String, forceC:
     mut args: Array<String> = ["-c", "-w", "-Wno-override-module", match (o.Opt) { Some(x) => x, None => "-O0" }]
     if (o.Debug) { args.Push("-g") }
     if (o.Pic) { args.Push("-fPIC") }
+    for (f in targetFlags(o)) { args.Push(f) }
     if (forceC) {
         args.Push("-x")
         args.Push("c")
@@ -435,7 +472,7 @@ fn BuildLib(clang: String, home: String, llPath: String, outPath: String, o: Bui
         i += 1
     }
     // the runtime and the garbage collector travel with the library, so the C side needs nothing else
-    let rt: Runtime = prepareRuntime(clang, home, o.Pic)
+    let rt: Runtime = prepareRuntime(clang, home, o.Pic, o)
     mut rtOpts: BuildOpts = BuildOpts.New()
     rtOpts.Opt = Some("-O2")
     rtOpts.Pic = o.Pic
@@ -481,3 +518,6 @@ fn BuildLib(clang: String, home: String, llPath: String, outPath: String, o: Bui
 }
 
 fn IsWindows() -> Bool { isWindows() }
+
+// The executable suffix of the target.
+fn ExeSuffix(o: BuildOpts) -> String { if (TargetWindows(o)) { ".exe" } else { "" } }
