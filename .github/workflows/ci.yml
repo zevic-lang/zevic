@@ -97,7 +97,7 @@ jobs:
         run: |
           sudo apt-get update -q
           sudo apt-get install -y -q gcc-aarch64-linux-gnu libc6-dev-arm64-cross qemu-user lld
-          tests/cross/linux-arm64.sh build/zevic
+          tests/cross/linux-arm64.sh build/zevic build/zevpm
 
       # the fixed point: the compiler built by the seed writes the IR the seed came from
       - name: Bootstrap check
