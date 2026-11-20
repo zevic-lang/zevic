@@ -1077,6 +1077,23 @@ static void sc_native_in_dependency(const char *tmp) {
     expect(strcmp(out, "42") == 0, "the dependency's native/ is built: %s", out);
 }
 
+static void sc_target(const char *tmp) {
+    /* `build --target` goes to build/<target>/, and `run` and `test` refuse a target */
+    pm(tmp, true, "new", "app", NULL);
+    char *app = join(tmp, "app");
+    Run p = pm(app, false, "build", "--target", "no-such", NULL);
+    expect(p.code != 0, "an unknown target must fail: %s", p.out);
+    p = pm(app, false, "build", "--target", "host", NULL);
+    expect(p.code == 0 && exists(join(app, "build/App" EXE)), "--target host builds into build/: %s%s", p.out, p.err);
+    p = pm(app, false, "run", "--target", "linux-x64", NULL);
+    expect(p.code != 0 && contains(p.err, "cannot be built for another system"), "run refuses --target: %s", p.err);
+#if defined(__linux__) && defined(__x86_64__)
+    /* the same system, named: no sysroot needed */
+    p = pm(app, false, "build", "--target", "linux-x64", NULL);
+    expect(p.code == 0 && exists(join(app, "build/linux-x64/App")), "build --target linux-x64: %s%s", p.out, p.err);
+#endif
+}
+
 static void sc_native_keys(const char *tmp) {
     /* include_dirs (relative and absolute) and defines of a dependency, and lib_dirs of the app */
     char *nat = join(tmp, "nat");
@@ -1240,6 +1257,7 @@ static void test_zevpm(void) {
     scenario("path_dependency", sc_path_dependency);
     scenario("native_in_dependency", sc_native_in_dependency);
     scenario("native_keys", sc_native_keys);
+    scenario("target", sc_target);
     scenario("library_for_c", sc_library_for_c);
     scenario("git_dependencies", sc_git_dependencies);
     scenario("git_update", sc_git_update);
