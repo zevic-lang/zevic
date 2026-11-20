@@ -15,7 +15,8 @@ fn usage() -> String {
     "usage: zevpm <command> [options]\n\n" +
         "  new <name> [--lib]   make a new package in a new directory\n" +
         "  init [--lib]         make the current directory a package\n" +
-        "  build [--release]    build the package into build/\n" +
+        "  build [--release] [--target <name>]\n" +
+        "                       build the package into build/ (build/<name>/ for another system)\n" +
         "  run [--release] [-- args]\n" +
         "                       build and run it\n" +
         "  test [filter]        run the tests (those whose name contains `filter`)\n" +
@@ -158,7 +159,9 @@ fn addLib(mut libs: Array<String>, name: String) {
 }
 
 // Builds the package and returns the path of what was made. `test` builds the test runner instead.
-fn build(m: Toml.Manifest, release: Bool, test: Bool) -> Result<String, Error> {
+// `target` is a name of `zevic --target` ("" for the machine zevpm runs on). A build for another system goes to
+// build/<target>/, so that it never overwrites the build for this one.
+fn build(m: Toml.Manifest, release: Bool, test: Bool, target: String) -> Result<String, Error> {
     let zevic: String = findZevic()?
     checkZevicVersion(zevic, m)?
     let pkgs: Array<Deps.Pkg> = Deps.Resolve(m, None)?
@@ -182,14 +185,16 @@ fn build(m: Toml.Manifest, release: Bool, test: Bool) -> Result<String, Error> {
     if (zev.IsEmpty()) {
         return Err(fatal("there are no .zev files in ${Os.Join(m.Dir, "src")}"))
     }
-    Os.Mkdirs("build")?
+    let dir: String = if (target == "") { "build" } else { "build/${target}" }
+    Os.Mkdirs(dir)?
+    let win: Bool = if (target == "") { Os.IsWindows() } else { Text.Contains(target, "windows") || Text.Contains(target, "mingw") }
     mut out: String = ""
     if (test) {
-        out = "build/${m.Name}-test${Os.ExeSuffix()}"
+        out = "${dir}/${m.Name}-test${if (win) { ".exe" } else { "" }}"
     } else if (isLib) {
-        out = if (Os.IsWindows()) { "build/${m.Name}.lib" } else { "build/lib${m.Name}.a" }
+        out = if (win) { "${dir}/${m.Name}.lib" } else { "${dir}/lib${m.Name}.a" }
     } else {
-        out = "build/${m.Name}${Os.ExeSuffix()}"
+        out = "${dir}/${m.Name}${if (win) { ".exe" } else { "" }}"
     }
     mut a: Array<String> = [zevic]
     a.Extend(zev)
@@ -198,6 +203,10 @@ fn build(m: Toml.Manifest, release: Bool, test: Bool) -> Result<String, Error> {
         a.Push("-O2")
     }
     a.Extend(flags)
+    if (target != "") {
+        a.Push("--target")
+        a.Push(target)
+    }
     for (l in libs) {
         a.Push("-l${l}")
     }
@@ -205,10 +214,10 @@ fn build(m: Toml.Manifest, release: Bool, test: Bool) -> Result<String, Error> {
         a.Push("--test")
     }
     if (isLib) {
-        Os.Mkdirs("build/include")?
+        Os.Mkdirs("${dir}/include")?
         a.Push("--lib")
         a.Push("--emit-header")
-        a.Push("build/include/${m.Name}.h")
+        a.Push("${dir}/include/${m.Name}.h")
     }
     a.Push("-o")
     a.Push(out)
@@ -324,15 +333,21 @@ fn loadHere() -> Result<Toml.Manifest, Error> {
 
 fn cmdBuild(args: Array<String>) -> Result<I32, Error> {
     mut release: Bool = false
-    for (a in args) {
-        if (a == "--release") {
+    mut target: String = ""
+    mut i: I64 = 0
+    while (i < args.Len()) {
+        if (args[i] == "--release") {
             release = true
+        } else if (args[i] == "--target" && i + 1 < args.Len()) {
+            i += 1
+            target = if (args[i] == "host") { "" } else { args[i] }
         } else {
-            return Err(fatal("unknown argument `${a}`"))
+            return Err(fatal("unknown argument `${args[i]}`"))
         }
+        i += 1
     }
     let m: Toml.Manifest = loadHere()?
-    let out: String = build(m, release, false)?
+    let out: String = build(m, release, false, target)?
     Console.Println("Built ${out}")
     Ok(0)
 }
@@ -347,6 +362,8 @@ fn cmdRun(args: Array<String>) -> Result<I32, Error> {
         } else if (args[i] == "--") {
             rest = args.Slice(i + 1, args.Len())
             break
+        } else if (args[i] == "--target") {
+            return Err(fatal("`run` starts the program here, so it cannot be built for another system: use `zevpm build --target <name>`"))
         } else {
             return Err(fatal("unknown argument `${args[i]}` (put the program's own arguments after `--`)"))
         }
@@ -356,7 +373,7 @@ fn cmdRun(args: Array<String>) -> Result<I32, Error> {
     if (m.Kind == "lib") {
         return Err(fatal("`${m.Name}` is a library; there is nothing to run (try `zevpm test`)"))
     }
-    let out: String = build(m, release, false)?
+    let out: String = build(m, release, false, "")?
     mut a: Array<String> = [Os.Join(".", out)]
     a.Extend(rest)
     let rc: I32 = Os.Run(a)
@@ -378,7 +395,7 @@ fn cmdTest(args: Array<String>) -> Result<I32, Error> {
         }
     }
     let m: Toml.Manifest = loadHere()?
-    let out: String = build(m, false, true)?
+    let out: String = build(m, false, true, "")?
     mut a: Array<String> = [Os.Join(".", out)]
     if (!filter.IsEmpty()) {
         a.Push(filter)
