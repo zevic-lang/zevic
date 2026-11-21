@@ -15,7 +15,7 @@ jobs:
       - name: zevic.wasm from bootstrap/zevic.ll
         run: |
           W=/opt/wasi-sdk-25.0-x86_64-linux/bin/clang
-          sed 's/define i32 @main(/define i32 @__main_argc_argv(/' bootstrap/zevic.ll > /tmp/zevic-wasm.ll
+          sed 's/^define i32 @main(/define i32 @__main_argc_argv(/' bootstrap/zevic.ll > /tmp/zevic-wasm.ll
           $W --target=wasm32-wasi -O1 -w -c /tmp/zevic-wasm.ll -o /tmp/zevic.o 2>&1 | head -30
           $W /tmp/rt.o /tmp/zevic.o -o /tmp/zevic.wasm -lm -Wl,--allow-undefined,--stack-first,-z,stack-size=8388608 2>&1 | head -30
           ls -l /tmp/zevic.wasm
