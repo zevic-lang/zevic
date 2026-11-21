@@ -1,6 +1,6 @@
 # Proposal 0010: cross-compilation (`--target`)
 
-- Status: proposed
+- Status: accepted (2026-11-21; steps 1 and 2 and the Zig support are implemented, see the specification)
 - Date: 2026-11-20
 
 ## Motivation
@@ -35,7 +35,7 @@ Without `--target`, the host is the target, as today. `--target host` says so ex
 
 1. **The size of `CLong`** is taken from the target (4 on Windows, 8 on the others), not from the host. (`Main.zev` passes `4` or `8` to the code generator by looking at the host.)
 2. **The name of the executable** (`.exe`) and the system libraries (`-lws2_32` for Windows targets) follow the target.
-3. **The IR gets a `target triple`** line, so that clang never has to override it and warn.
+3. ~~The IR gets a `target triple` line.~~ Not needed: clang is given `--target`, and the IR has no triple of its own to override.
 4. **clang is called with `--target=<triple>`**, and with `--sysroot` when one is given (see below), for the IR, the runtime, the GC, and the C and C++ files of a package.
 5. **The cache of the runtime objects** (`zevic_rt`, `bgc`) is keyed by the target too, so building for two targets does not recompile every time.
 6. **`Env.IsWindows()`** and the other run-time checks stay as they are: they ask the system the program runs on, which is the target.
@@ -45,8 +45,8 @@ Without `--target`, the host is the target, as today. `--target host` says so ex
 Compiling needs the target's C headers and libraries (a *sysroot*). `zevic` does not ship one. It looks, in this order:
 
 1. `--sysroot <dir>` or `ZEVIC_SYSROOT`
-2. a `ZEVIC_CLANG` that already knows the target. **`zig cc`** is the recommended one: it carries headers and libraries for Linux, Windows and macOS, so a wrapper script such as `zig cc "$@"` is all that is needed
-3. the system's own cross packages (for example `gcc-aarch64-linux-gnu` on Debian)
+2. a `ZEVIC_CLANG` that already knows the target. **`zig cc`** is the recommended one: it carries headers and libraries for Linux, Windows and macOS, so `zevic` runs it directly when `ZEVIC_CLANG` points to `zig` (the LLVM triples are turned into zig targets: `x86_64-windows-gnu`, `aarch64-macos`, `aarch64-linux-gnu` and so on), and uses the Zig that the installers can put next to `zevic` when `--target` is given and no compiler is named
+3. the system's own cross packages (for example `gcc-aarch64-linux-gnu` on Debian). Debian's layout does not work with `--sysroot`; a wrapper given as `ZEVIC_CLANG` adds `--gcc-install-dir=/usr/lib/gcc-cross/aarch64-linux-gnu/<version>` instead (`tests/cross/linux-arm64.sh` does so, and runs the result under `qemu-user`)
 
 If none of these works, the error says what to install, as it does for a missing clang today. The linker for a cross build is lld (`-fuse-ld=lld`).
 
@@ -68,7 +68,7 @@ Not planned: building for macOS from Linux or Windows without a macOS SDK (the S
 
 - **Only add runners** (Linux arm64, Windows arm64 and so on) to the CI and the release workflow. It needs no change in the compiler, and is planned anyway for the archives of `zevic`. It does not help the users of the language, who have one machine.
 - **Ship a cross toolchain with `zevic`.** Heavy (hundreds of MB), and the macOS SDK cannot be shipped.
-- **Make `zevic` call `zig` itself.** It would tie the compiler to one project. The `ZEVIC_CLANG` hook already allows it without that.
+- **Make `zevic` call `zig` itself.** It would tie the compiler to one project. (Decided otherwise, after a trial: a wrapper script cannot be started by `CreateProcess` on Windows, so `zevic` accepts `zig` as a compiler, as one option next to clang. clang stays the default.)
 
 ## Impact
 
@@ -77,6 +77,10 @@ Not planned: building for macOS from Linux or Windows without a macOS SDK (the S
 - The specification: a chapter "Cross-compilation" and the names in the table. **The names and the `--target` option become part of the public interface that 1.0 freezes** (proposal 0009), so they are to be settled before 1.0.
 - Tests: golden tests for the host target and for a wrong name; CI jobs that build `linux-arm64` from `linux-x64` with `gcc-aarch64-linux-gnu`, run it with `qemu-user`, and build `windows-x64` from Linux with `zig cc` (build only).
 - `Env.IsWindows()` and the rest of the standard library: no change.
+
+## Result of the trial with Zig
+
+`zig cc` (0.17.1) built `examples/01_hello` for all five targets tried from Linux x64: `windows-x64` (PE32+), `windows-arm64` (PE32+ ARM64), `macos-x64` and `macos-arm64` (Mach-O), `linux-arm64` (ELF aarch64). The runtime and the GC compile as they are. The programs were not run. Windows targets are MinGW-ABI.
 
 ## Open questions
 

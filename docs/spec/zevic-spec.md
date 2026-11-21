@@ -1555,6 +1555,8 @@ zevic --version
 | `-l<name>` `-L<dir>` `-I<dir>` `-D<k=v>` | options for linking and C |
 | `--cc <path>` `--cxx <path>` | specify the external compilers |
 | `--test` | build an executable for tests |
+| `--target <name>` | build for another system (see "Cross-compilation") |
+| `--sysroot <dir>` | the headers and libraries of that system (also `ZEVIC_SYSROOT`) |
 
 ### The flow of compilation
 
@@ -1580,6 +1582,28 @@ zevic --version
   4. the usual install locations (`C:\Program Files\LLVM\bin` on Windows, Homebrew on macOS, `/usr/lib/llvm-*/bin`)
 - When it is not found or the version is old, it prints how to install it (`winget install LLVM.LLVM`, `apt install clang`, `brew install llvm`) and exits.
 - On Windows the MSVC libraries are needed, so the Visual Studio Build Tools are assumed to be installed.
+- **`zig cc`** is accepted in place of clang: when the compiler given with `--cc` or `ZEVIC_CLANG` is a program named `zig`, it is run as `zig cc`, and the LLVM triples that `zevic` passes become zig targets. It is not searched for on `PATH`; see the next section.
+
+### Cross-compilation
+
+`--target <name>` builds for another system. `<name>` is one of the names below, `host` (the machine the compiler runs on, the default), or a full LLVM triple.
+
+| Name | Triple | Executable |
+| --- | --- | --- |
+| `linux-x64` | `x86_64-unknown-linux-gnu` | `app` |
+| `linux-arm64` | `aarch64-unknown-linux-gnu` | `app` |
+| `macos-x64` | `x86_64-apple-darwin` | `app` |
+| `macos-arm64` | `arm64-apple-darwin` | `app` |
+| `windows-x64` | `x86_64-pc-windows-msvc` | `app.exe` |
+| `windows-arm64` | `aarch64-pc-windows-msvc` | `app.exe` |
+
+- The target decides the size of `CLong` (4 on Windows, 8 elsewhere), the suffix of the executable (`.exe`), and the system libraries that are linked (`-lws2_32` on Windows). The runtime objects are cached per target. Linking uses lld.
+- The LLVM IR carries no `target triple` line; clang is given `--target=<triple>`.
+- `zevic` does not ship the C headers and libraries of the target. They come from, in this order: `--sysroot` or `ZEVIC_SYSROOT`; the compiler named by `--cc` or `ZEVIC_CLANG` (**Zig** carries them for Linux, Windows and macOS); the Zig that `install.sh --with-zig`, `install.ps1 -WithZig` or the Windows setup put in `<home>/zig/`, which is used when `--target` is given and no compiler is named; the cross packages of the system (on Debian, `gcc-aarch64-linux-gnu`, with `clang --gcc-install-dir=/usr/lib/gcc-cross/aarch64-linux-gnu/<version>` in a wrapper given as `ZEVIC_CLANG`).
+- With Zig, Windows targets use the MinGW ABI (`x86_64-windows-gnu`), not MSVC. Zevic code is not affected; a C library built for MSVC cannot be linked. A package with C++ files cannot be built with Zig.
+- `--target` cannot be combined with `--test`, since the program cannot run here.
+- Building for macOS needs the macOS SDK or Zig; the SDK is not shipped.
+- In `zevpm`, `zevpm build --target <name>` writes to `build/<name>/`; `run` and `test` refuse `--target`. A `[native]` library is searched for in the sysroot of the target.
 
 ### The runtime
 
