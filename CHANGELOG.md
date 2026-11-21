@@ -1,6 +1,7 @@
 # Changelog
 
-## Unreleased
+## 0.4.8
+- `zevic_rt.c` builds for WebAssembly (wasm32-wasi, `__wasi__`): no collector, no threads, sockets, processes or temporary files. It is what the playground on the site runs (together with `zevic` itself, built from `bootstrap/zevic.ll`)
 - `zevic` accepts Zig as the C compiler (`ZEVIC_CLANG=/path/to/zig`, run as `zig cc`, LLVM triples turned into zig targets). With `--target`, the Zig installed next to zevic (`<home>/zig/zig`) is used when no compiler is named.
 - `install.sh --with-zig` and `install.ps1 -WithZig` (asked when interactive, off by default) install Zig, checked against ziglang.org's SHA-256, for `--target`. `--no-zig`/`-NoZig` skip the question; `--zig-version`/`-ZigVersion` pick another Zig. The Windows setup has an unchecked "Install Zig" task (`/TASKS="zig"` when silent).
 - `zevic --target <name|triple>` builds for another system (proposal 0010, first step): `linux-x64`, `linux-arm64`, `macos-x64`, `macos-arm64`, `windows-x64`, `windows-arm64`, `host`, or an LLVM triple. `--sysroot <dir>` (or `ZEVIC_SYSROOT`) gives the C headers and libraries of the target; a `ZEVIC_CLANG` that knows the target, such as a wrapper around `zig cc`, works too. The size of `CLong`, the `.exe` suffix, `-lws2_32` and the cached runtime objects follow the target. `--test` cannot be combined with `--target`
