@@ -1,5 +1,5 @@
 [package]
 name = "Http"
-version = "0.4.7"
+version = "0.4.8"
 kind = "bin"
 zevic = ">=0.4"
