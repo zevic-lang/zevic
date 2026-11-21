@@ -1,0 +1,34 @@
+name: wasm-experiment
+on: [push]
+jobs:
+  try:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: wasi-sdk
+        run: curl -fsSL https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-linux.tar.gz | tar xz -C /opt
+      - name: runtime
+        run: |
+          W=/opt/wasi-sdk-25.0-x86_64-linux/bin/clang
+          $W -c -O1 -w runtime/zevic_rt.c -o /tmp/rt.o 2>&1 | head -40
+          ls -l /tmp/rt.o
+      - name: zevic.wasm from bootstrap/zevic.ll
+        run: |
+          W=/opt/wasi-sdk-25.0-x86_64-linux/bin/clang
+          $W --target=wasm32-wasi -O1 -w -c bootstrap/zevic.ll -o /tmp/zevic.o 2>&1 | head -30
+          $W /tmp/rt.o /tmp/zevic.o -o /tmp/zevic.wasm -lm -Wl,--allow-undefined,--stack-first,-z,stack-size=8388608 2>&1 | head -30
+          ls -l /tmp/zevic.wasm
+      - name: run it under node
+        run: |
+          mkdir -p /tmp/work && cp examples/01_hello/src/Main.zev /tmp/work/hello.zev
+          cat > /tmp/run.mjs <<'J'
+          import { WASI } from 'node:wasi';
+          import fs from 'node:fs';
+          const wasi = new WASI({ version: 'preview1', args: ['zevic', '--emit-ll', '/work/hello.zev', '-o', '/work/hello.ll'],
+            env: { ZEVIC_HOME: '/zhome' }, preopens: { '/zhome': process.cwd(), '/work': '/tmp/work' }, returnOnExit: true });
+          const m = await WebAssembly.compile(fs.readFileSync('/tmp/zevic.wasm'));
+          const inst = await WebAssembly.instantiate(m, wasi.getImportObject());
+          const t = Date.now(); const code = wasi.start(inst); console.log('exit', code, Date.now() - t, 'ms');
+          J
+          sed -i 's/^          //' /tmp/run.mjs
+          node /tmp/run.mjs 2>&1 | head -30; ls -l /tmp/work; head -c 300 /tmp/work/hello.ll

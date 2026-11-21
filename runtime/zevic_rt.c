@@ -19,7 +19,21 @@
 
 #include "zevic_rt.h"
 
+#ifdef __wasi__
+/* WebAssembly (the playground): no collector, no threads, no sockets, no processes. Memory is never given
+ * back, which is fine for a short program. */
+#include <stdlib.h>
+#define GC_INIT() ((void)0)
+#define GC_set_pages_executable(x) ((void)0)
+#define GC_MALLOC(n) calloc(1, (n))
+#define GC_MALLOC_ATOMIC(n) malloc(n)
+#define GC_MALLOC_UNCOLLECTABLE(n) calloc(1, (n))
+#define GC_malloc(n) calloc(1, (n))
+#define GC_malloc_uncollectable(n) calloc(1, (n))
+#define GC_FREE(p) ((void)0)
+#else
 #include "gc.h"
+#endif
 
 #include <ctype.h>
 #include <errno.h>
@@ -27,7 +41,12 @@
 #include <poll.h>
 #endif
 #include <math.h>
+#ifdef __wasi__
+typedef int jmp_buf[1]; /* the test runner's jump back is not available */
+#define longjmp(b, v) abort()
+#else
 #include <setjmp.h>
+#endif
 #include <stdarg.h>
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
@@ -40,7 +59,9 @@
 #ifdef _WIN32
 #else
 #include <dirent.h>
+#ifndef __wasi__
 #include <sys/wait.h>
+#endif
 #include <unistd.h>
 #endif
 #include <sys/stat.h>
@@ -1763,10 +1784,15 @@ void zevic_proc_run(zevic_str *out) {
     proc_put(fo, (int64_t)strlen(fo));
     proc_put(" 2>", 3);
     proc_put(fe, (int64_t)strlen(fe));
+#ifdef __wasi__
+    int rc = -1; /* no processes in WebAssembly */
+    g_proc_failed = 1;
+#else
     int rc = system(g_proc_cmd);
     if (rc == -1) g_proc_failed = 1;
     else if (WIFEXITED(rc)) g_proc_code = WEXITSTATUS(rc);
     else g_proc_code = 128 + (WIFSIGNALED(rc) ? WTERMSIG(rc) : 0);
+#endif
 #endif
     g_proc_len = base;
     g_proc_cmd[base] = 0;
@@ -1793,6 +1819,8 @@ void zevic_proc_inherit(void) {
                        win_std_inheritable(STD_ERROR_HANDLE));
     if (rc < 0) g_proc_failed = 1;
     else g_proc_code = rc;
+#elif defined(__wasi__)
+    g_proc_failed = 1; /* no processes in WebAssembly */
 #else
     int rc = system(g_proc_cmd);
     if (rc == -1) g_proc_failed = 1;
@@ -1980,7 +2008,7 @@ void *zevic_cond_new(void) {
 }
 void zevic_cond_wait(void *c, void *m) { SleepConditionVariableCS(c, m, INFINITE); }
 void zevic_cond_broadcast(void *c) { WakeAllConditionVariable(c); }
-#else
+#elif !defined(__wasi__)
 #include <pthread.h>
 #include <sched.h>
 
@@ -2045,6 +2073,7 @@ void zevic_cond_wait(void *c, void *m) { pthread_cond_wait(c, m); }
 void zevic_cond_broadcast(void *c) { pthread_cond_broadcast(c); }
 #endif
 
+#ifndef __wasi__
 /* ---------------------------------------------------------------------------------------------
  * Sockets (Zevic.Http): TCP over POSIX sockets, or Winsock. A socket is an I64. A failing call returns -1 (or 0
  * for zevic_net_write) and leaves the reason for zevic_net_failed() / zevic_net_errmsg().
@@ -2523,6 +2552,8 @@ void zevic_net_resolve(zevic_str *out, const char *hp, int64_t hn) {
     str_set(out, res, (int64_t)len);
     free(res);
 }
+
+#endif /* __wasi__: sockets, UDP and name lookup */
 
 /* ---- Deflate / Inflate (RFC 1951) ---------------------------------------
  * Inflate is a full decoder (stored, fixed and dynamic blocks). Deflate finds
