@@ -1,0 +1,29 @@
+name: wasm-experiment
+on: [push]
+jobs:
+  try:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: make -j4 2>&1 | tail -2
+      - name: wasi-sdk
+        run: |
+          curl -fsSL https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-25/wasi-sdk-25.0-x86_64-linux.tar.gz | tar xz -C /opt
+          ls /opt; /opt/wasi-sdk-25.0-x86_64-linux/bin/clang --version | head -1
+      - name: IR of hello
+        run: build/zevic --emit-ll examples/01_hello/src/Main.zev -o /tmp/hello.ll; head -c 600 /tmp/hello.ll; grep -c . /tmp/hello.ll
+      - name: runtime for wasm32-wasi
+        continue-on-error: true
+        run: |
+          W=/opt/wasi-sdk-25.0-x86_64-linux/bin/clang
+          $W -c -O1 -w -DGC_BUILTIN_ATOMIC -Iruntime/third_party/bgc/include runtime/zevic_rt.c -o /tmp/rt.o 2>&1 | head -40
+      - name: gc for wasm32-wasi
+        continue-on-error: true
+        run: |
+          W=/opt/wasi-sdk-25.0-x86_64-linux/bin/clang
+          $W -c -O1 -w -DGC_BUILTIN_ATOMIC -DNO_MSGBOX_ON_ERROR -Iruntime/third_party/bgc/include runtime/third_party/bgc/extra/gc.c -o /tmp/gc.o 2>&1 | head -40
+      - name: IR for wasm32
+        continue-on-error: true
+        run: |
+          W=/opt/wasi-sdk-25.0-x86_64-linux/bin/clang
+          $W --target=wasm32-wasi -c -O1 -w /tmp/hello.ll -o /tmp/hello.o 2>&1 | head -20
