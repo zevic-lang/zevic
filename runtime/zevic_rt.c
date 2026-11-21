@@ -44,6 +44,7 @@
 #ifdef __wasi__
 typedef int jmp_buf[1]; /* the test runner's jump back is not available */
 #define longjmp(b, v) abort()
+#define setjmp(b) 0
 #else
 #include <setjmp.h>
 #endif
@@ -1657,6 +1658,8 @@ static char *temp_path(void) {
     char dir[MAX_PATH], name[MAX_PATH];
     if (!GetTempPathA(MAX_PATH, dir) || !GetTempFileNameA(dir, "zev", 0, name)) return NULL;
     return strdup(name);
+#elif defined(__wasi__)
+    return NULL; /* no temporary files, no processes */
 #else
     /* $TMPDIR first: Termux has no writable /tmp (its temp dir is $PREFIX/tmp) */
     const char *t = getenv("TMPDIR");
