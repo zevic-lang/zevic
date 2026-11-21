@@ -8,28 +8,28 @@ Codename: stable
 Architectures: amd64 arm64
 Components: main
 Description: Zevic programming language packages
-Date: Thu, 19 Nov 2026 11:14:03 UTC
+Date: Sat, 21 Nov 2026 10:29:04 UTC
 MD5Sum:
- 96340eb844ebb320c624331f5291476d              649 main/binary-amd64/Packages
- 0fee38869ec6b06a3499bd788a39ca86              452 main/binary-amd64/Packages.gz
- d41d8cd98f00b204e9800998ecf8427e                0 main/binary-arm64/Packages
- 4a4dd3598707603b3f76a2378a4504aa               20 main/binary-arm64/Packages.gz
+ 0ecaf239a5b891dc13edac7fa1cfd400              649 main/binary-amd64/Packages
+ c1b8c6c30c22a0a082d5026ada4bd548              450 main/binary-amd64/Packages.gz
+ 194539b4c765c1e222fe4901a578a9a8              649 main/binary-arm64/Packages
+ 0d04019159f0cc5f6dc52646a4d22a06              453 main/binary-arm64/Packages.gz
 SHA256:
- 82c6f06c0190e600e78c49c126af0067fb738268289788cb1bd1673c67e044d8              649 main/binary-amd64/Packages
- f6fbed56ebd055947990e9ec8fb8b4e65e1d9fed27f63c4f6763a32eee2fdf82              452 main/binary-amd64/Packages.gz
- e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855                0 main/binary-arm64/Packages
- f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec               20 main/binary-arm64/Packages.gz
+ d3d70801bd497ec9e31036d374bc3999105a661a9ea4cb27c603ac368928895e              649 main/binary-amd64/Packages
+ dc8bdceec00637c0913081662f32bc333e490a2a4dea4fa9fa661c16b0abb2b8              450 main/binary-amd64/Packages.gz
+ 851f660176ef01534f5bda2d5d63fbf778a32650d95d222b401f45a2d207e4e8              649 main/binary-arm64/Packages
+ 0ac8b84b7458fc25652d013f23babcfbd94f0adb7da57c9df378c9cf9a93cb08              453 main/binary-arm64/Packages.gz
 -----BEGIN PGP SIGNATURE-----
 
-iQGzBAEBCgAdFiEExwc/L0xwYcfOSfSB5tl30tJghYMFAmr+2fsACgkQ5tl30tJg
-hYPXYQv+N56BsHfyQbmzMiI+6hixmRhR/8SSv6YGxQd6uVKzvR1mzX0wdVOyFbcO
-G5NQ3EBGGvjXubynNKEHDjYoFIo8DPvn69mUAG6IvCjI3TsrcbBtOvaMo/LHdZAy
-jbLNktfxdZxWol5Nh4mSoafwvfTCeKlPFr4bbCpXoc5E502cdu8KdlP2LauF0cqh
-Y+81jK9ZZvNY5hdVtkJJAZbvyTi04mkfgPpm5+FgWCDhleTETzH9D5lBztqPn6ev
-slTrnGva8QGK09bqCKBeps++Ue81/SLSzK5RWhdH59c95YARI0aAGP1QNK3c8Sh5
-nQ9UDUCuGQ/s4Zh2y1kxZ2Al7bfvJlgTC7uuw4rpVLm/Q/YF0rU8HwNLrSAyE3Xr
-Jar7+AQM1uEO+atD+A5qqrif0gY3ULIQPS6jNzT8Hcq9GWNX2YLRLpAsKHWZELMD
-VKto61Fe/ZOcorHY+A67wyVacHC8+MiNV1usf60Nsy2kepB4PpP6dA7S1phopVko
-L7b/JGG+
-=6/ce
+iQGzBAEBCgAdFiEExwc/L0xwYcfOSfSB5tl30tJghYMFAmsBcnAACgkQ5tl30tJg
+hYO0TAwAnsrPgsbhAZ42g/m6fgcvwEQnfgG7Bp36yA6peAGCIOAZVp85/4fjzuNr
+UR/9TEbDRB4/Yw+CD366A1+VSNoYUuf8Tk3RwUZIQsmskwIGa+DecOtrWmjXNbTd
+GNygO+mHSUFFSXTakJvQKj1C5n7wHfF2jcrOSKbWR62kjfsHytS5MEclNvD+1wFT
+BZWeugsuw6zYVdyh4XIdcHr2QFSruxlMp4NOVmm8etJWJH/sOjbKr9wkVivDEC2r
+u1DNUp1elHNl1j76zAmHwzwe3iRYXL54HGDG57+MogHSINOqgWZGYjk4Ais2DSuh
+FqaLBPj60n5HaQbnG/c7veHcIe1qr2ogT5oH3DKj+jg/QGJrbNyn8jrmmMDHaUr/
+Q7jJ7eAQblyShbR7BP4zpRjSwMI9WxqdMd1Csqy7ftuNsPTJPzQ2BQOkL9pOcprg
+Bvg41W9a0G05yyef8tXgrMdsqFCMvKOtbPIfpnTFNrGTiWp3pDBxn2ywqgy/vmmt
+Hz6n2bRR
+=1dY3
 -----END PGP SIGNATURE-----

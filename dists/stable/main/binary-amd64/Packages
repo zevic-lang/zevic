@@ -1,14 +1,14 @@
 Package: zevic
-Version: 0.4.7
+Version: 0.4.8
 Architecture: amd64
 Maintainer: rimsky-yamatov <ja.yamatov.dev@gmail.com>
-Installed-Size: 4588
+Installed-Size: 4608
 Depends: clang (>= 1:15)
-Filename: pool/main/z/zevic/zevic_0.4.7_amd64.deb
-Size: 879316
-MD5sum: d35d38c3398d104cb3a817f89b7d8a70
-SHA1: 7bf1e5bf174f2434a84894d207848f66e1572f2f
-SHA256: 6a2ca31bf59505e8448e8c4246e6a79a5ba9f71a37f1a5a72a0296244004128c
+Filename: pool/main/z/zevic/zevic_0.4.8_amd64.deb
+Size: 878396
+MD5sum: cd3fe833a718df024e601890d4a2bdf7
+SHA1: 8deb37871c23ae3223f93bba94d8c7f3885a1ac8
+SHA256: 88b9083e2c143b2b3349e9b67831e538f72d226db53e56d357aebc60aa7ea76d
 Section: devel
 Priority: optional
 Description: Zevic programming language: compiler, package manager and formatter
