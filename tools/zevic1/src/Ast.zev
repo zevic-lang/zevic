@@ -176,6 +176,7 @@ class Node {
     Flag3: Bool = false
     IsStatic: Bool = false
     IsMutFn: Bool = false
+    IsUnsafe: Bool = false
     IsExport: Bool = false
     A: Option<Node> = None
     B: Option<Node> = None
@@ -215,6 +216,7 @@ class Node {
         n.Flag3 = this.Flag3
         n.IsStatic = this.IsStatic
         n.IsMutFn = this.IsMutFn
+        n.IsUnsafe = this.IsUnsafe
         n.IsExport = this.IsExport
         n.A = this.A
         n.B = this.B
@@ -330,6 +332,7 @@ fn dump(n: Node, ind: I64) {
     if (n.Kind == NK.DFn) {
         if (n.IsStatic) { Console.Print(" static") }
         if (n.IsMutFn) { Console.Print(" mut") }
+        if (n.IsUnsafe) { Console.Print(" unsafe") }
         if (n.IsExport) { Console.Print(" export") }
     }
     if (n.Kind == NK.Param) {

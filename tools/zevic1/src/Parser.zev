@@ -1260,6 +1260,11 @@ class Parser {
     mut fn parseMember(mut decl: Ast.Node, dk: Ast.NK) -> Result<Unit, Error> {
         mut isStatic: Bool = false
         mut isMut: Bool = false
+        mut isUnsafe: Bool = false
+        if (this.kind() == T.Tk.Unsafe) {
+            this.next()
+            isUnsafe = true
+        }
         if (this.kind() == T.Tk.Static) {
             this.next()
             isStatic = true
@@ -1267,12 +1272,23 @@ class Parser {
             this.next()
             isMut = true
         }
+        if (!isUnsafe && this.kind() == T.Tk.Unsafe) {
+            this.next()
+            isUnsafe = true
+        }
+        if (isUnsafe && dk == Ast.NK.DInterface) {
+            return Err(this.perr(this.peek().Pos, "a method of an interface cannot be `unsafe` (a value of the interface could be called outside `unsafe`)"))
+        }
         if (this.kind() == T.Tk.Fn) {
             mut fnode: Ast.Node = this.parseFn(dk == Ast.NK.DInterface)?
             fnode.IsStatic = isStatic
             fnode.IsMutFn = isMut
+            fnode.IsUnsafe = isUnsafe
             decl.List.Push(fnode)
             return Ok(())
+        }
+        if (isUnsafe) {
+            return Err(this.perr(this.peek().Pos, "expected `fn` after `unsafe`"))
         }
         if (isStatic || isMut) {
             if (isStatic && this.kind() == T.Tk.Ident) {
@@ -1385,6 +1401,15 @@ class Parser {
         let t: T.Token = this.peek()
         match (t.Kind) {
             T.Tk.Fn => this.parseFn(false),
+            T.Tk.Unsafe => {
+                this.next()
+                if (this.kind() != T.Tk.Fn) {
+                    return Err(this.perr(this.peek().Pos, "expected `fn` after `unsafe` (an `unsafe fn`)"))
+                }
+                mut f: Ast.Node = this.parseFn(false)?
+                f.IsUnsafe = true
+                Ok(f)
+            },
             T.Tk.Struct => this.parseTypeDecl(Ast.NK.DStruct),
             T.Tk.Class => this.parseTypeDecl(Ast.NK.DClass),
             T.Tk.Enum => this.parseTypeDecl(Ast.NK.DEnum),
