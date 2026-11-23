@@ -11,7 +11,7 @@ fn Eq<T: Equatable>(a: T, b: T) -> Bool {
 }
 
 class Version : Comparable {
-    n: I32
+    mut n: I32
     fn Init(n: I32) { this.n = n }
     fn Equals(other: Version) -> Bool { this.n == other.n }
     fn Compare(other: Version) -> I32 { this.n - other.n }

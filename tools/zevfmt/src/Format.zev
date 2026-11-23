@@ -502,9 +502,9 @@ fn gap(p: Scan.Tok, c: Scan.Tok, pPrefix: Bool, cPrefix: Bool) -> Bool {
 // ---- the output ----
 
 class Out {
-    Lines: Array<String> = []
-    Cur: String = ""
-    Started: Bool = false
+    mut Lines: Array<String> = []
+    mut Cur: String = ""
+    mut Started: Bool = false
 
     mut fn Put(s: String) {
         this.Cur = this.Cur + s

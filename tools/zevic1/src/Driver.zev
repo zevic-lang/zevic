@@ -13,21 +13,21 @@ import Zevic1.Gen as Gen
 import Zevic1.Home as Home
 
 class BuildOpts {
-    Opt: Option<String> = None
-    Debug: Bool = false
-    KeepLl: Bool = false
-    Pic: Bool = false
-    Cc: Option<String> = None
-    Cxx: Option<String> = None
-    Libs: Array<String> = []
-    LibDirs: Array<String> = []
-    IncDirs: Array<String> = []
-    Defines: Array<String> = []
+    mut Opt: Option<String> = None
+    mut Debug: Bool = false
+    mut KeepLl: Bool = false
+    mut Pic: Bool = false
+    mut Cc: Option<String> = None
+    mut Cxx: Option<String> = None
+    mut Libs: Array<String> = []
+    mut LibDirs: Array<String> = []
+    mut IncDirs: Array<String> = []
+    mut Defines: Array<String> = []
     // .c .cpp .o .a ... files given on the command line
-    Inputs: Array<String> = []
+    mut Inputs: Array<String> = []
     // The LLVM triple to build for; empty means the machine zevic runs on.
-    Target: String = ""
-    Sysroot: String = ""
+    mut Target: String = ""
+    mut Sysroot: String = ""
 }
 
 // The triple of a target name (`linux-arm64`), or of a full triple given as it is. None for an unknown name.
@@ -336,11 +336,11 @@ fn siblingCxx(clang: String) -> String {
 }
 
 class Runtime {
-    Inc: String = ""
-    RtSrc: String = ""
-    GcSrc: String = ""
-    RtObj: Option<String> = None
-    GcObj: Option<String> = None
+    mut Inc: String = ""
+    mut RtSrc: String = ""
+    mut GcSrc: String = ""
+    mut RtObj: Option<String> = None
+    mut GcObj: Option<String> = None
 }
 
 fn prepareRuntime(clang: String, home: String, pic: Bool, o: BuildOpts) -> Runtime {

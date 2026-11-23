@@ -88,8 +88,8 @@ fn lower(s: String) -> String { Text.ToLower(s) }
 
 // One header line.
 class Field {
-    Name: String
-    Value: String
+    mut Name: String
+    mut Value: String
 
     fn Init(name: String, value: String) {
         this.Name = name
@@ -132,11 +132,11 @@ fn putHeader(fields: Array<Field>, name: String, value: String) -> Array<Field> 
 
 // A request: what a client sends and what a server handler receives.
 class Request {
-    Method: String
+    mut Method: String
     // The address (client) or the target, like `/path?query` (server).
-    Url: String
-    Body: String
-    Headers: Array<Field>
+    mut Url: String
+    mut Body: String
+    mut Headers: Array<Field>
 
     fn Init(method: String, url: String) {
         this.Method = method
@@ -170,9 +170,9 @@ class Request {
 
 // A response: what a client gets and what a server handler returns.
 class Response {
-    Status: I64
-    Body: String
-    Headers: Array<Field>
+    mut Status: I64
+    mut Body: String
+    mut Headers: Array<Field>
 
     fn Init(status: I64, body: String) {
         this.Status = status
@@ -219,8 +219,8 @@ fn reason(status: I64) -> String {
 
 // A socket with the bytes that were read but not used yet.
 class Conn {
-    fd: I64
-    pending: String
+    mut fd: I64
+    mut pending: String
 
     fn Init(fd: I64) {
         this.fd = fd
@@ -515,8 +515,8 @@ fn Post(url: String, body: String) -> Result<Response, Error> {
 // ---- server ----
 
 class Server {
-    fd: I64
-    port: I64
+    mut fd: I64
+    mut port: I64
 
     fn Init(fd: I64, port: I64) {
         this.fd = fd

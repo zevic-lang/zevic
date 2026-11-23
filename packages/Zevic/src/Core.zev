@@ -539,9 +539,9 @@ enum ErrorKind {
 }
 
 class Error {
-    kind: ErrorKind
-    message: String
-    cause: Option<Error>
+    mut kind: ErrorKind
+    mut message: String
+    mut cause: Option<Error>
 
     fn Init(kind: ErrorKind, message: String) {
         this.kind = kind
@@ -578,8 +578,8 @@ class Error {
 //                       must keep their names and order.
 // The iterator of an Array: Array implements Iterable<T> through it.
 class ArrayIter<T> : Iterator<T> {
-    arr: Array<T>
-    i: I64 = 0
+    mut arr: Array<T>
+    mut i: I64 = 0
 
     fn Init(arr: Array<T>) { this.arr = arr }
 
@@ -594,9 +594,9 @@ class ArrayIter<T> : Iterator<T> {
 }
 
 class Array<T> : Iterable<T> {
-    buf: Intrinsics.Buf<T> = Intrinsics.Buf.New(0)
-    len: I64 = 0
-    cap: I64 = 0
+    mut buf: Intrinsics.Buf<T> = Intrinsics.Buf.New(0)
+    mut len: I64 = 0
+    mut cap: I64 = 0
 
     fn Len() -> I64 { this.len }
 
@@ -939,12 +939,12 @@ class Array<T> : Iterable<T> {
 // and the entries are compacted the next time the table is rebuilt.
 
 class Map<K: Hashable, V> : Iterable<(K, V)> {
-    keys: Array<K> = []
-    vals: Array<V> = []
-    alive: Array<Bool> = []
-    idx: Array<I64> = []
-    count: I64 = 0
-    version: I64 = 0
+    mut keys: Array<K> = []
+    mut vals: Array<V> = []
+    mut alive: Array<Bool> = []
+    mut idx: Array<I64> = []
+    mut count: I64 = 0
+    mut version: I64 = 0
 
     fn Len() -> I64 { this.count }
 
@@ -1180,9 +1180,9 @@ class Map<K: Hashable, V> : Iterable<(K, V)> {
 }
 
 class MapIter<K: Hashable, V> : Iterator<(K, V)> {
-    m: Map<K, V>
-    i: I64 = 0
-    ver: I64 = 0
+    mut m: Map<K, V>
+    mut i: I64 = 0
+    mut ver: I64 = 0
 
     fn Init(m: Map<K, V>) {
         this.m = m
@@ -1207,7 +1207,7 @@ class MapIter<K: Hashable, V> : Iterator<(K, V)> {
 }
 
 class Set<T: Hashable> : Iterable<T> {
-    m: Map<T, Bool> = Map.New()
+    mut m: Map<T, Bool> = Map.New()
 
     fn Len() -> I64 { this.m.Len() }
 
@@ -1308,8 +1308,8 @@ class Set<T: Hashable> : Iterable<T> {
 }
 
 class SetIter<T: Hashable> : Iterator<T> {
-    items: Array<T>
-    i: I64 = 0
+    mut items: Array<T>
+    mut i: I64 = 0
 
     fn Init(items: Array<T>) { this.items = items }
 
@@ -1335,7 +1335,7 @@ extern "zevic" {
 }
 
 class Handle<T> {
-    id: CULong = 0
+    mut id: CULong = 0
 
     fn Init(x: T) {
         this.id = zevic_handle_new(Intrinsics.ObjPtr(x))
@@ -1367,7 +1367,7 @@ extern "zevic" {
 }
 
 class StringBuilder {
-    h: *CVoid = Null
+    mut h: *CVoid = Null
 
     fn Init() {
         this.h = zevic_strbuf_new()

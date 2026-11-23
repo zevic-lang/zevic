@@ -48,19 +48,19 @@ fn startsExpr(k: T.Tk) -> Bool {
 fn failed() -> Error { Error.New(ErrorKind.Parse, "syntax error") }
 
 class Parser {
-    file: I32
-    toks: Array<T.Token>
-    i: I64 = 0
-    diag: Diag.Diag
+    mut file: I32
+    mut toks: Array<T.Token>
+    mut i: I64 = 0
+    mut diag: Diag.Diag
     // A speculative parse: errors are not printed.
-    quiet: Bool = false
-    inExtern: Bool = false
+    mut quiet: Bool = false
+    mut inExtern: Bool = false
     // A recursion guard.
-    depth: I64 = 0
+    mut depth: I64 = 0
     // Parsing the pattern of a `match` arm: `n: Type` is allowed there.
-    armPat: Bool = false
+    mut armPat: Bool = false
     // The text has `async` or `await`.
-    UsesAsync: Bool = false
+    mut UsesAsync: Bool = false
 
     fn Init(diag: Diag.Diag, file: I32, toks: Array<T.Token>) {
         this.diag = diag
@@ -1324,9 +1324,7 @@ class Parser {
         }
         if (isStatic || isMut) {
             if (isStatic && this.kind() == T.Tk.Ident) {
-                let f: Ast.Node = this.parseField(true)?
-                decl.List.Push(f)
-                return Ok(())
+                return Err(this.perr(this.peek().Pos, "a `static` field is written `static let ${this.peek().Text}: Type = value`"))
             }
             return Err(this.perr(this.peek().Pos, "expected `fn` after `${if (isStatic) { "static" } else { "mut" }}`"))
         }
@@ -1357,6 +1355,15 @@ class Parser {
         }
         if (dk == Ast.NK.DInterface) {
             return Err(this.perr(this.peek().Pos, "an interface can only contain methods"))
+        }
+        if (this.inExtern) {
+            let f: Ast.Node = this.parseField(false)?
+            decl.List.Push(f)
+            return Ok(())
+        }
+        if (this.kind() == T.Tk.Ident && this.peekAt(1).Kind == T.Tk.Colon) {
+            let fname: String = this.peek().Text
+            return Err(this.perr(this.peek().Pos, "a field is declared with `let` or `mut`: write `mut ${fname}: Type` (or `let ${fname}: Type` if only `Init` sets it)"))
         }
         let f: Ast.Node = this.parseField(false)?
         decl.List.Push(f)

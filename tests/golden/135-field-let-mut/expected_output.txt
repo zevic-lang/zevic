@@ -1,5 +1,4 @@
 hits: 15 after 2 steps
 start: 100
 point: 7,2
-old: 7
 pair: ac

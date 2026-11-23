@@ -12,14 +12,14 @@ interface Shape {
 }
 
 class Circle : Shape {
-    r: F64
+    mut r: F64
     fn Init(r: F64) { this.r = r }
     fn Area() -> F64 { 3.0 * this.r * this.r }
     fn Name() -> String { "circle" }
 }
 
 struct Square : Shape {
-    side: F64
+    mut side: F64
     fn Init(side: F64) { this.side = side }
     fn Area() -> F64 { this.side * this.side }
     fn Name() -> String { "square" }

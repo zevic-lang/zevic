@@ -46,8 +46,8 @@ fn Tokenize(text: String) -> Result<Array<Token>, Error> {
 }
 
 class Parser {
-    tokens: Array<Token>
-    pos: I64 = 0
+    mut tokens: Array<Token>
+    mut pos: I64 = 0
 
     fn Init(tokens: Array<Token>) {
         this.tokens = tokens

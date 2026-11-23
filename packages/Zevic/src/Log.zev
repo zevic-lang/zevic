@@ -63,12 +63,12 @@ fn needsQuotes(v: String) -> Bool {
 }
 
 class Logger {
-    level: Level = Level.Info
-    json: Bool = false
-    showTime: Bool = true
-    fields: Array<(String, String)> = []
-    sink: fn(String) -> Unit
-    clock: fn() -> DateTime.DateTime
+    mut level: Level = Level.Info
+    mut json: Bool = false
+    mut showTime: Bool = true
+    mut fields: Array<(String, String)> = []
+    mut sink: fn(String) -> Unit
+    mut clock: fn() -> DateTime.DateTime
 
     fn Init() {
         this.sink = (line: String) => Console.Eprintln(line)

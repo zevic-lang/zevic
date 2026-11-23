@@ -3,8 +3,8 @@ module Main
 import Zevic.Console
 
 class Person {
-    name: String
-    Age: I32 = 0
+    mut name: String
+    mut Age: I32 = 0
 
     fn Init(name: String, age: I32) {
         this.name = name
@@ -17,8 +17,8 @@ class Person {
 }
 
 struct Point {
-    X: I32
-    Y: I32
+    mut X: I32
+    mut Y: I32
 
     fn Init(x: I32, y: I32) {
         this.X = x

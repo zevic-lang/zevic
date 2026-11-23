@@ -159,35 +159,35 @@ enum NK {
 }
 
 class Node {
-    Kind: NK
-    Pos: Token.Pos
+    mut Kind: NK
+    mut Pos: Token.Pos
     // where a block's closing `}` is (a block only)
-    EndPos: Token.Pos
+    mut EndPos: Token.Pos
     // An identifier, string bytes, an alias, a label. `HasName` tells "no name" from the empty name.
-    Name: String = ""
-    HasName: Bool = false
-    Name2: String = "" // the C name of an extern function
-    Op: Token.Tk = Token.Tk.Eof
-    Ival: U64 = 0_U64
-    Fval: F64 = 0.0
-    Suffix: String = ""
-    Flag: Bool = false
-    Flag2: Bool = false
-    Flag3: Bool = false
-    IsStatic: Bool = false
-    IsMutFn: Bool = false
-    IsUnsafe: Bool = false
-    IsExport: Bool = false
-    A: Option<Node> = None
-    B: Option<Node> = None
-    C: Option<Node> = None
-    D: Option<Node> = None
-    List: Array<Node> = []
-    List2: Array<Node> = []
-    List3: Array<Node> = []
-    Path: Array<String> = []
+    mut Name: String = ""
+    mut HasName: Bool = false
+    mut Name2: String = "" // the C name of an extern function
+    mut Op: Token.Tk = Token.Tk.Eof
+    mut Ival: U64 = 0_U64
+    mut Fval: F64 = 0.0
+    mut Suffix: String = ""
+    mut Flag: Bool = false
+    mut Flag2: Bool = false
+    mut Flag3: Bool = false
+    mut IsStatic: Bool = false
+    mut IsMutFn: Bool = false
+    mut IsUnsafe: Bool = false
+    mut IsExport: Bool = false
+    mut A: Option<Node> = None
+    mut B: Option<Node> = None
+    mut C: Option<Node> = None
+    mut D: Option<Node> = None
+    mut List: Array<Node> = []
+    mut List2: Array<Node> = []
+    mut List3: Array<Node> = []
+    mut Path: Array<String> = []
     // the type a type pattern resolved to (cached by the code generator)
-    Aux: Option<Types.Type> = None
+    mut Aux: Option<Types.Type> = None
 
     fn Init(kind: NK, pos: Token.Pos) {
         this.Kind = kind
@@ -232,16 +232,16 @@ class Node {
 }
 
 class SourceFile {
-    File: I32
-    Pos: Token.Pos
-    Module: String = ""
-    HasModule: Bool = false
-    ModulePos: Token.Pos
-    Imports: Array<Node> = []
-    Decls: Array<Node> = []
-    IsStd: Bool = false
+    mut File: I32
+    mut Pos: Token.Pos
+    mut Module: String = ""
+    mut HasModule: Bool = false
+    mut ModulePos: Token.Pos
+    mut Imports: Array<Node> = []
+    mut Decls: Array<Node> = []
+    mut IsStd: Bool = false
     // The text has `async` or `await`: Zevic.Async is loaded for the program.
-    UsesAsync: Bool = false
+    mut UsesAsync: Bool = false
 
     fn Init(file: I32) {
         this.File = file

@@ -10,7 +10,7 @@ extern "zevic" {
 
 // A length of time, kept in nanoseconds.
 struct Duration {
-    nanos: I64
+    mut nanos: I64
 
     fn Init(nanos: I64) { this.nanos = nanos }
 
@@ -30,7 +30,7 @@ struct Duration {
 
 // A point on a steady clock. It only goes forward and is meant for measuring how long something took.
 struct Instant {
-    nanos: I64
+    mut nanos: I64
 
     fn Init(nanos: I64) { this.nanos = nanos }
 

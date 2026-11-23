@@ -12,8 +12,8 @@ enum Command {
 }
 
 struct Entry {
-    Word: String
-    Count: I64
+    mut Word: String
+    mut Count: I64
 
     fn Init(word: String, count: I64) {
         this.Word = word
@@ -22,7 +22,7 @@ struct Entry {
 }
 
 class Counter {
-    counts: Map<String, I64> = Map.New()
+    mut counts: Map<String, I64> = Map.New()
 
     mut fn Add(word: String) {
         let n: I64 = this.counts.Get(word).UnwrapOr(0)

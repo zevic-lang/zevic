@@ -19,14 +19,14 @@ import Zevic.Text
 // are added by the parser.
 
 struct ArgSpec {
-    long: String
-    short: String
-    valueName: String
-    help: String
-    takesValue: Bool
-    required: Bool
-    hasDefault: Bool
-    defaultValue: String
+    mut long: String
+    mut short: String
+    mut valueName: String
+    mut help: String
+    mut takesValue: Bool
+    mut required: Bool
+    mut hasDefault: Bool
+    mut defaultValue: String
 
     fn Init(long: String, short: String, valueName: String, help: String, takesValue: Bool, required: Bool, hasDefault: Bool, defaultValue: String) {
         this.long = long
@@ -42,16 +42,16 @@ struct ArgSpec {
 
 // The result of parsing: what was given on the command line, by the names the command declared.
 class Matches {
-    counts: Map<String, I64> = Map.New()
-    values: Map<String, Array<String>> = Map.New()
-    positionals: Array<String> = []
-    positionalNames: Array<String> = []
-    subName: String = ""
-    sub: Option<Matches> = None
-    help: Bool = false
-    version: Bool = false
-    helpText: String = ""
-    versionText: String = ""
+    mut counts: Map<String, I64> = Map.New()
+    mut values: Map<String, Array<String>> = Map.New()
+    mut positionals: Array<String> = []
+    mut positionalNames: Array<String> = []
+    mut subName: String = ""
+    mut sub: Option<Matches> = None
+    mut help: Bool = false
+    mut version: Bool = false
+    mut helpText: String = ""
+    mut versionText: String = ""
 
     // Was the flag (or option) given at least once?
     fn Flag(name: String) -> Bool { this.counts.GetOr(name, 0) > 0 }
@@ -132,12 +132,12 @@ fn argShown(p: ArgSpec) -> String {
 }
 
 class Command {
-    name: String
-    about: String
-    version: String = ""
-    specs: Array<ArgSpec> = []
-    positionals: Array<ArgSpec> = []
-    subs: Array<Command> = []
+    mut name: String
+    mut about: String
+    mut version: String = ""
+    mut specs: Array<ArgSpec> = []
+    mut positionals: Array<ArgSpec> = []
+    mut subs: Array<Command> = []
 
     fn Init(name: String, about: String) {
         this.name = name

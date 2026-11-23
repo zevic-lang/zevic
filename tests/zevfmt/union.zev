@@ -3,12 +3,12 @@ module Main
 import Zevic.Console
 
 class Oops {
-    Msg: String
+    mut Msg: String
     fn Init(m: String) { this.Msg = m }
 }
 
 struct Box {
-    V: I32 | String
+    mut V: I32 | String
     fn Init(v: I32 | String) { this.V = v }
 }
 

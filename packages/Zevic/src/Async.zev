@@ -23,7 +23,7 @@ extern "zevic" {
 
 // A lock. `Lock` waits until nobody holds it; the holder must call `Unlock` (`defer m.Unlock()` is the usual way).
 class Mutex {
-    handle: *CVoid
+    mut handle: *CVoid
 
     fn Init() { this.handle = zevic_mutex_new() }
 
@@ -35,10 +35,10 @@ class Mutex {
 
 // The place where a task leaves its result.
 class Slot<T> {
-    mu: *CVoid
-    cv: *CVoid
-    done: Bool
-    value: Option<T>
+    mut mu: *CVoid
+    mut cv: *CVoid
+    mut done: Bool
+    mut value: Option<T>
 
     fn Init() {
         this.mu = zevic_mutex_new()
@@ -74,7 +74,7 @@ class Slot<T> {
 
 // A computation that runs on another thread. `Await` can be called any number of times, from any task.
 class Task<T> {
-    slot: Slot<T>
+    mut slot: Slot<T>
 
     fn Init(slot: Slot<T>) { this.slot = slot }
 
@@ -101,12 +101,12 @@ fn Spawn<T>(f: fn() -> T) -> Task<T> {
 
 // A queue for passing values between tasks. With a capacity, `Send` waits while the queue is full.
 class Channel<T> {
-    mu: *CVoid
-    cv: *CVoid
-    items: Array<T>
-    head: I64
-    cap: I64
-    closed: Bool
+    mut mu: *CVoid
+    mut cv: *CVoid
+    mut items: Array<T>
+    mut head: I64
+    mut cap: I64
+    mut closed: Bool
 
     // `capacity` 0 or less: no limit.
     fn Init(capacity: I64) {

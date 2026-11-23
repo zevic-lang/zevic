@@ -3,7 +3,7 @@ module Main
 import Zevic.Unsafe
 
 class Box {
-    V: I32 = 0
+    mut V: I32 = 0
 }
 
 fn Main() {

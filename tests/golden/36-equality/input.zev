@@ -3,8 +3,8 @@ module Main
 import Zevic.Console
 
 struct Point {
-    X: I32
-    Y: I32
+    mut X: I32
+    mut Y: I32
     fn Init(x: I32, y: I32) { this.X = x; this.Y = y }
 }
 
@@ -16,12 +16,12 @@ enum Shape {
 }
 
 class Box {
-    V: I32
+    mut V: I32
     fn Init(v: I32) { this.V = v }
 }
 
 class Money {
-    Cents: I64
+    mut Cents: I64
     fn Init(c: I64) { this.Cents = c }
     fn Equals(other: Money) -> Bool { this.Cents == other.Cents }
 }

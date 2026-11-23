@@ -15,9 +15,9 @@ extern "zevic" {
 
 // What a finished program left behind.
 struct Output {
-    Code: I32
-    Stdout: String
-    Stderr: String
+    mut Code: I32
+    mut Stdout: String
+    mut Stderr: String
 
     fn Init(code: I32, stdout: String, stderr: String) {
         this.Code = code

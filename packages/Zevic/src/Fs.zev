@@ -265,9 +265,9 @@ enum Mode {
 
 // An open file. Close it with `defer file.Close()`.
 class File {
-    handle: *CVoid = Null
-    path: String = ""
-    open: Bool = false
+    mut handle: *CVoid = Null
+    mut path: String = ""
+    mut open: Bool = false
 
     fn Init(handle: *CVoid, path: String) {
         this.handle = handle

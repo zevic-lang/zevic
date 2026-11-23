@@ -3,7 +3,7 @@ module Main
 import Zevic.Console
 
 struct Oops {
-    Msg: String
+    mut Msg: String
     fn Init(m: String) { this.Msg = m }
 }
 

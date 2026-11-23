@@ -1,7 +1,7 @@
 module Main
 
 class Cell {
-    N: I64 = 0
+    mut N: I64 = 0
 }
 
 fn Poke(xs: Array<Cell>) {

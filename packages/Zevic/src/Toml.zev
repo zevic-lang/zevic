@@ -106,9 +106,9 @@ enum Value {
 let inf: F64 = Math.Pow(10.0, 1000.0)
 
 class Parser {
-    s: String
-    pos: I64 = 0
-    line: I64 = 1
+    mut s: String
+    mut pos: I64 = 0
+    mut line: I64 = 1
 
     fn Init(s: String) { this.s = s }
 

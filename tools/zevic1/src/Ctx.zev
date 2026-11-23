@@ -11,8 +11,8 @@ import Zevic1.Types as Types
 
 // A value and its LLVM operand ("%t3", "42", "{ ptr @.str.0, i64 5 }", "zeroinitializer").
 class Val {
-    T: Types.Type
-    V: String
+    mut T: Types.Type
+    mut V: String
 
     fn Init(t: Types.Type, v: String) {
         this.T = t
@@ -21,12 +21,12 @@ class Val {
 }
 
 class Local {
-    Name: String
-    T: Types.Type
-    Mut: Bool
+    mut Name: String
+    mut T: Types.Type
+    mut Mut: Bool
     // the address of the value
-    Ptr: String
-    Pos: Token.Pos
+    mut Ptr: String
+    mut Pos: Token.Pos
 
     fn Init(name: String, t: Types.Type, isMut: Bool, ptr: String, pos: Token.Pos) {
         this.Name = name
@@ -38,19 +38,19 @@ class Local {
 }
 
 class Scope {
-    Up: Option<Scope> = None
-    Locals: Array<Local> = []
-    Defers: Array<Ast.Node> = []
+    mut Up: Option<Scope> = None
+    mut Locals: Array<Local> = []
+    mut Defers: Array<Ast.Node> = []
 }
 
 class Loop {
-    Brk: String
-    Cont: String
-    Scope: Scope
+    mut Brk: String
+    mut Cont: String
+    mut Scope: Scope
     // some `break` jumps to `brk`
-    BrkUsed: Bool = false
+    mut BrkUsed: Bool = false
     // `name@ for ...`
-    Label: Option<String> = None
+    mut Label: Option<String> = None
 
     fn Init(brk: String, cont: String, scope: Scope) {
         this.Brk = brk
@@ -62,11 +62,11 @@ class Loop {
 // Where a value lives, and whether it may be changed through this path.
 class Place {
     // the address of the value
-    Ptr: String
-    T: Types.Type
-    Mut: Bool
+    mut Ptr: String
+    mut T: Types.Type
+    mut Mut: Bool
     // the place is a `let` field outside `Init`
-    LetField: Bool = false
+    mut LetField: Bool = false
 
     fn Init(ptr: String, t: Types.Type, isMut: Bool) {
         this.Ptr = ptr
@@ -76,36 +76,36 @@ class Place {
 }
 
 class FnCtx {
-    G: Gen.Gen
-    Inst: Gen.Inst
-    File: Resolve.FileInfo
-    Env: Gen.Env
-    Code: Gen.Sb = Gen.Sb.New()
-    Allocas: Gen.Sb = Gen.Sb.New()
-    Cold: Gen.Sb = Gen.Sb.New()
-    NTmp: I64 = 0
+    mut G: Gen.Gen
+    mut Inst: Gen.Inst
+    mut File: Resolve.FileInfo
+    mut Env: Gen.Env
+    mut Code: Gen.Sb = Gen.Sb.New()
+    mut Allocas: Gen.Sb = Gen.Sb.New()
+    mut Cold: Gen.Sb = Gen.Sb.New()
+    mut NTmp: I64 = 0
     // how many `unsafe { }` blocks the code being generated is inside
-    Unsafe: I64 = 0
-    NLbl: I64 = 0
-    NSlot: I64 = 0
+    mut Unsafe: I64 = 0
+    mut NLbl: I64 = 0
+    mut NSlot: I64 = 0
     // `xs[i].F = v` on a struct element: the element expression whose copy must be stored back, and the local that holds that copy
-    WbElem: Option<Ast.Node> = None
-    WbName: String = ""
-    Cur: String = ""
-    Term: Bool = false
+    mut WbElem: Option<Ast.Node> = None
+    mut WbName: String = ""
+    mut Cur: String = ""
+    mut Term: Bool = false
     // None for a lambda whose result type is not known yet
-    Ret: Option<Types.Type>
-    Scope: Option<Scope> = None
-    Loops: Array<Loop> = []
+    mut Ret: Option<Types.Type>
+    mut Scope: Option<Scope> = None
+    mut Loops: Array<Loop> = []
     // inside a method
-    HasThis: Bool = false
+    mut HasThis: Bool = false
     // address of the `this` value (a slot holding the pointer, for classes)
-    ThisSlot: String = ""
-    ThisT: Option<Types.Type> = None
+    mut ThisSlot: String = ""
+    mut ThisT: Option<Types.Type> = None
     // may `this` be changed? (mut fn and Init)
-    ThisMut: Bool = false
+    mut ThisMut: Bool = false
     // names of variables that a lambda may capture: they live in heap cells
-    Heap: Map<String, Bool> = Map.New()
+    mut Heap: Map<String, Bool> = Map.New()
 
     fn Init(g: Gen.Gen, inst: Gen.Inst, file: Resolve.FileInfo, ret: Option<Types.Type>) {
         this.G = g

@@ -7,7 +7,7 @@ interface Shape {
 }
 
 class Sq : Shape {
-    side: I64
+    mut side: I64
     fn Init(side: I64) { this.side = side }
     fn Area() -> I64 { this.side * this.side }
 }

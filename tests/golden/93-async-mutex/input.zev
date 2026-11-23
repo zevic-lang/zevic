@@ -4,8 +4,8 @@ import Zevic.Async
 import Zevic.Console
 
 class Counter {
-    lock: Async.Mutex
-    N: I64 = 0
+    mut lock: Async.Mutex
+    mut N: I64 = 0
 
     fn Init() { this.lock = Async.Mutex.New() }
 

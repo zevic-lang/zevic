@@ -44,16 +44,16 @@ fn p32(mut b: Array<U8>, v: I64) { Bytes.PushU32LE(b, v.ToU32Wrap()) }
 
 // One file or directory in an archive.
 struct Entry {
-    Name: String
-    Size: I64
-    CompressedSize: I64
-    Crc: U32
-    Method: I64
-    DosDate: I64
-    DosTime: I64
-    Offset: I64
-    Attrs: I64
-    Host: I64
+    mut Name: String
+    mut Size: I64
+    mut CompressedSize: I64
+    mut Crc: U32
+    mut Method: I64
+    mut DosDate: I64
+    mut DosTime: I64
+    mut Offset: I64
+    mut Attrs: I64
+    mut Host: I64
 
     fn Init(name: String, size: I64, csize: I64, crc: U32, method: I64, date: I64, time: I64, offset: I64, attrs: I64, host: I64) {
         this.Name = name
@@ -107,9 +107,9 @@ fn SafeName(name: String) -> Option<String> {
 
 // An opened archive. It keeps the whole archive in memory.
 class Archive {
-    data: Array<U8>
-    entries: Array<Entry>
-    comment: String
+    mut data: Array<U8>
+    mut entries: Array<Entry>
+    mut comment: String
 
     fn Init(data: Array<U8>, entries: Array<Entry>, comment: String) {
         this.data = data
@@ -257,12 +257,12 @@ fn OpenFile(path: String) -> Result<Archive, Error> { Open(Fs.ReadBytes(path)?) 
 
 // Builds an archive in memory; `Finish` gives the bytes of the archive.
 class ZipWriter {
-    body: Array<U8> = []
-    central: Array<U8> = []
-    count: I64 = 0
-    level: I32 = 6
-    comment: String = ""
-    seen: Set<String> = Set<String>.New()
+    mut body: Array<U8> = []
+    mut central: Array<U8> = []
+    mut count: I64 = 0
+    mut level: I32 = 6
+    mut comment: String = ""
+    mut seen: Set<String> = Set<String>.New()
 
     fn Init() {}
 

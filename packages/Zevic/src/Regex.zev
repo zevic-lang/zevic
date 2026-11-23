@@ -41,22 +41,22 @@ let kTextEnd: I32 = 13
 let maxRepeat: I64 = 1000
 
 class Node {
-    kind: I32
-    ch: U32 = 0
-    cls: I64 = 0
-    kids: Array<Node> = []
-    min: I64 = 0
-    max: I64 = 0
-    greedy: Bool = true
-    group: I64 = 0
+    mut kind: I32
+    mut ch: U32 = 0
+    mut cls: I64 = 0
+    mut kids: Array<Node> = []
+    mut min: I64 = 0
+    mut max: I64 = 0
+    mut greedy: Bool = true
+    mut group: I64 = 0
 
     fn Init(kind: I32) { this.kind = kind }
 }
 
 // A set of characters: pairs `lo, hi` in `ranges`, taken as they are or, with `negated`, as everything else.
 class CharClass {
-    ranges: Array<U32> = []
-    negated: Bool = false
+    mut ranges: Array<U32> = []
+    mut negated: Bool = false
 
     mut fn Add(lo: U32, hi: U32) {
         this.ranges.Push(lo)
@@ -107,14 +107,14 @@ fn complement(rs: Array<U32>) -> Array<U32> {
 }
 
 class Parser {
-    src: Array<U32>
-    pos: I64 = 0
-    groups: I64 = 0
-    names: Map<String, I64> = Map.New()
-    classes: Array<CharClass> = []
-    ignoreCase: Bool = false
-    multiline: Bool = false
-    dotAll: Bool = false
+    mut src: Array<U32>
+    mut pos: I64 = 0
+    mut groups: I64 = 0
+    mut names: Map<String, I64> = Map.New()
+    mut classes: Array<CharClass> = []
+    mut ignoreCase: Bool = false
+    mut multiline: Bool = false
+    mut dotAll: Bool = false
 
     fn Init(src: Array<U32>) { this.src = src }
 
@@ -512,9 +512,9 @@ let opMatch: I32 = 12
 
 // The program: instruction number `i` is `ops[i]` with the operands `xs[i]` and `ys[i]`.
 class Compiler {
-    ops: Array<I32> = []
-    xs: Array<I64> = []
-    ys: Array<I64> = []
+    mut ops: Array<I32> = []
+    mut xs: Array<I64> = []
+    mut ys: Array<I64> = []
 
     mut fn Emit(op: I32, x: I64, y: I64) {
         this.ops.Push(op)
@@ -606,8 +606,8 @@ class Compiler {
 }
 
 class Thread {
-    pc: I64
-    caps: Array<I64>
+    mut pc: I64
+    mut caps: Array<I64>
 
     fn Init(pc: I64, caps: Array<I64>) {
         this.pc = pc
@@ -616,9 +616,9 @@ class Thread {
 }
 
 class Match {
-    text: String
-    caps: Array<I64>
-    names: Map<String, I64>
+    mut text: String
+    mut caps: Array<I64>
+    mut names: Map<String, I64>
 
     fn Init(text: String, caps: Array<I64>, names: Map<String, I64>) {
         this.text = text
@@ -663,16 +663,16 @@ class Match {
 }
 
 class Regex {
-    pattern: String
-    ops: Array<I32>
-    xs: Array<I64>
-    ys: Array<I64>
-    classes: Array<CharClass>
-    names: Map<String, I64>
-    groups: I64
-    ignoreCase: Bool
-    multiline: Bool
-    dotAll: Bool
+    mut pattern: String
+    mut ops: Array<I32>
+    mut xs: Array<I64>
+    mut ys: Array<I64>
+    mut classes: Array<CharClass>
+    mut names: Map<String, I64>
+    mut groups: I64
+    mut ignoreCase: Bool
+    mut multiline: Bool
+    mut dotAll: Bool
 
     fn Init(pattern: String, c: Compiler, p: Parser) {
         this.pattern = pattern
