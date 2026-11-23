@@ -4045,9 +4045,9 @@ fn genUnsafeIntrinsic(mut F: Ctx.FnCtx, call: Ast.Node, d: Resolve.Decl, last: A
         if (g.IsErr(n.T)) {
             return F.ErrVal()
         }
-        Gen.Declare(g, "calloc", "declare ptr @calloc(i64, i64)")
+        rtDecl(F, "zevic_calloc", "declare ptr @zevic_calloc(i64, i64)")
         let p: String = F.Tmp()
-        F.Emit("${p} = call ptr @calloc(i64 ${n.V}, i64 ${elemSize(F, t)})")
+        F.Emit("${p} = call ptr @zevic_calloc(i64 ${n.V}, i64 ${elemSize(F, t)})")
         return Ctx.Val.New(g.Tt.Ptr(t), p)
     }
     if (d.Name == "Free") {

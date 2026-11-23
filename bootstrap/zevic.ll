@@ -783,9 +783,9 @@ source_filename = "zevic"
 @.str.779 = private unnamed_addr constant [6 x i8] c"Alloc\00"
 @.str.780 = private unnamed_addr constant [77 x i8] c"`Unsafe.Alloc` needs its type and the number of values: `Unsafe.Alloc<T>(n)`\00"
 @.str.781 = private unnamed_addr constant [28 x i8] c"the count of `Unsafe.Alloc`\00"
-@.str.782 = private unnamed_addr constant [7 x i8] c"calloc\00"
-@.str.783 = private unnamed_addr constant [30 x i8] c"declare ptr @calloc(i64, i64)\00"
-@.str.784 = private unnamed_addr constant [25 x i8] c" = call ptr @calloc(i64 \00"
+@.str.782 = private unnamed_addr constant [13 x i8] c"zevic_calloc\00"
+@.str.783 = private unnamed_addr constant [36 x i8] c"declare ptr @zevic_calloc(i64, i64)\00"
+@.str.784 = private unnamed_addr constant [31 x i8] c" = call ptr @zevic_calloc(i64 \00"
 @.str.785 = private unnamed_addr constant [32 x i8] c"`Unsafe.Free` takes one pointer\00"
 @.str.786 = private unnamed_addr constant [39 x i8] c"`Unsafe.Free` needs a pointer, found `\00"
 @.str.787 = private unnamed_addr constant [5 x i8] c"Cast\00"
@@ -43940,8 +43940,8 @@ then.17:
   %t97 = call ptr @"zevic_Zevic1_Ctx_FnCtx_ErrVal"(ptr %t96)
   ret ptr %t97
 endif.19:
-  %t98 = load ptr, ptr %s4
-  call void @"zevic_Zevic1_Gen_Declare"(ptr %t98, { ptr, i64 } { ptr @.str.782, i64 6 }, { ptr, i64 } { ptr @.str.783, i64 29 })
+  %t98 = load ptr, ptr %s0
+  call void @"zevic_Zevic1_Expr_rtDecl"(ptr %t98, { ptr, i64 } { ptr @.str.782, i64 12 }, { ptr, i64 } { ptr @.str.783, i64 35 })
   %t99 = load ptr, ptr %s0
   %t100 = call { ptr, i64 } @"zevic_Zevic1_Ctx_FnCtx_Tmp"(ptr %t99)
   store { ptr, i64 } %t100, ptr %s10
@@ -43951,7 +43951,7 @@ endif.19:
   %t104 = extractvalue { ptr, i64 } %t103, 0
   %t105 = extractvalue { ptr, i64 } %t103, 1
   call void @zevic_sb_add(ptr %t102, ptr %t104, i64 %t105)
-  call void @zevic_sb_add(ptr %t102, ptr @.str.784, i64 24)
+  call void @zevic_sb_add(ptr %t102, ptr @.str.784, i64 30)
   %t106 = load ptr, ptr %s8
   %t107 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t106, i32 0, i32 1
   %t108 = load { ptr, i64 }, ptr %t107
