@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- `Printf`, `Eprintf` and `Text.Format` accept `%{Type}` (`%{I32}`, `%.2{F64}`, `%{String}`, `%{Bool}`…) besides `%d`, `%s` and the rest; both can be mixed in one format. The argument must be exactly that type, checked at compile time
+
 ## 0.4.8
 - `zevic_rt.c` builds for WebAssembly (wasm32-wasi, `__wasi__`): no collector, no threads, sockets, processes or temporary files. It is what the playground on the site runs (together with `zevic` itself, built from `bootstrap/zevic.ll`)
 - `zevic` accepts Zig as the C compiler (`ZEVIC_CLANG=/path/to/zig`, run as `zig cc`, LLVM triples turned into zig targets). With `--target`, the Zig installed next to zevic (`<home>/zig/zig`) is used when no compiler is named.

@@ -1442,6 +1442,7 @@ Prompt(msg: String) -> Option<String>   // show the message, then ReadLine
 - If the format string of `Printf` is a literal, the types and the number are **checked at compile time**. If it is a variable, it is checked at run time, and a mismatch is a Panic.
 - `%d` accepts any width of integer (decided from the type).
 - `Text.Format(fmt, ...) -> String` uses the same format as `Printf` (`%d %u %o %x %X %f %e %g %s %c %%`; flags, width and precision as in C) and returns a `String` without printing. The format must be a literal, and the types and the number are checked at compile time.
+- `%{Type}` also works in `Printf`, `Eprintf` and `Text.Format`, next to `%d` and the others, in the same format. `Type` is one of `I8 I16 I32 I64 U8 U16 U32 U64 F32 F64 String Char Bool`. Flags, width and precision go before the brace (`%05{I32}`, `%.2{F64}`, `%-10{String}`). Unlike `%d`, the argument must be **exactly** that type (an `I32` is an error for `%{I64}`), and a literal takes that type. `%{Bool}` prints `true` or `false`. An unknown type or a missing `}` is a compile error.
 - String interpolation `"${x}"` calls `x.ToString()`.
 
 ### C
