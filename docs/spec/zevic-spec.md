@@ -707,9 +707,9 @@ Your own types are defined with `struct` (a value type), `class` (a reference ty
 
 ```
 class Person {
-    name: String                  // lower case = private (inside the module)
-    Age: I32                      // upper case = public
-    Tags: Array<String> = []      // an initial value of a field
+    let name: String              // lower case = private (inside the module)
+    mut Age: I32                  // upper case = public
+    mut Tags: Array<String> = []  // an initial value of a field
 
     fn Init(name: String, age: I32) {
         this.name = name
@@ -734,7 +734,12 @@ p.Birthday()
 
 **Rules**
 
-- A field is written `name: Type`, and an initial value can be given with `= expression`. A capital first letter is public, a small one is private (visible only inside the same module).
+- A field is written `let name: Type` or `mut name: Type`, and an initial value can be given with `= expression`. A capital first letter is public, a small one is private (visible only inside the same module).
+  - **`mut`** fields can be changed (from a `mut` variable, or inside a `mut fn`), as before.
+  - **`let`** fields can be set only inside `Init` (through `this`) and cannot be changed after that, not even by a `mut` variable. A `let` field also cannot be changed in place (`items.Push(x)` on a `let` field is an error), the same as a `let` variable.
+  - A `static` field is a constant: `static let Name: Type = value` (`static mut` is an error).
+  - Only `class` and `struct` have fields written like this. The fields of an `extern struct` stay `Name: Type`.
+  - The old form without `let` or `mut` (`name: Type`) is still accepted for now and means `mut`. It will be removed.
 - Methods are `fn`. **`this` cannot be omitted** (`this.name`).
 - **`mut fn`** can change the fields of `this`. It can be called only from a `mut` variable. Inside an ordinary `fn`, the content of `this` cannot be changed (deep immutability).
 - **`static fn`** and **`static` fields** are called with the type name, as in `Person.Anonymous()`. A `static` field is a constant and cannot be assigned (mutable global state cannot be held).
@@ -1988,7 +1993,7 @@ tparams     = '<' tparam { ',' tparam } '>' ; tparam = Ident [ ':' type { '+' ty
 
 classDecl   = 'class' Ident [ tparams ] [ ':' typelist ] '{' { field | fnDecl } '}'
 structDecl  = 'struct' Ident [ tparams ] [ ':' typelist ] '{' { field | fnDecl } '}'
-field       = [ 'static' ] Ident ':' type [ '=' expr ]
+field       = ( 'let' | 'mut' | 'static' 'let' ) Ident ':' type [ '=' expr ]   (the old form [ 'static' ] Ident ':' type [ '=' expr ] is still accepted)
 enumDecl    = 'enum' Ident [ tparams ] [ ':' typelist ] '{' variant { ',' variant } [ ',' ] { fnDecl } '}'
 variant     = Ident [ '(' typelist ')' | '{' field { ',' field } '}' ]
 variantLit  = path '{' Ident ':' expr { ',' Ident ':' expr } [ ',' ] '}'      (the value of a named variant; path ends in an upper-case name, as in Shape.Named)

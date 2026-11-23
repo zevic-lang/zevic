@@ -35,6 +35,8 @@ enum TKind {
 class Field {
     Name: String
     T: Type
+    // declared with `let`: only `Init` can assign it
+    Let: Bool = false
 
     fn Init(name: String, t: Type) {
         this.Name = name

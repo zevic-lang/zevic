@@ -1569,7 +1569,10 @@ fn genLvalue(mut F: Ctx.FnCtx, n: Ast.Node) -> Option<(String, Types.Type)> {
             return None
         }
         if (!p.Mut) {
-            if (nn(n.A).Kind == Ast.NK.This) {
+            if (p.LetField) {
+                g.Diag.Error(n.Pos, "cannot assign to field `${n.Name}`: it is declared with `let`, so only `Init` can set it")
+                g.Diag.Note("declare it as `mut ${n.Name}: ...` to change it later")
+            } else if (nn(n.A).Kind == Ast.NK.This) {
                 g.Diag.Error(n.Pos, "cannot assign to field `${n.Name}` here: `this` can only be changed inside a `mut fn` (or `Init`)")
             } else {
                 g.Diag.Error(n.Pos, "cannot assign to field `${n.Name}` because `${rootName(n)}` is not `mut`")
@@ -2066,7 +2069,15 @@ fn genPlace(mut F: Ctx.FnCtx, n: Ast.Node) -> Ctx.Place {
                 }
                 let gep: String = F.Tmp()
                 F.Emit("${gep} = getelementptr inbounds ${sll}, ptr ${base}, i32 0, i32 ${idx}")
-                return Ctx.Place.New(gep, bt.Fields[idx].T, b.Mut)
+                // a `let` field can be set only by `Init` (through `this`)
+                let fld: Types.Field = bt.Fields[idx]
+                mut letHere: Bool = false
+                if (fld.Let) {
+                    letHere = !(nn(n.A).Kind == Ast.NK.This && F.Inst.D.Node.Name == "Init")
+                }
+                mut fp: Ctx.Place = Ctx.Place.New(gep, fld.T, b.Mut && !letHere)
+                fp.LetField = letHere
+                return fp
             }
         },
         _ => {},
@@ -3593,7 +3604,10 @@ fn genUserMethod(mut F: Ctx.FnCtx, call: Ast.Node, p: Ctx.Place, recvNode: Ast.N
         return F.ErrVal()
     }
     if (fnNode.IsMutFn && !p.Mut) {
-        if (recvNode.Kind == Ast.NK.This) {
+        if (p.LetField) {
+            g.Diag.Error(call.Pos, "cannot call `mut fn ${name}` on the field `${recvNode.Name}`: it is declared with `let`")
+            g.Diag.Note("declare it as `mut ${recvNode.Name}: ...` to change it")
+        } else if (recvNode.Kind == Ast.NK.This) {
             g.Diag.Error(call.Pos, "`mut fn ${name}` cannot be called here: `this` can only be changed inside a `mut fn` (or `Init`)")
         } else {
             g.Diag.Error(call.Pos, "cannot call `mut fn ${name}` because `${rootName(recvNode)}` is not `mut`")
