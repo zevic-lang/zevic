@@ -21,6 +21,9 @@ fn emitFunction(mut g: Gen.Gen, mut inst: Gen.Inst) {
     let fnNode: Ast.Node = inst.D.Node
     mut fc: Ctx.FnCtx = Ctx.FnCtx.New(g, inst, inst.D.FileInfo(), Some(inst.Ret))
     fc.Cur = "entry"
+    if (fnNode.IsUnsafe) {
+        fc.Unsafe = 1
+    }
     Expr.CollectLambdaNames(fnNode.B, fc.Heap)
     fc.PushScope()
     mut params: String = ""

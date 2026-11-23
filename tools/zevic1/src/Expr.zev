@@ -3042,6 +3042,11 @@ fn genCallDecl(mut F: Ctx.FnCtx, callIn: Ast.Node, d: Resolve.Decl, self: Option
     mut g: Gen.Gen = F.G
     let fnNode: Ast.Node = d.Node
     mut call: Ast.Node = callIn
+    if (fnNode.IsUnsafe && F.Unsafe == 0) {
+        g.Diag.Error(callIn.Pos, "`${fnNode.Name}` is an `unsafe fn`, so it can only be called inside an `unsafe { ... }` block or another `unsafe fn`")
+        genArgsForErrors(F, callIn)
+        return F.ErrVal()
+    }
     let ntp: I64 = fnNode.List2.Len()
     mut env: Gen.Env = Gen.MakeEnv(g, d, self, None)
     match (explicit) {
@@ -6318,6 +6323,10 @@ fn genPrintf(mut F: Ctx.FnCtx, n: Ast.Node, mode: I64) -> Ctx.Val {
 fn fnValueOf(mut F: Ctx.FnCtx, d: Resolve.Decl, pos: Token.Pos) -> Ctx.Val {
     mut g: Gen.Gen = F.G
     let fnNode: Ast.Node = d.Node
+    if (fnNode.IsUnsafe) {
+        g.Diag.Error(pos, "the `unsafe fn` `${d.Name}` cannot be used as a value (call it inside `unsafe`)")
+        return F.ErrVal()
+    }
     if (fnNode.List2.Len() > 0) {
         g.Diag.Error(pos, "the generic function `${d.Name}` cannot be used as a value (call it, or wrap it in a lambda)")
         return F.ErrVal()
