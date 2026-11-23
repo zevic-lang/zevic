@@ -1,0 +1,21 @@
+module Main
+
+import Zevic.Console
+import Zevic.Text
+
+fn Main() {
+    let n: I32 = 42
+    let big: U64 = 18446744073709551615
+    let small: I8 = -5
+    Console.Printf("%{I32} %{U64} %{I8}\n", n, big, small)
+    Console.Printf("|%5{I32}|%-5{I32}|%+{I32}|%05{I32}|\n", n, n, n, n)
+    Console.Printf("%.2{F64} %8.3{F64} %{F32}\n", 3.14159, 2.5, 1.5)
+    Console.Printf("%s|%10{String}|%-10{String}|%.2{String}\n", "abc", "right", "left", "truncate")
+    Console.Printf("%{Char}%{Char}%{Char}\n", 'Z', 'e', 'v')
+    Console.Printf("%{Bool} %{Bool} %6{Bool}|\n", true, false, true)
+    // a literal takes the type from the format
+    Console.Printf("%{U8} %{F64}\n", 200, 2.0)
+    // both styles in one format, and Format / Eprintf
+    Console.Println(Text.Format("%d-%{I64}-%x-%{String}-%%", 1, 2, 255, "end"))
+    Console.Eprintf("%{I32}\n", n)
+}

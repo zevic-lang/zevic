@@ -5862,6 +5862,35 @@ class FmtPiece {
     Text: String = ""
     IsSpec: Bool = false
     Conv: U8 = 0
+    Want: String = ""
+}
+
+// `%{I32}`: the type named in the format, as the conversion it stands for ('b' is Bool, shown as true/false)
+fn typedConv(name: String) -> U8 {
+    if (name == "I8" || name == "I16" || name == "I32" || name == "I64") {
+        return b'd'
+    }
+    if (name == "U8" || name == "U16" || name == "U32" || name == "U64") {
+        return b'u'
+    }
+    if (name == "F32" || name == "F64") {
+        return b'f'
+    }
+    if (name == "String") {
+        return b's'
+    }
+    if (name == "Char") {
+        return b'c'
+    }
+    if (name == "Bool") {
+        return b'b'
+    }
+    0
+}
+
+fn typeByName(g: Gen.Gen, name: String) -> Option<Types.Type> {
+    let t: Types.Type = if (name == "I8") { g.Tt.I8 } else if (name == "I16") { g.Tt.I16 } else if (name == "I32") { g.Tt.I32 } else if (name == "I64") { g.Tt.I64 } else if (name == "U8") { g.Tt.U8 } else if (name == "U16") { g.Tt.U16 } else if (name == "U32") { g.Tt.U32 } else if (name == "U64") { g.Tt.U64 } else if (name == "F32") { g.Tt.F32 } else if (name == "F64") { g.Tt.F64 } else if (name == "Bool") { g.Tt.Bool } else if (name == "Char") { g.Tt.Char } else { g.Tt.Str }
+    Some(t)
 }
 
 // mode 0: Printf (stdout), 1: Eprintf (stderr), 2: Text.Format (returns a String)
@@ -5924,6 +5953,34 @@ fn genPrintf(mut F: Ctx.FnCtx, n: Ast.Node, mode: I64) -> Ctx.Val {
                 j += 1
             }
         }
+        if (j < len && f.ByteAt(j) == b'{') {
+            // `%{Type}`: flags, width and precision come before the brace (`%08{I32}`, `%.2{F64}`)
+            mut k: I64 = j + 1
+            while (k < len && f.ByteAt(k) != b'}') {
+                k += 1
+            }
+            if (k >= len) {
+                g.Diag.Error(fs.Pos, "`%{` in `${who}` is not closed with `}`")
+                return F.ErrVal()
+            }
+            let tname: String = f.Slice(j + 1, k)
+            let tc: U8 = typedConv(tname)
+            if (tc == 0) {
+                g.Diag.Error(fs.Pos, "`%{${tname}}` in `${who}`: the type must be one of I8 I16 I32 I64 U8 U16 U32 U64 F32 F64 String Char Bool")
+                return F.ErrVal()
+            }
+            mut tp: FmtPiece = FmtPiece.New()
+            tp.IsSpec = true
+            tp.Conv = tc
+            tp.Want = tname
+            let tlen: String = if (tc == b'd' || tc == b'u') { "ll" } else { "" }
+            let tcc: U8 = if (tc == b'c' || tc == b'b') { b's' } else { tc }
+            let tprec: String = if (hasPrec) { ".${if (prec.Len() > 0) { prec } else { "0" }}" } else { "" }
+            tp.Text = "%${flags}${width}${tprec}${tlen}${byteStr(tcc)}"
+            pieces.Push(tp)
+            i = k + 1
+            continue
+        }
         if (j >= len || !inSet(f.ByteAt(j), "duoxXfeEgGscDi")) {
             g.Diag.Error(fs.Pos, "invalid format specifier in `${who}` (use %d %u %o %x %f %e %g %s %c or %%)")
             return F.ErrVal()
@@ -5963,14 +6020,17 @@ fn genPrintf(mut F: Ctx.FnCtx, n: Ast.Node, mode: I64) -> Ctx.Val {
         }
         let an: Ast.Node = n.List[ai]
         ai += 1
-        let hint: Option<Types.Type> = if (isFloatConv(p.Conv)) { Some(g.Tt.F64) } else { None }
+        let hint: Option<Types.Type> = if (p.Want != "") { typeByName(g, p.Want) } else if (isFloatConv(p.Conv)) { Some(g.Tt.F64) } else { None }
         let v: Ctx.Val = genExpr(F, an, hint)
         if (v.T.Id == g.Tt.Never.Id) {
             return F.NeverVal(None)
         }
         mut ok: Bool = true
         mut need: String = ""
-        if (p.Conv == b'd' || p.Conv == b'u' || p.Conv == b'o' || p.Conv == b'x' || p.Conv == b'X') {
+        if (p.Want != "") {
+            ok = v.T.Name == p.Want
+            need = "`${p.Want}`"
+        } else if (p.Conv == b'd' || p.Conv == b'u' || p.Conv == b'o' || p.Conv == b'x' || p.Conv == b'X') {
             ok = v.T.IsInt()
             need = "an integer"
         } else if (isFloatConv(p.Conv)) {
@@ -5984,7 +6044,8 @@ fn genPrintf(mut F: Ctx.FnCtx, n: Ast.Node, mode: I64) -> Ctx.Val {
             need = "a `Char`"
         }
         if (!ok && !g.IsErr(v.T)) {
-            g.Diag.Error(an.Pos, "`%${byteStr(p.Conv)}` needs ${need}, found `${v.T.Name}`")
+            let shown: String = if (p.Want != "") { "%{${p.Want}}" } else { "%${byteStr(p.Conv)}" }
+            g.Diag.Error(an.Pos, "`${shown}` needs ${need}, found `${v.T.Name}`")
             return F.ErrVal()
         }
         vals.Push(v)
@@ -6027,6 +6088,14 @@ fn genPrintf(mut F: Ctx.FnCtx, n: Ast.Node, mode: I64) -> Ctx.Val {
                 F.Emit("${x} = fpext float ${v.V} to double")
             }
             F.Emit("call void @zevic_printf_f(i32 ${stream}, ptr ${constPtr(c)}, double ${x})")
+        } else if (p.Conv == b'b') {
+            let tc: String = Gen.StrConst(g, "true")
+            let fc: String = Gen.StrConst(g, "false")
+            let bp: String = F.Tmp()
+            let bn: String = F.Tmp()
+            F.Emit("${bp} = select i1 ${v.V}, ptr ${constPtr(tc)}, ptr ${constPtr(fc)}")
+            F.Emit("${bn} = select i1 ${v.V}, i64 4, i64 5")
+            F.Emit("call void @zevic_printf_s(i32 ${stream}, ptr ${constPtr(c)}, ptr ${bp}, i64 ${bn})")
         } else if (p.Conv == b's') {
             let (sp, sn): (String, String) = strParts(F, v)
             F.Emit("call void @zevic_printf_s(i32 ${stream}, ptr ${constPtr(c)}, ptr ${sp}, i64 ${sn})")
