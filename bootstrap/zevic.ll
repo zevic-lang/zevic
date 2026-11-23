@@ -952,586 +952,592 @@ source_filename = "zevic"
 @.str.948 = private unnamed_addr constant [12 x i8] c"interface `\00"
 @.str.949 = private unnamed_addr constant [69 x i8] c"` is generic, so it cannot be called on an interface value of type `\00"
 @.str.950 = private unnamed_addr constant [36 x i8] c" = getelementptr inbounds ptr, ptr \00"
-@.str.951 = private unnamed_addr constant [39 x i8] c"` needs a string literal as its format\00"
-@.str.952 = private unnamed_addr constant [16 x i8] c"the format of `\00"
-@.str.953 = private unnamed_addr constant [56 x i8] c"` cannot contain `${...}`; pass the values as arguments\00"
-@.str.954 = private unnamed_addr constant [2 x i8] c"%\00"
-@.str.955 = private unnamed_addr constant [6 x i8] c"-+ 0#\00"
-@.str.956 = private unnamed_addr constant [15 x i8] c"duoxXfeEgGscDi\00"
-@.str.957 = private unnamed_addr constant [30 x i8] c"invalid format specifier in `\00"
-@.str.958 = private unnamed_addr constant [41 x i8] c"` (use %d %u %o %x %f %e %g %s %c or %%)\00"
-@.str.959 = private unnamed_addr constant [3 x i8] c"ll\00"
-@.str.960 = private unnamed_addr constant [16 x i8] c"the format has \00"
-@.str.961 = private unnamed_addr constant [22 x i8] c" placeholder(s), but \00"
-@.str.962 = private unnamed_addr constant [21 x i8] c" value(s) were given\00"
-@.str.963 = private unnamed_addr constant [11 x i8] c"an integer\00"
-@.str.964 = private unnamed_addr constant [17 x i8] c"a decimal number\00"
-@.str.965 = private unnamed_addr constant [11 x i8] c"a `String`\00"
-@.str.966 = private unnamed_addr constant [9 x i8] c"a `Char`\00"
-@.str.967 = private unnamed_addr constant [3 x i8] c"`%\00"
-@.str.968 = private unnamed_addr constant [10 x i8] c", found `\00"
-@.str.969 = private unnamed_addr constant [16 x i8] c"zevic_fmt_begin\00"
-@.str.970 = private unnamed_addr constant [32 x i8] c"declare void @zevic_fmt_begin()\00"
-@.str.971 = private unnamed_addr constant [14 x i8] c"zevic_fmt_end\00"
-@.str.972 = private unnamed_addr constant [33 x i8] c"declare void @zevic_fmt_end(ptr)\00"
-@.str.973 = private unnamed_addr constant [29 x i8] c"call void @zevic_fmt_begin()\00"
-@.str.974 = private unnamed_addr constant [17 x i8] c"zevic_printf_lit\00"
-@.str.975 = private unnamed_addr constant [46 x i8] c"declare void @zevic_printf_lit(i32, ptr, i64)\00"
-@.str.976 = private unnamed_addr constant [15 x i8] c"zevic_printf_i\00"
-@.str.977 = private unnamed_addr constant [44 x i8] c"declare void @zevic_printf_i(i32, ptr, i64)\00"
-@.str.978 = private unnamed_addr constant [15 x i8] c"zevic_printf_f\00"
-@.str.979 = private unnamed_addr constant [47 x i8] c"declare void @zevic_printf_f(i32, ptr, double)\00"
-@.str.980 = private unnamed_addr constant [15 x i8] c"zevic_printf_s\00"
-@.str.981 = private unnamed_addr constant [49 x i8] c"declare void @zevic_printf_s(i32, ptr, ptr, i64)\00"
-@.str.982 = private unnamed_addr constant [15 x i8] c"zevic_printf_c\00"
-@.str.983 = private unnamed_addr constant [44 x i8] c"declare void @zevic_printf_c(i32, ptr, i32)\00"
-@.str.984 = private unnamed_addr constant [33 x i8] c"call void @zevic_printf_lit(i32 \00"
-@.str.985 = private unnamed_addr constant [31 x i8] c"call void @zevic_printf_i(i32 \00"
-@.str.986 = private unnamed_addr constant [31 x i8] c"call void @zevic_printf_f(i32 \00"
-@.str.987 = private unnamed_addr constant [10 x i8] c", double \00"
-@.str.988 = private unnamed_addr constant [31 x i8] c"call void @zevic_printf_s(i32 \00"
-@.str.989 = private unnamed_addr constant [31 x i8] c"call void @zevic_printf_c(i32 \00"
-@.str.990 = private unnamed_addr constant [30 x i8] c"call void @zevic_fmt_end(ptr \00"
-@.str.991 = private unnamed_addr constant [23 x i8] c"the generic function `\00"
-@.str.992 = private unnamed_addr constant [62 x i8] c"` cannot be used as a value (call it, or wrap it in a lambda)\00"
-@.str.993 = private unnamed_addr constant [5 x i8] c"the \00"
-@.str.994 = private unnamed_addr constant [12 x i8] c" function `\00"
-@.str.995 = private unnamed_addr constant [63 x i8] c"` cannot be used as a value here (wrap it in a Zevic function)\00"
-@.str.996 = private unnamed_addr constant [7 x i8] c"thunk.\00"
-@.str.997 = private unnamed_addr constant [8 x i8] c"define \00"
-@.str.998 = private unnamed_addr constant [11 x i8] c"\22(ptr %env\00"
-@.str.999 = private unnamed_addr constant [20 x i8] c")\0A  unreachable\0A}\0A\0A\00"
-@.str.1000 = private unnamed_addr constant [9 x i8] c"{ ptr @\22\00"
-@.str.1001 = private unnamed_addr constant [19 x i8] c"this lambda takes \00"
-@.str.1002 = private unnamed_addr constant [36 x i8] c" parameter(s), but a function with \00"
-@.str.1003 = private unnamed_addr constant [13 x i8] c" is expected\00"
-@.str.1004 = private unnamed_addr constant [35 x i8] c"the type of the lambda parameter `\00"
-@.str.1005 = private unnamed_addr constant [35 x i8] c"` cannot be inferred here; write `\00"
-@.str.1006 = private unnamed_addr constant [8 x i8] c": Type`\00"
-@.str.1007 = private unnamed_addr constant [12 x i8] c"parameter `\00"
-@.str.1008 = private unnamed_addr constant [9 x i8] c"`, but `\00"
-@.str.1009 = private unnamed_addr constant [19 x i8] c"` is expected here\00"
-@.str.1010 = private unnamed_addr constant [49 x i8] c"an `async` block cannot use the `mut` variable `\00"
-@.str.1011 = private unnamed_addr constant [139 x i8] c"` of the surrounding function (the two would race); send the value through a `Channel`, or keep it in a class that is guarded by a `Mutex`\00"
-@.str.1012 = private unnamed_addr constant [6 x i8] c"entry\00"
-@.str.1013 = private unnamed_addr constant [46 x i8] c" = getelementptr inbounds ptr, ptr %env, i64 \00"
-@.str.1014 = private unnamed_addr constant [9 x i8] c"ptr %env\00"
-@.str.1015 = private unnamed_addr constant [3 x i8] c"%p\00"
-@.str.1016 = private unnamed_addr constant [25 x i8] c"the result of the lambda\00"
-@.str.1017 = private unnamed_addr constant [8 x i8] c"lambda.\00"
-@.str.1018 = private unnamed_addr constant [12 x i8] c") {\0Aentry:\0A\00"
-@.str.1019 = private unnamed_addr constant [4 x i8] c"}\0A\0A\00"
-@.str.1020 = private unnamed_addr constant [42 x i8] c" = insertvalue { ptr, ptr } undef, ptr @\22\00"
-@.str.1021 = private unnamed_addr constant [5 x i8] c"\22, 0\00"
-@.str.1022 = private unnamed_addr constant [25 x i8] c"tools/zevic1/src/Gen.zev\00"
-@.str.1023 = private unnamed_addr constant [6 x i8] c"error\00"
-@.str.1024 = private unnamed_addr constant [11 x i8] c"Zevic.Core\00"
-@.str.1025 = private unnamed_addr constant [25 x i8] c"` is private to module `\00"
-@.str.1026 = private unnamed_addr constant [60 x i8] c"` (names starting with a lowercase letter are not exported)\00"
-@.str.1027 = private unnamed_addr constant [9 x i8] c"module `\00"
-@.str.1028 = private unnamed_addr constant [26 x i8] c"` takes no type arguments\00"
-@.str.1029 = private unnamed_addr constant [17 x i8] c"Zevic.Intrinsics\00"
-@.str.1030 = private unnamed_addr constant [4 x i8] c"Buf\00"
-@.str.1031 = private unnamed_addr constant [68 x i8] c"the standard library file Core.zev is missing (cannot find `Array`)\00"
-@.str.1032 = private unnamed_addr constant [25 x i8] c"a syntax node is missing\00"
-@.str.1033 = private unnamed_addr constant [38 x i8] c"`Never` cannot be a member of a union\00"
-@.str.1034 = private unnamed_addr constant [57 x i8] c"a union needs at least two different types (found only `\00"
-@.str.1035 = private unnamed_addr constant [16 x i8] c"expected a type\00"
-@.str.1036 = private unnamed_addr constant [51 x i8] c"`Self` can only be used inside a type or interface\00"
-@.str.1037 = private unnamed_addr constant [6 x i8] c"Never\00"
-@.str.1038 = private unnamed_addr constant [15 x i8] c"unknown type `\00"
-@.str.1039 = private unnamed_addr constant [16 x i8] c"` is not a type\00"
-@.str.1040 = private unnamed_addr constant [61 x i8] c"` uses `Self`, so it can only be used as a constraint (`<T: \00"
-@.str.1041 = private unnamed_addr constant [32 x i8] c">`), not as the type of a value\00"
-@.str.1042 = private unnamed_addr constant [8 x i8] c"<error>\00"
-@.str.1043 = private unnamed_addr constant [9 x i8] c" | kind=\00"
-@.str.1044 = private unnamed_addr constant [7 x i8] c" size=\00"
-@.str.1045 = private unnamed_addr constant [8 x i8] c" align=\00"
-@.str.1046 = private unnamed_addr constant [5 x i8] c" ll=\00"
-@.str.1047 = private unnamed_addr constant [8 x i8] c" words=\00"
-@.str.1048 = private unnamed_addr constant [9 x i8] c"  field \00"
-@.str.1049 = private unnamed_addr constant [11 x i8] c"  variant \00"
-@.str.1050 = private unnamed_addr constant [6 x i8] c" tag=\00"
-@.str.1051 = private unnamed_addr constant [8 x i8] c" named=\00"
-@.str.1052 = private unnamed_addr constant [10 x i8] c" payload=\00"
-@.str.1053 = private unnamed_addr constant [5 x i8] c"    \00"
-@.str.1054 = private unnamed_addr constant [39 x i8] c"method of a type without a declaration\00"
-@.str.1055 = private unnamed_addr constant [28 x i8] c"` is not an interface, so `\00"
-@.str.1056 = private unnamed_addr constant [22 x i8] c"` cannot implement it\00"
-@.str.1057 = private unnamed_addr constant [32 x i8] c"interface without a declaration\00"
-@.str.1058 = private unnamed_addr constant [6 x i8] c") -> \00"
-@.str.1059 = private unnamed_addr constant [19 x i8] c"` gets a default `\00"
-@.str.1060 = private unnamed_addr constant [14 x i8] c"` from both `\00"
-@.str.1061 = private unnamed_addr constant [19 x i8] c"`; write its own `\00"
-@.str.1062 = private unnamed_addr constant [12 x i8] c"` to choose\00"
-@.str.1063 = private unnamed_addr constant [11 x i8] c"`, which `\00"
-@.str.1064 = private unnamed_addr constant [11 x i8] c"` requires\00"
-@.str.1065 = private unnamed_addr constant [38 x i8] c"` does not match the declaration in `\00"
-@.str.1066 = private unnamed_addr constant [18 x i8] c"`: it should be `\00"
-@.str.1067 = private unnamed_addr constant [5 x i8] c"mut \00"
-@.str.1068 = private unnamed_addr constant [4 x i8] c"fn \00"
-@.str.1069 = private unnamed_addr constant [10 x i8] c"Equatable\00"
-@.str.1070 = private unnamed_addr constant [52 x i8] c"` is not an interface, so it cannot be a constraint\00"
-@.str.1071 = private unnamed_addr constant [36 x i8] c"` does not satisfy the constraint `\00"
-@.str.1072 = private unnamed_addr constant [28 x i8] c"` would have to implement `\00"
-@.str.1073 = private unnamed_addr constant [22 x i8] c"` of the C function `\00"
-@.str.1074 = private unnamed_addr constant [46 x i8] c"`; C functions take only C types and pointers\00"
-@.str.1075 = private unnamed_addr constant [40 x i8] c"structs are passed by pointer: write `*\00"
-@.str.1076 = private unnamed_addr constant [20 x i8] c"` and pass `&value`\00"
-@.str.1077 = private unnamed_addr constant [45 x i8] c"convert it with a method such as `.ToCInt()`\00"
-@.str.1078 = private unnamed_addr constant [17 x i8] c"the C function `\00"
-@.str.1079 = private unnamed_addr constant [12 x i8] c"` returns `\00"
-@.str.1080 = private unnamed_addr constant [57 x i8] c"`; C functions return only C types, pointers and `CVoid`\00"
-@.str.1081 = private unnamed_addr constant [7 x i8] c"zevic_\00"
-@.str.1082 = private unnamed_addr constant [13 x i8] c"the C name `\00"
-@.str.1083 = private unnamed_addr constant [20 x i8] c"` is exported twice\00"
-@.str.1084 = private unnamed_addr constant [29 x i8] c"the other one is in module `\00"
-@.str.1085 = private unnamed_addr constant [49 x i8] c"an exported function cannot have type parameters\00"
-@.str.1086 = private unnamed_addr constant [5 x i8] c"Main\00"
-@.str.1087 = private unnamed_addr constant [26 x i8] c"`Main` cannot be exported\00"
-@.str.1088 = private unnamed_addr constant [17 x i8] c"0123456789ABCDEF\00"
-@.str.1089 = private unnamed_addr constant [2 x i8] c"\5C\00"
-@.str.1090 = private unnamed_addr constant [7 x i8] c"@.str.\00"
-@.str.1091 = private unnamed_addr constant [10 x i8] c" x i8] c\22\00"
-@.str.1092 = private unnamed_addr constant [6 x i8] c"\5C00\22\0A\00"
-@.str.1093 = private unnamed_addr constant [3 x i8] c" }\00"
-@.str.1094 = private unnamed_addr constant [6 x i8] c"Zevic\00"
-@.str.1095 = private unnamed_addr constant [26 x i8] c"tools/zevic1/src/Home.zev\00"
-@.str.1096 = private unnamed_addr constant [27 x i8] c"/packages/Zevic/zevic.toml\00"
-@.str.1097 = private unnamed_addr constant [11 x i8] c"ZEVIC_HOME\00"
-@.str.1098 = private unnamed_addr constant [16 x i8] c"/../share/zevic\00"
-@.str.1099 = private unnamed_addr constant [4 x i8] c"/..\00"
-@.str.1100 = private unnamed_addr constant [27 x i8] c"tools/zevic1/src/Lexer.zev\00"
-@.str.1101 = private unnamed_addr constant [7 x i8] c"module\00"
-@.str.1102 = private unnamed_addr constant [7 x i8] c"import\00"
-@.str.1103 = private unnamed_addr constant [3 x i8] c"as\00"
-@.str.1104 = private unnamed_addr constant [3 x i8] c"fn\00"
-@.str.1105 = private unnamed_addr constant [4 x i8] c"let\00"
-@.str.1106 = private unnamed_addr constant [4 x i8] c"mut\00"
-@.str.1107 = private unnamed_addr constant [6 x i8] c"class\00"
-@.str.1108 = private unnamed_addr constant [7 x i8] c"struct\00"
-@.str.1109 = private unnamed_addr constant [5 x i8] c"enum\00"
-@.str.1110 = private unnamed_addr constant [10 x i8] c"interface\00"
-@.str.1111 = private unnamed_addr constant [7 x i8] c"static\00"
-@.str.1112 = private unnamed_addr constant [7 x i8] c"extern\00"
-@.str.1113 = private unnamed_addr constant [7 x i8] c"export\00"
-@.str.1114 = private unnamed_addr constant [3 x i8] c"if\00"
-@.str.1115 = private unnamed_addr constant [6 x i8] c"while\00"
-@.str.1116 = private unnamed_addr constant [5 x i8] c"loop\00"
-@.str.1117 = private unnamed_addr constant [4 x i8] c"for\00"
-@.str.1118 = private unnamed_addr constant [3 x i8] c"in\00"
-@.str.1119 = private unnamed_addr constant [6 x i8] c"match\00"
-@.str.1120 = private unnamed_addr constant [7 x i8] c"return\00"
-@.str.1121 = private unnamed_addr constant [6 x i8] c"defer\00"
-@.str.1122 = private unnamed_addr constant [6 x i8] c"async\00"
-@.str.1123 = private unnamed_addr constant [6 x i8] c"await\00"
-@.str.1124 = private unnamed_addr constant [6 x i8] c"macro\00"
-@.str.1125 = private unnamed_addr constant [7 x i8] c"unsafe\00"
-@.str.1126 = private unnamed_addr constant [6 x i8] c"where\00"
-@.str.1127 = private unnamed_addr constant [6 x i8] c"const\00"
-@.str.1128 = private unnamed_addr constant [6 x i8] c"yield\00"
-@.str.1129 = private unnamed_addr constant [5 x i8] c"impl\00"
-@.str.1130 = private unnamed_addr constant [27 x i8] c"unfinished escape sequence\00"
-@.str.1131 = private unnamed_addr constant [40 x i8] c"`\5Cx` must be followed by two hex digits\00"
-@.str.1132 = private unnamed_addr constant [73 x i8] c"`\5CxNN` in a string must be 00 to 7F (use `\5Cu{...}` for other characters)\00"
-@.str.1133 = private unnamed_addr constant [23 x i8] c"`\5CxNN` is out of range\00"
-@.str.1134 = private unnamed_addr constant [40 x i8] c"`\5Cu` must be followed by `{hex digits}`\00"
-@.str.1135 = private unnamed_addr constant [25 x i8] c"invalid `\5Cu{...}` escape\00"
-@.str.1136 = private unnamed_addr constant [46 x i8] c"`\5Cu{...}` is not a valid Unicode scalar value\00"
-@.str.1137 = private unnamed_addr constant [24 x i8] c"unknown escape sequence\00"
-@.str.1138 = private unnamed_addr constant [27 x i8] c"unterminated block comment\00"
-@.str.1139 = private unnamed_addr constant [2 x i8] c"r\00"
-@.str.1140 = private unnamed_addr constant [125 x i8] c"Zevic has no `null`: use an `Option<T>` (`Some(value)` or `None`) for a value that may be missing, or `Null` for a C pointer\00"
-@.str.1141 = private unnamed_addr constant [65 x i8] c"` is reserved for the future and cannot be used as a name (use `\00"
-@.str.1142 = private unnamed_addr constant [16 x i8] c"` in backticks)\00"
-@.str.1143 = private unnamed_addr constant [71 x i8] c"malformed `identifier`: expected a name followed by a closing backtick\00"
-@.str.1144 = private unnamed_addr constant [59 x i8] c"unexpected non-ASCII character outside a string or comment\00"
-@.str.1145 = private unnamed_addr constant [25 x i8] c"`#` is not used in Zevic\00"
-@.str.1146 = private unnamed_addr constant [23 x i8] c"unexpected character `\00"
-@.str.1147 = private unnamed_addr constant [3 x i8] c"I8\00"
-@.str.1148 = private unnamed_addr constant [4 x i8] c"I16\00"
-@.str.1149 = private unnamed_addr constant [4 x i8] c"I32\00"
-@.str.1150 = private unnamed_addr constant [4 x i8] c"I64\00"
-@.str.1151 = private unnamed_addr constant [3 x i8] c"U8\00"
-@.str.1152 = private unnamed_addr constant [4 x i8] c"U16\00"
-@.str.1153 = private unnamed_addr constant [4 x i8] c"U32\00"
-@.str.1154 = private unnamed_addr constant [4 x i8] c"U64\00"
-@.str.1155 = private unnamed_addr constant [4 x i8] c"F32\00"
-@.str.1156 = private unnamed_addr constant [4 x i8] c"F64\00"
-@.str.1157 = private unnamed_addr constant [44 x i8] c"`_` in a number must sit between two digits\00"
-@.str.1158 = private unnamed_addr constant [40 x i8] c"expected digits after the number prefix\00"
-@.str.1159 = private unnamed_addr constant [67 x i8] c"a number needs digits on both sides of `.` (write `1.0`, not `1.`)\00"
-@.str.1160 = private unnamed_addr constant [2 x i8] c"e\00"
-@.str.1161 = private unnamed_addr constant [13 x i8] c"unexpected `\00"
-@.str.1162 = private unnamed_addr constant [51 x i8] c"` after a number (a type is written like `255_U8`)\00"
-@.str.1163 = private unnamed_addr constant [2 x i8] c"F\00"
-@.str.1164 = private unnamed_addr constant [48 x i8] c"a decimal number cannot have the integer type `\00"
-@.str.1165 = private unnamed_addr constant [55 x i8] c"a number cannot start with 0 (octal is written `0o17`)\00"
-@.str.1166 = private unnamed_addr constant [67 x i8] c"integer literal is too large (the maximum is 18446744073709551615)\00"
-@.str.1167 = private unnamed_addr constant [31 x i8] c"unterminated character literal\00"
-@.str.1168 = private unnamed_addr constant [24 x i8] c"empty character literal\00"
-@.str.1169 = private unnamed_addr constant [35 x i8] c"invalid UTF-8 in character literal\00"
-@.str.1170 = private unnamed_addr constant [62 x i8] c"a byte literal must be ASCII (use `b'\5CxNN'` for other values)\00"
-@.str.1171 = private unnamed_addr constant [72 x i8] c"a character literal holds exactly one character (use a string for more)\00"
-@.str.1172 = private unnamed_addr constant [30 x i8] c"unterminated `${` in a string\00"
-@.str.1173 = private unnamed_addr constant [34 x i8] c"invalid UTF-8 in a string literal\00"
-@.str.1174 = private unnamed_addr constant [76 x i8] c"a `\22\22\22` string must start on a new line (put the text after the line break)\00"
-@.str.1175 = private unnamed_addr constant [31 x i8] c"unterminated multi-line string\00"
-@.str.1176 = private unnamed_addr constant [42 x i8] c"the closing `\22\22\22` must be on its own line\00"
-@.str.1177 = private unnamed_addr constant [70 x i8] c"a line in a multi-line string is indented less than the closing `\22\22\22`\00"
-@.str.1178 = private unnamed_addr constant [69 x i8] c"unterminated string (a string cannot span lines; use `\22\22\22` for that)\00"
-@.str.1179 = private unnamed_addr constant [27 x i8] c"zevic: error: cannot read \00"
-@.str.1180 = private unnamed_addr constant [26 x i8] c"tools/zevic1/src/Main.zev\00"
-@.str.1181 = private unnamed_addr constant [10 x i8] c" (quoted)\00"
-@.str.1182 = private unnamed_addr constant [3 x i8] c" _\00"
-@.str.1183 = private unnamed_addr constant [5 x i8] c"expr\00"
-@.str.1184 = private unnamed_addr constant [5 x i8] c"text\00"
-@.str.1185 = private unnamed_addr constant [2 x i8] c"[\00"
-@.str.1186 = private unnamed_addr constant [2 x i8] c"]\00"
-@.str.1187 = private unnamed_addr constant [20 x i8] c"/packages/Zevic/src\00"
-@.str.1188 = private unnamed_addr constant [29 x i8] c"/packages/Zevic/src/Core.zev\00"
-@.str.1189 = private unnamed_addr constant [6 x i8] c"file \00"
-@.str.1190 = private unnamed_addr constant [5 x i8] c" std\00"
-@.str.1191 = private unnamed_addr constant [7 x i8] c"  dep \00"
-@.str.1192 = private unnamed_addr constant [10 x i8] c"  source \00"
-@.str.1193 = private unnamed_addr constant [12 x i8] c"    import \00"
-@.str.1194 = private unnamed_addr constant [5 x i8] c" -> \00"
-@.str.1195 = private unnamed_addr constant [7 x i8] c"Zevic.\00"
-@.str.1196 = private unnamed_addr constant [4 x i8] c"pub\00"
-@.str.1197 = private unnamed_addr constant [5 x i8] c"priv\00"
-@.str.1198 = private unnamed_addr constant [10 x i8] c"    decl \00"
-@.str.1199 = private unnamed_addr constant [6 x i8] c" abi=\00"
-@.str.1200 = private unnamed_addr constant [8 x i8] c"  test \00"
-@.str.1201 = private unnamed_addr constant [9 x i8] c" | size=\00"
-@.str.1202 = private unnamed_addr constant [5 x i8] c" id=\00"
-@.str.1203 = private unnamed_addr constant [2 x i8] c"T\00"
-@.str.1204 = private unnamed_addr constant [6 x i8] c"CChar\00"
-@.str.1205 = private unnamed_addr constant [6 x i8] c"CLong\00"
-@.str.1206 = private unnamed_addr constant [7 x i8] c"CULong\00"
-@.str.1207 = private unnamed_addr constant [7 x i8] c"CSizeT\00"
-@.str.1208 = private unnamed_addr constant [7 x i8] c"CFloat\00"
-@.str.1209 = private unnamed_addr constant [9 x i8] c"missing \00"
-@.str.1210 = private unnamed_addr constant [18 x i8] c"cbyname unknown: \00"
-@.str.1211 = private unnamed_addr constant [6 x i8] c"CNope\00"
-@.str.1212 = private unnamed_addr constant [6 x i8] c"found\00"
-@.str.1213 = private unnamed_addr constant [4 x i8] c"MyC\00"
-@.str.1214 = private unnamed_addr constant [14 x i8] c"prim String: \00"
-@.str.1215 = private unnamed_addr constant [4 x i8] c"yes\00"
-@.str.1216 = private unnamed_addr constant [3 x i8] c"no\00"
-@.str.1217 = private unnamed_addr constant [15 x i8] c", prim Never: \00"
-@.str.1218 = private unnamed_addr constant [7 x i8] c"same: \00"
-@.str.1219 = private unnamed_addr constant [13 x i8] c"one member: \00"
-@.str.1220 = private unnamed_addr constant [11 x i8] c"Main.Point\00"
-@.str.1221 = private unnamed_addr constant [2 x i8] c"X\00"
-@.str.1222 = private unnamed_addr constant [2 x i8] c"Y\00"
-@.str.1223 = private unnamed_addr constant [11 x i8] c"Main.Empty\00"
-@.str.1224 = private unnamed_addr constant [12 x i8] c"Main.Holder\00"
-@.str.1225 = private unnamed_addr constant [2 x i8] c"A\00"
-@.str.1226 = private unnamed_addr constant [2 x i8] c"U\00"
-@.str.1227 = private unnamed_addr constant [2 x i8] c"P\00"
-@.str.1228 = private unnamed_addr constant [11 x i8] c"Main.Shape\00"
-@.str.1229 = private unnamed_addr constant [7 x i8] c"Circle\00"
-@.str.1230 = private unnamed_addr constant [5 x i8] c"Rect\00"
-@.str.1231 = private unnamed_addr constant [4 x i8] c"Dot\00"
-@.str.1232 = private unnamed_addr constant [11 x i8] c"Main.Color\00"
-@.str.1233 = private unnamed_addr constant [4 x i8] c"Red\00"
-@.str.1234 = private unnamed_addr constant [5 x i8] c"Blue\00"
-@.str.1235 = private unnamed_addr constant [9 x i8] c"Main.Box\00"
-@.str.1236 = private unnamed_addr constant [9 x i8] c"Main.Map\00"
-@.str.1237 = private unnamed_addr constant [8 x i8] c"is_int \00"
-@.str.1238 = private unnamed_addr constant [9 x i8] c" signed \00"
-@.str.1239 = private unnamed_addr constant [8 x i8] c" float \00"
-@.str.1240 = private unnamed_addr constant [12 x i8] c" value_agg \00"
-@.str.1241 = private unnamed_addr constant [7 x i8] c" bits \00"
-@.str.1242 = private unnamed_addr constant [7 x i8] c"ZEVIC_\00"
-@.str.1243 = private unnamed_addr constant [5 x i8] c".zev\00"
-@.str.1244 = private unnamed_addr constant [49 x i8] c"usage: zevic [options] <file.zev>... [-o output]\00"
-@.str.1245 = private unnamed_addr constant [163 x i8] c"  --target <name|triple>  --sysroot <dir>  --test  --lib  --pic  --emit-ll  --emit-header <f>  --keep-ll  -O0|-O1|-O2 (default -O0)  -g  --cc <path>  --cxx <path>\00"
-@.str.1246 = private unnamed_addr constant [68 x i8] c"  -l<lib> -L<dir> -I<dir> -D<name>  and .c .cpp .o .a files to link\00"
-@.str.1247 = private unnamed_addr constant [14 x i8] c"--emit-header\00"
-@.str.1248 = private unnamed_addr constant [6 x i8] c"--lib\00"
-@.str.1249 = private unnamed_addr constant [6 x i8] c"--pic\00"
-@.str.1250 = private unnamed_addr constant [9 x i8] c"--target\00"
-@.str.1251 = private unnamed_addr constant [24 x i8] c"error: unknown target `\00"
-@.str.1252 = private unnamed_addr constant [113 x i8] c"` (expected linux-x64, linux-arm64, macos-x64, macos-arm64, windows-x64, windows-arm64, host, or an LLVM triple)\00"
-@.str.1253 = private unnamed_addr constant [10 x i8] c"--sysroot\00"
-@.str.1254 = private unnamed_addr constant [7 x i8] c"--test\00"
-@.str.1255 = private unnamed_addr constant [10 x i8] c"--emit-ll\00"
-@.str.1256 = private unnamed_addr constant [10 x i8] c"--keep-ll\00"
-@.str.1257 = private unnamed_addr constant [4 x i8] c"-O1\00"
-@.str.1258 = private unnamed_addr constant [5 x i8] c"--cc\00"
-@.str.1259 = private unnamed_addr constant [6 x i8] c"--cxx\00"
-@.str.1260 = private unnamed_addr constant [5 x i8] c".obj\00"
-@.str.1261 = private unnamed_addr constant [24 x i8] c"error: unknown option `\00"
-@.str.1262 = private unnamed_addr constant [36 x i8] c"error: don't know what to do with `\00"
-@.str.1263 = private unnamed_addr constant [25 x i8] c"` (expected a .zev file)\00"
-@.str.1264 = private unnamed_addr constant [10 x i8] c"_test.zev\00"
-@.str.1265 = private unnamed_addr constant [7 x i8] c" error\00"
-@.str.1266 = private unnamed_addr constant [2 x i8] c"s\00"
-@.str.1267 = private unnamed_addr constant [7 x i8] c" found\00"
-@.str.1268 = private unnamed_addr constant [22 x i8] c"error: cannot write `\00"
-@.str.1269 = private unnamed_addr constant [4 x i8] c".ll\00"
-@.str.1270 = private unnamed_addr constant [14 x i8] c"ZEVIC_SYSROOT\00"
-@.str.1271 = private unnamed_addr constant [86 x i8] c"error: --test builds a program that runs here, so it cannot be combined with --target\00"
-@.str.1272 = private unnamed_addr constant [9 x i8] c"/zig/zig\00"
-@.str.1273 = private unnamed_addr constant [10 x i8] c".zevic.ll\00"
-@.str.1274 = private unnamed_addr constant [32 x i8] c"error: clang failed (exit code \00"
-@.str.1275 = private unnamed_addr constant [19 x i8] c") while building `\00"
-@.str.1276 = private unnamed_addr constant [21 x i8] c"note: building for `\00"
-@.str.1277 = private unnamed_addr constant [153 x i8] c"` needs that system's C headers and libraries: give `--sysroot <dir>` (or ZEVIC_SYSROOT), or Zig (`install.sh --with-zig`, or ZEVIC_CLANG=<path to zig>)\00"
-@.str.1278 = private unnamed_addr constant [28 x i8] c"tools/zevic1/src/Parser.zev\00"
-@.str.1279 = private unnamed_addr constant [13 x i8] c"syntax error\00"
-@.str.1280 = private unnamed_addr constant [9 x i8] c"a number\00"
-@.str.1281 = private unnamed_addr constant [9 x i8] c"a string\00"
-@.str.1282 = private unnamed_addr constant [12 x i8] c"a character\00"
-@.str.1283 = private unnamed_addr constant [20 x i8] c"the end of the line\00"
-@.str.1284 = private unnamed_addr constant [20 x i8] c"the end of the file\00"
-@.str.1285 = private unnamed_addr constant [10 x i8] c"expected \00"
-@.str.1286 = private unnamed_addr constant [9 x i8] c", found \00"
-@.str.1287 = private unnamed_addr constant [21 x i8] c"expected `>`, found \00"
-@.str.1288 = private unnamed_addr constant [26 x i8] c"type is nested too deeply\00"
-@.str.1289 = private unnamed_addr constant [4 x i8] c"`)`\00"
-@.str.1290 = private unnamed_addr constant [4 x i8] c"`(`\00"
-@.str.1291 = private unnamed_addr constant [24 x i8] c"expected a type, found \00"
-@.str.1292 = private unnamed_addr constant [22 x i8] c"a type parameter name\00"
-@.str.1293 = private unnamed_addr constant [24 x i8] c"empty `${}` in a string\00"
-@.str.1294 = private unnamed_addr constant [12 x i8] c"unexpected \00"
-@.str.1295 = private unnamed_addr constant [13 x i8] c" in `${...}`\00"
-@.str.1296 = private unnamed_addr constant [17 x i8] c"a parameter name\00"
-@.str.1297 = private unnamed_addr constant [22 x i8] c"` must be written (`(\00"
-@.str.1298 = private unnamed_addr constant [17 x i8] c": Type) => ...`)\00"
-@.str.1299 = private unnamed_addr constant [5 x i8] c"`=>`\00"
-@.str.1300 = private unnamed_addr constant [55 x i8] c"`(` after `if` (conditions are written in parentheses)\00"
-@.str.1301 = private unnamed_addr constant [53 x i8] c"expected `{` (the body of an `if` must be in braces)\00"
-@.str.1302 = private unnamed_addr constant [34 x i8] c"expected `if` or `{` after `else`\00"
-@.str.1303 = private unnamed_addr constant [60 x i8] c"`(` after `match` (the scrutinee is written in parentheses)\00"
-@.str.1304 = private unnamed_addr constant [4 x i8] c"`{`\00"
-@.str.1305 = private unnamed_addr constant [35 x i8] c"unterminated `match`: expected `}`\00"
-@.str.1306 = private unnamed_addr constant [50 x i8] c"`(` (a guard condition is written in parentheses)\00"
-@.str.1307 = private unnamed_addr constant [53 x i8] c"expected `,` or a new line after a match arm, found \00"
-@.str.1308 = private unnamed_addr constant [4 x i8] c"`]`\00"
-@.str.1309 = private unnamed_addr constant [21 x i8] c"`:` in a map literal\00"
-@.str.1310 = private unnamed_addr constant [4 x i8] c"`}`\00"
-@.str.1311 = private unnamed_addr constant [63 x i8] c"expected `{` after `async` (an `async` block: `async { ... }`)\00"
-@.str.1312 = private unnamed_addr constant [31 x i8] c"expected an expression, found \00"
-@.str.1313 = private unnamed_addr constant [4 x i8] c"`<`\00"
-@.str.1314 = private unnamed_addr constant [41 x i8] c"expected a member name after `.`, found \00"
-@.str.1315 = private unnamed_addr constant [24 x i8] c"`)` after the arguments\00"
-@.str.1316 = private unnamed_addr constant [13 x i8] c"a field name\00"
-@.str.1317 = private unnamed_addr constant [25 x i8] c"`:` after the field name\00"
-@.str.1318 = private unnamed_addr constant [37 x i8] c"`}` (fields are separated by commas)\00"
-@.str.1319 = private unnamed_addr constant [32 x i8] c"expression is nested too deeply\00"
-@.str.1320 = private unnamed_addr constant [3 x i8] c"is\00"
-@.str.1321 = private unnamed_addr constant [64 x i8] c"comparison operators cannot be chained (write `a < b && b < c`)\00"
-@.str.1322 = private unnamed_addr constant [25 x i8] c"ranges cannot be chained\00"
-@.str.1323 = private unnamed_addr constant [46 x i8] c"`-` in a pattern must be followed by a number\00"
-@.str.1324 = private unnamed_addr constant [38 x i8] c"`:` after the field name in a pattern\00"
-@.str.1325 = private unnamed_addr constant [27 x i8] c"expected a pattern, found \00"
-@.str.1326 = private unnamed_addr constant [8 x i8] c"write `\00"
-@.str.1327 = private unnamed_addr constant [35 x i8] c"@label` without a blank before `@`\00"
-@.str.1328 = private unnamed_addr constant [46 x i8] c"expected a label name right after `@` (like `\00"
-@.str.1329 = private unnamed_addr constant [9 x i8] c"@outer`)\00"
-@.str.1330 = private unnamed_addr constant [75 x i8] c"write the label as `name@ loop` on one line, with `@` right after the name\00"
-@.str.1331 = private unnamed_addr constant [33 x i8] c"a variable needs a type: write `\00"
-@.str.1332 = private unnamed_addr constant [21 x i8] c" name: Type = value`\00"
-@.str.1333 = private unnamed_addr constant [58 x i8] c"`=` and an initial value (a variable must be initialised)\00"
-@.str.1334 = private unnamed_addr constant [58 x i8] c"`(` after `while` (conditions are written in parentheses)\00"
-@.str.1335 = private unnamed_addr constant [52 x i8] c"expected `{` (the body of a loop must be in braces)\00"
-@.str.1336 = private unnamed_addr constant [26 x i8] c"expected `{` after `loop`\00"
-@.str.1337 = private unnamed_addr constant [16 x i8] c"`(` after `for`\00"
-@.str.1338 = private unnamed_addr constant [5 x i8] c"`in`\00"
-@.str.1339 = private unnamed_addr constant [83 x i8] c"declarations are only allowed at the top level (use a lambda for a local function)\00"
-@.str.1340 = private unnamed_addr constant [55 x i8] c"expected a new line or `}` after the statement, found \00"
-@.str.1341 = private unnamed_addr constant [25 x i8] c"this `{` is never closed\00"
-@.str.1342 = private unnamed_addr constant [5 x i8] c"`fn`\00"
-@.str.1343 = private unnamed_addr constant [16 x i8] c"a function name\00"
-@.str.1344 = private unnamed_addr constant [28 x i8] c"`(` after the function name\00"
-@.str.1345 = private unnamed_addr constant [60 x i8] c"`:` and the parameter's type (parameter types are required)\00"
-@.str.1346 = private unnamed_addr constant [25 x i8] c"`)` after the parameters\00"
-@.str.1347 = private unnamed_addr constant [23 x i8] c"the C name as a string\00"
-@.str.1348 = private unnamed_addr constant [40 x i8] c"expected `{` and the body of function `\00"
-@.str.1349 = private unnamed_addr constant [25 x i8] c"`:` and the field's type\00"
-@.str.1350 = private unnamed_addr constant [22 x i8] c"expected `fn` after `\00"
-@.str.1351 = private unnamed_addr constant [23 x i8] c"a variant name or `fn`\00"
-@.str.1352 = private unnamed_addr constant [38 x i8] c"an interface can only contain methods\00"
-@.str.1353 = private unnamed_addr constant [52 x i8] c"expected a new line or `}` after the member, found \00"
-@.str.1354 = private unnamed_addr constant [12 x i8] c"a type name\00"
-@.str.1355 = private unnamed_addr constant [29 x i8] c"`{` and the body of the type\00"
-@.str.1356 = private unnamed_addr constant [23 x i8] c"the ABI string (`\22C\22`)\00"
-@.str.1357 = private unnamed_addr constant [32 x i8] c"expected `{` after `extern \22C\22`\00"
-@.str.1358 = private unnamed_addr constant [66 x i8] c"an `extern` block can contain only `fn` and `struct` declarations\00"
-@.str.1359 = private unnamed_addr constant [16 x i8] c"a constant name\00"
-@.str.1360 = private unnamed_addr constant [28 x i8] c"`:` and the constant's type\00"
-@.str.1361 = private unnamed_addr constant [18 x i8] c"`=` and the value\00"
-@.str.1362 = private unnamed_addr constant [78 x i8] c"`mut` is not allowed at the top level (global mutable state is not supported)\00"
-@.str.1363 = private unnamed_addr constant [5 x i8] c"test\00"
-@.str.1364 = private unnamed_addr constant [101 x i8] c" at the top level (expected `fn`, `struct`, `class`, `enum`, `interface`, `extern`, `let` or `test`)\00"
-@.str.1365 = private unnamed_addr constant [43 x i8] c"a Zevic file must start with `module Name`\00"
-@.str.1366 = private unnamed_addr constant [14 x i8] c"a module name\00"
-@.str.1367 = private unnamed_addr constant [14 x i8] c"an alias name\00"
-@.str.1368 = private unnamed_addr constant [10 x i8] c"ptr %this\00"
-@.str.1369 = private unnamed_addr constant [22 x i8] c"store ptr %this, ptr \00"
-@.str.1370 = private unnamed_addr constant [6 x i8] c"%this\00"
-@.str.1371 = private unnamed_addr constant [29 x i8] c"tools/zevic1/src/Program.zev\00"
-@.str.1372 = private unnamed_addr constant [14 x i8] c"` has no body\00"
-@.str.1373 = private unnamed_addr constant [65 x i8] c"the function result (the body must end with a value or `return`)\00"
-@.str.1374 = private unnamed_addr constant [72 x i8] c"no entry point: a program needs `module Main` with a public `fn Main()`\00"
-@.str.1375 = private unnamed_addr constant [35 x i8] c"`Main` cannot have type parameters\00"
-@.str.1376 = private unnamed_addr constant [56 x i8] c"`Main` takes no parameters or one `args: Array<String>`\00"
-@.str.1377 = private unnamed_addr constant [10 x i8] c"Zevic.Env\00"
-@.str.1378 = private unnamed_addr constant [8 x i8] c"RawArgs\00"
-@.str.1379 = private unnamed_addr constant [54 x i8] c"the parameter of `Main` must be `args: Array<String>`\00"
-@.str.1380 = private unnamed_addr constant [60 x i8] c"cannot find `Zevic.Env.RawArgs` for the arguments of `Main`\00"
-@.str.1381 = private unnamed_addr constant [75 x i8] c"`Main` must not return a value (use `Env.Exit(code)` to set the exit code)\00"
-@.str.1382 = private unnamed_addr constant [50 x i8] c"; generated by zevic0\0Asource_filename = \22zevic\22\0A\0A\00"
-@.str.1383 = private unnamed_addr constant [37 x i8] c"declare void @zevic_init(i32, ptr)\0A\0A\00"
-@.str.1384 = private unnamed_addr constant [77 x i8] c"declare void @zevic_test_add(ptr, i64, ptr)\0Adeclare i32 @zevic_test_main()\0A\0A\00"
-@.str.1385 = private unnamed_addr constant [88 x i8] c"define i32 @main(i32 %argc, ptr %argv) {\0A  call void @zevic_init(i32 %argc, ptr %argv)\0A\00"
-@.str.1386 = private unnamed_addr constant [33 x i8] c"  call void @zevic_test_add(ptr \00"
-@.str.1387 = private unnamed_addr constant [9 x i8] c", ptr @\22\00"
-@.str.1388 = private unnamed_addr constant [4 x i8] c"\22)\0A\00"
-@.str.1389 = private unnamed_addr constant [53 x i8] c"  %rc = call i32 @zevic_test_main()\0A  ret i32 %rc\0A}\0A\00"
-@.str.1390 = private unnamed_addr constant [16 x i8] c"  %args = call \00"
-@.str.1391 = private unnamed_addr constant [19 x i8] c"\22()\0A  call void @\22\00"
-@.str.1392 = private unnamed_addr constant [9 x i8] c" %args)\0A\00"
-@.str.1393 = private unnamed_addr constant [15 x i8] c"  call void @\22\00"
-@.str.1394 = private unnamed_addr constant [5 x i8] c"\22()\0A\00"
-@.str.1395 = private unnamed_addr constant [15 x i8] c"  ret i32 0\0A}\0A\00"
-@.str.1396 = private unnamed_addr constant [2 x i8] c"*\00"
-@.str.1397 = private unnamed_addr constant [8 x i8] c"struct \00"
-@.str.1398 = private unnamed_addr constant [5 x i8] c"char\00"
-@.str.1399 = private unnamed_addr constant [7 x i8] c"CSChar\00"
-@.str.1400 = private unnamed_addr constant [12 x i8] c"signed char\00"
-@.str.1401 = private unnamed_addr constant [7 x i8] c"CUChar\00"
-@.str.1402 = private unnamed_addr constant [14 x i8] c"unsigned char\00"
-@.str.1403 = private unnamed_addr constant [7 x i8] c"CShort\00"
-@.str.1404 = private unnamed_addr constant [6 x i8] c"short\00"
-@.str.1405 = private unnamed_addr constant [8 x i8] c"CUShort\00"
-@.str.1406 = private unnamed_addr constant [15 x i8] c"unsigned short\00"
-@.str.1407 = private unnamed_addr constant [4 x i8] c"int\00"
-@.str.1408 = private unnamed_addr constant [13 x i8] c"unsigned int\00"
-@.str.1409 = private unnamed_addr constant [5 x i8] c"long\00"
-@.str.1410 = private unnamed_addr constant [14 x i8] c"unsigned long\00"
-@.str.1411 = private unnamed_addr constant [10 x i8] c"CLongLong\00"
-@.str.1412 = private unnamed_addr constant [10 x i8] c"long long\00"
-@.str.1413 = private unnamed_addr constant [11 x i8] c"CULongLong\00"
-@.str.1414 = private unnamed_addr constant [19 x i8] c"unsigned long long\00"
-@.str.1415 = private unnamed_addr constant [7 x i8] c"size_t\00"
-@.str.1416 = private unnamed_addr constant [8 x i8] c"CSSizeT\00"
-@.str.1417 = private unnamed_addr constant [9 x i8] c"intptr_t\00"
-@.str.1418 = private unnamed_addr constant [9 x i8] c"CPtrDiff\00"
-@.str.1419 = private unnamed_addr constant [10 x i8] c"ptrdiff_t\00"
-@.str.1420 = private unnamed_addr constant [8 x i8] c"CIntPtr\00"
-@.str.1421 = private unnamed_addr constant [9 x i8] c"CUIntPtr\00"
-@.str.1422 = private unnamed_addr constant [10 x i8] c"uintptr_t\00"
-@.str.1423 = private unnamed_addr constant [6 x i8] c"_Bool\00"
-@.str.1424 = private unnamed_addr constant [13 x i8] c"const char *\00"
-@.str.1425 = private unnamed_addr constant [4 x i8] c" {\0A\00"
-@.str.1426 = private unnamed_addr constant [3 x i8] c";\0A\00"
-@.str.1427 = private unnamed_addr constant [5 x i8] c"};\0A\0A\00"
-@.str.1428 = private unnamed_addr constant [79 x i8] c"/* generated by zevic0: the `export \22C\22` functions of this program */\0A#ifndef \00"
-@.str.1429 = private unnamed_addr constant [10 x i8] c"\0A#define \00"
-@.str.1430 = private unnamed_addr constant [3 x i8] c"\0A\0A\00"
-@.str.1431 = private unnamed_addr constant [82 x i8] c"#include <stddef.h>\0A#include <stdint.h>\0A\0A#ifdef __cplusplus\0Aextern \22C\22 {\0A#endif\0A\0A\00"
-@.str.1432 = private unnamed_addr constant [105 x i8] c"/* Call this once before any other function of the library. */\0Avoid zevic_init(int argc, char **argv);\0A\0A\00"
-@.str.1433 = private unnamed_addr constant [4 x i8] c");\0A\00"
-@.str.1434 = private unnamed_addr constant [38 x i8] c"\0A#ifdef __cplusplus\0A}\0A#endif\0A\0A#endif\0A\00"
-@.str.1435 = private unnamed_addr constant [3 x i8] c"::\00"
-@.str.1436 = private unnamed_addr constant [27 x i8] c"declaration without a file\00"
-@.str.1437 = private unnamed_addr constant [29 x i8] c"tools/zevic1/src/Resolve.zev\00"
-@.str.1438 = private unnamed_addr constant [10 x i8] c"ErrorKind\00"
-@.str.1439 = private unnamed_addr constant [14 x i8] c"StringBuilder\00"
-@.str.1440 = private unnamed_addr constant [5 x i8] c"Same\00"
-@.str.1441 = private unnamed_addr constant [6 x i8] c"test.\00"
-@.str.1442 = private unnamed_addr constant [32 x i8] c"` is already defined in module \00"
-@.str.1443 = private unnamed_addr constant [28 x i8] c"the first definition is at \00"
-@.str.1444 = private unnamed_addr constant [73 x i8] c"module names starting with `Zevic` are reserved for the standard library\00"
-@.str.1445 = private unnamed_addr constant [49 x i8] c"` is a reserved name (it is part of the prelude)\00"
-@.str.1446 = private unnamed_addr constant [6 x i8] c"/src/\00"
-@.str.1447 = private unnamed_addr constant [52 x i8] c"`Zevic.Intrinsics` is only for the standard library\00"
-@.str.1448 = private unnamed_addr constant [21 x i8] c"cannot find module `\00"
-@.str.1449 = private unnamed_addr constant [38 x i8] c"looked for the standard library file \00"
-@.str.1450 = private unnamed_addr constant [30 x i8] c"a module cannot import itself\00"
-@.str.1451 = private unnamed_addr constant [62 x i8] c"` is already imported (or the name is used by another import)\00"
-@.str.1452 = private unnamed_addr constant [17 x i8] c"the short name `\00"
-@.str.1453 = private unnamed_addr constant [57 x i8] c"` clashes with another import; use the full name or `as`\00"
-@.str.1454 = private unnamed_addr constant [18 x i8] c"circular import: \00"
-@.str.1455 = private unnamed_addr constant [29 x i8] c"tools/zevic1/src/Suggest.zev\00"
-@.str.1456 = private unnamed_addr constant [12 x i8] c"end of file\00"
-@.str.1457 = private unnamed_addr constant [8 x i8] c"newline\00"
-@.str.1458 = private unnamed_addr constant [11 x i8] c"identifier\00"
-@.str.1459 = private unnamed_addr constant [8 x i8] c"integer\00"
-@.str.1460 = private unnamed_addr constant [7 x i8] c"number\00"
-@.str.1461 = private unnamed_addr constant [10 x i8] c"character\00"
-@.str.1462 = private unnamed_addr constant [5 x i8] c"byte\00"
-@.str.1463 = private unnamed_addr constant [7 x i8] c"string\00"
-@.str.1464 = private unnamed_addr constant [2 x i8] c"+\00"
-@.str.1465 = private unnamed_addr constant [2 x i8] c"&\00"
-@.str.1466 = private unnamed_addr constant [2 x i8] c"^\00"
-@.str.1467 = private unnamed_addr constant [2 x i8] c"~\00"
-@.str.1468 = private unnamed_addr constant [2 x i8] c"!\00"
-@.str.1469 = private unnamed_addr constant [3 x i8] c"<<\00"
-@.str.1470 = private unnamed_addr constant [3 x i8] c">>\00"
-@.str.1471 = private unnamed_addr constant [3 x i8] c"&&\00"
-@.str.1472 = private unnamed_addr constant [3 x i8] c"||\00"
-@.str.1473 = private unnamed_addr constant [2 x i8] c"=\00"
-@.str.1474 = private unnamed_addr constant [3 x i8] c"==\00"
-@.str.1475 = private unnamed_addr constant [3 x i8] c"!=\00"
-@.str.1476 = private unnamed_addr constant [3 x i8] c"<=\00"
-@.str.1477 = private unnamed_addr constant [3 x i8] c">=\00"
-@.str.1478 = private unnamed_addr constant [3 x i8] c"+=\00"
-@.str.1479 = private unnamed_addr constant [3 x i8] c"-=\00"
-@.str.1480 = private unnamed_addr constant [3 x i8] c"*=\00"
-@.str.1481 = private unnamed_addr constant [3 x i8] c"/=\00"
-@.str.1482 = private unnamed_addr constant [3 x i8] c"%=\00"
-@.str.1483 = private unnamed_addr constant [3 x i8] c"&=\00"
-@.str.1484 = private unnamed_addr constant [3 x i8] c"|=\00"
-@.str.1485 = private unnamed_addr constant [3 x i8] c"^=\00"
-@.str.1486 = private unnamed_addr constant [4 x i8] c"<<=\00"
-@.str.1487 = private unnamed_addr constant [4 x i8] c">>=\00"
-@.str.1488 = private unnamed_addr constant [3 x i8] c"..\00"
-@.str.1489 = private unnamed_addr constant [4 x i8] c"..=\00"
-@.str.1490 = private unnamed_addr constant [3 x i8] c"->\00"
-@.str.1491 = private unnamed_addr constant [3 x i8] c"=>\00"
-@.str.1492 = private unnamed_addr constant [2 x i8] c"{\00"
-@.str.1493 = private unnamed_addr constant [2 x i8] c"}\00"
-@.str.1494 = private unnamed_addr constant [27 x i8] c"tools/zevic1/src/Types.zev\00"
-@.str.1495 = private unnamed_addr constant [3 x i8] c"i8\00"
-@.str.1496 = private unnamed_addr constant [4 x i8] c"fn(\00"
-@.str.1497 = private unnamed_addr constant [2 x i8] c"'\00"
-@.str.1498 = private unnamed_addr constant [4 x i8] c" | \00"
-@.str.1499 = private unnamed_addr constant [4 x i8] c"i16\00"
-@.str.1500 = private unnamed_addr constant [4 x i8] c"i32\00"
-@.str.1501 = private unnamed_addr constant [4 x i8] c"i64\00"
-@.str.1502 = private unnamed_addr constant [3 x i8] c"i1\00"
-@.str.1503 = private unnamed_addr constant [13 x i8] c"{ ptr, i64 }\00"
-@.str.1504 = private unnamed_addr constant [3 x i8] c"{}\00"
-@.str.1505 = private unnamed_addr constant [13 x i8] c"{ ptr, ptr }\00"
-@.str.1506 = private unnamed_addr constant [3 x i8] c"{ \00"
-@.str.1507 = private unnamed_addr constant [8 x i8] c"{ i32 }\00"
-@.str.1508 = private unnamed_addr constant [9 x i8] c"{ i32, [\00"
-@.str.1509 = private unnamed_addr constant [10 x i8] c" x i64] }\00"
-@.str.1510 = private unnamed_addr constant [7 x i8] c"index \00"
-@.str.1511 = private unnamed_addr constant [26 x i8] c" is out of range (length \00"
-@.str.1512 = private unnamed_addr constant [15 x i8] c"Zevic/Core.zev\00"
-@.str.1513 = private unnamed_addr constant [7 x i8] c"slice \00"
-@.str.1514 = private unnamed_addr constant [15 x i8] c"Zevic/Text.zev\00"
-@.str.1515 = private unnamed_addr constant [18 x i8] c"Zevic/Process.zev\00"
-@.str.1516 = private unnamed_addr constant [15 x i8] c"cannot start \22\00"
-@.str.1517 = private unnamed_addr constant [21 x i8] c"create the directory\00"
-@.str.1518 = private unnamed_addr constant [5 x i8] c"read\00"
-@.str.1519 = private unnamed_addr constant [15 x i8] c"Zevic/Time.zev\00"
-@.str.1520 = private unnamed_addr constant [7 x i8] c"remove\00"
-@.str.1521 = private unnamed_addr constant [7 x i8] c"rename\00"
-@.str.1522 = private unnamed_addr constant [30 x i8] c"called Unwrap on a None value\00"
-@.str.1523 = private unnamed_addr constant [31 x i8] c" is not a Unicode scalar value\00"
-@.str.1524 = private unnamed_addr constant [35 x i8] c"the format is not a decimal number\00"
-@.str.1525 = private unnamed_addr constant [6 x i8] c"write\00"
-@.str.1526 = private unnamed_addr constant [8 x i8] c"cannot \00"
-@.str.1527 = private unnamed_addr constant [3 x i8] c" \22\00"
-@.str.1528 = private unnamed_addr constant [4 x i8] c"\22: \00"
-@.str.1529 = private unnamed_addr constant [14 x i8] c"cannot read \22\00"
-@.str.1530 = private unnamed_addr constant [16 x i8] c"\22 as a number: \00"
+@.str.951 = private unnamed_addr constant [3 x i8] c"I8\00"
+@.str.952 = private unnamed_addr constant [4 x i8] c"I16\00"
+@.str.953 = private unnamed_addr constant [4 x i8] c"I32\00"
+@.str.954 = private unnamed_addr constant [4 x i8] c"I64\00"
+@.str.955 = private unnamed_addr constant [3 x i8] c"U8\00"
+@.str.956 = private unnamed_addr constant [4 x i8] c"U16\00"
+@.str.957 = private unnamed_addr constant [4 x i8] c"U32\00"
+@.str.958 = private unnamed_addr constant [4 x i8] c"U64\00"
+@.str.959 = private unnamed_addr constant [4 x i8] c"F32\00"
+@.str.960 = private unnamed_addr constant [4 x i8] c"F64\00"
+@.str.961 = private unnamed_addr constant [39 x i8] c"` needs a string literal as its format\00"
+@.str.962 = private unnamed_addr constant [16 x i8] c"the format of `\00"
+@.str.963 = private unnamed_addr constant [56 x i8] c"` cannot contain `${...}`; pass the values as arguments\00"
+@.str.964 = private unnamed_addr constant [2 x i8] c"%\00"
+@.str.965 = private unnamed_addr constant [6 x i8] c"-+ 0#\00"
+@.str.966 = private unnamed_addr constant [10 x i8] c"`%{` in `\00"
+@.str.967 = private unnamed_addr constant [25 x i8] c"` is not closed with `}`\00"
+@.str.968 = private unnamed_addr constant [4 x i8] c"`%{\00"
+@.str.969 = private unnamed_addr constant [8 x i8] c"}` in `\00"
+@.str.970 = private unnamed_addr constant [82 x i8] c"`: the type must be one of I8 I16 I32 I64 U8 U16 U32 U64 F32 F64 String Char Bool\00"
+@.str.971 = private unnamed_addr constant [3 x i8] c"ll\00"
+@.str.972 = private unnamed_addr constant [15 x i8] c"duoxXfeEgGscDi\00"
+@.str.973 = private unnamed_addr constant [30 x i8] c"invalid format specifier in `\00"
+@.str.974 = private unnamed_addr constant [41 x i8] c"` (use %d %u %o %x %f %e %g %s %c or %%)\00"
+@.str.975 = private unnamed_addr constant [16 x i8] c"the format has \00"
+@.str.976 = private unnamed_addr constant [22 x i8] c" placeholder(s), but \00"
+@.str.977 = private unnamed_addr constant [21 x i8] c" value(s) were given\00"
+@.str.978 = private unnamed_addr constant [11 x i8] c"an integer\00"
+@.str.979 = private unnamed_addr constant [17 x i8] c"a decimal number\00"
+@.str.980 = private unnamed_addr constant [11 x i8] c"a `String`\00"
+@.str.981 = private unnamed_addr constant [9 x i8] c"a `Char`\00"
+@.str.982 = private unnamed_addr constant [3 x i8] c"%{\00"
+@.str.983 = private unnamed_addr constant [2 x i8] c"}\00"
+@.str.984 = private unnamed_addr constant [10 x i8] c", found `\00"
+@.str.985 = private unnamed_addr constant [16 x i8] c"zevic_fmt_begin\00"
+@.str.986 = private unnamed_addr constant [32 x i8] c"declare void @zevic_fmt_begin()\00"
+@.str.987 = private unnamed_addr constant [14 x i8] c"zevic_fmt_end\00"
+@.str.988 = private unnamed_addr constant [33 x i8] c"declare void @zevic_fmt_end(ptr)\00"
+@.str.989 = private unnamed_addr constant [29 x i8] c"call void @zevic_fmt_begin()\00"
+@.str.990 = private unnamed_addr constant [17 x i8] c"zevic_printf_lit\00"
+@.str.991 = private unnamed_addr constant [46 x i8] c"declare void @zevic_printf_lit(i32, ptr, i64)\00"
+@.str.992 = private unnamed_addr constant [15 x i8] c"zevic_printf_i\00"
+@.str.993 = private unnamed_addr constant [44 x i8] c"declare void @zevic_printf_i(i32, ptr, i64)\00"
+@.str.994 = private unnamed_addr constant [15 x i8] c"zevic_printf_f\00"
+@.str.995 = private unnamed_addr constant [47 x i8] c"declare void @zevic_printf_f(i32, ptr, double)\00"
+@.str.996 = private unnamed_addr constant [15 x i8] c"zevic_printf_s\00"
+@.str.997 = private unnamed_addr constant [49 x i8] c"declare void @zevic_printf_s(i32, ptr, ptr, i64)\00"
+@.str.998 = private unnamed_addr constant [15 x i8] c"zevic_printf_c\00"
+@.str.999 = private unnamed_addr constant [44 x i8] c"declare void @zevic_printf_c(i32, ptr, i32)\00"
+@.str.1000 = private unnamed_addr constant [33 x i8] c"call void @zevic_printf_lit(i32 \00"
+@.str.1001 = private unnamed_addr constant [31 x i8] c"call void @zevic_printf_i(i32 \00"
+@.str.1002 = private unnamed_addr constant [31 x i8] c"call void @zevic_printf_f(i32 \00"
+@.str.1003 = private unnamed_addr constant [10 x i8] c", double \00"
+@.str.1004 = private unnamed_addr constant [15 x i8] c", i64 4, i64 5\00"
+@.str.1005 = private unnamed_addr constant [31 x i8] c"call void @zevic_printf_s(i32 \00"
+@.str.1006 = private unnamed_addr constant [31 x i8] c"call void @zevic_printf_c(i32 \00"
+@.str.1007 = private unnamed_addr constant [30 x i8] c"call void @zevic_fmt_end(ptr \00"
+@.str.1008 = private unnamed_addr constant [23 x i8] c"the generic function `\00"
+@.str.1009 = private unnamed_addr constant [62 x i8] c"` cannot be used as a value (call it, or wrap it in a lambda)\00"
+@.str.1010 = private unnamed_addr constant [5 x i8] c"the \00"
+@.str.1011 = private unnamed_addr constant [12 x i8] c" function `\00"
+@.str.1012 = private unnamed_addr constant [63 x i8] c"` cannot be used as a value here (wrap it in a Zevic function)\00"
+@.str.1013 = private unnamed_addr constant [7 x i8] c"thunk.\00"
+@.str.1014 = private unnamed_addr constant [8 x i8] c"define \00"
+@.str.1015 = private unnamed_addr constant [11 x i8] c"\22(ptr %env\00"
+@.str.1016 = private unnamed_addr constant [20 x i8] c")\0A  unreachable\0A}\0A\0A\00"
+@.str.1017 = private unnamed_addr constant [9 x i8] c"{ ptr @\22\00"
+@.str.1018 = private unnamed_addr constant [19 x i8] c"this lambda takes \00"
+@.str.1019 = private unnamed_addr constant [36 x i8] c" parameter(s), but a function with \00"
+@.str.1020 = private unnamed_addr constant [13 x i8] c" is expected\00"
+@.str.1021 = private unnamed_addr constant [35 x i8] c"the type of the lambda parameter `\00"
+@.str.1022 = private unnamed_addr constant [35 x i8] c"` cannot be inferred here; write `\00"
+@.str.1023 = private unnamed_addr constant [8 x i8] c": Type`\00"
+@.str.1024 = private unnamed_addr constant [12 x i8] c"parameter `\00"
+@.str.1025 = private unnamed_addr constant [9 x i8] c"`, but `\00"
+@.str.1026 = private unnamed_addr constant [19 x i8] c"` is expected here\00"
+@.str.1027 = private unnamed_addr constant [49 x i8] c"an `async` block cannot use the `mut` variable `\00"
+@.str.1028 = private unnamed_addr constant [139 x i8] c"` of the surrounding function (the two would race); send the value through a `Channel`, or keep it in a class that is guarded by a `Mutex`\00"
+@.str.1029 = private unnamed_addr constant [6 x i8] c"entry\00"
+@.str.1030 = private unnamed_addr constant [46 x i8] c" = getelementptr inbounds ptr, ptr %env, i64 \00"
+@.str.1031 = private unnamed_addr constant [9 x i8] c"ptr %env\00"
+@.str.1032 = private unnamed_addr constant [3 x i8] c"%p\00"
+@.str.1033 = private unnamed_addr constant [25 x i8] c"the result of the lambda\00"
+@.str.1034 = private unnamed_addr constant [8 x i8] c"lambda.\00"
+@.str.1035 = private unnamed_addr constant [12 x i8] c") {\0Aentry:\0A\00"
+@.str.1036 = private unnamed_addr constant [4 x i8] c"}\0A\0A\00"
+@.str.1037 = private unnamed_addr constant [42 x i8] c" = insertvalue { ptr, ptr } undef, ptr @\22\00"
+@.str.1038 = private unnamed_addr constant [5 x i8] c"\22, 0\00"
+@.str.1039 = private unnamed_addr constant [25 x i8] c"tools/zevic1/src/Gen.zev\00"
+@.str.1040 = private unnamed_addr constant [6 x i8] c"error\00"
+@.str.1041 = private unnamed_addr constant [11 x i8] c"Zevic.Core\00"
+@.str.1042 = private unnamed_addr constant [25 x i8] c"` is private to module `\00"
+@.str.1043 = private unnamed_addr constant [60 x i8] c"` (names starting with a lowercase letter are not exported)\00"
+@.str.1044 = private unnamed_addr constant [9 x i8] c"module `\00"
+@.str.1045 = private unnamed_addr constant [26 x i8] c"` takes no type arguments\00"
+@.str.1046 = private unnamed_addr constant [17 x i8] c"Zevic.Intrinsics\00"
+@.str.1047 = private unnamed_addr constant [4 x i8] c"Buf\00"
+@.str.1048 = private unnamed_addr constant [68 x i8] c"the standard library file Core.zev is missing (cannot find `Array`)\00"
+@.str.1049 = private unnamed_addr constant [25 x i8] c"a syntax node is missing\00"
+@.str.1050 = private unnamed_addr constant [38 x i8] c"`Never` cannot be a member of a union\00"
+@.str.1051 = private unnamed_addr constant [57 x i8] c"a union needs at least two different types (found only `\00"
+@.str.1052 = private unnamed_addr constant [16 x i8] c"expected a type\00"
+@.str.1053 = private unnamed_addr constant [51 x i8] c"`Self` can only be used inside a type or interface\00"
+@.str.1054 = private unnamed_addr constant [6 x i8] c"Never\00"
+@.str.1055 = private unnamed_addr constant [15 x i8] c"unknown type `\00"
+@.str.1056 = private unnamed_addr constant [16 x i8] c"` is not a type\00"
+@.str.1057 = private unnamed_addr constant [61 x i8] c"` uses `Self`, so it can only be used as a constraint (`<T: \00"
+@.str.1058 = private unnamed_addr constant [32 x i8] c">`), not as the type of a value\00"
+@.str.1059 = private unnamed_addr constant [8 x i8] c"<error>\00"
+@.str.1060 = private unnamed_addr constant [9 x i8] c" | kind=\00"
+@.str.1061 = private unnamed_addr constant [7 x i8] c" size=\00"
+@.str.1062 = private unnamed_addr constant [8 x i8] c" align=\00"
+@.str.1063 = private unnamed_addr constant [5 x i8] c" ll=\00"
+@.str.1064 = private unnamed_addr constant [8 x i8] c" words=\00"
+@.str.1065 = private unnamed_addr constant [9 x i8] c"  field \00"
+@.str.1066 = private unnamed_addr constant [11 x i8] c"  variant \00"
+@.str.1067 = private unnamed_addr constant [6 x i8] c" tag=\00"
+@.str.1068 = private unnamed_addr constant [8 x i8] c" named=\00"
+@.str.1069 = private unnamed_addr constant [10 x i8] c" payload=\00"
+@.str.1070 = private unnamed_addr constant [5 x i8] c"    \00"
+@.str.1071 = private unnamed_addr constant [39 x i8] c"method of a type without a declaration\00"
+@.str.1072 = private unnamed_addr constant [28 x i8] c"` is not an interface, so `\00"
+@.str.1073 = private unnamed_addr constant [22 x i8] c"` cannot implement it\00"
+@.str.1074 = private unnamed_addr constant [32 x i8] c"interface without a declaration\00"
+@.str.1075 = private unnamed_addr constant [6 x i8] c") -> \00"
+@.str.1076 = private unnamed_addr constant [19 x i8] c"` gets a default `\00"
+@.str.1077 = private unnamed_addr constant [14 x i8] c"` from both `\00"
+@.str.1078 = private unnamed_addr constant [19 x i8] c"`; write its own `\00"
+@.str.1079 = private unnamed_addr constant [12 x i8] c"` to choose\00"
+@.str.1080 = private unnamed_addr constant [11 x i8] c"`, which `\00"
+@.str.1081 = private unnamed_addr constant [11 x i8] c"` requires\00"
+@.str.1082 = private unnamed_addr constant [38 x i8] c"` does not match the declaration in `\00"
+@.str.1083 = private unnamed_addr constant [18 x i8] c"`: it should be `\00"
+@.str.1084 = private unnamed_addr constant [5 x i8] c"mut \00"
+@.str.1085 = private unnamed_addr constant [4 x i8] c"fn \00"
+@.str.1086 = private unnamed_addr constant [10 x i8] c"Equatable\00"
+@.str.1087 = private unnamed_addr constant [52 x i8] c"` is not an interface, so it cannot be a constraint\00"
+@.str.1088 = private unnamed_addr constant [36 x i8] c"` does not satisfy the constraint `\00"
+@.str.1089 = private unnamed_addr constant [28 x i8] c"` would have to implement `\00"
+@.str.1090 = private unnamed_addr constant [22 x i8] c"` of the C function `\00"
+@.str.1091 = private unnamed_addr constant [46 x i8] c"`; C functions take only C types and pointers\00"
+@.str.1092 = private unnamed_addr constant [40 x i8] c"structs are passed by pointer: write `*\00"
+@.str.1093 = private unnamed_addr constant [20 x i8] c"` and pass `&value`\00"
+@.str.1094 = private unnamed_addr constant [45 x i8] c"convert it with a method such as `.ToCInt()`\00"
+@.str.1095 = private unnamed_addr constant [17 x i8] c"the C function `\00"
+@.str.1096 = private unnamed_addr constant [12 x i8] c"` returns `\00"
+@.str.1097 = private unnamed_addr constant [57 x i8] c"`; C functions return only C types, pointers and `CVoid`\00"
+@.str.1098 = private unnamed_addr constant [7 x i8] c"zevic_\00"
+@.str.1099 = private unnamed_addr constant [13 x i8] c"the C name `\00"
+@.str.1100 = private unnamed_addr constant [20 x i8] c"` is exported twice\00"
+@.str.1101 = private unnamed_addr constant [29 x i8] c"the other one is in module `\00"
+@.str.1102 = private unnamed_addr constant [49 x i8] c"an exported function cannot have type parameters\00"
+@.str.1103 = private unnamed_addr constant [5 x i8] c"Main\00"
+@.str.1104 = private unnamed_addr constant [26 x i8] c"`Main` cannot be exported\00"
+@.str.1105 = private unnamed_addr constant [17 x i8] c"0123456789ABCDEF\00"
+@.str.1106 = private unnamed_addr constant [2 x i8] c"\5C\00"
+@.str.1107 = private unnamed_addr constant [7 x i8] c"@.str.\00"
+@.str.1108 = private unnamed_addr constant [10 x i8] c" x i8] c\22\00"
+@.str.1109 = private unnamed_addr constant [6 x i8] c"\5C00\22\0A\00"
+@.str.1110 = private unnamed_addr constant [3 x i8] c" }\00"
+@.str.1111 = private unnamed_addr constant [6 x i8] c"Zevic\00"
+@.str.1112 = private unnamed_addr constant [26 x i8] c"tools/zevic1/src/Home.zev\00"
+@.str.1113 = private unnamed_addr constant [27 x i8] c"/packages/Zevic/zevic.toml\00"
+@.str.1114 = private unnamed_addr constant [11 x i8] c"ZEVIC_HOME\00"
+@.str.1115 = private unnamed_addr constant [16 x i8] c"/../share/zevic\00"
+@.str.1116 = private unnamed_addr constant [4 x i8] c"/..\00"
+@.str.1117 = private unnamed_addr constant [27 x i8] c"tools/zevic1/src/Lexer.zev\00"
+@.str.1118 = private unnamed_addr constant [7 x i8] c"module\00"
+@.str.1119 = private unnamed_addr constant [7 x i8] c"import\00"
+@.str.1120 = private unnamed_addr constant [3 x i8] c"as\00"
+@.str.1121 = private unnamed_addr constant [3 x i8] c"fn\00"
+@.str.1122 = private unnamed_addr constant [4 x i8] c"let\00"
+@.str.1123 = private unnamed_addr constant [4 x i8] c"mut\00"
+@.str.1124 = private unnamed_addr constant [6 x i8] c"class\00"
+@.str.1125 = private unnamed_addr constant [7 x i8] c"struct\00"
+@.str.1126 = private unnamed_addr constant [5 x i8] c"enum\00"
+@.str.1127 = private unnamed_addr constant [10 x i8] c"interface\00"
+@.str.1128 = private unnamed_addr constant [7 x i8] c"static\00"
+@.str.1129 = private unnamed_addr constant [7 x i8] c"extern\00"
+@.str.1130 = private unnamed_addr constant [7 x i8] c"export\00"
+@.str.1131 = private unnamed_addr constant [3 x i8] c"if\00"
+@.str.1132 = private unnamed_addr constant [6 x i8] c"while\00"
+@.str.1133 = private unnamed_addr constant [5 x i8] c"loop\00"
+@.str.1134 = private unnamed_addr constant [4 x i8] c"for\00"
+@.str.1135 = private unnamed_addr constant [3 x i8] c"in\00"
+@.str.1136 = private unnamed_addr constant [6 x i8] c"match\00"
+@.str.1137 = private unnamed_addr constant [7 x i8] c"return\00"
+@.str.1138 = private unnamed_addr constant [6 x i8] c"defer\00"
+@.str.1139 = private unnamed_addr constant [6 x i8] c"async\00"
+@.str.1140 = private unnamed_addr constant [6 x i8] c"await\00"
+@.str.1141 = private unnamed_addr constant [6 x i8] c"macro\00"
+@.str.1142 = private unnamed_addr constant [7 x i8] c"unsafe\00"
+@.str.1143 = private unnamed_addr constant [6 x i8] c"where\00"
+@.str.1144 = private unnamed_addr constant [6 x i8] c"const\00"
+@.str.1145 = private unnamed_addr constant [6 x i8] c"yield\00"
+@.str.1146 = private unnamed_addr constant [5 x i8] c"impl\00"
+@.str.1147 = private unnamed_addr constant [27 x i8] c"unfinished escape sequence\00"
+@.str.1148 = private unnamed_addr constant [40 x i8] c"`\5Cx` must be followed by two hex digits\00"
+@.str.1149 = private unnamed_addr constant [73 x i8] c"`\5CxNN` in a string must be 00 to 7F (use `\5Cu{...}` for other characters)\00"
+@.str.1150 = private unnamed_addr constant [23 x i8] c"`\5CxNN` is out of range\00"
+@.str.1151 = private unnamed_addr constant [40 x i8] c"`\5Cu` must be followed by `{hex digits}`\00"
+@.str.1152 = private unnamed_addr constant [25 x i8] c"invalid `\5Cu{...}` escape\00"
+@.str.1153 = private unnamed_addr constant [46 x i8] c"`\5Cu{...}` is not a valid Unicode scalar value\00"
+@.str.1154 = private unnamed_addr constant [24 x i8] c"unknown escape sequence\00"
+@.str.1155 = private unnamed_addr constant [27 x i8] c"unterminated block comment\00"
+@.str.1156 = private unnamed_addr constant [2 x i8] c"r\00"
+@.str.1157 = private unnamed_addr constant [125 x i8] c"Zevic has no `null`: use an `Option<T>` (`Some(value)` or `None`) for a value that may be missing, or `Null` for a C pointer\00"
+@.str.1158 = private unnamed_addr constant [65 x i8] c"` is reserved for the future and cannot be used as a name (use `\00"
+@.str.1159 = private unnamed_addr constant [16 x i8] c"` in backticks)\00"
+@.str.1160 = private unnamed_addr constant [71 x i8] c"malformed `identifier`: expected a name followed by a closing backtick\00"
+@.str.1161 = private unnamed_addr constant [59 x i8] c"unexpected non-ASCII character outside a string or comment\00"
+@.str.1162 = private unnamed_addr constant [25 x i8] c"`#` is not used in Zevic\00"
+@.str.1163 = private unnamed_addr constant [23 x i8] c"unexpected character `\00"
+@.str.1164 = private unnamed_addr constant [44 x i8] c"`_` in a number must sit between two digits\00"
+@.str.1165 = private unnamed_addr constant [40 x i8] c"expected digits after the number prefix\00"
+@.str.1166 = private unnamed_addr constant [67 x i8] c"a number needs digits on both sides of `.` (write `1.0`, not `1.`)\00"
+@.str.1167 = private unnamed_addr constant [2 x i8] c"e\00"
+@.str.1168 = private unnamed_addr constant [13 x i8] c"unexpected `\00"
+@.str.1169 = private unnamed_addr constant [51 x i8] c"` after a number (a type is written like `255_U8`)\00"
+@.str.1170 = private unnamed_addr constant [2 x i8] c"F\00"
+@.str.1171 = private unnamed_addr constant [48 x i8] c"a decimal number cannot have the integer type `\00"
+@.str.1172 = private unnamed_addr constant [55 x i8] c"a number cannot start with 0 (octal is written `0o17`)\00"
+@.str.1173 = private unnamed_addr constant [67 x i8] c"integer literal is too large (the maximum is 18446744073709551615)\00"
+@.str.1174 = private unnamed_addr constant [31 x i8] c"unterminated character literal\00"
+@.str.1175 = private unnamed_addr constant [24 x i8] c"empty character literal\00"
+@.str.1176 = private unnamed_addr constant [35 x i8] c"invalid UTF-8 in character literal\00"
+@.str.1177 = private unnamed_addr constant [62 x i8] c"a byte literal must be ASCII (use `b'\5CxNN'` for other values)\00"
+@.str.1178 = private unnamed_addr constant [72 x i8] c"a character literal holds exactly one character (use a string for more)\00"
+@.str.1179 = private unnamed_addr constant [30 x i8] c"unterminated `${` in a string\00"
+@.str.1180 = private unnamed_addr constant [34 x i8] c"invalid UTF-8 in a string literal\00"
+@.str.1181 = private unnamed_addr constant [76 x i8] c"a `\22\22\22` string must start on a new line (put the text after the line break)\00"
+@.str.1182 = private unnamed_addr constant [31 x i8] c"unterminated multi-line string\00"
+@.str.1183 = private unnamed_addr constant [42 x i8] c"the closing `\22\22\22` must be on its own line\00"
+@.str.1184 = private unnamed_addr constant [70 x i8] c"a line in a multi-line string is indented less than the closing `\22\22\22`\00"
+@.str.1185 = private unnamed_addr constant [69 x i8] c"unterminated string (a string cannot span lines; use `\22\22\22` for that)\00"
+@.str.1186 = private unnamed_addr constant [27 x i8] c"zevic: error: cannot read \00"
+@.str.1187 = private unnamed_addr constant [26 x i8] c"tools/zevic1/src/Main.zev\00"
+@.str.1188 = private unnamed_addr constant [10 x i8] c" (quoted)\00"
+@.str.1189 = private unnamed_addr constant [3 x i8] c" _\00"
+@.str.1190 = private unnamed_addr constant [5 x i8] c"expr\00"
+@.str.1191 = private unnamed_addr constant [5 x i8] c"text\00"
+@.str.1192 = private unnamed_addr constant [2 x i8] c"[\00"
+@.str.1193 = private unnamed_addr constant [2 x i8] c"]\00"
+@.str.1194 = private unnamed_addr constant [20 x i8] c"/packages/Zevic/src\00"
+@.str.1195 = private unnamed_addr constant [29 x i8] c"/packages/Zevic/src/Core.zev\00"
+@.str.1196 = private unnamed_addr constant [6 x i8] c"file \00"
+@.str.1197 = private unnamed_addr constant [5 x i8] c" std\00"
+@.str.1198 = private unnamed_addr constant [7 x i8] c"  dep \00"
+@.str.1199 = private unnamed_addr constant [10 x i8] c"  source \00"
+@.str.1200 = private unnamed_addr constant [12 x i8] c"    import \00"
+@.str.1201 = private unnamed_addr constant [5 x i8] c" -> \00"
+@.str.1202 = private unnamed_addr constant [7 x i8] c"Zevic.\00"
+@.str.1203 = private unnamed_addr constant [4 x i8] c"pub\00"
+@.str.1204 = private unnamed_addr constant [5 x i8] c"priv\00"
+@.str.1205 = private unnamed_addr constant [10 x i8] c"    decl \00"
+@.str.1206 = private unnamed_addr constant [6 x i8] c" abi=\00"
+@.str.1207 = private unnamed_addr constant [8 x i8] c"  test \00"
+@.str.1208 = private unnamed_addr constant [9 x i8] c" | size=\00"
+@.str.1209 = private unnamed_addr constant [5 x i8] c" id=\00"
+@.str.1210 = private unnamed_addr constant [2 x i8] c"T\00"
+@.str.1211 = private unnamed_addr constant [6 x i8] c"CChar\00"
+@.str.1212 = private unnamed_addr constant [6 x i8] c"CLong\00"
+@.str.1213 = private unnamed_addr constant [7 x i8] c"CULong\00"
+@.str.1214 = private unnamed_addr constant [7 x i8] c"CSizeT\00"
+@.str.1215 = private unnamed_addr constant [7 x i8] c"CFloat\00"
+@.str.1216 = private unnamed_addr constant [9 x i8] c"missing \00"
+@.str.1217 = private unnamed_addr constant [18 x i8] c"cbyname unknown: \00"
+@.str.1218 = private unnamed_addr constant [6 x i8] c"CNope\00"
+@.str.1219 = private unnamed_addr constant [6 x i8] c"found\00"
+@.str.1220 = private unnamed_addr constant [4 x i8] c"MyC\00"
+@.str.1221 = private unnamed_addr constant [14 x i8] c"prim String: \00"
+@.str.1222 = private unnamed_addr constant [4 x i8] c"yes\00"
+@.str.1223 = private unnamed_addr constant [3 x i8] c"no\00"
+@.str.1224 = private unnamed_addr constant [15 x i8] c", prim Never: \00"
+@.str.1225 = private unnamed_addr constant [7 x i8] c"same: \00"
+@.str.1226 = private unnamed_addr constant [13 x i8] c"one member: \00"
+@.str.1227 = private unnamed_addr constant [11 x i8] c"Main.Point\00"
+@.str.1228 = private unnamed_addr constant [2 x i8] c"X\00"
+@.str.1229 = private unnamed_addr constant [2 x i8] c"Y\00"
+@.str.1230 = private unnamed_addr constant [11 x i8] c"Main.Empty\00"
+@.str.1231 = private unnamed_addr constant [12 x i8] c"Main.Holder\00"
+@.str.1232 = private unnamed_addr constant [2 x i8] c"A\00"
+@.str.1233 = private unnamed_addr constant [2 x i8] c"U\00"
+@.str.1234 = private unnamed_addr constant [2 x i8] c"P\00"
+@.str.1235 = private unnamed_addr constant [11 x i8] c"Main.Shape\00"
+@.str.1236 = private unnamed_addr constant [7 x i8] c"Circle\00"
+@.str.1237 = private unnamed_addr constant [5 x i8] c"Rect\00"
+@.str.1238 = private unnamed_addr constant [4 x i8] c"Dot\00"
+@.str.1239 = private unnamed_addr constant [11 x i8] c"Main.Color\00"
+@.str.1240 = private unnamed_addr constant [4 x i8] c"Red\00"
+@.str.1241 = private unnamed_addr constant [5 x i8] c"Blue\00"
+@.str.1242 = private unnamed_addr constant [9 x i8] c"Main.Box\00"
+@.str.1243 = private unnamed_addr constant [9 x i8] c"Main.Map\00"
+@.str.1244 = private unnamed_addr constant [8 x i8] c"is_int \00"
+@.str.1245 = private unnamed_addr constant [9 x i8] c" signed \00"
+@.str.1246 = private unnamed_addr constant [8 x i8] c" float \00"
+@.str.1247 = private unnamed_addr constant [12 x i8] c" value_agg \00"
+@.str.1248 = private unnamed_addr constant [7 x i8] c" bits \00"
+@.str.1249 = private unnamed_addr constant [7 x i8] c"ZEVIC_\00"
+@.str.1250 = private unnamed_addr constant [5 x i8] c".zev\00"
+@.str.1251 = private unnamed_addr constant [49 x i8] c"usage: zevic [options] <file.zev>... [-o output]\00"
+@.str.1252 = private unnamed_addr constant [163 x i8] c"  --target <name|triple>  --sysroot <dir>  --test  --lib  --pic  --emit-ll  --emit-header <f>  --keep-ll  -O0|-O1|-O2 (default -O0)  -g  --cc <path>  --cxx <path>\00"
+@.str.1253 = private unnamed_addr constant [68 x i8] c"  -l<lib> -L<dir> -I<dir> -D<name>  and .c .cpp .o .a files to link\00"
+@.str.1254 = private unnamed_addr constant [14 x i8] c"--emit-header\00"
+@.str.1255 = private unnamed_addr constant [6 x i8] c"--lib\00"
+@.str.1256 = private unnamed_addr constant [6 x i8] c"--pic\00"
+@.str.1257 = private unnamed_addr constant [9 x i8] c"--target\00"
+@.str.1258 = private unnamed_addr constant [24 x i8] c"error: unknown target `\00"
+@.str.1259 = private unnamed_addr constant [113 x i8] c"` (expected linux-x64, linux-arm64, macos-x64, macos-arm64, windows-x64, windows-arm64, host, or an LLVM triple)\00"
+@.str.1260 = private unnamed_addr constant [10 x i8] c"--sysroot\00"
+@.str.1261 = private unnamed_addr constant [7 x i8] c"--test\00"
+@.str.1262 = private unnamed_addr constant [10 x i8] c"--emit-ll\00"
+@.str.1263 = private unnamed_addr constant [10 x i8] c"--keep-ll\00"
+@.str.1264 = private unnamed_addr constant [4 x i8] c"-O1\00"
+@.str.1265 = private unnamed_addr constant [5 x i8] c"--cc\00"
+@.str.1266 = private unnamed_addr constant [6 x i8] c"--cxx\00"
+@.str.1267 = private unnamed_addr constant [5 x i8] c".obj\00"
+@.str.1268 = private unnamed_addr constant [24 x i8] c"error: unknown option `\00"
+@.str.1269 = private unnamed_addr constant [36 x i8] c"error: don't know what to do with `\00"
+@.str.1270 = private unnamed_addr constant [25 x i8] c"` (expected a .zev file)\00"
+@.str.1271 = private unnamed_addr constant [10 x i8] c"_test.zev\00"
+@.str.1272 = private unnamed_addr constant [7 x i8] c" error\00"
+@.str.1273 = private unnamed_addr constant [2 x i8] c"s\00"
+@.str.1274 = private unnamed_addr constant [7 x i8] c" found\00"
+@.str.1275 = private unnamed_addr constant [22 x i8] c"error: cannot write `\00"
+@.str.1276 = private unnamed_addr constant [4 x i8] c".ll\00"
+@.str.1277 = private unnamed_addr constant [14 x i8] c"ZEVIC_SYSROOT\00"
+@.str.1278 = private unnamed_addr constant [86 x i8] c"error: --test builds a program that runs here, so it cannot be combined with --target\00"
+@.str.1279 = private unnamed_addr constant [9 x i8] c"/zig/zig\00"
+@.str.1280 = private unnamed_addr constant [10 x i8] c".zevic.ll\00"
+@.str.1281 = private unnamed_addr constant [32 x i8] c"error: clang failed (exit code \00"
+@.str.1282 = private unnamed_addr constant [19 x i8] c") while building `\00"
+@.str.1283 = private unnamed_addr constant [21 x i8] c"note: building for `\00"
+@.str.1284 = private unnamed_addr constant [153 x i8] c"` needs that system's C headers and libraries: give `--sysroot <dir>` (or ZEVIC_SYSROOT), or Zig (`install.sh --with-zig`, or ZEVIC_CLANG=<path to zig>)\00"
+@.str.1285 = private unnamed_addr constant [28 x i8] c"tools/zevic1/src/Parser.zev\00"
+@.str.1286 = private unnamed_addr constant [13 x i8] c"syntax error\00"
+@.str.1287 = private unnamed_addr constant [9 x i8] c"a number\00"
+@.str.1288 = private unnamed_addr constant [9 x i8] c"a string\00"
+@.str.1289 = private unnamed_addr constant [12 x i8] c"a character\00"
+@.str.1290 = private unnamed_addr constant [20 x i8] c"the end of the line\00"
+@.str.1291 = private unnamed_addr constant [20 x i8] c"the end of the file\00"
+@.str.1292 = private unnamed_addr constant [10 x i8] c"expected \00"
+@.str.1293 = private unnamed_addr constant [9 x i8] c", found \00"
+@.str.1294 = private unnamed_addr constant [21 x i8] c"expected `>`, found \00"
+@.str.1295 = private unnamed_addr constant [26 x i8] c"type is nested too deeply\00"
+@.str.1296 = private unnamed_addr constant [4 x i8] c"`)`\00"
+@.str.1297 = private unnamed_addr constant [4 x i8] c"`(`\00"
+@.str.1298 = private unnamed_addr constant [24 x i8] c"expected a type, found \00"
+@.str.1299 = private unnamed_addr constant [22 x i8] c"a type parameter name\00"
+@.str.1300 = private unnamed_addr constant [24 x i8] c"empty `${}` in a string\00"
+@.str.1301 = private unnamed_addr constant [12 x i8] c"unexpected \00"
+@.str.1302 = private unnamed_addr constant [13 x i8] c" in `${...}`\00"
+@.str.1303 = private unnamed_addr constant [17 x i8] c"a parameter name\00"
+@.str.1304 = private unnamed_addr constant [22 x i8] c"` must be written (`(\00"
+@.str.1305 = private unnamed_addr constant [17 x i8] c": Type) => ...`)\00"
+@.str.1306 = private unnamed_addr constant [5 x i8] c"`=>`\00"
+@.str.1307 = private unnamed_addr constant [55 x i8] c"`(` after `if` (conditions are written in parentheses)\00"
+@.str.1308 = private unnamed_addr constant [53 x i8] c"expected `{` (the body of an `if` must be in braces)\00"
+@.str.1309 = private unnamed_addr constant [34 x i8] c"expected `if` or `{` after `else`\00"
+@.str.1310 = private unnamed_addr constant [60 x i8] c"`(` after `match` (the scrutinee is written in parentheses)\00"
+@.str.1311 = private unnamed_addr constant [4 x i8] c"`{`\00"
+@.str.1312 = private unnamed_addr constant [35 x i8] c"unterminated `match`: expected `}`\00"
+@.str.1313 = private unnamed_addr constant [50 x i8] c"`(` (a guard condition is written in parentheses)\00"
+@.str.1314 = private unnamed_addr constant [53 x i8] c"expected `,` or a new line after a match arm, found \00"
+@.str.1315 = private unnamed_addr constant [4 x i8] c"`]`\00"
+@.str.1316 = private unnamed_addr constant [21 x i8] c"`:` in a map literal\00"
+@.str.1317 = private unnamed_addr constant [4 x i8] c"`}`\00"
+@.str.1318 = private unnamed_addr constant [63 x i8] c"expected `{` after `async` (an `async` block: `async { ... }`)\00"
+@.str.1319 = private unnamed_addr constant [31 x i8] c"expected an expression, found \00"
+@.str.1320 = private unnamed_addr constant [4 x i8] c"`<`\00"
+@.str.1321 = private unnamed_addr constant [41 x i8] c"expected a member name after `.`, found \00"
+@.str.1322 = private unnamed_addr constant [24 x i8] c"`)` after the arguments\00"
+@.str.1323 = private unnamed_addr constant [13 x i8] c"a field name\00"
+@.str.1324 = private unnamed_addr constant [25 x i8] c"`:` after the field name\00"
+@.str.1325 = private unnamed_addr constant [37 x i8] c"`}` (fields are separated by commas)\00"
+@.str.1326 = private unnamed_addr constant [32 x i8] c"expression is nested too deeply\00"
+@.str.1327 = private unnamed_addr constant [3 x i8] c"is\00"
+@.str.1328 = private unnamed_addr constant [64 x i8] c"comparison operators cannot be chained (write `a < b && b < c`)\00"
+@.str.1329 = private unnamed_addr constant [25 x i8] c"ranges cannot be chained\00"
+@.str.1330 = private unnamed_addr constant [46 x i8] c"`-` in a pattern must be followed by a number\00"
+@.str.1331 = private unnamed_addr constant [38 x i8] c"`:` after the field name in a pattern\00"
+@.str.1332 = private unnamed_addr constant [27 x i8] c"expected a pattern, found \00"
+@.str.1333 = private unnamed_addr constant [8 x i8] c"write `\00"
+@.str.1334 = private unnamed_addr constant [35 x i8] c"@label` without a blank before `@`\00"
+@.str.1335 = private unnamed_addr constant [46 x i8] c"expected a label name right after `@` (like `\00"
+@.str.1336 = private unnamed_addr constant [9 x i8] c"@outer`)\00"
+@.str.1337 = private unnamed_addr constant [75 x i8] c"write the label as `name@ loop` on one line, with `@` right after the name\00"
+@.str.1338 = private unnamed_addr constant [33 x i8] c"a variable needs a type: write `\00"
+@.str.1339 = private unnamed_addr constant [21 x i8] c" name: Type = value`\00"
+@.str.1340 = private unnamed_addr constant [58 x i8] c"`=` and an initial value (a variable must be initialised)\00"
+@.str.1341 = private unnamed_addr constant [58 x i8] c"`(` after `while` (conditions are written in parentheses)\00"
+@.str.1342 = private unnamed_addr constant [52 x i8] c"expected `{` (the body of a loop must be in braces)\00"
+@.str.1343 = private unnamed_addr constant [26 x i8] c"expected `{` after `loop`\00"
+@.str.1344 = private unnamed_addr constant [16 x i8] c"`(` after `for`\00"
+@.str.1345 = private unnamed_addr constant [5 x i8] c"`in`\00"
+@.str.1346 = private unnamed_addr constant [83 x i8] c"declarations are only allowed at the top level (use a lambda for a local function)\00"
+@.str.1347 = private unnamed_addr constant [55 x i8] c"expected a new line or `}` after the statement, found \00"
+@.str.1348 = private unnamed_addr constant [25 x i8] c"this `{` is never closed\00"
+@.str.1349 = private unnamed_addr constant [5 x i8] c"`fn`\00"
+@.str.1350 = private unnamed_addr constant [16 x i8] c"a function name\00"
+@.str.1351 = private unnamed_addr constant [28 x i8] c"`(` after the function name\00"
+@.str.1352 = private unnamed_addr constant [60 x i8] c"`:` and the parameter's type (parameter types are required)\00"
+@.str.1353 = private unnamed_addr constant [25 x i8] c"`)` after the parameters\00"
+@.str.1354 = private unnamed_addr constant [23 x i8] c"the C name as a string\00"
+@.str.1355 = private unnamed_addr constant [40 x i8] c"expected `{` and the body of function `\00"
+@.str.1356 = private unnamed_addr constant [25 x i8] c"`:` and the field's type\00"
+@.str.1357 = private unnamed_addr constant [22 x i8] c"expected `fn` after `\00"
+@.str.1358 = private unnamed_addr constant [23 x i8] c"a variant name or `fn`\00"
+@.str.1359 = private unnamed_addr constant [38 x i8] c"an interface can only contain methods\00"
+@.str.1360 = private unnamed_addr constant [52 x i8] c"expected a new line or `}` after the member, found \00"
+@.str.1361 = private unnamed_addr constant [12 x i8] c"a type name\00"
+@.str.1362 = private unnamed_addr constant [29 x i8] c"`{` and the body of the type\00"
+@.str.1363 = private unnamed_addr constant [23 x i8] c"the ABI string (`\22C\22`)\00"
+@.str.1364 = private unnamed_addr constant [32 x i8] c"expected `{` after `extern \22C\22`\00"
+@.str.1365 = private unnamed_addr constant [66 x i8] c"an `extern` block can contain only `fn` and `struct` declarations\00"
+@.str.1366 = private unnamed_addr constant [16 x i8] c"a constant name\00"
+@.str.1367 = private unnamed_addr constant [28 x i8] c"`:` and the constant's type\00"
+@.str.1368 = private unnamed_addr constant [18 x i8] c"`=` and the value\00"
+@.str.1369 = private unnamed_addr constant [78 x i8] c"`mut` is not allowed at the top level (global mutable state is not supported)\00"
+@.str.1370 = private unnamed_addr constant [5 x i8] c"test\00"
+@.str.1371 = private unnamed_addr constant [101 x i8] c" at the top level (expected `fn`, `struct`, `class`, `enum`, `interface`, `extern`, `let` or `test`)\00"
+@.str.1372 = private unnamed_addr constant [43 x i8] c"a Zevic file must start with `module Name`\00"
+@.str.1373 = private unnamed_addr constant [14 x i8] c"a module name\00"
+@.str.1374 = private unnamed_addr constant [14 x i8] c"an alias name\00"
+@.str.1375 = private unnamed_addr constant [10 x i8] c"ptr %this\00"
+@.str.1376 = private unnamed_addr constant [22 x i8] c"store ptr %this, ptr \00"
+@.str.1377 = private unnamed_addr constant [6 x i8] c"%this\00"
+@.str.1378 = private unnamed_addr constant [29 x i8] c"tools/zevic1/src/Program.zev\00"
+@.str.1379 = private unnamed_addr constant [14 x i8] c"` has no body\00"
+@.str.1380 = private unnamed_addr constant [65 x i8] c"the function result (the body must end with a value or `return`)\00"
+@.str.1381 = private unnamed_addr constant [72 x i8] c"no entry point: a program needs `module Main` with a public `fn Main()`\00"
+@.str.1382 = private unnamed_addr constant [35 x i8] c"`Main` cannot have type parameters\00"
+@.str.1383 = private unnamed_addr constant [56 x i8] c"`Main` takes no parameters or one `args: Array<String>`\00"
+@.str.1384 = private unnamed_addr constant [10 x i8] c"Zevic.Env\00"
+@.str.1385 = private unnamed_addr constant [8 x i8] c"RawArgs\00"
+@.str.1386 = private unnamed_addr constant [54 x i8] c"the parameter of `Main` must be `args: Array<String>`\00"
+@.str.1387 = private unnamed_addr constant [60 x i8] c"cannot find `Zevic.Env.RawArgs` for the arguments of `Main`\00"
+@.str.1388 = private unnamed_addr constant [75 x i8] c"`Main` must not return a value (use `Env.Exit(code)` to set the exit code)\00"
+@.str.1389 = private unnamed_addr constant [50 x i8] c"; generated by zevic0\0Asource_filename = \22zevic\22\0A\0A\00"
+@.str.1390 = private unnamed_addr constant [37 x i8] c"declare void @zevic_init(i32, ptr)\0A\0A\00"
+@.str.1391 = private unnamed_addr constant [77 x i8] c"declare void @zevic_test_add(ptr, i64, ptr)\0Adeclare i32 @zevic_test_main()\0A\0A\00"
+@.str.1392 = private unnamed_addr constant [88 x i8] c"define i32 @main(i32 %argc, ptr %argv) {\0A  call void @zevic_init(i32 %argc, ptr %argv)\0A\00"
+@.str.1393 = private unnamed_addr constant [33 x i8] c"  call void @zevic_test_add(ptr \00"
+@.str.1394 = private unnamed_addr constant [9 x i8] c", ptr @\22\00"
+@.str.1395 = private unnamed_addr constant [4 x i8] c"\22)\0A\00"
+@.str.1396 = private unnamed_addr constant [53 x i8] c"  %rc = call i32 @zevic_test_main()\0A  ret i32 %rc\0A}\0A\00"
+@.str.1397 = private unnamed_addr constant [16 x i8] c"  %args = call \00"
+@.str.1398 = private unnamed_addr constant [19 x i8] c"\22()\0A  call void @\22\00"
+@.str.1399 = private unnamed_addr constant [9 x i8] c" %args)\0A\00"
+@.str.1400 = private unnamed_addr constant [15 x i8] c"  call void @\22\00"
+@.str.1401 = private unnamed_addr constant [5 x i8] c"\22()\0A\00"
+@.str.1402 = private unnamed_addr constant [15 x i8] c"  ret i32 0\0A}\0A\00"
+@.str.1403 = private unnamed_addr constant [2 x i8] c"*\00"
+@.str.1404 = private unnamed_addr constant [8 x i8] c"struct \00"
+@.str.1405 = private unnamed_addr constant [5 x i8] c"char\00"
+@.str.1406 = private unnamed_addr constant [7 x i8] c"CSChar\00"
+@.str.1407 = private unnamed_addr constant [12 x i8] c"signed char\00"
+@.str.1408 = private unnamed_addr constant [7 x i8] c"CUChar\00"
+@.str.1409 = private unnamed_addr constant [14 x i8] c"unsigned char\00"
+@.str.1410 = private unnamed_addr constant [7 x i8] c"CShort\00"
+@.str.1411 = private unnamed_addr constant [6 x i8] c"short\00"
+@.str.1412 = private unnamed_addr constant [8 x i8] c"CUShort\00"
+@.str.1413 = private unnamed_addr constant [15 x i8] c"unsigned short\00"
+@.str.1414 = private unnamed_addr constant [4 x i8] c"int\00"
+@.str.1415 = private unnamed_addr constant [13 x i8] c"unsigned int\00"
+@.str.1416 = private unnamed_addr constant [5 x i8] c"long\00"
+@.str.1417 = private unnamed_addr constant [14 x i8] c"unsigned long\00"
+@.str.1418 = private unnamed_addr constant [10 x i8] c"CLongLong\00"
+@.str.1419 = private unnamed_addr constant [10 x i8] c"long long\00"
+@.str.1420 = private unnamed_addr constant [11 x i8] c"CULongLong\00"
+@.str.1421 = private unnamed_addr constant [19 x i8] c"unsigned long long\00"
+@.str.1422 = private unnamed_addr constant [7 x i8] c"size_t\00"
+@.str.1423 = private unnamed_addr constant [8 x i8] c"CSSizeT\00"
+@.str.1424 = private unnamed_addr constant [9 x i8] c"intptr_t\00"
+@.str.1425 = private unnamed_addr constant [9 x i8] c"CPtrDiff\00"
+@.str.1426 = private unnamed_addr constant [10 x i8] c"ptrdiff_t\00"
+@.str.1427 = private unnamed_addr constant [8 x i8] c"CIntPtr\00"
+@.str.1428 = private unnamed_addr constant [9 x i8] c"CUIntPtr\00"
+@.str.1429 = private unnamed_addr constant [10 x i8] c"uintptr_t\00"
+@.str.1430 = private unnamed_addr constant [6 x i8] c"_Bool\00"
+@.str.1431 = private unnamed_addr constant [13 x i8] c"const char *\00"
+@.str.1432 = private unnamed_addr constant [4 x i8] c" {\0A\00"
+@.str.1433 = private unnamed_addr constant [3 x i8] c";\0A\00"
+@.str.1434 = private unnamed_addr constant [5 x i8] c"};\0A\0A\00"
+@.str.1435 = private unnamed_addr constant [79 x i8] c"/* generated by zevic0: the `export \22C\22` functions of this program */\0A#ifndef \00"
+@.str.1436 = private unnamed_addr constant [10 x i8] c"\0A#define \00"
+@.str.1437 = private unnamed_addr constant [3 x i8] c"\0A\0A\00"
+@.str.1438 = private unnamed_addr constant [82 x i8] c"#include <stddef.h>\0A#include <stdint.h>\0A\0A#ifdef __cplusplus\0Aextern \22C\22 {\0A#endif\0A\0A\00"
+@.str.1439 = private unnamed_addr constant [105 x i8] c"/* Call this once before any other function of the library. */\0Avoid zevic_init(int argc, char **argv);\0A\0A\00"
+@.str.1440 = private unnamed_addr constant [4 x i8] c");\0A\00"
+@.str.1441 = private unnamed_addr constant [38 x i8] c"\0A#ifdef __cplusplus\0A}\0A#endif\0A\0A#endif\0A\00"
+@.str.1442 = private unnamed_addr constant [3 x i8] c"::\00"
+@.str.1443 = private unnamed_addr constant [27 x i8] c"declaration without a file\00"
+@.str.1444 = private unnamed_addr constant [29 x i8] c"tools/zevic1/src/Resolve.zev\00"
+@.str.1445 = private unnamed_addr constant [10 x i8] c"ErrorKind\00"
+@.str.1446 = private unnamed_addr constant [14 x i8] c"StringBuilder\00"
+@.str.1447 = private unnamed_addr constant [5 x i8] c"Same\00"
+@.str.1448 = private unnamed_addr constant [6 x i8] c"test.\00"
+@.str.1449 = private unnamed_addr constant [32 x i8] c"` is already defined in module \00"
+@.str.1450 = private unnamed_addr constant [28 x i8] c"the first definition is at \00"
+@.str.1451 = private unnamed_addr constant [73 x i8] c"module names starting with `Zevic` are reserved for the standard library\00"
+@.str.1452 = private unnamed_addr constant [49 x i8] c"` is a reserved name (it is part of the prelude)\00"
+@.str.1453 = private unnamed_addr constant [6 x i8] c"/src/\00"
+@.str.1454 = private unnamed_addr constant [52 x i8] c"`Zevic.Intrinsics` is only for the standard library\00"
+@.str.1455 = private unnamed_addr constant [21 x i8] c"cannot find module `\00"
+@.str.1456 = private unnamed_addr constant [38 x i8] c"looked for the standard library file \00"
+@.str.1457 = private unnamed_addr constant [30 x i8] c"a module cannot import itself\00"
+@.str.1458 = private unnamed_addr constant [62 x i8] c"` is already imported (or the name is used by another import)\00"
+@.str.1459 = private unnamed_addr constant [17 x i8] c"the short name `\00"
+@.str.1460 = private unnamed_addr constant [57 x i8] c"` clashes with another import; use the full name or `as`\00"
+@.str.1461 = private unnamed_addr constant [18 x i8] c"circular import: \00"
+@.str.1462 = private unnamed_addr constant [29 x i8] c"tools/zevic1/src/Suggest.zev\00"
+@.str.1463 = private unnamed_addr constant [12 x i8] c"end of file\00"
+@.str.1464 = private unnamed_addr constant [8 x i8] c"newline\00"
+@.str.1465 = private unnamed_addr constant [11 x i8] c"identifier\00"
+@.str.1466 = private unnamed_addr constant [8 x i8] c"integer\00"
+@.str.1467 = private unnamed_addr constant [7 x i8] c"number\00"
+@.str.1468 = private unnamed_addr constant [10 x i8] c"character\00"
+@.str.1469 = private unnamed_addr constant [5 x i8] c"byte\00"
+@.str.1470 = private unnamed_addr constant [7 x i8] c"string\00"
+@.str.1471 = private unnamed_addr constant [2 x i8] c"+\00"
+@.str.1472 = private unnamed_addr constant [2 x i8] c"&\00"
+@.str.1473 = private unnamed_addr constant [2 x i8] c"^\00"
+@.str.1474 = private unnamed_addr constant [2 x i8] c"~\00"
+@.str.1475 = private unnamed_addr constant [2 x i8] c"!\00"
+@.str.1476 = private unnamed_addr constant [3 x i8] c"<<\00"
+@.str.1477 = private unnamed_addr constant [3 x i8] c">>\00"
+@.str.1478 = private unnamed_addr constant [3 x i8] c"&&\00"
+@.str.1479 = private unnamed_addr constant [3 x i8] c"||\00"
+@.str.1480 = private unnamed_addr constant [2 x i8] c"=\00"
+@.str.1481 = private unnamed_addr constant [3 x i8] c"==\00"
+@.str.1482 = private unnamed_addr constant [3 x i8] c"!=\00"
+@.str.1483 = private unnamed_addr constant [3 x i8] c"<=\00"
+@.str.1484 = private unnamed_addr constant [3 x i8] c">=\00"
+@.str.1485 = private unnamed_addr constant [3 x i8] c"+=\00"
+@.str.1486 = private unnamed_addr constant [3 x i8] c"-=\00"
+@.str.1487 = private unnamed_addr constant [3 x i8] c"*=\00"
+@.str.1488 = private unnamed_addr constant [3 x i8] c"/=\00"
+@.str.1489 = private unnamed_addr constant [3 x i8] c"%=\00"
+@.str.1490 = private unnamed_addr constant [3 x i8] c"&=\00"
+@.str.1491 = private unnamed_addr constant [3 x i8] c"|=\00"
+@.str.1492 = private unnamed_addr constant [3 x i8] c"^=\00"
+@.str.1493 = private unnamed_addr constant [4 x i8] c"<<=\00"
+@.str.1494 = private unnamed_addr constant [4 x i8] c">>=\00"
+@.str.1495 = private unnamed_addr constant [3 x i8] c"..\00"
+@.str.1496 = private unnamed_addr constant [4 x i8] c"..=\00"
+@.str.1497 = private unnamed_addr constant [3 x i8] c"->\00"
+@.str.1498 = private unnamed_addr constant [3 x i8] c"=>\00"
+@.str.1499 = private unnamed_addr constant [2 x i8] c"{\00"
+@.str.1500 = private unnamed_addr constant [27 x i8] c"tools/zevic1/src/Types.zev\00"
+@.str.1501 = private unnamed_addr constant [3 x i8] c"i8\00"
+@.str.1502 = private unnamed_addr constant [4 x i8] c"fn(\00"
+@.str.1503 = private unnamed_addr constant [2 x i8] c"'\00"
+@.str.1504 = private unnamed_addr constant [4 x i8] c" | \00"
+@.str.1505 = private unnamed_addr constant [4 x i8] c"i16\00"
+@.str.1506 = private unnamed_addr constant [4 x i8] c"i32\00"
+@.str.1507 = private unnamed_addr constant [4 x i8] c"i64\00"
+@.str.1508 = private unnamed_addr constant [3 x i8] c"i1\00"
+@.str.1509 = private unnamed_addr constant [13 x i8] c"{ ptr, i64 }\00"
+@.str.1510 = private unnamed_addr constant [3 x i8] c"{}\00"
+@.str.1511 = private unnamed_addr constant [13 x i8] c"{ ptr, ptr }\00"
+@.str.1512 = private unnamed_addr constant [3 x i8] c"{ \00"
+@.str.1513 = private unnamed_addr constant [8 x i8] c"{ i32 }\00"
+@.str.1514 = private unnamed_addr constant [9 x i8] c"{ i32, [\00"
+@.str.1515 = private unnamed_addr constant [10 x i8] c" x i64] }\00"
+@.str.1516 = private unnamed_addr constant [7 x i8] c"index \00"
+@.str.1517 = private unnamed_addr constant [26 x i8] c" is out of range (length \00"
+@.str.1518 = private unnamed_addr constant [15 x i8] c"Zevic/Core.zev\00"
+@.str.1519 = private unnamed_addr constant [7 x i8] c"slice \00"
+@.str.1520 = private unnamed_addr constant [15 x i8] c"Zevic/Text.zev\00"
+@.str.1521 = private unnamed_addr constant [18 x i8] c"Zevic/Process.zev\00"
+@.str.1522 = private unnamed_addr constant [15 x i8] c"cannot start \22\00"
+@.str.1523 = private unnamed_addr constant [21 x i8] c"create the directory\00"
+@.str.1524 = private unnamed_addr constant [5 x i8] c"read\00"
+@.str.1525 = private unnamed_addr constant [15 x i8] c"Zevic/Time.zev\00"
+@.str.1526 = private unnamed_addr constant [7 x i8] c"remove\00"
+@.str.1527 = private unnamed_addr constant [7 x i8] c"rename\00"
+@.str.1528 = private unnamed_addr constant [30 x i8] c"called Unwrap on a None value\00"
+@.str.1529 = private unnamed_addr constant [31 x i8] c" is not a Unicode scalar value\00"
+@.str.1530 = private unnamed_addr constant [35 x i8] c"the format is not a decimal number\00"
+@.str.1531 = private unnamed_addr constant [6 x i8] c"write\00"
+@.str.1532 = private unnamed_addr constant [8 x i8] c"cannot \00"
+@.str.1533 = private unnamed_addr constant [3 x i8] c" \22\00"
+@.str.1534 = private unnamed_addr constant [4 x i8] c"\22: \00"
+@.str.1535 = private unnamed_addr constant [14 x i8] c"cannot read \22\00"
+@.str.1536 = private unnamed_addr constant [16 x i8] c"\22 as a number: \00"
 
 declare i32 @zevic_str_eq(ptr, i64, ptr, i64)
 declare ptr @zevic_sb_new()
@@ -59844,6 +59850,365 @@ or.end.7:
   ret i1 %t13
 }
 
+define i8 @"zevic_Zevic1_Expr_typedConv"({ ptr, i64 } %p0) {
+entry:
+  %s0 = alloca { ptr, i64 }, align 8
+  store { ptr, i64 } %p0, ptr %s0
+  %t0 = load { ptr, i64 }, ptr %s0
+  %t2 = extractvalue { ptr, i64 } %t0, 0
+  %t3 = extractvalue { ptr, i64 } %t0, 1
+  %t4 = call i32 @zevic_str_eq(ptr %t2, i64 %t3, ptr @.str.951, i64 2)
+  %t1 = icmp ne i32 %t4, 0
+  br i1 %t1, label %or.end.1, label %or.rhs.0
+or.rhs.0:
+  %t5 = load { ptr, i64 }, ptr %s0
+  %t7 = extractvalue { ptr, i64 } %t5, 0
+  %t8 = extractvalue { ptr, i64 } %t5, 1
+  %t9 = call i32 @zevic_str_eq(ptr %t7, i64 %t8, ptr @.str.952, i64 3)
+  %t6 = icmp ne i32 %t9, 0
+  br label %or.end.1
+or.end.1:
+  %t10 = phi i1 [ true, %entry ], [ %t6, %or.rhs.0 ]
+  br i1 %t10, label %or.end.3, label %or.rhs.2
+or.rhs.2:
+  %t11 = load { ptr, i64 }, ptr %s0
+  %t13 = extractvalue { ptr, i64 } %t11, 0
+  %t14 = extractvalue { ptr, i64 } %t11, 1
+  %t15 = call i32 @zevic_str_eq(ptr %t13, i64 %t14, ptr @.str.953, i64 3)
+  %t12 = icmp ne i32 %t15, 0
+  br label %or.end.3
+or.end.3:
+  %t16 = phi i1 [ true, %or.end.1 ], [ %t12, %or.rhs.2 ]
+  br i1 %t16, label %or.end.5, label %or.rhs.4
+or.rhs.4:
+  %t17 = load { ptr, i64 }, ptr %s0
+  %t19 = extractvalue { ptr, i64 } %t17, 0
+  %t20 = extractvalue { ptr, i64 } %t17, 1
+  %t21 = call i32 @zevic_str_eq(ptr %t19, i64 %t20, ptr @.str.954, i64 3)
+  %t18 = icmp ne i32 %t21, 0
+  br label %or.end.5
+or.end.5:
+  %t22 = phi i1 [ true, %or.end.3 ], [ %t18, %or.rhs.4 ]
+  br i1 %t22, label %then.6, label %endif.8
+then.6:
+  ret i8 100
+endif.8:
+  %t23 = load { ptr, i64 }, ptr %s0
+  %t25 = extractvalue { ptr, i64 } %t23, 0
+  %t26 = extractvalue { ptr, i64 } %t23, 1
+  %t27 = call i32 @zevic_str_eq(ptr %t25, i64 %t26, ptr @.str.955, i64 2)
+  %t24 = icmp ne i32 %t27, 0
+  br i1 %t24, label %or.end.10, label %or.rhs.9
+or.rhs.9:
+  %t28 = load { ptr, i64 }, ptr %s0
+  %t30 = extractvalue { ptr, i64 } %t28, 0
+  %t31 = extractvalue { ptr, i64 } %t28, 1
+  %t32 = call i32 @zevic_str_eq(ptr %t30, i64 %t31, ptr @.str.956, i64 3)
+  %t29 = icmp ne i32 %t32, 0
+  br label %or.end.10
+or.end.10:
+  %t33 = phi i1 [ true, %endif.8 ], [ %t29, %or.rhs.9 ]
+  br i1 %t33, label %or.end.12, label %or.rhs.11
+or.rhs.11:
+  %t34 = load { ptr, i64 }, ptr %s0
+  %t36 = extractvalue { ptr, i64 } %t34, 0
+  %t37 = extractvalue { ptr, i64 } %t34, 1
+  %t38 = call i32 @zevic_str_eq(ptr %t36, i64 %t37, ptr @.str.957, i64 3)
+  %t35 = icmp ne i32 %t38, 0
+  br label %or.end.12
+or.end.12:
+  %t39 = phi i1 [ true, %or.end.10 ], [ %t35, %or.rhs.11 ]
+  br i1 %t39, label %or.end.14, label %or.rhs.13
+or.rhs.13:
+  %t40 = load { ptr, i64 }, ptr %s0
+  %t42 = extractvalue { ptr, i64 } %t40, 0
+  %t43 = extractvalue { ptr, i64 } %t40, 1
+  %t44 = call i32 @zevic_str_eq(ptr %t42, i64 %t43, ptr @.str.958, i64 3)
+  %t41 = icmp ne i32 %t44, 0
+  br label %or.end.14
+or.end.14:
+  %t45 = phi i1 [ true, %or.end.12 ], [ %t41, %or.rhs.13 ]
+  br i1 %t45, label %then.15, label %endif.17
+then.15:
+  ret i8 117
+endif.17:
+  %t46 = load { ptr, i64 }, ptr %s0
+  %t48 = extractvalue { ptr, i64 } %t46, 0
+  %t49 = extractvalue { ptr, i64 } %t46, 1
+  %t50 = call i32 @zevic_str_eq(ptr %t48, i64 %t49, ptr @.str.959, i64 3)
+  %t47 = icmp ne i32 %t50, 0
+  br i1 %t47, label %or.end.19, label %or.rhs.18
+or.rhs.18:
+  %t51 = load { ptr, i64 }, ptr %s0
+  %t53 = extractvalue { ptr, i64 } %t51, 0
+  %t54 = extractvalue { ptr, i64 } %t51, 1
+  %t55 = call i32 @zevic_str_eq(ptr %t53, i64 %t54, ptr @.str.960, i64 3)
+  %t52 = icmp ne i32 %t55, 0
+  br label %or.end.19
+or.end.19:
+  %t56 = phi i1 [ true, %endif.17 ], [ %t52, %or.rhs.18 ]
+  br i1 %t56, label %then.20, label %endif.22
+then.20:
+  ret i8 102
+endif.22:
+  %t57 = load { ptr, i64 }, ptr %s0
+  %t59 = extractvalue { ptr, i64 } %t57, 0
+  %t60 = extractvalue { ptr, i64 } %t57, 1
+  %t61 = call i32 @zevic_str_eq(ptr %t59, i64 %t60, ptr @.str.28, i64 6)
+  %t58 = icmp ne i32 %t61, 0
+  br i1 %t58, label %then.23, label %endif.25
+then.23:
+  ret i8 115
+endif.25:
+  %t62 = load { ptr, i64 }, ptr %s0
+  %t64 = extractvalue { ptr, i64 } %t62, 0
+  %t65 = extractvalue { ptr, i64 } %t62, 1
+  %t66 = call i32 @zevic_str_eq(ptr %t64, i64 %t65, ptr @.str.26, i64 4)
+  %t63 = icmp ne i32 %t66, 0
+  br i1 %t63, label %then.26, label %endif.28
+then.26:
+  ret i8 99
+endif.28:
+  %t67 = load { ptr, i64 }, ptr %s0
+  %t69 = extractvalue { ptr, i64 } %t67, 0
+  %t70 = extractvalue { ptr, i64 } %t67, 1
+  %t71 = call i32 @zevic_str_eq(ptr %t69, i64 %t70, ptr @.str.25, i64 4)
+  %t68 = icmp ne i32 %t71, 0
+  br i1 %t68, label %then.29, label %endif.31
+then.29:
+  ret i8 98
+endif.31:
+  ret i8 0
+}
+
+define { i32, [1 x i64] } @"zevic_Zevic1_Expr_typeByName"(ptr %p0, { ptr, i64 } %p1) {
+entry:
+  %s0 = alloca ptr, align 8
+  %s1 = alloca { ptr, i64 }, align 8
+  %s2 = alloca ptr, align 8
+  %s3 = alloca { i32, [1 x i64] }, align 8
+  store ptr %p0, ptr %s0
+  store { ptr, i64 } %p1, ptr %s1
+  %t0 = load { ptr, i64 }, ptr %s1
+  %t2 = extractvalue { ptr, i64 } %t0, 0
+  %t3 = extractvalue { ptr, i64 } %t0, 1
+  %t4 = call i32 @zevic_str_eq(ptr %t2, i64 %t3, ptr @.str.951, i64 2)
+  %t1 = icmp ne i32 %t4, 0
+  br i1 %t1, label %then.0, label %else.1
+then.0:
+  %t5 = load ptr, ptr %s0
+  %t6 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t5, i32 0, i32 2
+  %t7 = load ptr, ptr %t6
+  %t8 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t7, i32 0, i32 5
+  %t9 = load ptr, ptr %t8
+  br label %endif.2
+else.1:
+  %t10 = load { ptr, i64 }, ptr %s1
+  %t12 = extractvalue { ptr, i64 } %t10, 0
+  %t13 = extractvalue { ptr, i64 } %t10, 1
+  %t14 = call i32 @zevic_str_eq(ptr %t12, i64 %t13, ptr @.str.952, i64 3)
+  %t11 = icmp ne i32 %t14, 0
+  br i1 %t11, label %then.3, label %else.4
+then.3:
+  %t15 = load ptr, ptr %s0
+  %t16 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t15, i32 0, i32 2
+  %t17 = load ptr, ptr %t16
+  %t18 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t17, i32 0, i32 6
+  %t19 = load ptr, ptr %t18
+  br label %endif.5
+else.4:
+  %t20 = load { ptr, i64 }, ptr %s1
+  %t22 = extractvalue { ptr, i64 } %t20, 0
+  %t23 = extractvalue { ptr, i64 } %t20, 1
+  %t24 = call i32 @zevic_str_eq(ptr %t22, i64 %t23, ptr @.str.953, i64 3)
+  %t21 = icmp ne i32 %t24, 0
+  br i1 %t21, label %then.6, label %else.7
+then.6:
+  %t25 = load ptr, ptr %s0
+  %t26 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t25, i32 0, i32 2
+  %t27 = load ptr, ptr %t26
+  %t28 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t27, i32 0, i32 7
+  %t29 = load ptr, ptr %t28
+  br label %endif.8
+else.7:
+  %t30 = load { ptr, i64 }, ptr %s1
+  %t32 = extractvalue { ptr, i64 } %t30, 0
+  %t33 = extractvalue { ptr, i64 } %t30, 1
+  %t34 = call i32 @zevic_str_eq(ptr %t32, i64 %t33, ptr @.str.954, i64 3)
+  %t31 = icmp ne i32 %t34, 0
+  br i1 %t31, label %then.9, label %else.10
+then.9:
+  %t35 = load ptr, ptr %s0
+  %t36 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t35, i32 0, i32 2
+  %t37 = load ptr, ptr %t36
+  %t38 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t37, i32 0, i32 8
+  %t39 = load ptr, ptr %t38
+  br label %endif.11
+else.10:
+  %t40 = load { ptr, i64 }, ptr %s1
+  %t42 = extractvalue { ptr, i64 } %t40, 0
+  %t43 = extractvalue { ptr, i64 } %t40, 1
+  %t44 = call i32 @zevic_str_eq(ptr %t42, i64 %t43, ptr @.str.955, i64 2)
+  %t41 = icmp ne i32 %t44, 0
+  br i1 %t41, label %then.12, label %else.13
+then.12:
+  %t45 = load ptr, ptr %s0
+  %t46 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t45, i32 0, i32 2
+  %t47 = load ptr, ptr %t46
+  %t48 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t47, i32 0, i32 9
+  %t49 = load ptr, ptr %t48
+  br label %endif.14
+else.13:
+  %t50 = load { ptr, i64 }, ptr %s1
+  %t52 = extractvalue { ptr, i64 } %t50, 0
+  %t53 = extractvalue { ptr, i64 } %t50, 1
+  %t54 = call i32 @zevic_str_eq(ptr %t52, i64 %t53, ptr @.str.956, i64 3)
+  %t51 = icmp ne i32 %t54, 0
+  br i1 %t51, label %then.15, label %else.16
+then.15:
+  %t55 = load ptr, ptr %s0
+  %t56 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t55, i32 0, i32 2
+  %t57 = load ptr, ptr %t56
+  %t58 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t57, i32 0, i32 10
+  %t59 = load ptr, ptr %t58
+  br label %endif.17
+else.16:
+  %t60 = load { ptr, i64 }, ptr %s1
+  %t62 = extractvalue { ptr, i64 } %t60, 0
+  %t63 = extractvalue { ptr, i64 } %t60, 1
+  %t64 = call i32 @zevic_str_eq(ptr %t62, i64 %t63, ptr @.str.957, i64 3)
+  %t61 = icmp ne i32 %t64, 0
+  br i1 %t61, label %then.18, label %else.19
+then.18:
+  %t65 = load ptr, ptr %s0
+  %t66 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t65, i32 0, i32 2
+  %t67 = load ptr, ptr %t66
+  %t68 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t67, i32 0, i32 11
+  %t69 = load ptr, ptr %t68
+  br label %endif.20
+else.19:
+  %t70 = load { ptr, i64 }, ptr %s1
+  %t72 = extractvalue { ptr, i64 } %t70, 0
+  %t73 = extractvalue { ptr, i64 } %t70, 1
+  %t74 = call i32 @zevic_str_eq(ptr %t72, i64 %t73, ptr @.str.958, i64 3)
+  %t71 = icmp ne i32 %t74, 0
+  br i1 %t71, label %then.21, label %else.22
+then.21:
+  %t75 = load ptr, ptr %s0
+  %t76 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t75, i32 0, i32 2
+  %t77 = load ptr, ptr %t76
+  %t78 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t77, i32 0, i32 12
+  %t79 = load ptr, ptr %t78
+  br label %endif.23
+else.22:
+  %t80 = load { ptr, i64 }, ptr %s1
+  %t82 = extractvalue { ptr, i64 } %t80, 0
+  %t83 = extractvalue { ptr, i64 } %t80, 1
+  %t84 = call i32 @zevic_str_eq(ptr %t82, i64 %t83, ptr @.str.959, i64 3)
+  %t81 = icmp ne i32 %t84, 0
+  br i1 %t81, label %then.24, label %else.25
+then.24:
+  %t85 = load ptr, ptr %s0
+  %t86 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t85, i32 0, i32 2
+  %t87 = load ptr, ptr %t86
+  %t88 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t87, i32 0, i32 13
+  %t89 = load ptr, ptr %t88
+  br label %endif.26
+else.25:
+  %t90 = load { ptr, i64 }, ptr %s1
+  %t92 = extractvalue { ptr, i64 } %t90, 0
+  %t93 = extractvalue { ptr, i64 } %t90, 1
+  %t94 = call i32 @zevic_str_eq(ptr %t92, i64 %t93, ptr @.str.960, i64 3)
+  %t91 = icmp ne i32 %t94, 0
+  br i1 %t91, label %then.27, label %else.28
+then.27:
+  %t95 = load ptr, ptr %s0
+  %t96 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t95, i32 0, i32 2
+  %t97 = load ptr, ptr %t96
+  %t98 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t97, i32 0, i32 14
+  %t99 = load ptr, ptr %t98
+  br label %endif.29
+else.28:
+  %t100 = load { ptr, i64 }, ptr %s1
+  %t102 = extractvalue { ptr, i64 } %t100, 0
+  %t103 = extractvalue { ptr, i64 } %t100, 1
+  %t104 = call i32 @zevic_str_eq(ptr %t102, i64 %t103, ptr @.str.25, i64 4)
+  %t101 = icmp ne i32 %t104, 0
+  br i1 %t101, label %then.30, label %else.31
+then.30:
+  %t105 = load ptr, ptr %s0
+  %t106 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t105, i32 0, i32 2
+  %t107 = load ptr, ptr %t106
+  %t108 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t107, i32 0, i32 15
+  %t109 = load ptr, ptr %t108
+  br label %endif.32
+else.31:
+  %t110 = load { ptr, i64 }, ptr %s1
+  %t112 = extractvalue { ptr, i64 } %t110, 0
+  %t113 = extractvalue { ptr, i64 } %t110, 1
+  %t114 = call i32 @zevic_str_eq(ptr %t112, i64 %t113, ptr @.str.26, i64 4)
+  %t111 = icmp ne i32 %t114, 0
+  br i1 %t111, label %then.33, label %else.34
+then.33:
+  %t115 = load ptr, ptr %s0
+  %t116 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t115, i32 0, i32 2
+  %t117 = load ptr, ptr %t116
+  %t118 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t117, i32 0, i32 16
+  %t119 = load ptr, ptr %t118
+  br label %endif.35
+else.34:
+  %t120 = load ptr, ptr %s0
+  %t121 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t120, i32 0, i32 2
+  %t122 = load ptr, ptr %t121
+  %t123 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t122, i32 0, i32 17
+  %t124 = load ptr, ptr %t123
+  br label %endif.35
+endif.35:
+  %t125 = phi ptr [ %t119, %then.33 ], [ %t124, %else.34 ]
+  br label %endif.32
+endif.32:
+  %t126 = phi ptr [ %t109, %then.30 ], [ %t125, %endif.35 ]
+  br label %endif.29
+endif.29:
+  %t127 = phi ptr [ %t99, %then.27 ], [ %t126, %endif.32 ]
+  br label %endif.26
+endif.26:
+  %t128 = phi ptr [ %t89, %then.24 ], [ %t127, %endif.29 ]
+  br label %endif.23
+endif.23:
+  %t129 = phi ptr [ %t79, %then.21 ], [ %t128, %endif.26 ]
+  br label %endif.20
+endif.20:
+  %t130 = phi ptr [ %t69, %then.18 ], [ %t129, %endif.23 ]
+  br label %endif.17
+endif.17:
+  %t131 = phi ptr [ %t59, %then.15 ], [ %t130, %endif.20 ]
+  br label %endif.14
+endif.14:
+  %t132 = phi ptr [ %t49, %then.12 ], [ %t131, %endif.17 ]
+  br label %endif.11
+endif.11:
+  %t133 = phi ptr [ %t39, %then.9 ], [ %t132, %endif.14 ]
+  br label %endif.8
+endif.8:
+  %t134 = phi ptr [ %t29, %then.6 ], [ %t133, %endif.11 ]
+  br label %endif.5
+endif.5:
+  %t135 = phi ptr [ %t19, %then.3 ], [ %t134, %endif.8 ]
+  br label %endif.2
+endif.2:
+  %t136 = phi ptr [ %t9, %then.0 ], [ %t135, %endif.5 ]
+  store ptr %t136, ptr %s2
+  %t137 = load ptr, ptr %s2
+  %t138 = getelementptr inbounds { i32, [1 x i64] }, ptr %s3, i32 0, i32 0
+  store i32 0, ptr %t138
+  %t139 = insertvalue { ptr } undef, ptr %t137, 0
+  %t140 = getelementptr inbounds { i32, [1 x i64] }, ptr %s3, i32 0, i32 1
+  store { ptr } %t139, ptr %t140
+  %t141 = load { i32, [1 x i64] }, ptr %s3
+  ret { i32, [1 x i64] } %t141
+}
+
 define ptr @"zevic_Zevic1_Expr_genPrintf"(ptr %p0, ptr %p1, i64 %p2) {
 entry:
   %s0 = alloca ptr, align 8
@@ -59886,66 +60251,90 @@ entry:
   %s37 = alloca i1, align 1
   %s38 = alloca { ptr, i64 }, align 8
   %s39 = alloca { ptr, i64 }, align 8
-  %s40 = alloca { ptr, i64 }, align 8
-  %s41 = alloca i8, align 1
-  %s42 = alloca ptr, align 8
+  %s40 = alloca i64, align 8
+  %s41 = alloca { ptr, i64 }, align 8
+  %s42 = alloca { ptr, i64 }, align 8
   %s43 = alloca { ptr, i64 }, align 8
   %s44 = alloca i8, align 1
   %s45 = alloca { ptr, i64 }, align 8
-  %s46 = alloca { ptr, i64 }, align 8
+  %s46 = alloca ptr, align 8
   %s47 = alloca { ptr, i64 }, align 8
-  %s48 = alloca ptr, align 8
-  %s49 = alloca i64, align 8
-  %s50 = alloca ptr, align 8
-  %s51 = alloca i64, align 8
-  %s52 = alloca ptr, align 8
-  %s53 = alloca { ptr, i64 }, align 8
-  %s54 = alloca { ptr, i64 }, align 8
+  %s48 = alloca i8, align 1
+  %s49 = alloca { ptr, i64 }, align 8
+  %s50 = alloca { ptr, i64 }, align 8
+  %s51 = alloca { ptr, i64 }, align 8
+  %s52 = alloca { ptr, i64 }, align 8
+  %s53 = alloca i8, align 1
+  %s54 = alloca ptr, align 8
   %s55 = alloca { ptr, i64 }, align 8
-  %s56 = alloca ptr, align 8
-  %s57 = alloca i64, align 8
-  %s58 = alloca ptr, align 8
-  %s59 = alloca i64, align 8
+  %s56 = alloca i8, align 1
+  %s57 = alloca { ptr, i64 }, align 8
+  %s58 = alloca { ptr, i64 }, align 8
+  %s59 = alloca { ptr, i64 }, align 8
   %s60 = alloca ptr, align 8
-  %s61 = alloca ptr, align 8
-  %s62 = alloca { i32, [1 x i64] }, align 8
-  %s63 = alloca { i32, [1 x i64] }, align 8
-  %s64 = alloca { i32, [1 x i64] }, align 8
-  %s65 = alloca ptr, align 8
-  %s66 = alloca { i32, [1 x i64] }, align 8
-  %s67 = alloca i1, align 1
-  %s68 = alloca { ptr, i64 }, align 8
-  %s69 = alloca { ptr, i64 }, align 8
-  %s70 = alloca i64, align 8
+  %s61 = alloca i64, align 8
+  %s62 = alloca ptr, align 8
+  %s63 = alloca i64, align 8
+  %s64 = alloca ptr, align 8
+  %s65 = alloca { ptr, i64 }, align 8
+  %s66 = alloca { ptr, i64 }, align 8
+  %s67 = alloca { ptr, i64 }, align 8
+  %s68 = alloca ptr, align 8
+  %s69 = alloca i64, align 8
+  %s70 = alloca ptr, align 8
   %s71 = alloca i64, align 8
   %s72 = alloca ptr, align 8
-  %s73 = alloca i64, align 8
-  %s74 = alloca ptr, align 8
-  %s75 = alloca { ptr, i64 }, align 8
-  %s76 = alloca { ptr, i64 }, align 8
-  %s77 = alloca { ptr, i64 }, align 8
-  %s78 = alloca { ptr, i64 }, align 8
-  %s79 = alloca ptr, align 8
+  %s73 = alloca ptr, align 8
+  %s74 = alloca { i32, [1 x i64] }, align 8
+  %s75 = alloca { i32, [1 x i64] }, align 8
+  %s76 = alloca { i32, [1 x i64] }, align 8
+  %s77 = alloca ptr, align 8
+  %s78 = alloca { i32, [1 x i64] }, align 8
+  %s79 = alloca i1, align 1
   %s80 = alloca { ptr, i64 }, align 8
-  %s81 = alloca i32, align 4
+  %s81 = alloca { ptr, i64 }, align 8
   %s82 = alloca { ptr, i64 }, align 8
   %s83 = alloca { ptr, i64 }, align 8
   %s84 = alloca { ptr, i64 }, align 8
   %s85 = alloca { ptr, i64 }, align 8
-  %s86 = alloca { ptr, i64 }, align 8
-  %s87 = alloca { ptr, i64 }, align 8
-  %s88 = alloca { ptr, i64 }, align 8
-  %s89 = alloca { ptr, i64 }, align 8
-  %s90 = alloca { ptr, i64 }, align 8
+  %s86 = alloca i64, align 8
+  %s87 = alloca i64, align 8
+  %s88 = alloca ptr, align 8
+  %s89 = alloca i64, align 8
+  %s90 = alloca ptr, align 8
   %s91 = alloca { ptr, i64 }, align 8
   %s92 = alloca { ptr, i64 }, align 8
   %s93 = alloca { ptr, i64 }, align 8
   %s94 = alloca { ptr, i64 }, align 8
-  %s95 = alloca { ptr, i64 }, align 8
+  %s95 = alloca ptr, align 8
   %s96 = alloca { ptr, i64 }, align 8
-  %s97 = alloca { ptr, i64 }, align 8
+  %s97 = alloca i32, align 4
   %s98 = alloca { ptr, i64 }, align 8
   %s99 = alloca { ptr, i64 }, align 8
+  %s100 = alloca { ptr, i64 }, align 8
+  %s101 = alloca { ptr, i64 }, align 8
+  %s102 = alloca { ptr, i64 }, align 8
+  %s103 = alloca { ptr, i64 }, align 8
+  %s104 = alloca { ptr, i64 }, align 8
+  %s105 = alloca { ptr, i64 }, align 8
+  %s106 = alloca { ptr, i64 }, align 8
+  %s107 = alloca { ptr, i64 }, align 8
+  %s108 = alloca { ptr, i64 }, align 8
+  %s109 = alloca { ptr, i64 }, align 8
+  %s110 = alloca { ptr, i64 }, align 8
+  %s111 = alloca { ptr, i64 }, align 8
+  %s112 = alloca { ptr, i64 }, align 8
+  %s113 = alloca { ptr, i64 }, align 8
+  %s114 = alloca { ptr, i64 }, align 8
+  %s115 = alloca { ptr, i64 }, align 8
+  %s116 = alloca { ptr, i64 }, align 8
+  %s117 = alloca { ptr, i64 }, align 8
+  %s118 = alloca { ptr, i64 }, align 8
+  %s119 = alloca { ptr, i64 }, align 8
+  %s120 = alloca { ptr, i64 }, align 8
+  %s121 = alloca { ptr, i64 }, align 8
+  %s122 = alloca { ptr, i64 }, align 8
+  %s123 = alloca { ptr, i64 }, align 8
   store ptr %p0, ptr %s0
   store ptr %p1, ptr %s1
   store i64 %p2, ptr %s2
@@ -60008,7 +60397,7 @@ then.5:
   %t38 = extractvalue { ptr, i64 } %t37, 0
   %t39 = extractvalue { ptr, i64 } %t37, 1
   call void @zevic_sb_add(ptr %t36, ptr %t38, i64 %t39)
-  call void @zevic_sb_add(ptr %t36, ptr @.str.951, i64 38)
+  call void @zevic_sb_add(ptr %t36, ptr @.str.961, i64 38)
   call void @zevic_sb_finish(ptr %s9, ptr %t36)
   %t40 = load { ptr, i64 }, ptr %s9
   call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t32, { i32, i32, i32 } %t35, { ptr, i64 } %t40)
@@ -60069,12 +60458,12 @@ then.13:
   %t77 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t76, i32 0, i32 1
   %t78 = load { i32, i32, i32 }, ptr %t77
   %t79 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t79, ptr @.str.952, i64 15)
+  call void @zevic_sb_add(ptr %t79, ptr @.str.962, i64 15)
   %t80 = load { ptr, i64 }, ptr %s4
   %t81 = extractvalue { ptr, i64 } %t80, 0
   %t82 = extractvalue { ptr, i64 } %t80, 1
   call void @zevic_sb_add(ptr %t79, ptr %t81, i64 %t82)
-  call void @zevic_sb_add(ptr %t79, ptr @.str.953, i64 55)
+  call void @zevic_sb_add(ptr %t79, ptr @.str.963, i64 55)
   call void @zevic_sb_finish(ptr %s18, ptr %t79)
   %t83 = load { ptr, i64 }, ptr %s18
   call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t75, { i32, i32, i32 } %t78, { ptr, i64 } %t83)
@@ -60208,7 +60597,7 @@ then.38:
   %t161 = extractvalue { ptr, i64 } %t160, 0
   %t162 = extractvalue { ptr, i64 } %t160, 1
   call void @zevic_sb_add(ptr %t159, ptr %t161, i64 %t162)
-  call void @zevic_sb_add(ptr %t159, ptr @.str.954, i64 1)
+  call void @zevic_sb_add(ptr %t159, ptr @.str.964, i64 1)
   call void @zevic_sb_finish(ptr %s27, ptr %t159)
   %t163 = load { ptr, i64 }, ptr %s27
   store { ptr, i64 } %t163, ptr %s21
@@ -60227,1436 +60616,1908 @@ endif.40:
   %t171 = icmp sgt i64 %t170, 0
   br i1 %t171, label %then.43, label %endif.45
 then.43:
-  %t172 = call ptr @zevic_alloc(i64 24)
-  %t173 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t172, i32 0, i32 0
+  %t172 = call ptr @zevic_alloc(i64 40)
+  %t173 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t172, i32 0, i32 0
   store { ptr, i64 } { ptr @.str.83, i64 0 }, ptr %t173
-  %t174 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t172, i32 0, i32 1
+  %t174 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t172, i32 0, i32 1
   store i1 false, ptr %t174
-  %t175 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t172, i32 0, i32 2
+  %t175 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t172, i32 0, i32 2
   store i8 0, ptr %t175
+  %t176 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t172, i32 0, i32 3
+  store { ptr, i64 } { ptr @.str.83, i64 0 }, ptr %t176
   store ptr %t172, ptr %s28
-  %t176 = load ptr, ptr %s28
-  %t177 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t176, i32 0, i32 0
-  %t178 = load { ptr, i64 }, ptr %s21
-  store { ptr, i64 } %t178, ptr %t177
-  %t179 = load ptr, ptr %s20
-  %t180 = load ptr, ptr %s28
-  call void @"zevic_Array<Zevic1_Expr_FmtPiece>_Push"(ptr %t179, ptr %t180)
+  %t177 = load ptr, ptr %s28
+  %t178 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t177, i32 0, i32 0
+  %t179 = load { ptr, i64 }, ptr %s21
+  store { ptr, i64 } %t179, ptr %t178
+  %t180 = load ptr, ptr %s20
+  %t181 = load ptr, ptr %s28
+  call void @"zevic_Array<Zevic1_Expr_FmtPiece>_Push"(ptr %t180, ptr %t181)
   store { ptr, i64 } { ptr @.str.83, i64 0 }, ptr %s21
   br label %endif.45
 endif.45:
-  %t181 = load i64, ptr %s23
-  %t182 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t181, i64 1)
-  %t183 = extractvalue { i64, i1 } %t182, 0
-  %t184 = extractvalue { i64, i1 } %t182, 1
-  br i1 %t184, label %panic.47, label %ok.46
+  %t182 = load i64, ptr %s23
+  %t183 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t182, i64 1)
+  %t184 = extractvalue { i64, i1 } %t183, 0
+  %t185 = extractvalue { i64, i1 } %t183, 1
+  br i1 %t185, label %panic.47, label %ok.46
 ok.46:
-  store i64 %t183, ptr %s29
+  store i64 %t184, ptr %s29
   store { ptr, i64 } { ptr @.str.83, i64 0 }, ptr %s30
   store { ptr, i64 } { ptr @.str.83, i64 0 }, ptr %s31
   store { ptr, i64 } { ptr @.str.83, i64 0 }, ptr %s32
   br label %while.cond.48
 while.cond.48:
-  %t185 = load i64, ptr %s29
-  %t186 = load i64, ptr %s22
-  %t187 = icmp slt i64 %t185, %t186
-  br i1 %t187, label %and.rhs.51, label %and.end.52
+  %t186 = load i64, ptr %s29
+  %t187 = load i64, ptr %s22
+  %t188 = icmp slt i64 %t186, %t187
+  br i1 %t188, label %and.rhs.51, label %and.end.52
 and.rhs.51:
-  %t188 = load { ptr, i64 }, ptr %s11
-  %t189 = load i64, ptr %s29
-  %t190 = extractvalue { ptr, i64 } %t188, 0
-  %t191 = extractvalue { ptr, i64 } %t188, 1
-  %t192 = icmp uge i64 %t189, %t191
-  br i1 %t192, label %panic.54, label %ok.53
+  %t189 = load { ptr, i64 }, ptr %s11
+  %t190 = load i64, ptr %s29
+  %t191 = extractvalue { ptr, i64 } %t189, 0
+  %t192 = extractvalue { ptr, i64 } %t189, 1
+  %t193 = icmp uge i64 %t190, %t192
+  br i1 %t193, label %panic.54, label %ok.53
 ok.53:
-  %t193 = getelementptr inbounds i8, ptr %t190, i64 %t189
-  %t194 = load i8, ptr %t193
-  %t195 = call i1 @"zevic_Zevic1_Expr_inSet"(i8 %t194, { ptr, i64 } { ptr @.str.955, i64 5 })
+  %t194 = getelementptr inbounds i8, ptr %t191, i64 %t190
+  %t195 = load i8, ptr %t194
+  %t196 = call i1 @"zevic_Zevic1_Expr_inSet"(i8 %t195, { ptr, i64 } { ptr @.str.965, i64 5 })
   br label %and.end.52
 and.end.52:
-  %t196 = phi i1 [ false, %while.cond.48 ], [ %t195, %ok.53 ]
-  br i1 %t196, label %while.body.49, label %while.end.50
+  %t197 = phi i1 [ false, %while.cond.48 ], [ %t196, %ok.53 ]
+  br i1 %t197, label %while.body.49, label %while.end.50
 while.body.49:
-  %t197 = call ptr @zevic_sb_new()
-  %t198 = load { ptr, i64 }, ptr %s30
-  %t199 = extractvalue { ptr, i64 } %t198, 0
-  %t200 = extractvalue { ptr, i64 } %t198, 1
-  call void @zevic_sb_add(ptr %t197, ptr %t199, i64 %t200)
-  %t201 = load { ptr, i64 }, ptr %s11
-  %t202 = load i64, ptr %s29
+  %t198 = call ptr @zevic_sb_new()
+  %t199 = load { ptr, i64 }, ptr %s30
+  %t200 = extractvalue { ptr, i64 } %t199, 0
+  %t201 = extractvalue { ptr, i64 } %t199, 1
+  call void @zevic_sb_add(ptr %t198, ptr %t200, i64 %t201)
+  %t202 = load { ptr, i64 }, ptr %s11
   %t203 = load i64, ptr %s29
-  %t204 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t203, i64 1)
-  %t205 = extractvalue { i64, i1 } %t204, 0
-  %t206 = extractvalue { i64, i1 } %t204, 1
-  br i1 %t206, label %panic.56, label %ok.55
+  %t204 = load i64, ptr %s29
+  %t205 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t204, i64 1)
+  %t206 = extractvalue { i64, i1 } %t205, 0
+  %t207 = extractvalue { i64, i1 } %t205, 1
+  br i1 %t207, label %panic.56, label %ok.55
 ok.55:
-  %t207 = extractvalue { ptr, i64 } %t201, 0
-  %t208 = extractvalue { ptr, i64 } %t201, 1
-  %t209 = call i32 @zevic_str_slice_ok(ptr %t207, i64 %t208, i64 %t202, i64 %t205)
-  %t210 = icmp eq i32 %t209, 0
-  br i1 %t210, label %panic.58, label %ok.57
+  %t208 = extractvalue { ptr, i64 } %t202, 0
+  %t209 = extractvalue { ptr, i64 } %t202, 1
+  %t210 = call i32 @zevic_str_slice_ok(ptr %t208, i64 %t209, i64 %t203, i64 %t206)
+  %t211 = icmp eq i32 %t210, 0
+  br i1 %t211, label %panic.58, label %ok.57
 ok.57:
-  call void @zevic_str_slice(ptr %s33, ptr %t207, i64 %t208, i64 %t202, i64 %t205)
-  %t211 = load { ptr, i64 }, ptr %s33
-  %t212 = extractvalue { ptr, i64 } %t211, 0
-  %t213 = extractvalue { ptr, i64 } %t211, 1
-  call void @zevic_sb_add(ptr %t197, ptr %t212, i64 %t213)
-  call void @zevic_sb_finish(ptr %s34, ptr %t197)
-  %t214 = load { ptr, i64 }, ptr %s34
-  store { ptr, i64 } %t214, ptr %s30
-  %t215 = load i64, ptr %s29
-  %t216 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t215, i64 1)
-  %t217 = extractvalue { i64, i1 } %t216, 0
-  %t218 = extractvalue { i64, i1 } %t216, 1
-  br i1 %t218, label %panic.60, label %ok.59
+  call void @zevic_str_slice(ptr %s33, ptr %t208, i64 %t209, i64 %t203, i64 %t206)
+  %t212 = load { ptr, i64 }, ptr %s33
+  %t213 = extractvalue { ptr, i64 } %t212, 0
+  %t214 = extractvalue { ptr, i64 } %t212, 1
+  call void @zevic_sb_add(ptr %t198, ptr %t213, i64 %t214)
+  call void @zevic_sb_finish(ptr %s34, ptr %t198)
+  %t215 = load { ptr, i64 }, ptr %s34
+  store { ptr, i64 } %t215, ptr %s30
+  %t216 = load i64, ptr %s29
+  %t217 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t216, i64 1)
+  %t218 = extractvalue { i64, i1 } %t217, 0
+  %t219 = extractvalue { i64, i1 } %t217, 1
+  br i1 %t219, label %panic.60, label %ok.59
 ok.59:
-  store i64 %t217, ptr %s29
+  store i64 %t218, ptr %s29
   br label %while.cond.48
 while.end.50:
   br label %while.cond.61
 while.cond.61:
-  %t219 = load i64, ptr %s29
-  %t220 = load i64, ptr %s22
-  %t221 = icmp slt i64 %t219, %t220
-  br i1 %t221, label %and.rhs.64, label %and.end.65
+  %t220 = load i64, ptr %s29
+  %t221 = load i64, ptr %s22
+  %t222 = icmp slt i64 %t220, %t221
+  br i1 %t222, label %and.rhs.64, label %and.end.65
 and.rhs.64:
-  %t222 = load { ptr, i64 }, ptr %s11
-  %t223 = load i64, ptr %s29
-  %t224 = extractvalue { ptr, i64 } %t222, 0
-  %t225 = extractvalue { ptr, i64 } %t222, 1
-  %t226 = icmp uge i64 %t223, %t225
-  br i1 %t226, label %panic.67, label %ok.66
+  %t223 = load { ptr, i64 }, ptr %s11
+  %t224 = load i64, ptr %s29
+  %t225 = extractvalue { ptr, i64 } %t223, 0
+  %t226 = extractvalue { ptr, i64 } %t223, 1
+  %t227 = icmp uge i64 %t224, %t226
+  br i1 %t227, label %panic.67, label %ok.66
 ok.66:
-  %t227 = getelementptr inbounds i8, ptr %t224, i64 %t223
-  %t228 = load i8, ptr %t227
-  %t229 = icmp uge i8 %t228, 48
+  %t228 = getelementptr inbounds i8, ptr %t225, i64 %t224
+  %t229 = load i8, ptr %t228
+  %t230 = icmp uge i8 %t229, 48
   br label %and.end.65
 and.end.65:
-  %t230 = phi i1 [ false, %while.cond.61 ], [ %t229, %ok.66 ]
-  br i1 %t230, label %and.rhs.68, label %and.end.69
+  %t231 = phi i1 [ false, %while.cond.61 ], [ %t230, %ok.66 ]
+  br i1 %t231, label %and.rhs.68, label %and.end.69
 and.rhs.68:
-  %t231 = load { ptr, i64 }, ptr %s11
-  %t232 = load i64, ptr %s29
-  %t233 = extractvalue { ptr, i64 } %t231, 0
-  %t234 = extractvalue { ptr, i64 } %t231, 1
-  %t235 = icmp uge i64 %t232, %t234
-  br i1 %t235, label %panic.71, label %ok.70
+  %t232 = load { ptr, i64 }, ptr %s11
+  %t233 = load i64, ptr %s29
+  %t234 = extractvalue { ptr, i64 } %t232, 0
+  %t235 = extractvalue { ptr, i64 } %t232, 1
+  %t236 = icmp uge i64 %t233, %t235
+  br i1 %t236, label %panic.71, label %ok.70
 ok.70:
-  %t236 = getelementptr inbounds i8, ptr %t233, i64 %t232
-  %t237 = load i8, ptr %t236
-  %t238 = icmp ule i8 %t237, 57
+  %t237 = getelementptr inbounds i8, ptr %t234, i64 %t233
+  %t238 = load i8, ptr %t237
+  %t239 = icmp ule i8 %t238, 57
   br label %and.end.69
 and.end.69:
-  %t239 = phi i1 [ false, %and.end.65 ], [ %t238, %ok.70 ]
-  br i1 %t239, label %while.body.62, label %while.end.63
+  %t240 = phi i1 [ false, %and.end.65 ], [ %t239, %ok.70 ]
+  br i1 %t240, label %while.body.62, label %while.end.63
 while.body.62:
-  %t240 = call ptr @zevic_sb_new()
-  %t241 = load { ptr, i64 }, ptr %s31
-  %t242 = extractvalue { ptr, i64 } %t241, 0
-  %t243 = extractvalue { ptr, i64 } %t241, 1
-  call void @zevic_sb_add(ptr %t240, ptr %t242, i64 %t243)
-  %t244 = load { ptr, i64 }, ptr %s11
-  %t245 = load i64, ptr %s29
+  %t241 = call ptr @zevic_sb_new()
+  %t242 = load { ptr, i64 }, ptr %s31
+  %t243 = extractvalue { ptr, i64 } %t242, 0
+  %t244 = extractvalue { ptr, i64 } %t242, 1
+  call void @zevic_sb_add(ptr %t241, ptr %t243, i64 %t244)
+  %t245 = load { ptr, i64 }, ptr %s11
   %t246 = load i64, ptr %s29
-  %t247 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t246, i64 1)
-  %t248 = extractvalue { i64, i1 } %t247, 0
-  %t249 = extractvalue { i64, i1 } %t247, 1
-  br i1 %t249, label %panic.73, label %ok.72
+  %t247 = load i64, ptr %s29
+  %t248 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t247, i64 1)
+  %t249 = extractvalue { i64, i1 } %t248, 0
+  %t250 = extractvalue { i64, i1 } %t248, 1
+  br i1 %t250, label %panic.73, label %ok.72
 ok.72:
-  %t250 = extractvalue { ptr, i64 } %t244, 0
-  %t251 = extractvalue { ptr, i64 } %t244, 1
-  %t252 = call i32 @zevic_str_slice_ok(ptr %t250, i64 %t251, i64 %t245, i64 %t248)
-  %t253 = icmp eq i32 %t252, 0
-  br i1 %t253, label %panic.75, label %ok.74
+  %t251 = extractvalue { ptr, i64 } %t245, 0
+  %t252 = extractvalue { ptr, i64 } %t245, 1
+  %t253 = call i32 @zevic_str_slice_ok(ptr %t251, i64 %t252, i64 %t246, i64 %t249)
+  %t254 = icmp eq i32 %t253, 0
+  br i1 %t254, label %panic.75, label %ok.74
 ok.74:
-  call void @zevic_str_slice(ptr %s35, ptr %t250, i64 %t251, i64 %t245, i64 %t248)
-  %t254 = load { ptr, i64 }, ptr %s35
-  %t255 = extractvalue { ptr, i64 } %t254, 0
-  %t256 = extractvalue { ptr, i64 } %t254, 1
-  call void @zevic_sb_add(ptr %t240, ptr %t255, i64 %t256)
-  call void @zevic_sb_finish(ptr %s36, ptr %t240)
-  %t257 = load { ptr, i64 }, ptr %s36
-  store { ptr, i64 } %t257, ptr %s31
-  %t258 = load i64, ptr %s29
-  %t259 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t258, i64 1)
-  %t260 = extractvalue { i64, i1 } %t259, 0
-  %t261 = extractvalue { i64, i1 } %t259, 1
-  br i1 %t261, label %panic.77, label %ok.76
+  call void @zevic_str_slice(ptr %s35, ptr %t251, i64 %t252, i64 %t246, i64 %t249)
+  %t255 = load { ptr, i64 }, ptr %s35
+  %t256 = extractvalue { ptr, i64 } %t255, 0
+  %t257 = extractvalue { ptr, i64 } %t255, 1
+  call void @zevic_sb_add(ptr %t241, ptr %t256, i64 %t257)
+  call void @zevic_sb_finish(ptr %s36, ptr %t241)
+  %t258 = load { ptr, i64 }, ptr %s36
+  store { ptr, i64 } %t258, ptr %s31
+  %t259 = load i64, ptr %s29
+  %t260 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t259, i64 1)
+  %t261 = extractvalue { i64, i1 } %t260, 0
+  %t262 = extractvalue { i64, i1 } %t260, 1
+  br i1 %t262, label %panic.77, label %ok.76
 ok.76:
-  store i64 %t260, ptr %s29
+  store i64 %t261, ptr %s29
   br label %while.cond.61
 while.end.63:
   store i1 false, ptr %s37
-  %t262 = load i64, ptr %s29
-  %t263 = load i64, ptr %s22
-  %t264 = icmp slt i64 %t262, %t263
-  br i1 %t264, label %and.rhs.78, label %and.end.79
+  %t263 = load i64, ptr %s29
+  %t264 = load i64, ptr %s22
+  %t265 = icmp slt i64 %t263, %t264
+  br i1 %t265, label %and.rhs.78, label %and.end.79
 and.rhs.78:
-  %t265 = load { ptr, i64 }, ptr %s11
-  %t266 = load i64, ptr %s29
-  %t267 = extractvalue { ptr, i64 } %t265, 0
-  %t268 = extractvalue { ptr, i64 } %t265, 1
-  %t269 = icmp uge i64 %t266, %t268
-  br i1 %t269, label %panic.81, label %ok.80
+  %t266 = load { ptr, i64 }, ptr %s11
+  %t267 = load i64, ptr %s29
+  %t268 = extractvalue { ptr, i64 } %t266, 0
+  %t269 = extractvalue { ptr, i64 } %t266, 1
+  %t270 = icmp uge i64 %t267, %t269
+  br i1 %t270, label %panic.81, label %ok.80
 ok.80:
-  %t270 = getelementptr inbounds i8, ptr %t267, i64 %t266
-  %t271 = load i8, ptr %t270
-  %t272 = icmp eq i8 %t271, 46
+  %t271 = getelementptr inbounds i8, ptr %t268, i64 %t267
+  %t272 = load i8, ptr %t271
+  %t273 = icmp eq i8 %t272, 46
   br label %and.end.79
 and.end.79:
-  %t273 = phi i1 [ false, %while.end.63 ], [ %t272, %ok.80 ]
-  br i1 %t273, label %then.82, label %endif.84
+  %t274 = phi i1 [ false, %while.end.63 ], [ %t273, %ok.80 ]
+  br i1 %t274, label %then.82, label %endif.84
 then.82:
   store i1 true, ptr %s37
-  %t274 = load i64, ptr %s29
-  %t275 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t274, i64 1)
-  %t276 = extractvalue { i64, i1 } %t275, 0
-  %t277 = extractvalue { i64, i1 } %t275, 1
-  br i1 %t277, label %panic.86, label %ok.85
+  %t275 = load i64, ptr %s29
+  %t276 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t275, i64 1)
+  %t277 = extractvalue { i64, i1 } %t276, 0
+  %t278 = extractvalue { i64, i1 } %t276, 1
+  br i1 %t278, label %panic.86, label %ok.85
 ok.85:
-  store i64 %t276, ptr %s29
+  store i64 %t277, ptr %s29
   br label %while.cond.87
 while.cond.87:
-  %t278 = load i64, ptr %s29
-  %t279 = load i64, ptr %s22
-  %t280 = icmp slt i64 %t278, %t279
-  br i1 %t280, label %and.rhs.90, label %and.end.91
+  %t279 = load i64, ptr %s29
+  %t280 = load i64, ptr %s22
+  %t281 = icmp slt i64 %t279, %t280
+  br i1 %t281, label %and.rhs.90, label %and.end.91
 and.rhs.90:
-  %t281 = load { ptr, i64 }, ptr %s11
-  %t282 = load i64, ptr %s29
-  %t283 = extractvalue { ptr, i64 } %t281, 0
-  %t284 = extractvalue { ptr, i64 } %t281, 1
-  %t285 = icmp uge i64 %t282, %t284
-  br i1 %t285, label %panic.93, label %ok.92
+  %t282 = load { ptr, i64 }, ptr %s11
+  %t283 = load i64, ptr %s29
+  %t284 = extractvalue { ptr, i64 } %t282, 0
+  %t285 = extractvalue { ptr, i64 } %t282, 1
+  %t286 = icmp uge i64 %t283, %t285
+  br i1 %t286, label %panic.93, label %ok.92
 ok.92:
-  %t286 = getelementptr inbounds i8, ptr %t283, i64 %t282
-  %t287 = load i8, ptr %t286
-  %t288 = icmp uge i8 %t287, 48
+  %t287 = getelementptr inbounds i8, ptr %t284, i64 %t283
+  %t288 = load i8, ptr %t287
+  %t289 = icmp uge i8 %t288, 48
   br label %and.end.91
 and.end.91:
-  %t289 = phi i1 [ false, %while.cond.87 ], [ %t288, %ok.92 ]
-  br i1 %t289, label %and.rhs.94, label %and.end.95
+  %t290 = phi i1 [ false, %while.cond.87 ], [ %t289, %ok.92 ]
+  br i1 %t290, label %and.rhs.94, label %and.end.95
 and.rhs.94:
-  %t290 = load { ptr, i64 }, ptr %s11
-  %t291 = load i64, ptr %s29
-  %t292 = extractvalue { ptr, i64 } %t290, 0
-  %t293 = extractvalue { ptr, i64 } %t290, 1
-  %t294 = icmp uge i64 %t291, %t293
-  br i1 %t294, label %panic.97, label %ok.96
+  %t291 = load { ptr, i64 }, ptr %s11
+  %t292 = load i64, ptr %s29
+  %t293 = extractvalue { ptr, i64 } %t291, 0
+  %t294 = extractvalue { ptr, i64 } %t291, 1
+  %t295 = icmp uge i64 %t292, %t294
+  br i1 %t295, label %panic.97, label %ok.96
 ok.96:
-  %t295 = getelementptr inbounds i8, ptr %t292, i64 %t291
-  %t296 = load i8, ptr %t295
-  %t297 = icmp ule i8 %t296, 57
+  %t296 = getelementptr inbounds i8, ptr %t293, i64 %t292
+  %t297 = load i8, ptr %t296
+  %t298 = icmp ule i8 %t297, 57
   br label %and.end.95
 and.end.95:
-  %t298 = phi i1 [ false, %and.end.91 ], [ %t297, %ok.96 ]
-  br i1 %t298, label %while.body.88, label %while.end.89
+  %t299 = phi i1 [ false, %and.end.91 ], [ %t298, %ok.96 ]
+  br i1 %t299, label %while.body.88, label %while.end.89
 while.body.88:
-  %t299 = call ptr @zevic_sb_new()
-  %t300 = load { ptr, i64 }, ptr %s32
-  %t301 = extractvalue { ptr, i64 } %t300, 0
-  %t302 = extractvalue { ptr, i64 } %t300, 1
-  call void @zevic_sb_add(ptr %t299, ptr %t301, i64 %t302)
-  %t303 = load { ptr, i64 }, ptr %s11
-  %t304 = load i64, ptr %s29
+  %t300 = call ptr @zevic_sb_new()
+  %t301 = load { ptr, i64 }, ptr %s32
+  %t302 = extractvalue { ptr, i64 } %t301, 0
+  %t303 = extractvalue { ptr, i64 } %t301, 1
+  call void @zevic_sb_add(ptr %t300, ptr %t302, i64 %t303)
+  %t304 = load { ptr, i64 }, ptr %s11
   %t305 = load i64, ptr %s29
-  %t306 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t305, i64 1)
-  %t307 = extractvalue { i64, i1 } %t306, 0
-  %t308 = extractvalue { i64, i1 } %t306, 1
-  br i1 %t308, label %panic.99, label %ok.98
+  %t306 = load i64, ptr %s29
+  %t307 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t306, i64 1)
+  %t308 = extractvalue { i64, i1 } %t307, 0
+  %t309 = extractvalue { i64, i1 } %t307, 1
+  br i1 %t309, label %panic.99, label %ok.98
 ok.98:
-  %t309 = extractvalue { ptr, i64 } %t303, 0
-  %t310 = extractvalue { ptr, i64 } %t303, 1
-  %t311 = call i32 @zevic_str_slice_ok(ptr %t309, i64 %t310, i64 %t304, i64 %t307)
-  %t312 = icmp eq i32 %t311, 0
-  br i1 %t312, label %panic.101, label %ok.100
+  %t310 = extractvalue { ptr, i64 } %t304, 0
+  %t311 = extractvalue { ptr, i64 } %t304, 1
+  %t312 = call i32 @zevic_str_slice_ok(ptr %t310, i64 %t311, i64 %t305, i64 %t308)
+  %t313 = icmp eq i32 %t312, 0
+  br i1 %t313, label %panic.101, label %ok.100
 ok.100:
-  call void @zevic_str_slice(ptr %s38, ptr %t309, i64 %t310, i64 %t304, i64 %t307)
-  %t313 = load { ptr, i64 }, ptr %s38
-  %t314 = extractvalue { ptr, i64 } %t313, 0
-  %t315 = extractvalue { ptr, i64 } %t313, 1
-  call void @zevic_sb_add(ptr %t299, ptr %t314, i64 %t315)
-  call void @zevic_sb_finish(ptr %s39, ptr %t299)
-  %t316 = load { ptr, i64 }, ptr %s39
-  store { ptr, i64 } %t316, ptr %s32
-  %t317 = load i64, ptr %s29
-  %t318 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t317, i64 1)
-  %t319 = extractvalue { i64, i1 } %t318, 0
-  %t320 = extractvalue { i64, i1 } %t318, 1
-  br i1 %t320, label %panic.103, label %ok.102
+  call void @zevic_str_slice(ptr %s38, ptr %t310, i64 %t311, i64 %t305, i64 %t308)
+  %t314 = load { ptr, i64 }, ptr %s38
+  %t315 = extractvalue { ptr, i64 } %t314, 0
+  %t316 = extractvalue { ptr, i64 } %t314, 1
+  call void @zevic_sb_add(ptr %t300, ptr %t315, i64 %t316)
+  call void @zevic_sb_finish(ptr %s39, ptr %t300)
+  %t317 = load { ptr, i64 }, ptr %s39
+  store { ptr, i64 } %t317, ptr %s32
+  %t318 = load i64, ptr %s29
+  %t319 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t318, i64 1)
+  %t320 = extractvalue { i64, i1 } %t319, 0
+  %t321 = extractvalue { i64, i1 } %t319, 1
+  br i1 %t321, label %panic.103, label %ok.102
 ok.102:
-  store i64 %t319, ptr %s29
+  store i64 %t320, ptr %s29
   br label %while.cond.87
 while.end.89:
   br label %endif.84
 endif.84:
-  %t321 = load i64, ptr %s29
-  %t322 = load i64, ptr %s22
-  %t323 = icmp sge i64 %t321, %t322
-  br i1 %t323, label %or.end.105, label %or.rhs.104
-or.rhs.104:
-  %t324 = load { ptr, i64 }, ptr %s11
-  %t325 = load i64, ptr %s29
-  %t326 = extractvalue { ptr, i64 } %t324, 0
-  %t327 = extractvalue { ptr, i64 } %t324, 1
-  %t328 = icmp uge i64 %t325, %t327
-  br i1 %t328, label %panic.107, label %ok.106
+  %t322 = load i64, ptr %s29
+  %t323 = load i64, ptr %s22
+  %t324 = icmp slt i64 %t322, %t323
+  br i1 %t324, label %and.rhs.104, label %and.end.105
+and.rhs.104:
+  %t325 = load { ptr, i64 }, ptr %s11
+  %t326 = load i64, ptr %s29
+  %t327 = extractvalue { ptr, i64 } %t325, 0
+  %t328 = extractvalue { ptr, i64 } %t325, 1
+  %t329 = icmp uge i64 %t326, %t328
+  br i1 %t329, label %panic.107, label %ok.106
 ok.106:
-  %t329 = getelementptr inbounds i8, ptr %t326, i64 %t325
-  %t330 = load i8, ptr %t329
-  %t331 = call i1 @"zevic_Zevic1_Expr_inSet"(i8 %t330, { ptr, i64 } { ptr @.str.956, i64 14 })
-  %t332 = xor i1 %t331, true
-  br label %or.end.105
-or.end.105:
-  %t333 = phi i1 [ true, %endif.84 ], [ %t332, %ok.106 ]
+  %t330 = getelementptr inbounds i8, ptr %t327, i64 %t326
+  %t331 = load i8, ptr %t330
+  %t332 = icmp eq i8 %t331, 123
+  br label %and.end.105
+and.end.105:
+  %t333 = phi i1 [ false, %endif.84 ], [ %t332, %ok.106 ]
   br i1 %t333, label %then.108, label %endif.110
 then.108:
-  %t334 = load ptr, ptr %s3
-  %t335 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t334, i32 0, i32 1
-  %t336 = load ptr, ptr %t335
-  %t337 = load ptr, ptr %s10
-  %t338 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t337, i32 0, i32 1
-  %t339 = load { i32, i32, i32 }, ptr %t338
-  %t340 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t340, ptr @.str.957, i64 29)
-  %t341 = load { ptr, i64 }, ptr %s4
-  %t342 = extractvalue { ptr, i64 } %t341, 0
-  %t343 = extractvalue { ptr, i64 } %t341, 1
-  call void @zevic_sb_add(ptr %t340, ptr %t342, i64 %t343)
-  call void @zevic_sb_add(ptr %t340, ptr @.str.958, i64 40)
-  call void @zevic_sb_finish(ptr %s40, ptr %t340)
-  %t344 = load { ptr, i64 }, ptr %s40
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t336, { i32, i32, i32 } %t339, { ptr, i64 } %t344)
-  %t345 = load ptr, ptr %s0
-  %t346 = call ptr @"zevic_Zevic1_Ctx_FnCtx_ErrVal"(ptr %t345)
-  ret ptr %t346
-endif.110:
-  %t347 = load { ptr, i64 }, ptr %s11
-  %t348 = load i64, ptr %s29
-  %t349 = extractvalue { ptr, i64 } %t347, 0
-  %t350 = extractvalue { ptr, i64 } %t347, 1
-  %t351 = icmp uge i64 %t348, %t350
-  br i1 %t351, label %panic.112, label %ok.111
+  %t334 = load i64, ptr %s29
+  %t335 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t334, i64 1)
+  %t336 = extractvalue { i64, i1 } %t335, 0
+  %t337 = extractvalue { i64, i1 } %t335, 1
+  br i1 %t337, label %panic.112, label %ok.111
 ok.111:
-  %t352 = getelementptr inbounds i8, ptr %t349, i64 %t348
-  %t353 = load i8, ptr %t352
-  %t354 = icmp eq i8 %t353, 105
-  br i1 %t354, label %then.113, label %else.114
-then.113:
-  br label %endif.115
-else.114:
-  %t355 = load { ptr, i64 }, ptr %s11
-  %t356 = load i64, ptr %s29
-  %t357 = extractvalue { ptr, i64 } %t355, 0
-  %t358 = extractvalue { ptr, i64 } %t355, 1
-  %t359 = icmp uge i64 %t356, %t358
-  br i1 %t359, label %panic.117, label %ok.116
-ok.116:
-  %t360 = getelementptr inbounds i8, ptr %t357, i64 %t356
-  %t361 = load i8, ptr %t360
-  br label %endif.115
-endif.115:
-  %t362 = phi i8 [ 100, %then.113 ], [ %t361, %ok.116 ]
-  store i8 %t362, ptr %s41
-  %t363 = call ptr @zevic_alloc(i64 24)
-  %t364 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t363, i32 0, i32 0
-  store { ptr, i64 } { ptr @.str.83, i64 0 }, ptr %t364
-  %t365 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t363, i32 0, i32 1
-  store i1 false, ptr %t365
-  %t366 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t363, i32 0, i32 2
-  store i8 0, ptr %t366
-  store ptr %t363, ptr %s42
-  %t367 = load ptr, ptr %s42
-  %t368 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t367, i32 0, i32 1
-  store i1 true, ptr %t368
-  %t369 = load ptr, ptr %s42
-  %t370 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t369, i32 0, i32 2
-  %t371 = load i8, ptr %s41
-  store i8 %t371, ptr %t370
-  %t372 = load i8, ptr %s41
-  %t373 = icmp eq i8 %t372, 100
-  br i1 %t373, label %or.end.119, label %or.rhs.118
-or.rhs.118:
-  %t374 = load i8, ptr %s41
-  %t375 = icmp eq i8 %t374, 117
-  br label %or.end.119
-or.end.119:
-  %t376 = phi i1 [ true, %endif.115 ], [ %t375, %or.rhs.118 ]
-  br i1 %t376, label %or.end.121, label %or.rhs.120
-or.rhs.120:
-  %t377 = load i8, ptr %s41
-  %t378 = icmp eq i8 %t377, 111
-  br label %or.end.121
-or.end.121:
-  %t379 = phi i1 [ true, %or.end.119 ], [ %t378, %or.rhs.120 ]
-  br i1 %t379, label %or.end.123, label %or.rhs.122
-or.rhs.122:
-  %t380 = load i8, ptr %s41
-  %t381 = icmp eq i8 %t380, 120
-  br label %or.end.123
-or.end.123:
-  %t382 = phi i1 [ true, %or.end.121 ], [ %t381, %or.rhs.122 ]
-  br i1 %t382, label %or.end.125, label %or.rhs.124
-or.rhs.124:
-  %t383 = load i8, ptr %s41
-  %t384 = icmp eq i8 %t383, 88
-  br label %or.end.125
-or.end.125:
-  %t385 = phi i1 [ true, %or.end.123 ], [ %t384, %or.rhs.124 ]
-  br i1 %t385, label %then.126, label %else.127
-then.126:
-  br label %endif.128
-else.127:
-  br label %endif.128
-endif.128:
-  %t386 = phi { ptr, i64 } [ { ptr @.str.959, i64 2 }, %then.126 ], [ { ptr @.str.83, i64 0 }, %else.127 ]
-  store { ptr, i64 } %t386, ptr %s43
-  %t387 = load i8, ptr %s41
-  %t388 = icmp eq i8 %t387, 99
-  br i1 %t388, label %then.129, label %else.130
+  store i64 %t336, ptr %s40
+  br label %while.cond.113
+while.cond.113:
+  %t338 = load i64, ptr %s40
+  %t339 = load i64, ptr %s22
+  %t340 = icmp slt i64 %t338, %t339
+  br i1 %t340, label %and.rhs.116, label %and.end.117
+and.rhs.116:
+  %t341 = load { ptr, i64 }, ptr %s11
+  %t342 = load i64, ptr %s40
+  %t343 = extractvalue { ptr, i64 } %t341, 0
+  %t344 = extractvalue { ptr, i64 } %t341, 1
+  %t345 = icmp uge i64 %t342, %t344
+  br i1 %t345, label %panic.119, label %ok.118
+ok.118:
+  %t346 = getelementptr inbounds i8, ptr %t343, i64 %t342
+  %t347 = load i8, ptr %t346
+  %t348 = icmp ne i8 %t347, 125
+  br label %and.end.117
+and.end.117:
+  %t349 = phi i1 [ false, %while.cond.113 ], [ %t348, %ok.118 ]
+  br i1 %t349, label %while.body.114, label %while.end.115
+while.body.114:
+  %t350 = load i64, ptr %s40
+  %t351 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t350, i64 1)
+  %t352 = extractvalue { i64, i1 } %t351, 0
+  %t353 = extractvalue { i64, i1 } %t351, 1
+  br i1 %t353, label %panic.121, label %ok.120
+ok.120:
+  store i64 %t352, ptr %s40
+  br label %while.cond.113
+while.end.115:
+  %t354 = load i64, ptr %s40
+  %t355 = load i64, ptr %s22
+  %t356 = icmp sge i64 %t354, %t355
+  br i1 %t356, label %then.122, label %endif.124
+then.122:
+  %t357 = load ptr, ptr %s3
+  %t358 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t357, i32 0, i32 1
+  %t359 = load ptr, ptr %t358
+  %t360 = load ptr, ptr %s10
+  %t361 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t360, i32 0, i32 1
+  %t362 = load { i32, i32, i32 }, ptr %t361
+  %t363 = call ptr @zevic_sb_new()
+  call void @zevic_sb_add(ptr %t363, ptr @.str.966, i64 9)
+  %t364 = load { ptr, i64 }, ptr %s4
+  %t365 = extractvalue { ptr, i64 } %t364, 0
+  %t366 = extractvalue { ptr, i64 } %t364, 1
+  call void @zevic_sb_add(ptr %t363, ptr %t365, i64 %t366)
+  call void @zevic_sb_add(ptr %t363, ptr @.str.967, i64 24)
+  call void @zevic_sb_finish(ptr %s41, ptr %t363)
+  %t367 = load { ptr, i64 }, ptr %s41
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t359, { i32, i32, i32 } %t362, { ptr, i64 } %t367)
+  %t368 = load ptr, ptr %s0
+  %t369 = call ptr @"zevic_Zevic1_Ctx_FnCtx_ErrVal"(ptr %t368)
+  ret ptr %t369
+endif.124:
+  %t370 = load { ptr, i64 }, ptr %s11
+  %t371 = load i64, ptr %s29
+  %t372 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t371, i64 1)
+  %t373 = extractvalue { i64, i1 } %t372, 0
+  %t374 = extractvalue { i64, i1 } %t372, 1
+  br i1 %t374, label %panic.126, label %ok.125
+ok.125:
+  %t375 = load i64, ptr %s40
+  %t376 = extractvalue { ptr, i64 } %t370, 0
+  %t377 = extractvalue { ptr, i64 } %t370, 1
+  %t378 = call i32 @zevic_str_slice_ok(ptr %t376, i64 %t377, i64 %t373, i64 %t375)
+  %t379 = icmp eq i32 %t378, 0
+  br i1 %t379, label %panic.128, label %ok.127
+ok.127:
+  call void @zevic_str_slice(ptr %s42, ptr %t376, i64 %t377, i64 %t373, i64 %t375)
+  %t380 = load { ptr, i64 }, ptr %s42
+  store { ptr, i64 } %t380, ptr %s43
+  %t381 = load { ptr, i64 }, ptr %s43
+  %t382 = call i8 @"zevic_Zevic1_Expr_typedConv"({ ptr, i64 } %t381)
+  store i8 %t382, ptr %s44
+  %t383 = load i8, ptr %s44
+  %t384 = icmp eq i8 %t383, 0
+  br i1 %t384, label %then.129, label %endif.131
 then.129:
-  br label %endif.131
-else.130:
-  %t389 = load i8, ptr %s41
-  br label %endif.131
+  %t385 = load ptr, ptr %s3
+  %t386 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t385, i32 0, i32 1
+  %t387 = load ptr, ptr %t386
+  %t388 = load ptr, ptr %s10
+  %t389 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t388, i32 0, i32 1
+  %t390 = load { i32, i32, i32 }, ptr %t389
+  %t391 = call ptr @zevic_sb_new()
+  call void @zevic_sb_add(ptr %t391, ptr @.str.968, i64 3)
+  %t392 = load { ptr, i64 }, ptr %s43
+  %t393 = extractvalue { ptr, i64 } %t392, 0
+  %t394 = extractvalue { ptr, i64 } %t392, 1
+  call void @zevic_sb_add(ptr %t391, ptr %t393, i64 %t394)
+  call void @zevic_sb_add(ptr %t391, ptr @.str.969, i64 7)
+  %t395 = load { ptr, i64 }, ptr %s4
+  %t396 = extractvalue { ptr, i64 } %t395, 0
+  %t397 = extractvalue { ptr, i64 } %t395, 1
+  call void @zevic_sb_add(ptr %t391, ptr %t396, i64 %t397)
+  call void @zevic_sb_add(ptr %t391, ptr @.str.970, i64 81)
+  call void @zevic_sb_finish(ptr %s45, ptr %t391)
+  %t398 = load { ptr, i64 }, ptr %s45
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t387, { i32, i32, i32 } %t390, { ptr, i64 } %t398)
+  %t399 = load ptr, ptr %s0
+  %t400 = call ptr @"zevic_Zevic1_Ctx_FnCtx_ErrVal"(ptr %t399)
+  ret ptr %t400
 endif.131:
-  %t390 = phi i8 [ 115, %then.129 ], [ %t389, %else.130 ]
-  store i8 %t390, ptr %s44
-  %t391 = load i1, ptr %s37
-  br i1 %t391, label %then.132, label %else.133
-then.132:
-  %t392 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t392, ptr @.str.96, i64 1)
-  %t393 = load { ptr, i64 }, ptr %s32
-  %t394 = extractvalue { ptr, i64 } %t393, 0
-  %t395 = extractvalue { ptr, i64 } %t393, 1
-  %t396 = icmp sgt i64 %t395, 0
-  br i1 %t396, label %then.135, label %else.136
-then.135:
-  %t397 = load { ptr, i64 }, ptr %s32
-  br label %endif.137
-else.136:
-  br label %endif.137
-endif.137:
-  %t398 = phi { ptr, i64 } [ %t397, %then.135 ], [ { ptr @.str.467, i64 1 }, %else.136 ]
-  %t399 = extractvalue { ptr, i64 } %t398, 0
-  %t400 = extractvalue { ptr, i64 } %t398, 1
-  call void @zevic_sb_add(ptr %t392, ptr %t399, i64 %t400)
-  call void @zevic_sb_finish(ptr %s45, ptr %t392)
-  %t401 = load { ptr, i64 }, ptr %s45
-  br label %endif.134
-else.133:
-  br label %endif.134
-endif.134:
-  %t402 = phi { ptr, i64 } [ %t401, %endif.137 ], [ { ptr @.str.83, i64 0 }, %else.133 ]
-  store { ptr, i64 } %t402, ptr %s46
-  %t403 = load ptr, ptr %s42
-  %t404 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t403, i32 0, i32 0
-  %t405 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t405, ptr @.str.954, i64 1)
-  %t406 = load { ptr, i64 }, ptr %s30
-  %t407 = extractvalue { ptr, i64 } %t406, 0
-  %t408 = extractvalue { ptr, i64 } %t406, 1
-  call void @zevic_sb_add(ptr %t405, ptr %t407, i64 %t408)
-  %t409 = load { ptr, i64 }, ptr %s31
-  %t410 = extractvalue { ptr, i64 } %t409, 0
-  %t411 = extractvalue { ptr, i64 } %t409, 1
-  call void @zevic_sb_add(ptr %t405, ptr %t410, i64 %t411)
-  %t412 = load { ptr, i64 }, ptr %s46
-  %t413 = extractvalue { ptr, i64 } %t412, 0
-  %t414 = extractvalue { ptr, i64 } %t412, 1
-  call void @zevic_sb_add(ptr %t405, ptr %t413, i64 %t414)
-  %t415 = load { ptr, i64 }, ptr %s43
-  %t416 = extractvalue { ptr, i64 } %t415, 0
-  %t417 = extractvalue { ptr, i64 } %t415, 1
-  call void @zevic_sb_add(ptr %t405, ptr %t416, i64 %t417)
-  %t418 = load i8, ptr %s44
-  %t419 = call { ptr, i64 } @"zevic_Zevic1_Expr_byteStr"(i8 %t418)
-  %t420 = extractvalue { ptr, i64 } %t419, 0
-  %t421 = extractvalue { ptr, i64 } %t419, 1
-  call void @zevic_sb_add(ptr %t405, ptr %t420, i64 %t421)
-  call void @zevic_sb_finish(ptr %s47, ptr %t405)
-  %t422 = load { ptr, i64 }, ptr %s47
-  store { ptr, i64 } %t422, ptr %t404
-  %t423 = load ptr, ptr %s20
-  %t424 = load ptr, ptr %s42
-  call void @"zevic_Array<Zevic1_Expr_FmtPiece>_Push"(ptr %t423, ptr %t424)
-  %t425 = load i64, ptr %s29
-  %t426 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t425, i64 1)
-  %t427 = extractvalue { i64, i1 } %t426, 0
-  %t428 = extractvalue { i64, i1 } %t426, 1
-  br i1 %t428, label %panic.139, label %ok.138
-ok.138:
-  store i64 %t427, ptr %s23
-  br label %while.cond.16
-while.end.18:
-  %t429 = load { ptr, i64 }, ptr %s21
+  %t401 = call ptr @zevic_alloc(i64 40)
+  %t402 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t401, i32 0, i32 0
+  store { ptr, i64 } { ptr @.str.83, i64 0 }, ptr %t402
+  %t403 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t401, i32 0, i32 1
+  store i1 false, ptr %t403
+  %t404 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t401, i32 0, i32 2
+  store i8 0, ptr %t404
+  %t405 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t401, i32 0, i32 3
+  store { ptr, i64 } { ptr @.str.83, i64 0 }, ptr %t405
+  store ptr %t401, ptr %s46
+  %t406 = load ptr, ptr %s46
+  %t407 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t406, i32 0, i32 1
+  store i1 true, ptr %t407
+  %t408 = load ptr, ptr %s46
+  %t409 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t408, i32 0, i32 2
+  %t410 = load i8, ptr %s44
+  store i8 %t410, ptr %t409
+  %t411 = load ptr, ptr %s46
+  %t412 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t411, i32 0, i32 3
+  %t413 = load { ptr, i64 }, ptr %s43
+  store { ptr, i64 } %t413, ptr %t412
+  %t414 = load i8, ptr %s44
+  %t415 = icmp eq i8 %t414, 100
+  br i1 %t415, label %or.end.133, label %or.rhs.132
+or.rhs.132:
+  %t416 = load i8, ptr %s44
+  %t417 = icmp eq i8 %t416, 117
+  br label %or.end.133
+or.end.133:
+  %t418 = phi i1 [ true, %endif.131 ], [ %t417, %or.rhs.132 ]
+  br i1 %t418, label %then.134, label %else.135
+then.134:
+  br label %endif.136
+else.135:
+  br label %endif.136
+endif.136:
+  %t419 = phi { ptr, i64 } [ { ptr @.str.971, i64 2 }, %then.134 ], [ { ptr @.str.83, i64 0 }, %else.135 ]
+  store { ptr, i64 } %t419, ptr %s47
+  %t420 = load i8, ptr %s44
+  %t421 = icmp eq i8 %t420, 99
+  br i1 %t421, label %or.end.138, label %or.rhs.137
+or.rhs.137:
+  %t422 = load i8, ptr %s44
+  %t423 = icmp eq i8 %t422, 98
+  br label %or.end.138
+or.end.138:
+  %t424 = phi i1 [ true, %endif.136 ], [ %t423, %or.rhs.137 ]
+  br i1 %t424, label %then.139, label %else.140
+then.139:
+  br label %endif.141
+else.140:
+  %t425 = load i8, ptr %s44
+  br label %endif.141
+endif.141:
+  %t426 = phi i8 [ 115, %then.139 ], [ %t425, %else.140 ]
+  store i8 %t426, ptr %s48
+  %t427 = load i1, ptr %s37
+  br i1 %t427, label %then.142, label %else.143
+then.142:
+  %t428 = call ptr @zevic_sb_new()
+  call void @zevic_sb_add(ptr %t428, ptr @.str.96, i64 1)
+  %t429 = load { ptr, i64 }, ptr %s32
   %t430 = extractvalue { ptr, i64 } %t429, 0
   %t431 = extractvalue { ptr, i64 } %t429, 1
   %t432 = icmp sgt i64 %t431, 0
-  br i1 %t432, label %then.140, label %endif.142
-then.140:
-  %t433 = call ptr @zevic_alloc(i64 24)
-  %t434 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t433, i32 0, i32 0
-  store { ptr, i64 } { ptr @.str.83, i64 0 }, ptr %t434
-  %t435 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t433, i32 0, i32 1
-  store i1 false, ptr %t435
-  %t436 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t433, i32 0, i32 2
-  store i8 0, ptr %t436
-  store ptr %t433, ptr %s48
-  %t437 = load ptr, ptr %s48
-  %t438 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t437, i32 0, i32 0
-  %t439 = load { ptr, i64 }, ptr %s21
-  store { ptr, i64 } %t439, ptr %t438
-  %t440 = load ptr, ptr %s20
-  %t441 = load ptr, ptr %s48
-  call void @"zevic_Array<Zevic1_Expr_FmtPiece>_Push"(ptr %t440, ptr %t441)
-  br label %endif.142
-endif.142:
-  store i64 0, ptr %s49
-  %t442 = load ptr, ptr %s20
-  store ptr %t442, ptr %s50
-  store i64 0, ptr %s51
-  br label %for.cond.143
-for.cond.143:
-  %t443 = load i64, ptr %s51
-  %t444 = load ptr, ptr %s50
-  %t445 = call i64 @"zevic_Array<Zevic1_Expr_FmtPiece>_Len"(ptr %t444)
-  %t446 = icmp slt i64 %t443, %t445
-  br i1 %t446, label %for.body.144, label %for.end.145
-for.body.144:
-  %t447 = load ptr, ptr %s50
-  %t448 = load i64, ptr %s51
-  %t449 = call ptr @"zevic_Array<Zevic1_Expr_FmtPiece>_Index"(ptr %t447, i64 %t448)
-  store ptr %t449, ptr %s52
-  %t450 = load i64, ptr %s51
-  %t451 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t450, i64 1)
-  %t452 = extractvalue { i64, i1 } %t451, 0
-  %t453 = extractvalue { i64, i1 } %t451, 1
-  br i1 %t453, label %panic.147, label %ok.146
-ok.146:
-  store i64 %t452, ptr %s51
-  %t454 = load ptr, ptr %s52
-  %t455 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t454, i32 0, i32 1
-  %t456 = load i1, ptr %t455
-  br i1 %t456, label %then.148, label %endif.150
-then.148:
-  %t457 = load i64, ptr %s49
-  %t458 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t457, i64 1)
-  %t459 = extractvalue { i64, i1 } %t458, 0
-  %t460 = extractvalue { i64, i1 } %t458, 1
-  br i1 %t460, label %panic.152, label %ok.151
-ok.151:
-  store i64 %t459, ptr %s49
-  br label %endif.150
-endif.150:
-  br label %for.cond.143
-for.end.145:
-  %t461 = load i64, ptr %s49
-  %t462 = load ptr, ptr %s1
-  %t463 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t462, i32 0, i32 20
-  %t464 = load ptr, ptr %t463
-  %t465 = call i64 @"zevic_Array<Zevic1_Ast_Node>_Len"(ptr %t464)
-  %t466 = call { i64, i1 } @llvm.ssub.with.overflow.i64(i64 %t465, i64 1)
-  %t467 = extractvalue { i64, i1 } %t466, 0
-  %t468 = extractvalue { i64, i1 } %t466, 1
-  br i1 %t468, label %panic.154, label %ok.153
-ok.153:
-  %t469 = icmp ne i64 %t461, %t467
-  br i1 %t469, label %then.155, label %endif.157
-then.155:
-  %t470 = load ptr, ptr %s3
-  %t471 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t470, i32 0, i32 1
-  %t472 = load ptr, ptr %t471
-  %t473 = load ptr, ptr %s1
-  %t474 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t473, i32 0, i32 1
-  %t475 = load { i32, i32, i32 }, ptr %t474
-  %t476 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t476, ptr @.str.960, i64 15)
-  %t477 = load i64, ptr %s49
-  call void @zevic_i64_to_str(ptr %s53, i64 %t477)
-  %t478 = load { ptr, i64 }, ptr %s53
-  %t479 = extractvalue { ptr, i64 } %t478, 0
-  %t480 = extractvalue { ptr, i64 } %t478, 1
-  call void @zevic_sb_add(ptr %t476, ptr %t479, i64 %t480)
-  call void @zevic_sb_add(ptr %t476, ptr @.str.961, i64 21)
-  %t481 = load ptr, ptr %s1
-  %t482 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t481, i32 0, i32 20
-  %t483 = load ptr, ptr %t482
-  %t484 = call i64 @"zevic_Array<Zevic1_Ast_Node>_Len"(ptr %t483)
-  %t485 = call { i64, i1 } @llvm.ssub.with.overflow.i64(i64 %t484, i64 1)
-  %t486 = extractvalue { i64, i1 } %t485, 0
-  %t487 = extractvalue { i64, i1 } %t485, 1
-  br i1 %t487, label %panic.159, label %ok.158
-ok.158:
-  call void @zevic_i64_to_str(ptr %s54, i64 %t486)
-  %t488 = load { ptr, i64 }, ptr %s54
-  %t489 = extractvalue { ptr, i64 } %t488, 0
-  %t490 = extractvalue { ptr, i64 } %t488, 1
-  call void @zevic_sb_add(ptr %t476, ptr %t489, i64 %t490)
-  call void @zevic_sb_add(ptr %t476, ptr @.str.962, i64 20)
-  call void @zevic_sb_finish(ptr %s55, ptr %t476)
-  %t491 = load { ptr, i64 }, ptr %s55
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t472, { i32, i32, i32 } %t475, { ptr, i64 } %t491)
-  %t492 = load ptr, ptr %s0
-  %t493 = call ptr @"zevic_Zevic1_Ctx_FnCtx_ErrVal"(ptr %t492)
-  ret ptr %t493
-endif.157:
-  %t496 = getelementptr ptr, ptr null, i32 1
-  %t497 = ptrtoint ptr %t496 to i64
-  %t494 = mul i64 0, %t497
-  %t495 = call ptr @zevic_alloc(i64 %t494)
-  %t498 = call ptr @zevic_alloc(i64 24)
-  %t499 = getelementptr inbounds { ptr, i64, i64 }, ptr %t498, i32 0, i32 0
-  store ptr %t495, ptr %t499
-  %t500 = getelementptr inbounds { ptr, i64, i64 }, ptr %t498, i32 0, i32 1
-  store i64 0, ptr %t500
-  %t501 = getelementptr inbounds { ptr, i64, i64 }, ptr %t498, i32 0, i32 2
-  store i64 0, ptr %t501
-  store ptr %t498, ptr %s56
-  store i64 1, ptr %s57
-  %t502 = load ptr, ptr %s20
-  store ptr %t502, ptr %s58
-  store i64 0, ptr %s59
-  br label %for.cond.160
-for.cond.160:
-  %t503 = load i64, ptr %s59
-  %t504 = load ptr, ptr %s58
-  %t505 = call i64 @"zevic_Array<Zevic1_Expr_FmtPiece>_Len"(ptr %t504)
-  %t506 = icmp slt i64 %t503, %t505
-  br i1 %t506, label %for.body.161, label %for.end.162
-for.body.161:
-  %t507 = load ptr, ptr %s58
-  %t508 = load i64, ptr %s59
-  %t509 = call ptr @"zevic_Array<Zevic1_Expr_FmtPiece>_Index"(ptr %t507, i64 %t508)
-  store ptr %t509, ptr %s60
-  %t510 = load i64, ptr %s59
-  %t511 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t510, i64 1)
-  %t512 = extractvalue { i64, i1 } %t511, 0
-  %t513 = extractvalue { i64, i1 } %t511, 1
-  br i1 %t513, label %panic.164, label %ok.163
-ok.163:
-  store i64 %t512, ptr %s59
-  %t514 = load ptr, ptr %s60
-  %t515 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t514, i32 0, i32 1
-  %t516 = load i1, ptr %t515
-  %t517 = xor i1 %t516, true
-  br i1 %t517, label %then.165, label %endif.167
-then.165:
-  br label %for.cond.160
-endif.167:
-  %t518 = load ptr, ptr %s1
-  %t519 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t518, i32 0, i32 20
-  %t520 = load ptr, ptr %t519
-  %t521 = load i64, ptr %s57
-  %t522 = call ptr @"zevic_Array<Zevic1_Ast_Node>_Index"(ptr %t520, i64 %t521)
-  store ptr %t522, ptr %s61
-  %t523 = load i64, ptr %s57
-  %t524 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t523, i64 1)
-  %t525 = extractvalue { i64, i1 } %t524, 0
-  %t526 = extractvalue { i64, i1 } %t524, 1
-  br i1 %t526, label %panic.169, label %ok.168
-ok.168:
-  store i64 %t525, ptr %s57
-  %t527 = load ptr, ptr %s60
-  %t528 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t527, i32 0, i32 2
-  %t529 = load i8, ptr %t528
-  %t530 = call i1 @"zevic_Zevic1_Expr_isFloatConv"(i8 %t529)
-  br i1 %t530, label %then.170, label %else.171
-then.170:
-  %t531 = load ptr, ptr %s3
-  %t532 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t531, i32 0, i32 2
-  %t533 = load ptr, ptr %t532
-  %t534 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t533, i32 0, i32 14
-  %t535 = load ptr, ptr %t534
-  %t536 = getelementptr inbounds { i32, [1 x i64] }, ptr %s62, i32 0, i32 0
-  store i32 0, ptr %t536
-  %t537 = insertvalue { ptr } undef, ptr %t535, 0
-  %t538 = getelementptr inbounds { i32, [1 x i64] }, ptr %s62, i32 0, i32 1
-  store { ptr } %t537, ptr %t538
-  %t539 = load { i32, [1 x i64] }, ptr %s62
-  br label %endif.172
-else.171:
-  %t540 = getelementptr inbounds { i32, [1 x i64] }, ptr %s63, i32 0, i32 0
-  store i32 1, ptr %t540
-  %t541 = load { i32, [1 x i64] }, ptr %s63
-  br label %endif.172
-endif.172:
-  %t542 = phi { i32, [1 x i64] } [ %t539, %then.170 ], [ %t541, %else.171 ]
-  store { i32, [1 x i64] } %t542, ptr %s64
-  %t543 = load ptr, ptr %s0
-  %t544 = load ptr, ptr %s61
-  %t545 = load { i32, [1 x i64] }, ptr %s64
-  %t546 = call ptr @"zevic_Zevic1_Expr_genExpr"(ptr %t543, ptr %t544, { i32, [1 x i64] } %t545)
-  store ptr %t546, ptr %s65
-  %t547 = load ptr, ptr %s65
-  %t548 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t547, i32 0, i32 0
-  %t549 = load ptr, ptr %t548
-  %t550 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t549, i32 0, i32 5
-  %t551 = load i32, ptr %t550
-  %t552 = load ptr, ptr %s3
-  %t553 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t552, i32 0, i32 2
-  %t554 = load ptr, ptr %t553
-  %t555 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t554, i32 0, i32 19
-  %t556 = load ptr, ptr %t555
-  %t557 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t556, i32 0, i32 5
-  %t558 = load i32, ptr %t557
-  %t559 = icmp eq i32 %t551, %t558
-  br i1 %t559, label %then.173, label %endif.175
-then.173:
-  %t560 = load ptr, ptr %s0
-  %t561 = getelementptr inbounds { i32, [1 x i64] }, ptr %s66, i32 0, i32 0
-  store i32 1, ptr %t561
-  %t562 = load { i32, [1 x i64] }, ptr %s66
-  %t563 = call ptr @"zevic_Zevic1_Ctx_FnCtx_NeverVal"(ptr %t560, { i32, [1 x i64] } %t562)
-  ret ptr %t563
-endif.175:
-  store i1 true, ptr %s67
-  store { ptr, i64 } { ptr @.str.83, i64 0 }, ptr %s68
-  %t564 = load ptr, ptr %s60
-  %t565 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t564, i32 0, i32 2
-  %t566 = load i8, ptr %t565
-  %t567 = icmp eq i8 %t566, 100
-  br i1 %t567, label %or.end.177, label %or.rhs.176
-or.rhs.176:
-  %t568 = load ptr, ptr %s60
-  %t569 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t568, i32 0, i32 2
-  %t570 = load i8, ptr %t569
-  %t571 = icmp eq i8 %t570, 117
-  br label %or.end.177
-or.end.177:
-  %t572 = phi i1 [ true, %endif.175 ], [ %t571, %or.rhs.176 ]
-  br i1 %t572, label %or.end.179, label %or.rhs.178
-or.rhs.178:
-  %t573 = load ptr, ptr %s60
-  %t574 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t573, i32 0, i32 2
-  %t575 = load i8, ptr %t574
-  %t576 = icmp eq i8 %t575, 111
-  br label %or.end.179
-or.end.179:
-  %t577 = phi i1 [ true, %or.end.177 ], [ %t576, %or.rhs.178 ]
-  br i1 %t577, label %or.end.181, label %or.rhs.180
-or.rhs.180:
-  %t578 = load ptr, ptr %s60
-  %t579 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t578, i32 0, i32 2
-  %t580 = load i8, ptr %t579
-  %t581 = icmp eq i8 %t580, 120
-  br label %or.end.181
-or.end.181:
-  %t582 = phi i1 [ true, %or.end.179 ], [ %t581, %or.rhs.180 ]
-  br i1 %t582, label %or.end.183, label %or.rhs.182
-or.rhs.182:
+  br i1 %t432, label %then.145, label %else.146
+then.145:
+  %t433 = load { ptr, i64 }, ptr %s32
+  br label %endif.147
+else.146:
+  br label %endif.147
+endif.147:
+  %t434 = phi { ptr, i64 } [ %t433, %then.145 ], [ { ptr @.str.467, i64 1 }, %else.146 ]
+  %t435 = extractvalue { ptr, i64 } %t434, 0
+  %t436 = extractvalue { ptr, i64 } %t434, 1
+  call void @zevic_sb_add(ptr %t428, ptr %t435, i64 %t436)
+  call void @zevic_sb_finish(ptr %s49, ptr %t428)
+  %t437 = load { ptr, i64 }, ptr %s49
+  br label %endif.144
+else.143:
+  br label %endif.144
+endif.144:
+  %t438 = phi { ptr, i64 } [ %t437, %endif.147 ], [ { ptr @.str.83, i64 0 }, %else.143 ]
+  store { ptr, i64 } %t438, ptr %s50
+  %t439 = load ptr, ptr %s46
+  %t440 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t439, i32 0, i32 0
+  %t441 = call ptr @zevic_sb_new()
+  call void @zevic_sb_add(ptr %t441, ptr @.str.964, i64 1)
+  %t442 = load { ptr, i64 }, ptr %s30
+  %t443 = extractvalue { ptr, i64 } %t442, 0
+  %t444 = extractvalue { ptr, i64 } %t442, 1
+  call void @zevic_sb_add(ptr %t441, ptr %t443, i64 %t444)
+  %t445 = load { ptr, i64 }, ptr %s31
+  %t446 = extractvalue { ptr, i64 } %t445, 0
+  %t447 = extractvalue { ptr, i64 } %t445, 1
+  call void @zevic_sb_add(ptr %t441, ptr %t446, i64 %t447)
+  %t448 = load { ptr, i64 }, ptr %s50
+  %t449 = extractvalue { ptr, i64 } %t448, 0
+  %t450 = extractvalue { ptr, i64 } %t448, 1
+  call void @zevic_sb_add(ptr %t441, ptr %t449, i64 %t450)
+  %t451 = load { ptr, i64 }, ptr %s47
+  %t452 = extractvalue { ptr, i64 } %t451, 0
+  %t453 = extractvalue { ptr, i64 } %t451, 1
+  call void @zevic_sb_add(ptr %t441, ptr %t452, i64 %t453)
+  %t454 = load i8, ptr %s48
+  %t455 = call { ptr, i64 } @"zevic_Zevic1_Expr_byteStr"(i8 %t454)
+  %t456 = extractvalue { ptr, i64 } %t455, 0
+  %t457 = extractvalue { ptr, i64 } %t455, 1
+  call void @zevic_sb_add(ptr %t441, ptr %t456, i64 %t457)
+  call void @zevic_sb_finish(ptr %s51, ptr %t441)
+  %t458 = load { ptr, i64 }, ptr %s51
+  store { ptr, i64 } %t458, ptr %t440
+  %t459 = load ptr, ptr %s20
+  %t460 = load ptr, ptr %s46
+  call void @"zevic_Array<Zevic1_Expr_FmtPiece>_Push"(ptr %t459, ptr %t460)
+  %t461 = load i64, ptr %s40
+  %t462 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t461, i64 1)
+  %t463 = extractvalue { i64, i1 } %t462, 0
+  %t464 = extractvalue { i64, i1 } %t462, 1
+  br i1 %t464, label %panic.149, label %ok.148
+ok.148:
+  store i64 %t463, ptr %s23
+  br label %while.cond.16
+endif.110:
+  %t465 = load i64, ptr %s29
+  %t466 = load i64, ptr %s22
+  %t467 = icmp sge i64 %t465, %t466
+  br i1 %t467, label %or.end.151, label %or.rhs.150
+or.rhs.150:
+  %t468 = load { ptr, i64 }, ptr %s11
+  %t469 = load i64, ptr %s29
+  %t470 = extractvalue { ptr, i64 } %t468, 0
+  %t471 = extractvalue { ptr, i64 } %t468, 1
+  %t472 = icmp uge i64 %t469, %t471
+  br i1 %t472, label %panic.153, label %ok.152
+ok.152:
+  %t473 = getelementptr inbounds i8, ptr %t470, i64 %t469
+  %t474 = load i8, ptr %t473
+  %t475 = call i1 @"zevic_Zevic1_Expr_inSet"(i8 %t474, { ptr, i64 } { ptr @.str.972, i64 14 })
+  %t476 = xor i1 %t475, true
+  br label %or.end.151
+or.end.151:
+  %t477 = phi i1 [ true, %endif.110 ], [ %t476, %ok.152 ]
+  br i1 %t477, label %then.154, label %endif.156
+then.154:
+  %t478 = load ptr, ptr %s3
+  %t479 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t478, i32 0, i32 1
+  %t480 = load ptr, ptr %t479
+  %t481 = load ptr, ptr %s10
+  %t482 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t481, i32 0, i32 1
+  %t483 = load { i32, i32, i32 }, ptr %t482
+  %t484 = call ptr @zevic_sb_new()
+  call void @zevic_sb_add(ptr %t484, ptr @.str.973, i64 29)
+  %t485 = load { ptr, i64 }, ptr %s4
+  %t486 = extractvalue { ptr, i64 } %t485, 0
+  %t487 = extractvalue { ptr, i64 } %t485, 1
+  call void @zevic_sb_add(ptr %t484, ptr %t486, i64 %t487)
+  call void @zevic_sb_add(ptr %t484, ptr @.str.974, i64 40)
+  call void @zevic_sb_finish(ptr %s52, ptr %t484)
+  %t488 = load { ptr, i64 }, ptr %s52
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t480, { i32, i32, i32 } %t483, { ptr, i64 } %t488)
+  %t489 = load ptr, ptr %s0
+  %t490 = call ptr @"zevic_Zevic1_Ctx_FnCtx_ErrVal"(ptr %t489)
+  ret ptr %t490
+endif.156:
+  %t491 = load { ptr, i64 }, ptr %s11
+  %t492 = load i64, ptr %s29
+  %t493 = extractvalue { ptr, i64 } %t491, 0
+  %t494 = extractvalue { ptr, i64 } %t491, 1
+  %t495 = icmp uge i64 %t492, %t494
+  br i1 %t495, label %panic.158, label %ok.157
+ok.157:
+  %t496 = getelementptr inbounds i8, ptr %t493, i64 %t492
+  %t497 = load i8, ptr %t496
+  %t498 = icmp eq i8 %t497, 105
+  br i1 %t498, label %then.159, label %else.160
+then.159:
+  br label %endif.161
+else.160:
+  %t499 = load { ptr, i64 }, ptr %s11
+  %t500 = load i64, ptr %s29
+  %t501 = extractvalue { ptr, i64 } %t499, 0
+  %t502 = extractvalue { ptr, i64 } %t499, 1
+  %t503 = icmp uge i64 %t500, %t502
+  br i1 %t503, label %panic.163, label %ok.162
+ok.162:
+  %t504 = getelementptr inbounds i8, ptr %t501, i64 %t500
+  %t505 = load i8, ptr %t504
+  br label %endif.161
+endif.161:
+  %t506 = phi i8 [ 100, %then.159 ], [ %t505, %ok.162 ]
+  store i8 %t506, ptr %s53
+  %t507 = call ptr @zevic_alloc(i64 40)
+  %t508 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t507, i32 0, i32 0
+  store { ptr, i64 } { ptr @.str.83, i64 0 }, ptr %t508
+  %t509 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t507, i32 0, i32 1
+  store i1 false, ptr %t509
+  %t510 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t507, i32 0, i32 2
+  store i8 0, ptr %t510
+  %t511 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t507, i32 0, i32 3
+  store { ptr, i64 } { ptr @.str.83, i64 0 }, ptr %t511
+  store ptr %t507, ptr %s54
+  %t512 = load ptr, ptr %s54
+  %t513 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t512, i32 0, i32 1
+  store i1 true, ptr %t513
+  %t514 = load ptr, ptr %s54
+  %t515 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t514, i32 0, i32 2
+  %t516 = load i8, ptr %s53
+  store i8 %t516, ptr %t515
+  %t517 = load i8, ptr %s53
+  %t518 = icmp eq i8 %t517, 100
+  br i1 %t518, label %or.end.165, label %or.rhs.164
+or.rhs.164:
+  %t519 = load i8, ptr %s53
+  %t520 = icmp eq i8 %t519, 117
+  br label %or.end.165
+or.end.165:
+  %t521 = phi i1 [ true, %endif.161 ], [ %t520, %or.rhs.164 ]
+  br i1 %t521, label %or.end.167, label %or.rhs.166
+or.rhs.166:
+  %t522 = load i8, ptr %s53
+  %t523 = icmp eq i8 %t522, 111
+  br label %or.end.167
+or.end.167:
+  %t524 = phi i1 [ true, %or.end.165 ], [ %t523, %or.rhs.166 ]
+  br i1 %t524, label %or.end.169, label %or.rhs.168
+or.rhs.168:
+  %t525 = load i8, ptr %s53
+  %t526 = icmp eq i8 %t525, 120
+  br label %or.end.169
+or.end.169:
+  %t527 = phi i1 [ true, %or.end.167 ], [ %t526, %or.rhs.168 ]
+  br i1 %t527, label %or.end.171, label %or.rhs.170
+or.rhs.170:
+  %t528 = load i8, ptr %s53
+  %t529 = icmp eq i8 %t528, 88
+  br label %or.end.171
+or.end.171:
+  %t530 = phi i1 [ true, %or.end.169 ], [ %t529, %or.rhs.170 ]
+  br i1 %t530, label %then.172, label %else.173
+then.172:
+  br label %endif.174
+else.173:
+  br label %endif.174
+endif.174:
+  %t531 = phi { ptr, i64 } [ { ptr @.str.971, i64 2 }, %then.172 ], [ { ptr @.str.83, i64 0 }, %else.173 ]
+  store { ptr, i64 } %t531, ptr %s55
+  %t532 = load i8, ptr %s53
+  %t533 = icmp eq i8 %t532, 99
+  br i1 %t533, label %then.175, label %else.176
+then.175:
+  br label %endif.177
+else.176:
+  %t534 = load i8, ptr %s53
+  br label %endif.177
+endif.177:
+  %t535 = phi i8 [ 115, %then.175 ], [ %t534, %else.176 ]
+  store i8 %t535, ptr %s56
+  %t536 = load i1, ptr %s37
+  br i1 %t536, label %then.178, label %else.179
+then.178:
+  %t537 = call ptr @zevic_sb_new()
+  call void @zevic_sb_add(ptr %t537, ptr @.str.96, i64 1)
+  %t538 = load { ptr, i64 }, ptr %s32
+  %t539 = extractvalue { ptr, i64 } %t538, 0
+  %t540 = extractvalue { ptr, i64 } %t538, 1
+  %t541 = icmp sgt i64 %t540, 0
+  br i1 %t541, label %then.181, label %else.182
+then.181:
+  %t542 = load { ptr, i64 }, ptr %s32
+  br label %endif.183
+else.182:
+  br label %endif.183
+endif.183:
+  %t543 = phi { ptr, i64 } [ %t542, %then.181 ], [ { ptr @.str.467, i64 1 }, %else.182 ]
+  %t544 = extractvalue { ptr, i64 } %t543, 0
+  %t545 = extractvalue { ptr, i64 } %t543, 1
+  call void @zevic_sb_add(ptr %t537, ptr %t544, i64 %t545)
+  call void @zevic_sb_finish(ptr %s57, ptr %t537)
+  %t546 = load { ptr, i64 }, ptr %s57
+  br label %endif.180
+else.179:
+  br label %endif.180
+endif.180:
+  %t547 = phi { ptr, i64 } [ %t546, %endif.183 ], [ { ptr @.str.83, i64 0 }, %else.179 ]
+  store { ptr, i64 } %t547, ptr %s58
+  %t548 = load ptr, ptr %s54
+  %t549 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t548, i32 0, i32 0
+  %t550 = call ptr @zevic_sb_new()
+  call void @zevic_sb_add(ptr %t550, ptr @.str.964, i64 1)
+  %t551 = load { ptr, i64 }, ptr %s30
+  %t552 = extractvalue { ptr, i64 } %t551, 0
+  %t553 = extractvalue { ptr, i64 } %t551, 1
+  call void @zevic_sb_add(ptr %t550, ptr %t552, i64 %t553)
+  %t554 = load { ptr, i64 }, ptr %s31
+  %t555 = extractvalue { ptr, i64 } %t554, 0
+  %t556 = extractvalue { ptr, i64 } %t554, 1
+  call void @zevic_sb_add(ptr %t550, ptr %t555, i64 %t556)
+  %t557 = load { ptr, i64 }, ptr %s58
+  %t558 = extractvalue { ptr, i64 } %t557, 0
+  %t559 = extractvalue { ptr, i64 } %t557, 1
+  call void @zevic_sb_add(ptr %t550, ptr %t558, i64 %t559)
+  %t560 = load { ptr, i64 }, ptr %s55
+  %t561 = extractvalue { ptr, i64 } %t560, 0
+  %t562 = extractvalue { ptr, i64 } %t560, 1
+  call void @zevic_sb_add(ptr %t550, ptr %t561, i64 %t562)
+  %t563 = load i8, ptr %s56
+  %t564 = call { ptr, i64 } @"zevic_Zevic1_Expr_byteStr"(i8 %t563)
+  %t565 = extractvalue { ptr, i64 } %t564, 0
+  %t566 = extractvalue { ptr, i64 } %t564, 1
+  call void @zevic_sb_add(ptr %t550, ptr %t565, i64 %t566)
+  call void @zevic_sb_finish(ptr %s59, ptr %t550)
+  %t567 = load { ptr, i64 }, ptr %s59
+  store { ptr, i64 } %t567, ptr %t549
+  %t568 = load ptr, ptr %s20
+  %t569 = load ptr, ptr %s54
+  call void @"zevic_Array<Zevic1_Expr_FmtPiece>_Push"(ptr %t568, ptr %t569)
+  %t570 = load i64, ptr %s29
+  %t571 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t570, i64 1)
+  %t572 = extractvalue { i64, i1 } %t571, 0
+  %t573 = extractvalue { i64, i1 } %t571, 1
+  br i1 %t573, label %panic.185, label %ok.184
+ok.184:
+  store i64 %t572, ptr %s23
+  br label %while.cond.16
+while.end.18:
+  %t574 = load { ptr, i64 }, ptr %s21
+  %t575 = extractvalue { ptr, i64 } %t574, 0
+  %t576 = extractvalue { ptr, i64 } %t574, 1
+  %t577 = icmp sgt i64 %t576, 0
+  br i1 %t577, label %then.186, label %endif.188
+then.186:
+  %t578 = call ptr @zevic_alloc(i64 40)
+  %t579 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t578, i32 0, i32 0
+  store { ptr, i64 } { ptr @.str.83, i64 0 }, ptr %t579
+  %t580 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t578, i32 0, i32 1
+  store i1 false, ptr %t580
+  %t581 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t578, i32 0, i32 2
+  store i8 0, ptr %t581
+  %t582 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t578, i32 0, i32 3
+  store { ptr, i64 } { ptr @.str.83, i64 0 }, ptr %t582
+  store ptr %t578, ptr %s60
   %t583 = load ptr, ptr %s60
-  %t584 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t583, i32 0, i32 2
-  %t585 = load i8, ptr %t584
-  %t586 = icmp eq i8 %t585, 88
-  br label %or.end.183
-or.end.183:
-  %t587 = phi i1 [ true, %or.end.181 ], [ %t586, %or.rhs.182 ]
-  br i1 %t587, label %then.184, label %else.185
-then.184:
-  %t588 = load ptr, ptr %s65
-  %t589 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t588, i32 0, i32 0
-  %t590 = load ptr, ptr %t589
-  %t591 = call i1 @"zevic_Zevic1_Types_Type_IsInt"(ptr %t590)
-  store i1 %t591, ptr %s67
-  store { ptr, i64 } { ptr @.str.963, i64 10 }, ptr %s68
-  br label %endif.186
-else.185:
-  %t592 = load ptr, ptr %s60
-  %t593 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t592, i32 0, i32 2
-  %t594 = load i8, ptr %t593
-  %t595 = call i1 @"zevic_Zevic1_Expr_isFloatConv"(i8 %t594)
-  br i1 %t595, label %then.187, label %else.188
-then.187:
-  %t596 = load ptr, ptr %s65
-  %t597 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t596, i32 0, i32 0
-  %t598 = load ptr, ptr %t597
-  %t599 = call i1 @"zevic_Zevic1_Types_Type_IsFloat"(ptr %t598)
-  store i1 %t599, ptr %s67
-  store { ptr, i64 } { ptr @.str.964, i64 16 }, ptr %s68
-  br label %endif.189
-else.188:
-  %t600 = load ptr, ptr %s60
-  %t601 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t600, i32 0, i32 2
-  %t602 = load i8, ptr %t601
-  %t603 = icmp eq i8 %t602, 115
-  br i1 %t603, label %then.190, label %else.191
-then.190:
-  %t604 = load ptr, ptr %s65
-  %t605 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t604, i32 0, i32 0
-  %t606 = load ptr, ptr %t605
-  %t607 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t606, i32 0, i32 5
-  %t608 = load i32, ptr %t607
-  %t609 = load ptr, ptr %s3
-  %t610 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t609, i32 0, i32 2
-  %t611 = load ptr, ptr %t610
-  %t612 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t611, i32 0, i32 17
-  %t613 = load ptr, ptr %t612
-  %t614 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t613, i32 0, i32 5
-  %t615 = load i32, ptr %t614
-  %t616 = icmp eq i32 %t608, %t615
-  store i1 %t616, ptr %s67
-  store { ptr, i64 } { ptr @.str.965, i64 10 }, ptr %s68
-  br label %endif.192
-else.191:
-  %t617 = load ptr, ptr %s60
-  %t618 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t617, i32 0, i32 2
-  %t619 = load i8, ptr %t618
-  %t620 = icmp eq i8 %t619, 99
-  br i1 %t620, label %then.193, label %endif.195
-then.193:
-  %t621 = load ptr, ptr %s65
-  %t622 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t621, i32 0, i32 0
-  %t623 = load ptr, ptr %t622
-  %t624 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t623, i32 0, i32 5
-  %t625 = load i32, ptr %t624
-  %t626 = load ptr, ptr %s3
-  %t627 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t626, i32 0, i32 2
-  %t628 = load ptr, ptr %t627
-  %t629 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t628, i32 0, i32 16
-  %t630 = load ptr, ptr %t629
-  %t631 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t630, i32 0, i32 5
-  %t632 = load i32, ptr %t631
-  %t633 = icmp eq i32 %t625, %t632
-  store i1 %t633, ptr %s67
-  store { ptr, i64 } { ptr @.str.966, i64 8 }, ptr %s68
-  br label %endif.195
-endif.195:
-  br label %endif.192
-endif.192:
-  br label %endif.189
-endif.189:
-  br label %endif.186
-endif.186:
-  %t634 = load i1, ptr %s67
-  %t635 = xor i1 %t634, true
-  br i1 %t635, label %and.rhs.196, label %and.end.197
-and.rhs.196:
-  %t636 = load ptr, ptr %s3
-  %t637 = load ptr, ptr %s65
-  %t638 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t637, i32 0, i32 0
-  %t639 = load ptr, ptr %t638
-  %t640 = call i1 @"zevic_Zevic1_Gen_Gen_IsErr"(ptr %t636, ptr %t639)
-  %t641 = xor i1 %t640, true
-  br label %and.end.197
-and.end.197:
-  %t642 = phi i1 [ false, %endif.186 ], [ %t641, %and.rhs.196 ]
-  br i1 %t642, label %then.198, label %endif.200
-then.198:
-  %t643 = load ptr, ptr %s3
-  %t644 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t643, i32 0, i32 1
-  %t645 = load ptr, ptr %t644
-  %t646 = load ptr, ptr %s61
-  %t647 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t646, i32 0, i32 1
-  %t648 = load { i32, i32, i32 }, ptr %t647
-  %t649 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t649, ptr @.str.967, i64 2)
-  %t650 = load ptr, ptr %s60
-  %t651 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t650, i32 0, i32 2
-  %t652 = load i8, ptr %t651
-  %t653 = call { ptr, i64 } @"zevic_Zevic1_Expr_byteStr"(i8 %t652)
-  %t654 = extractvalue { ptr, i64 } %t653, 0
-  %t655 = extractvalue { ptr, i64 } %t653, 1
-  call void @zevic_sb_add(ptr %t649, ptr %t654, i64 %t655)
-  call void @zevic_sb_add(ptr %t649, ptr @.str.572, i64 8)
-  %t656 = load { ptr, i64 }, ptr %s68
-  %t657 = extractvalue { ptr, i64 } %t656, 0
-  %t658 = extractvalue { ptr, i64 } %t656, 1
-  call void @zevic_sb_add(ptr %t649, ptr %t657, i64 %t658)
-  call void @zevic_sb_add(ptr %t649, ptr @.str.968, i64 9)
-  %t659 = load ptr, ptr %s65
-  %t660 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t659, i32 0, i32 0
-  %t661 = load ptr, ptr %t660
-  %t662 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t661, i32 0, i32 1
-  %t663 = load { ptr, i64 }, ptr %t662
-  %t664 = extractvalue { ptr, i64 } %t663, 0
-  %t665 = extractvalue { ptr, i64 } %t663, 1
-  call void @zevic_sb_add(ptr %t649, ptr %t664, i64 %t665)
-  call void @zevic_sb_add(ptr %t649, ptr @.str.149, i64 1)
-  call void @zevic_sb_finish(ptr %s69, ptr %t649)
-  %t666 = load { ptr, i64 }, ptr %s69
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t645, { i32, i32, i32 } %t648, { ptr, i64 } %t666)
-  %t667 = load ptr, ptr %s0
-  %t668 = call ptr @"zevic_Zevic1_Ctx_FnCtx_ErrVal"(ptr %t667)
-  ret ptr %t668
-endif.200:
-  %t669 = load ptr, ptr %s56
-  %t670 = load ptr, ptr %s65
-  call void @"zevic_Array<Zevic1_Ctx_Val>_Push"(ptr %t669, ptr %t670)
-  br label %for.cond.160
-for.end.162:
-  %t671 = load i64, ptr %s2
-  %t672 = icmp eq i64 %t671, 2
-  br i1 %t672, label %then.201, label %else.202
+  %t584 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t583, i32 0, i32 0
+  %t585 = load { ptr, i64 }, ptr %s21
+  store { ptr, i64 } %t585, ptr %t584
+  %t586 = load ptr, ptr %s20
+  %t587 = load ptr, ptr %s60
+  call void @"zevic_Array<Zevic1_Expr_FmtPiece>_Push"(ptr %t586, ptr %t587)
+  br label %endif.188
+endif.188:
+  store i64 0, ptr %s61
+  %t588 = load ptr, ptr %s20
+  store ptr %t588, ptr %s62
+  store i64 0, ptr %s63
+  br label %for.cond.189
+for.cond.189:
+  %t589 = load i64, ptr %s63
+  %t590 = load ptr, ptr %s62
+  %t591 = call i64 @"zevic_Array<Zevic1_Expr_FmtPiece>_Len"(ptr %t590)
+  %t592 = icmp slt i64 %t589, %t591
+  br i1 %t592, label %for.body.190, label %for.end.191
+for.body.190:
+  %t593 = load ptr, ptr %s62
+  %t594 = load i64, ptr %s63
+  %t595 = call ptr @"zevic_Array<Zevic1_Expr_FmtPiece>_Index"(ptr %t593, i64 %t594)
+  store ptr %t595, ptr %s64
+  %t596 = load i64, ptr %s63
+  %t597 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t596, i64 1)
+  %t598 = extractvalue { i64, i1 } %t597, 0
+  %t599 = extractvalue { i64, i1 } %t597, 1
+  br i1 %t599, label %panic.193, label %ok.192
+ok.192:
+  store i64 %t598, ptr %s63
+  %t600 = load ptr, ptr %s64
+  %t601 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t600, i32 0, i32 1
+  %t602 = load i1, ptr %t601
+  br i1 %t602, label %then.194, label %endif.196
+then.194:
+  %t603 = load i64, ptr %s61
+  %t604 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t603, i64 1)
+  %t605 = extractvalue { i64, i1 } %t604, 0
+  %t606 = extractvalue { i64, i1 } %t604, 1
+  br i1 %t606, label %panic.198, label %ok.197
+ok.197:
+  store i64 %t605, ptr %s61
+  br label %endif.196
+endif.196:
+  br label %for.cond.189
+for.end.191:
+  %t607 = load i64, ptr %s61
+  %t608 = load ptr, ptr %s1
+  %t609 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t608, i32 0, i32 20
+  %t610 = load ptr, ptr %t609
+  %t611 = call i64 @"zevic_Array<Zevic1_Ast_Node>_Len"(ptr %t610)
+  %t612 = call { i64, i1 } @llvm.ssub.with.overflow.i64(i64 %t611, i64 1)
+  %t613 = extractvalue { i64, i1 } %t612, 0
+  %t614 = extractvalue { i64, i1 } %t612, 1
+  br i1 %t614, label %panic.200, label %ok.199
+ok.199:
+  %t615 = icmp ne i64 %t607, %t613
+  br i1 %t615, label %then.201, label %endif.203
 then.201:
-  br label %endif.203
-else.202:
-  %t673 = load i64, ptr %s2
-  %t674 = icmp eq i64 %t673, 1
-  br i1 %t674, label %then.204, label %else.205
-then.204:
-  br label %endif.206
-else.205:
-  br label %endif.206
-endif.206:
-  %t675 = phi i64 [ 2, %then.204 ], [ 1, %else.205 ]
-  br label %endif.203
+  %t616 = load ptr, ptr %s3
+  %t617 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t616, i32 0, i32 1
+  %t618 = load ptr, ptr %t617
+  %t619 = load ptr, ptr %s1
+  %t620 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t619, i32 0, i32 1
+  %t621 = load { i32, i32, i32 }, ptr %t620
+  %t622 = call ptr @zevic_sb_new()
+  call void @zevic_sb_add(ptr %t622, ptr @.str.975, i64 15)
+  %t623 = load i64, ptr %s61
+  call void @zevic_i64_to_str(ptr %s65, i64 %t623)
+  %t624 = load { ptr, i64 }, ptr %s65
+  %t625 = extractvalue { ptr, i64 } %t624, 0
+  %t626 = extractvalue { ptr, i64 } %t624, 1
+  call void @zevic_sb_add(ptr %t622, ptr %t625, i64 %t626)
+  call void @zevic_sb_add(ptr %t622, ptr @.str.976, i64 21)
+  %t627 = load ptr, ptr %s1
+  %t628 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t627, i32 0, i32 20
+  %t629 = load ptr, ptr %t628
+  %t630 = call i64 @"zevic_Array<Zevic1_Ast_Node>_Len"(ptr %t629)
+  %t631 = call { i64, i1 } @llvm.ssub.with.overflow.i64(i64 %t630, i64 1)
+  %t632 = extractvalue { i64, i1 } %t631, 0
+  %t633 = extractvalue { i64, i1 } %t631, 1
+  br i1 %t633, label %panic.205, label %ok.204
+ok.204:
+  call void @zevic_i64_to_str(ptr %s66, i64 %t632)
+  %t634 = load { ptr, i64 }, ptr %s66
+  %t635 = extractvalue { ptr, i64 } %t634, 0
+  %t636 = extractvalue { ptr, i64 } %t634, 1
+  call void @zevic_sb_add(ptr %t622, ptr %t635, i64 %t636)
+  call void @zevic_sb_add(ptr %t622, ptr @.str.977, i64 20)
+  call void @zevic_sb_finish(ptr %s67, ptr %t622)
+  %t637 = load { ptr, i64 }, ptr %s67
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t618, { i32, i32, i32 } %t621, { ptr, i64 } %t637)
+  %t638 = load ptr, ptr %s0
+  %t639 = call ptr @"zevic_Zevic1_Ctx_FnCtx_ErrVal"(ptr %t638)
+  ret ptr %t639
 endif.203:
-  %t676 = phi i64 [ 3, %then.201 ], [ %t675, %endif.206 ]
-  store i64 %t676, ptr %s70
-  %t677 = load i64, ptr %s2
-  %t678 = icmp eq i64 %t677, 2
-  br i1 %t678, label %then.207, label %endif.209
-then.207:
-  %t679 = load ptr, ptr %s0
-  call void @"zevic_Zevic1_Expr_rtDecl"(ptr %t679, { ptr, i64 } { ptr @.str.969, i64 15 }, { ptr, i64 } { ptr @.str.970, i64 31 })
-  %t680 = load ptr, ptr %s0
-  call void @"zevic_Zevic1_Expr_rtDecl"(ptr %t680, { ptr, i64 } { ptr @.str.971, i64 13 }, { ptr, i64 } { ptr @.str.972, i64 32 })
-  %t681 = load ptr, ptr %s0
-  call void @"zevic_Zevic1_Ctx_FnCtx_Emit"(ptr %t681, { ptr, i64 } { ptr @.str.973, i64 28 })
-  br label %endif.209
-endif.209:
-  %t682 = load ptr, ptr %s0
-  call void @"zevic_Zevic1_Expr_rtDecl"(ptr %t682, { ptr, i64 } { ptr @.str.974, i64 16 }, { ptr, i64 } { ptr @.str.975, i64 45 })
-  %t683 = load ptr, ptr %s0
-  call void @"zevic_Zevic1_Expr_rtDecl"(ptr %t683, { ptr, i64 } { ptr @.str.976, i64 14 }, { ptr, i64 } { ptr @.str.977, i64 43 })
-  %t684 = load ptr, ptr %s0
-  call void @"zevic_Zevic1_Expr_rtDecl"(ptr %t684, { ptr, i64 } { ptr @.str.978, i64 14 }, { ptr, i64 } { ptr @.str.979, i64 46 })
-  %t685 = load ptr, ptr %s0
-  call void @"zevic_Zevic1_Expr_rtDecl"(ptr %t685, { ptr, i64 } { ptr @.str.980, i64 14 }, { ptr, i64 } { ptr @.str.981, i64 48 })
-  %t686 = load ptr, ptr %s0
-  call void @"zevic_Zevic1_Expr_rtDecl"(ptr %t686, { ptr, i64 } { ptr @.str.982, i64 14 }, { ptr, i64 } { ptr @.str.983, i64 43 })
+  %t642 = getelementptr ptr, ptr null, i32 1
+  %t643 = ptrtoint ptr %t642 to i64
+  %t640 = mul i64 0, %t643
+  %t641 = call ptr @zevic_alloc(i64 %t640)
+  %t644 = call ptr @zevic_alloc(i64 24)
+  %t645 = getelementptr inbounds { ptr, i64, i64 }, ptr %t644, i32 0, i32 0
+  store ptr %t641, ptr %t645
+  %t646 = getelementptr inbounds { ptr, i64, i64 }, ptr %t644, i32 0, i32 1
+  store i64 0, ptr %t646
+  %t647 = getelementptr inbounds { ptr, i64, i64 }, ptr %t644, i32 0, i32 2
+  store i64 0, ptr %t647
+  store ptr %t644, ptr %s68
+  store i64 1, ptr %s69
+  %t648 = load ptr, ptr %s20
+  store ptr %t648, ptr %s70
   store i64 0, ptr %s71
-  %t687 = load ptr, ptr %s20
-  store ptr %t687, ptr %s72
-  store i64 0, ptr %s73
-  br label %for.cond.210
-for.cond.210:
-  %t688 = load i64, ptr %s73
-  %t689 = load ptr, ptr %s72
-  %t690 = call i64 @"zevic_Array<Zevic1_Expr_FmtPiece>_Len"(ptr %t689)
-  %t691 = icmp slt i64 %t688, %t690
-  br i1 %t691, label %for.body.211, label %for.end.212
-for.body.211:
-  %t692 = load ptr, ptr %s72
-  %t693 = load i64, ptr %s73
-  %t694 = call ptr @"zevic_Array<Zevic1_Expr_FmtPiece>_Index"(ptr %t692, i64 %t693)
-  store ptr %t694, ptr %s74
-  %t695 = load i64, ptr %s73
-  %t696 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t695, i64 1)
-  %t697 = extractvalue { i64, i1 } %t696, 0
-  %t698 = extractvalue { i64, i1 } %t696, 1
-  br i1 %t698, label %panic.214, label %ok.213
-ok.213:
-  store i64 %t697, ptr %s73
-  %t699 = load ptr, ptr %s3
-  %t700 = load ptr, ptr %s74
-  %t701 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t700, i32 0, i32 0
-  %t702 = load { ptr, i64 }, ptr %t701
-  %t703 = call { ptr, i64 } @"zevic_Zevic1_Gen_StrConst"(ptr %t699, { ptr, i64 } %t702)
-  store { ptr, i64 } %t703, ptr %s75
-  %t704 = load ptr, ptr %s74
-  %t705 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t704, i32 0, i32 1
-  %t706 = load i1, ptr %t705
-  %t707 = xor i1 %t706, true
-  br i1 %t707, label %then.215, label %endif.217
-then.215:
-  %t708 = load ptr, ptr %s0
-  %t709 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t709, ptr @.str.984, i64 32)
-  %t710 = load i64, ptr %s70
-  call void @zevic_i64_to_str(ptr %s76, i64 %t710)
-  %t711 = load { ptr, i64 }, ptr %s76
-  %t712 = extractvalue { ptr, i64 } %t711, 0
-  %t713 = extractvalue { ptr, i64 } %t711, 1
-  call void @zevic_sb_add(ptr %t709, ptr %t712, i64 %t713)
-  call void @zevic_sb_add(ptr %t709, ptr @.str.152, i64 6)
-  %t714 = load { ptr, i64 }, ptr %s75
-  %t715 = call { ptr, i64 } @"zevic_Zevic1_Expr_constPtr"({ ptr, i64 } %t714)
-  %t716 = extractvalue { ptr, i64 } %t715, 0
-  %t717 = extractvalue { ptr, i64 } %t715, 1
-  call void @zevic_sb_add(ptr %t709, ptr %t716, i64 %t717)
-  call void @zevic_sb_add(ptr %t709, ptr @.str.342, i64 6)
-  %t718 = load ptr, ptr %s74
-  %t719 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t718, i32 0, i32 0
-  %t720 = load { ptr, i64 }, ptr %t719
-  %t721 = extractvalue { ptr, i64 } %t720, 0
-  %t722 = extractvalue { ptr, i64 } %t720, 1
-  call void @zevic_i64_to_str(ptr %s77, i64 %t722)
-  %t723 = load { ptr, i64 }, ptr %s77
-  %t724 = extractvalue { ptr, i64 } %t723, 0
-  %t725 = extractvalue { ptr, i64 } %t723, 1
-  call void @zevic_sb_add(ptr %t709, ptr %t724, i64 %t725)
-  call void @zevic_sb_add(ptr %t709, ptr @.str.290, i64 1)
-  call void @zevic_sb_finish(ptr %s78, ptr %t709)
-  %t726 = load { ptr, i64 }, ptr %s78
-  call void @"zevic_Zevic1_Ctx_FnCtx_Emit"(ptr %t708, { ptr, i64 } %t726)
-  br label %for.cond.210
-endif.217:
-  %t727 = load ptr, ptr %s56
-  %t728 = load i64, ptr %s71
-  %t729 = call ptr @"zevic_Array<Zevic1_Ctx_Val>_Index"(ptr %t727, i64 %t728)
-  store ptr %t729, ptr %s79
-  %t730 = load i64, ptr %s71
-  %t731 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t730, i64 1)
-  %t732 = extractvalue { i64, i1 } %t731, 0
-  %t733 = extractvalue { i64, i1 } %t731, 1
-  br i1 %t733, label %panic.219, label %ok.218
-ok.218:
-  store i64 %t732, ptr %s71
-  %t734 = load ptr, ptr %s3
-  %t735 = load ptr, ptr %s79
-  %t736 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t735, i32 0, i32 0
-  %t737 = load ptr, ptr %t736
-  %t738 = call i1 @"zevic_Zevic1_Gen_Gen_IsErr"(ptr %t734, ptr %t737)
-  br i1 %t738, label %then.220, label %endif.222
-then.220:
-  br label %for.cond.210
-endif.222:
-  %t739 = load ptr, ptr %s74
-  %t740 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t739, i32 0, i32 2
-  %t741 = load i8, ptr %t740
-  %t742 = icmp eq i8 %t741, 100
-  br i1 %t742, label %or.end.224, label %or.rhs.223
-or.rhs.223:
-  %t743 = load ptr, ptr %s74
-  %t744 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t743, i32 0, i32 2
-  %t745 = load i8, ptr %t744
-  %t746 = icmp eq i8 %t745, 117
-  br label %or.end.224
-or.end.224:
-  %t747 = phi i1 [ true, %endif.222 ], [ %t746, %or.rhs.223 ]
-  br i1 %t747, label %or.end.226, label %or.rhs.225
-or.rhs.225:
-  %t748 = load ptr, ptr %s74
-  %t749 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t748, i32 0, i32 2
-  %t750 = load i8, ptr %t749
-  %t751 = icmp eq i8 %t750, 111
-  br label %or.end.226
-or.end.226:
-  %t752 = phi i1 [ true, %or.end.224 ], [ %t751, %or.rhs.225 ]
-  br i1 %t752, label %or.end.228, label %or.rhs.227
-or.rhs.227:
-  %t753 = load ptr, ptr %s74
-  %t754 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t753, i32 0, i32 2
-  %t755 = load i8, ptr %t754
-  %t756 = icmp eq i8 %t755, 120
-  br label %or.end.228
-or.end.228:
-  %t757 = phi i1 [ true, %or.end.226 ], [ %t756, %or.rhs.227 ]
-  br i1 %t757, label %or.end.230, label %or.rhs.229
-or.rhs.229:
-  %t758 = load ptr, ptr %s74
-  %t759 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t758, i32 0, i32 2
-  %t760 = load i8, ptr %t759
-  %t761 = icmp eq i8 %t760, 88
-  br label %or.end.230
-or.end.230:
-  %t762 = phi i1 [ true, %or.end.228 ], [ %t761, %or.rhs.229 ]
-  br i1 %t762, label %then.231, label %else.232
-then.231:
-  %t763 = load ptr, ptr %s79
-  %t764 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t763, i32 0, i32 1
-  %t765 = load { ptr, i64 }, ptr %t764
-  store { ptr, i64 } %t765, ptr %s80
-  %t766 = load ptr, ptr %s79
-  %t767 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t766, i32 0, i32 0
-  %t768 = load ptr, ptr %t767
-  %t769 = call i32 @"zevic_Zevic1_Types_Type_Bits"(ptr %t768)
-  store i32 %t769, ptr %s81
-  %t770 = load i32, ptr %s81
-  %t771 = icmp slt i32 %t770, 64
-  br i1 %t771, label %then.234, label %endif.236
-then.234:
-  %t772 = load ptr, ptr %s0
-  %t773 = call { ptr, i64 } @"zevic_Zevic1_Ctx_FnCtx_Tmp"(ptr %t772)
-  store { ptr, i64 } %t773, ptr %s80
-  %t774 = load ptr, ptr %s0
-  %t775 = call ptr @zevic_sb_new()
-  %t776 = load { ptr, i64 }, ptr %s80
-  %t777 = extractvalue { ptr, i64 } %t776, 0
-  %t778 = extractvalue { ptr, i64 } %t776, 1
-  call void @zevic_sb_add(ptr %t775, ptr %t777, i64 %t778)
-  call void @zevic_sb_add(ptr %t775, ptr @.str.311, i64 3)
-  %t779 = load ptr, ptr %s79
-  %t780 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t779, i32 0, i32 0
-  %t781 = load ptr, ptr %t780
-  %t782 = call i1 @"zevic_Zevic1_Types_Type_IsSigned"(ptr %t781)
-  br i1 %t782, label %then.237, label %else.238
-then.237:
-  br label %endif.239
-else.238:
-  br label %endif.239
-endif.239:
-  %t783 = phi { ptr, i64 } [ { ptr @.str.312, i64 4 }, %then.237 ], [ { ptr @.str.313, i64 4 }, %else.238 ]
-  %t784 = extractvalue { ptr, i64 } %t783, 0
-  %t785 = extractvalue { ptr, i64 } %t783, 1
-  call void @zevic_sb_add(ptr %t775, ptr %t784, i64 %t785)
-  call void @zevic_sb_add(ptr %t775, ptr @.str.314, i64 2)
-  %t786 = load i32, ptr %s81
-  %t787 = sext i32 %t786 to i64
-  call void @zevic_i64_to_str(ptr %s82, i64 %t787)
-  %t788 = load { ptr, i64 }, ptr %s82
-  %t789 = extractvalue { ptr, i64 } %t788, 0
-  %t790 = extractvalue { ptr, i64 } %t788, 1
-  call void @zevic_sb_add(ptr %t775, ptr %t789, i64 %t790)
-  call void @zevic_sb_add(ptr %t775, ptr @.str.95, i64 1)
-  %t791 = load ptr, ptr %s79
-  %t792 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t791, i32 0, i32 1
-  %t793 = load { ptr, i64 }, ptr %t792
-  %t794 = extractvalue { ptr, i64 } %t793, 0
-  %t795 = extractvalue { ptr, i64 } %t793, 1
-  call void @zevic_sb_add(ptr %t775, ptr %t794, i64 %t795)
-  call void @zevic_sb_add(ptr %t775, ptr @.str.315, i64 7)
-  call void @zevic_sb_finish(ptr %s83, ptr %t775)
-  %t796 = load { ptr, i64 }, ptr %s83
-  call void @"zevic_Zevic1_Ctx_FnCtx_Emit"(ptr %t774, { ptr, i64 } %t796)
-  br label %endif.236
-endif.236:
-  %t797 = load ptr, ptr %s0
-  %t798 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t798, ptr @.str.985, i64 30)
-  %t799 = load i64, ptr %s70
-  call void @zevic_i64_to_str(ptr %s84, i64 %t799)
-  %t800 = load { ptr, i64 }, ptr %s84
-  %t801 = extractvalue { ptr, i64 } %t800, 0
-  %t802 = extractvalue { ptr, i64 } %t800, 1
-  call void @zevic_sb_add(ptr %t798, ptr %t801, i64 %t802)
-  call void @zevic_sb_add(ptr %t798, ptr @.str.152, i64 6)
-  %t803 = load { ptr, i64 }, ptr %s75
-  %t804 = call { ptr, i64 } @"zevic_Zevic1_Expr_constPtr"({ ptr, i64 } %t803)
-  %t805 = extractvalue { ptr, i64 } %t804, 0
-  %t806 = extractvalue { ptr, i64 } %t804, 1
-  call void @zevic_sb_add(ptr %t798, ptr %t805, i64 %t806)
-  call void @zevic_sb_add(ptr %t798, ptr @.str.342, i64 6)
-  %t807 = load { ptr, i64 }, ptr %s80
-  %t808 = extractvalue { ptr, i64 } %t807, 0
-  %t809 = extractvalue { ptr, i64 } %t807, 1
-  call void @zevic_sb_add(ptr %t798, ptr %t808, i64 %t809)
-  call void @zevic_sb_add(ptr %t798, ptr @.str.290, i64 1)
-  call void @zevic_sb_finish(ptr %s85, ptr %t798)
-  %t810 = load { ptr, i64 }, ptr %s85
-  call void @"zevic_Zevic1_Ctx_FnCtx_Emit"(ptr %t797, { ptr, i64 } %t810)
-  br label %endif.233
-else.232:
-  %t811 = load ptr, ptr %s74
-  %t812 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t811, i32 0, i32 2
-  %t813 = load i8, ptr %t812
-  %t814 = call i1 @"zevic_Zevic1_Expr_isFloatConv"(i8 %t813)
-  br i1 %t814, label %then.240, label %else.241
-then.240:
-  %t815 = load ptr, ptr %s79
-  %t816 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t815, i32 0, i32 1
-  %t817 = load { ptr, i64 }, ptr %t816
-  store { ptr, i64 } %t817, ptr %s86
-  %t818 = load ptr, ptr %s79
-  %t819 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t818, i32 0, i32 0
-  %t820 = load ptr, ptr %t819
-  %t821 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t820, i32 0, i32 5
-  %t822 = load i32, ptr %t821
+  br label %for.cond.206
+for.cond.206:
+  %t649 = load i64, ptr %s71
+  %t650 = load ptr, ptr %s70
+  %t651 = call i64 @"zevic_Array<Zevic1_Expr_FmtPiece>_Len"(ptr %t650)
+  %t652 = icmp slt i64 %t649, %t651
+  br i1 %t652, label %for.body.207, label %for.end.208
+for.body.207:
+  %t653 = load ptr, ptr %s70
+  %t654 = load i64, ptr %s71
+  %t655 = call ptr @"zevic_Array<Zevic1_Expr_FmtPiece>_Index"(ptr %t653, i64 %t654)
+  store ptr %t655, ptr %s72
+  %t656 = load i64, ptr %s71
+  %t657 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t656, i64 1)
+  %t658 = extractvalue { i64, i1 } %t657, 0
+  %t659 = extractvalue { i64, i1 } %t657, 1
+  br i1 %t659, label %panic.210, label %ok.209
+ok.209:
+  store i64 %t658, ptr %s71
+  %t660 = load ptr, ptr %s72
+  %t661 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t660, i32 0, i32 1
+  %t662 = load i1, ptr %t661
+  %t663 = xor i1 %t662, true
+  br i1 %t663, label %then.211, label %endif.213
+then.211:
+  br label %for.cond.206
+endif.213:
+  %t664 = load ptr, ptr %s1
+  %t665 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t664, i32 0, i32 20
+  %t666 = load ptr, ptr %t665
+  %t667 = load i64, ptr %s69
+  %t668 = call ptr @"zevic_Array<Zevic1_Ast_Node>_Index"(ptr %t666, i64 %t667)
+  store ptr %t668, ptr %s73
+  %t669 = load i64, ptr %s69
+  %t670 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t669, i64 1)
+  %t671 = extractvalue { i64, i1 } %t670, 0
+  %t672 = extractvalue { i64, i1 } %t670, 1
+  br i1 %t672, label %panic.215, label %ok.214
+ok.214:
+  store i64 %t671, ptr %s69
+  %t673 = load ptr, ptr %s72
+  %t674 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t673, i32 0, i32 3
+  %t675 = load { ptr, i64 }, ptr %t674
+  %t677 = extractvalue { ptr, i64 } %t675, 0
+  %t678 = extractvalue { ptr, i64 } %t675, 1
+  %t679 = call i32 @zevic_str_eq(ptr %t677, i64 %t678, ptr @.str.83, i64 0)
+  %t676 = icmp eq i32 %t679, 0
+  br i1 %t676, label %then.216, label %else.217
+then.216:
+  %t680 = load ptr, ptr %s3
+  %t681 = load ptr, ptr %s72
+  %t682 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t681, i32 0, i32 3
+  %t683 = load { ptr, i64 }, ptr %t682
+  %t684 = call { i32, [1 x i64] } @"zevic_Zevic1_Expr_typeByName"(ptr %t680, { ptr, i64 } %t683)
+  br label %endif.218
+else.217:
+  %t685 = load ptr, ptr %s72
+  %t686 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t685, i32 0, i32 2
+  %t687 = load i8, ptr %t686
+  %t688 = call i1 @"zevic_Zevic1_Expr_isFloatConv"(i8 %t687)
+  br i1 %t688, label %then.219, label %else.220
+then.219:
+  %t689 = load ptr, ptr %s3
+  %t690 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t689, i32 0, i32 2
+  %t691 = load ptr, ptr %t690
+  %t692 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t691, i32 0, i32 14
+  %t693 = load ptr, ptr %t692
+  %t694 = getelementptr inbounds { i32, [1 x i64] }, ptr %s74, i32 0, i32 0
+  store i32 0, ptr %t694
+  %t695 = insertvalue { ptr } undef, ptr %t693, 0
+  %t696 = getelementptr inbounds { i32, [1 x i64] }, ptr %s74, i32 0, i32 1
+  store { ptr } %t695, ptr %t696
+  %t697 = load { i32, [1 x i64] }, ptr %s74
+  br label %endif.221
+else.220:
+  %t698 = getelementptr inbounds { i32, [1 x i64] }, ptr %s75, i32 0, i32 0
+  store i32 1, ptr %t698
+  %t699 = load { i32, [1 x i64] }, ptr %s75
+  br label %endif.221
+endif.221:
+  %t700 = phi { i32, [1 x i64] } [ %t697, %then.219 ], [ %t699, %else.220 ]
+  br label %endif.218
+endif.218:
+  %t701 = phi { i32, [1 x i64] } [ %t684, %then.216 ], [ %t700, %endif.221 ]
+  store { i32, [1 x i64] } %t701, ptr %s76
+  %t702 = load ptr, ptr %s0
+  %t703 = load ptr, ptr %s73
+  %t704 = load { i32, [1 x i64] }, ptr %s76
+  %t705 = call ptr @"zevic_Zevic1_Expr_genExpr"(ptr %t702, ptr %t703, { i32, [1 x i64] } %t704)
+  store ptr %t705, ptr %s77
+  %t706 = load ptr, ptr %s77
+  %t707 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t706, i32 0, i32 0
+  %t708 = load ptr, ptr %t707
+  %t709 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t708, i32 0, i32 5
+  %t710 = load i32, ptr %t709
+  %t711 = load ptr, ptr %s3
+  %t712 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t711, i32 0, i32 2
+  %t713 = load ptr, ptr %t712
+  %t714 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t713, i32 0, i32 19
+  %t715 = load ptr, ptr %t714
+  %t716 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t715, i32 0, i32 5
+  %t717 = load i32, ptr %t716
+  %t718 = icmp eq i32 %t710, %t717
+  br i1 %t718, label %then.222, label %endif.224
+then.222:
+  %t719 = load ptr, ptr %s0
+  %t720 = getelementptr inbounds { i32, [1 x i64] }, ptr %s78, i32 0, i32 0
+  store i32 1, ptr %t720
+  %t721 = load { i32, [1 x i64] }, ptr %s78
+  %t722 = call ptr @"zevic_Zevic1_Ctx_FnCtx_NeverVal"(ptr %t719, { i32, [1 x i64] } %t721)
+  ret ptr %t722
+endif.224:
+  store i1 true, ptr %s79
+  store { ptr, i64 } { ptr @.str.83, i64 0 }, ptr %s80
+  %t723 = load ptr, ptr %s72
+  %t724 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t723, i32 0, i32 3
+  %t725 = load { ptr, i64 }, ptr %t724
+  %t727 = extractvalue { ptr, i64 } %t725, 0
+  %t728 = extractvalue { ptr, i64 } %t725, 1
+  %t729 = call i32 @zevic_str_eq(ptr %t727, i64 %t728, ptr @.str.83, i64 0)
+  %t726 = icmp eq i32 %t729, 0
+  br i1 %t726, label %then.225, label %else.226
+then.225:
+  %t730 = load ptr, ptr %s77
+  %t731 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t730, i32 0, i32 0
+  %t732 = load ptr, ptr %t731
+  %t733 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t732, i32 0, i32 1
+  %t734 = load { ptr, i64 }, ptr %t733
+  %t735 = load ptr, ptr %s72
+  %t736 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t735, i32 0, i32 3
+  %t737 = load { ptr, i64 }, ptr %t736
+  %t739 = extractvalue { ptr, i64 } %t734, 0
+  %t740 = extractvalue { ptr, i64 } %t734, 1
+  %t741 = extractvalue { ptr, i64 } %t737, 0
+  %t742 = extractvalue { ptr, i64 } %t737, 1
+  %t743 = call i32 @zevic_str_eq(ptr %t739, i64 %t740, ptr %t741, i64 %t742)
+  %t738 = icmp ne i32 %t743, 0
+  store i1 %t738, ptr %s79
+  %t744 = call ptr @zevic_sb_new()
+  call void @zevic_sb_add(ptr %t744, ptr @.str.149, i64 1)
+  %t745 = load ptr, ptr %s72
+  %t746 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t745, i32 0, i32 3
+  %t747 = load { ptr, i64 }, ptr %t746
+  %t748 = extractvalue { ptr, i64 } %t747, 0
+  %t749 = extractvalue { ptr, i64 } %t747, 1
+  call void @zevic_sb_add(ptr %t744, ptr %t748, i64 %t749)
+  call void @zevic_sb_add(ptr %t744, ptr @.str.149, i64 1)
+  call void @zevic_sb_finish(ptr %s81, ptr %t744)
+  %t750 = load { ptr, i64 }, ptr %s81
+  store { ptr, i64 } %t750, ptr %s80
+  br label %endif.227
+else.226:
+  %t751 = load ptr, ptr %s72
+  %t752 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t751, i32 0, i32 2
+  %t753 = load i8, ptr %t752
+  %t754 = icmp eq i8 %t753, 100
+  br i1 %t754, label %or.end.229, label %or.rhs.228
+or.rhs.228:
+  %t755 = load ptr, ptr %s72
+  %t756 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t755, i32 0, i32 2
+  %t757 = load i8, ptr %t756
+  %t758 = icmp eq i8 %t757, 117
+  br label %or.end.229
+or.end.229:
+  %t759 = phi i1 [ true, %else.226 ], [ %t758, %or.rhs.228 ]
+  br i1 %t759, label %or.end.231, label %or.rhs.230
+or.rhs.230:
+  %t760 = load ptr, ptr %s72
+  %t761 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t760, i32 0, i32 2
+  %t762 = load i8, ptr %t761
+  %t763 = icmp eq i8 %t762, 111
+  br label %or.end.231
+or.end.231:
+  %t764 = phi i1 [ true, %or.end.229 ], [ %t763, %or.rhs.230 ]
+  br i1 %t764, label %or.end.233, label %or.rhs.232
+or.rhs.232:
+  %t765 = load ptr, ptr %s72
+  %t766 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t765, i32 0, i32 2
+  %t767 = load i8, ptr %t766
+  %t768 = icmp eq i8 %t767, 120
+  br label %or.end.233
+or.end.233:
+  %t769 = phi i1 [ true, %or.end.231 ], [ %t768, %or.rhs.232 ]
+  br i1 %t769, label %or.end.235, label %or.rhs.234
+or.rhs.234:
+  %t770 = load ptr, ptr %s72
+  %t771 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t770, i32 0, i32 2
+  %t772 = load i8, ptr %t771
+  %t773 = icmp eq i8 %t772, 88
+  br label %or.end.235
+or.end.235:
+  %t774 = phi i1 [ true, %or.end.233 ], [ %t773, %or.rhs.234 ]
+  br i1 %t774, label %then.236, label %else.237
+then.236:
+  %t775 = load ptr, ptr %s77
+  %t776 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t775, i32 0, i32 0
+  %t777 = load ptr, ptr %t776
+  %t778 = call i1 @"zevic_Zevic1_Types_Type_IsInt"(ptr %t777)
+  store i1 %t778, ptr %s79
+  store { ptr, i64 } { ptr @.str.978, i64 10 }, ptr %s80
+  br label %endif.238
+else.237:
+  %t779 = load ptr, ptr %s72
+  %t780 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t779, i32 0, i32 2
+  %t781 = load i8, ptr %t780
+  %t782 = call i1 @"zevic_Zevic1_Expr_isFloatConv"(i8 %t781)
+  br i1 %t782, label %then.239, label %else.240
+then.239:
+  %t783 = load ptr, ptr %s77
+  %t784 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t783, i32 0, i32 0
+  %t785 = load ptr, ptr %t784
+  %t786 = call i1 @"zevic_Zevic1_Types_Type_IsFloat"(ptr %t785)
+  store i1 %t786, ptr %s79
+  store { ptr, i64 } { ptr @.str.979, i64 16 }, ptr %s80
+  br label %endif.241
+else.240:
+  %t787 = load ptr, ptr %s72
+  %t788 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t787, i32 0, i32 2
+  %t789 = load i8, ptr %t788
+  %t790 = icmp eq i8 %t789, 115
+  br i1 %t790, label %then.242, label %else.243
+then.242:
+  %t791 = load ptr, ptr %s77
+  %t792 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t791, i32 0, i32 0
+  %t793 = load ptr, ptr %t792
+  %t794 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t793, i32 0, i32 5
+  %t795 = load i32, ptr %t794
+  %t796 = load ptr, ptr %s3
+  %t797 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t796, i32 0, i32 2
+  %t798 = load ptr, ptr %t797
+  %t799 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t798, i32 0, i32 17
+  %t800 = load ptr, ptr %t799
+  %t801 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t800, i32 0, i32 5
+  %t802 = load i32, ptr %t801
+  %t803 = icmp eq i32 %t795, %t802
+  store i1 %t803, ptr %s79
+  store { ptr, i64 } { ptr @.str.980, i64 10 }, ptr %s80
+  br label %endif.244
+else.243:
+  %t804 = load ptr, ptr %s72
+  %t805 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t804, i32 0, i32 2
+  %t806 = load i8, ptr %t805
+  %t807 = icmp eq i8 %t806, 99
+  br i1 %t807, label %then.245, label %endif.247
+then.245:
+  %t808 = load ptr, ptr %s77
+  %t809 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t808, i32 0, i32 0
+  %t810 = load ptr, ptr %t809
+  %t811 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t810, i32 0, i32 5
+  %t812 = load i32, ptr %t811
+  %t813 = load ptr, ptr %s3
+  %t814 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t813, i32 0, i32 2
+  %t815 = load ptr, ptr %t814
+  %t816 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t815, i32 0, i32 16
+  %t817 = load ptr, ptr %t816
+  %t818 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t817, i32 0, i32 5
+  %t819 = load i32, ptr %t818
+  %t820 = icmp eq i32 %t812, %t819
+  store i1 %t820, ptr %s79
+  store { ptr, i64 } { ptr @.str.981, i64 8 }, ptr %s80
+  br label %endif.247
+endif.247:
+  br label %endif.244
+endif.244:
+  br label %endif.241
+endif.241:
+  br label %endif.238
+endif.238:
+  br label %endif.227
+endif.227:
+  %t821 = load i1, ptr %s79
+  %t822 = xor i1 %t821, true
+  br i1 %t822, label %and.rhs.248, label %and.end.249
+and.rhs.248:
   %t823 = load ptr, ptr %s3
-  %t824 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t823, i32 0, i32 2
-  %t825 = load ptr, ptr %t824
-  %t826 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t825, i32 0, i32 13
-  %t827 = load ptr, ptr %t826
-  %t828 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t827, i32 0, i32 5
-  %t829 = load i32, ptr %t828
-  %t830 = icmp eq i32 %t822, %t829
-  br i1 %t830, label %then.243, label %endif.245
-then.243:
-  %t831 = load ptr, ptr %s0
-  %t832 = call { ptr, i64 } @"zevic_Zevic1_Ctx_FnCtx_Tmp"(ptr %t831)
-  store { ptr, i64 } %t832, ptr %s86
-  %t833 = load ptr, ptr %s0
-  %t834 = call ptr @zevic_sb_new()
-  %t835 = load { ptr, i64 }, ptr %s86
-  %t836 = extractvalue { ptr, i64 } %t835, 0
-  %t837 = extractvalue { ptr, i64 } %t835, 1
-  call void @zevic_sb_add(ptr %t834, ptr %t836, i64 %t837)
-  call void @zevic_sb_add(ptr %t834, ptr @.str.320, i64 15)
-  %t838 = load ptr, ptr %s79
-  %t839 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t838, i32 0, i32 1
+  %t824 = load ptr, ptr %s77
+  %t825 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t824, i32 0, i32 0
+  %t826 = load ptr, ptr %t825
+  %t827 = call i1 @"zevic_Zevic1_Gen_Gen_IsErr"(ptr %t823, ptr %t826)
+  %t828 = xor i1 %t827, true
+  br label %and.end.249
+and.end.249:
+  %t829 = phi i1 [ false, %endif.227 ], [ %t828, %and.rhs.248 ]
+  br i1 %t829, label %then.250, label %endif.252
+then.250:
+  %t830 = load ptr, ptr %s72
+  %t831 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t830, i32 0, i32 3
+  %t832 = load { ptr, i64 }, ptr %t831
+  %t834 = extractvalue { ptr, i64 } %t832, 0
+  %t835 = extractvalue { ptr, i64 } %t832, 1
+  %t836 = call i32 @zevic_str_eq(ptr %t834, i64 %t835, ptr @.str.83, i64 0)
+  %t833 = icmp eq i32 %t836, 0
+  br i1 %t833, label %then.253, label %else.254
+then.253:
+  %t837 = call ptr @zevic_sb_new()
+  call void @zevic_sb_add(ptr %t837, ptr @.str.982, i64 2)
+  %t838 = load ptr, ptr %s72
+  %t839 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t838, i32 0, i32 3
   %t840 = load { ptr, i64 }, ptr %t839
   %t841 = extractvalue { ptr, i64 } %t840, 0
   %t842 = extractvalue { ptr, i64 } %t840, 1
-  call void @zevic_sb_add(ptr %t834, ptr %t841, i64 %t842)
-  call void @zevic_sb_add(ptr %t834, ptr @.str.321, i64 10)
-  call void @zevic_sb_finish(ptr %s87, ptr %t834)
-  %t843 = load { ptr, i64 }, ptr %s87
-  call void @"zevic_Zevic1_Ctx_FnCtx_Emit"(ptr %t833, { ptr, i64 } %t843)
-  br label %endif.245
-endif.245:
-  %t844 = load ptr, ptr %s0
-  %t845 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t845, ptr @.str.986, i64 30)
-  %t846 = load i64, ptr %s70
-  call void @zevic_i64_to_str(ptr %s88, i64 %t846)
-  %t847 = load { ptr, i64 }, ptr %s88
-  %t848 = extractvalue { ptr, i64 } %t847, 0
-  %t849 = extractvalue { ptr, i64 } %t847, 1
-  call void @zevic_sb_add(ptr %t845, ptr %t848, i64 %t849)
-  call void @zevic_sb_add(ptr %t845, ptr @.str.152, i64 6)
-  %t850 = load { ptr, i64 }, ptr %s75
-  %t851 = call { ptr, i64 } @"zevic_Zevic1_Expr_constPtr"({ ptr, i64 } %t850)
-  %t852 = extractvalue { ptr, i64 } %t851, 0
-  %t853 = extractvalue { ptr, i64 } %t851, 1
-  call void @zevic_sb_add(ptr %t845, ptr %t852, i64 %t853)
-  call void @zevic_sb_add(ptr %t845, ptr @.str.987, i64 9)
-  %t854 = load { ptr, i64 }, ptr %s86
-  %t855 = extractvalue { ptr, i64 } %t854, 0
-  %t856 = extractvalue { ptr, i64 } %t854, 1
-  call void @zevic_sb_add(ptr %t845, ptr %t855, i64 %t856)
-  call void @zevic_sb_add(ptr %t845, ptr @.str.290, i64 1)
-  call void @zevic_sb_finish(ptr %s89, ptr %t845)
-  %t857 = load { ptr, i64 }, ptr %s89
-  call void @"zevic_Zevic1_Ctx_FnCtx_Emit"(ptr %t844, { ptr, i64 } %t857)
-  br label %endif.242
-else.241:
-  %t858 = load ptr, ptr %s74
-  %t859 = getelementptr inbounds { { ptr, i64 }, i1, i8 }, ptr %t858, i32 0, i32 2
-  %t860 = load i8, ptr %t859
-  %t861 = icmp eq i8 %t860, 115
-  br i1 %t861, label %then.246, label %else.247
-then.246:
-  %t862 = load ptr, ptr %s0
-  %t863 = load ptr, ptr %s79
-  %t864 = call { { ptr, i64 }, { ptr, i64 } } @"zevic_Zevic1_Expr_strParts"(ptr %t862, ptr %t863)
-  %t865 = extractvalue { { ptr, i64 }, { ptr, i64 } } %t864, 0
-  store { ptr, i64 } %t865, ptr %s90
-  %t866 = extractvalue { { ptr, i64 }, { ptr, i64 } } %t864, 1
-  store { ptr, i64 } %t866, ptr %s91
-  %t867 = load ptr, ptr %s0
-  %t868 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t868, ptr @.str.988, i64 30)
-  %t869 = load i64, ptr %s70
-  call void @zevic_i64_to_str(ptr %s92, i64 %t869)
-  %t870 = load { ptr, i64 }, ptr %s92
+  call void @zevic_sb_add(ptr %t837, ptr %t841, i64 %t842)
+  call void @zevic_sb_add(ptr %t837, ptr @.str.983, i64 1)
+  call void @zevic_sb_finish(ptr %s82, ptr %t837)
+  %t843 = load { ptr, i64 }, ptr %s82
+  br label %endif.255
+else.254:
+  %t844 = call ptr @zevic_sb_new()
+  call void @zevic_sb_add(ptr %t844, ptr @.str.964, i64 1)
+  %t845 = load ptr, ptr %s72
+  %t846 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t845, i32 0, i32 2
+  %t847 = load i8, ptr %t846
+  %t848 = call { ptr, i64 } @"zevic_Zevic1_Expr_byteStr"(i8 %t847)
+  %t849 = extractvalue { ptr, i64 } %t848, 0
+  %t850 = extractvalue { ptr, i64 } %t848, 1
+  call void @zevic_sb_add(ptr %t844, ptr %t849, i64 %t850)
+  call void @zevic_sb_finish(ptr %s83, ptr %t844)
+  %t851 = load { ptr, i64 }, ptr %s83
+  br label %endif.255
+endif.255:
+  %t852 = phi { ptr, i64 } [ %t843, %then.253 ], [ %t851, %else.254 ]
+  store { ptr, i64 } %t852, ptr %s84
+  %t853 = load ptr, ptr %s3
+  %t854 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t853, i32 0, i32 1
+  %t855 = load ptr, ptr %t854
+  %t856 = load ptr, ptr %s73
+  %t857 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t856, i32 0, i32 1
+  %t858 = load { i32, i32, i32 }, ptr %t857
+  %t859 = call ptr @zevic_sb_new()
+  call void @zevic_sb_add(ptr %t859, ptr @.str.149, i64 1)
+  %t860 = load { ptr, i64 }, ptr %s84
+  %t861 = extractvalue { ptr, i64 } %t860, 0
+  %t862 = extractvalue { ptr, i64 } %t860, 1
+  call void @zevic_sb_add(ptr %t859, ptr %t861, i64 %t862)
+  call void @zevic_sb_add(ptr %t859, ptr @.str.572, i64 8)
+  %t863 = load { ptr, i64 }, ptr %s80
+  %t864 = extractvalue { ptr, i64 } %t863, 0
+  %t865 = extractvalue { ptr, i64 } %t863, 1
+  call void @zevic_sb_add(ptr %t859, ptr %t864, i64 %t865)
+  call void @zevic_sb_add(ptr %t859, ptr @.str.984, i64 9)
+  %t866 = load ptr, ptr %s77
+  %t867 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t866, i32 0, i32 0
+  %t868 = load ptr, ptr %t867
+  %t869 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t868, i32 0, i32 1
+  %t870 = load { ptr, i64 }, ptr %t869
   %t871 = extractvalue { ptr, i64 } %t870, 0
   %t872 = extractvalue { ptr, i64 } %t870, 1
-  call void @zevic_sb_add(ptr %t868, ptr %t871, i64 %t872)
-  call void @zevic_sb_add(ptr %t868, ptr @.str.152, i64 6)
-  %t873 = load { ptr, i64 }, ptr %s75
-  %t874 = call { ptr, i64 } @"zevic_Zevic1_Expr_constPtr"({ ptr, i64 } %t873)
-  %t875 = extractvalue { ptr, i64 } %t874, 0
-  %t876 = extractvalue { ptr, i64 } %t874, 1
-  call void @zevic_sb_add(ptr %t868, ptr %t875, i64 %t876)
-  call void @zevic_sb_add(ptr %t868, ptr @.str.152, i64 6)
-  %t877 = load { ptr, i64 }, ptr %s90
-  %t878 = extractvalue { ptr, i64 } %t877, 0
-  %t879 = extractvalue { ptr, i64 } %t877, 1
-  call void @zevic_sb_add(ptr %t868, ptr %t878, i64 %t879)
-  call void @zevic_sb_add(ptr %t868, ptr @.str.342, i64 6)
-  %t880 = load { ptr, i64 }, ptr %s91
-  %t881 = extractvalue { ptr, i64 } %t880, 0
-  %t882 = extractvalue { ptr, i64 } %t880, 1
-  call void @zevic_sb_add(ptr %t868, ptr %t881, i64 %t882)
-  call void @zevic_sb_add(ptr %t868, ptr @.str.290, i64 1)
-  call void @zevic_sb_finish(ptr %s93, ptr %t868)
-  %t883 = load { ptr, i64 }, ptr %s93
-  call void @"zevic_Zevic1_Ctx_FnCtx_Emit"(ptr %t867, { ptr, i64 } %t883)
-  br label %endif.248
-else.247:
-  %t884 = load ptr, ptr %s0
-  %t885 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t885, ptr @.str.989, i64 30)
-  %t886 = load i64, ptr %s70
-  call void @zevic_i64_to_str(ptr %s94, i64 %t886)
-  %t887 = load { ptr, i64 }, ptr %s94
-  %t888 = extractvalue { ptr, i64 } %t887, 0
-  %t889 = extractvalue { ptr, i64 } %t887, 1
-  call void @zevic_sb_add(ptr %t885, ptr %t888, i64 %t889)
-  call void @zevic_sb_add(ptr %t885, ptr @.str.152, i64 6)
-  %t890 = load { ptr, i64 }, ptr %s75
-  %t891 = call { ptr, i64 } @"zevic_Zevic1_Expr_constPtr"({ ptr, i64 } %t890)
-  %t892 = extractvalue { ptr, i64 } %t891, 0
-  %t893 = extractvalue { ptr, i64 } %t891, 1
-  call void @zevic_sb_add(ptr %t885, ptr %t892, i64 %t893)
-  call void @zevic_sb_add(ptr %t885, ptr @.str.343, i64 6)
-  %t894 = load ptr, ptr %s79
-  %t895 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t894, i32 0, i32 1
-  %t896 = load { ptr, i64 }, ptr %t895
-  %t897 = extractvalue { ptr, i64 } %t896, 0
-  %t898 = extractvalue { ptr, i64 } %t896, 1
-  call void @zevic_sb_add(ptr %t885, ptr %t897, i64 %t898)
-  call void @zevic_sb_add(ptr %t885, ptr @.str.290, i64 1)
-  call void @zevic_sb_finish(ptr %s95, ptr %t885)
-  %t899 = load { ptr, i64 }, ptr %s95
-  call void @"zevic_Zevic1_Ctx_FnCtx_Emit"(ptr %t884, { ptr, i64 } %t899)
-  br label %endif.248
-endif.248:
-  br label %endif.242
-endif.242:
-  br label %endif.233
-endif.233:
-  br label %for.cond.210
-for.end.212:
-  %t900 = load i64, ptr %s2
-  %t901 = icmp eq i64 %t900, 2
-  br i1 %t901, label %then.249, label %endif.251
-then.249:
-  %t902 = load ptr, ptr %s0
-  %t903 = load ptr, ptr %s3
-  %t904 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t903, i32 0, i32 2
-  %t905 = load ptr, ptr %t904
-  %t906 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t905, i32 0, i32 17
-  %t907 = load ptr, ptr %t906
-  %t908 = call { ptr, i64 } @"zevic_Zevic1_Ctx_FnCtx_NewSlot"(ptr %t902, ptr %t907)
-  store { ptr, i64 } %t908, ptr %s96
-  %t909 = load ptr, ptr %s0
-  %t910 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t910, ptr @.str.990, i64 29)
-  %t911 = load { ptr, i64 }, ptr %s96
-  %t912 = extractvalue { ptr, i64 } %t911, 0
-  %t913 = extractvalue { ptr, i64 } %t911, 1
-  call void @zevic_sb_add(ptr %t910, ptr %t912, i64 %t913)
-  call void @zevic_sb_add(ptr %t910, ptr @.str.290, i64 1)
-  call void @zevic_sb_finish(ptr %s97, ptr %t910)
-  %t914 = load { ptr, i64 }, ptr %s97
-  call void @"zevic_Zevic1_Ctx_FnCtx_Emit"(ptr %t909, { ptr, i64 } %t914)
+  call void @zevic_sb_add(ptr %t859, ptr %t871, i64 %t872)
+  call void @zevic_sb_add(ptr %t859, ptr @.str.149, i64 1)
+  call void @zevic_sb_finish(ptr %s85, ptr %t859)
+  %t873 = load { ptr, i64 }, ptr %s85
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t855, { i32, i32, i32 } %t858, { ptr, i64 } %t873)
+  %t874 = load ptr, ptr %s0
+  %t875 = call ptr @"zevic_Zevic1_Ctx_FnCtx_ErrVal"(ptr %t874)
+  ret ptr %t875
+endif.252:
+  %t876 = load ptr, ptr %s68
+  %t877 = load ptr, ptr %s77
+  call void @"zevic_Array<Zevic1_Ctx_Val>_Push"(ptr %t876, ptr %t877)
+  br label %for.cond.206
+for.end.208:
+  %t878 = load i64, ptr %s2
+  %t879 = icmp eq i64 %t878, 2
+  br i1 %t879, label %then.256, label %else.257
+then.256:
+  br label %endif.258
+else.257:
+  %t880 = load i64, ptr %s2
+  %t881 = icmp eq i64 %t880, 1
+  br i1 %t881, label %then.259, label %else.260
+then.259:
+  br label %endif.261
+else.260:
+  br label %endif.261
+endif.261:
+  %t882 = phi i64 [ 2, %then.259 ], [ 1, %else.260 ]
+  br label %endif.258
+endif.258:
+  %t883 = phi i64 [ 3, %then.256 ], [ %t882, %endif.261 ]
+  store i64 %t883, ptr %s86
+  %t884 = load i64, ptr %s2
+  %t885 = icmp eq i64 %t884, 2
+  br i1 %t885, label %then.262, label %endif.264
+then.262:
+  %t886 = load ptr, ptr %s0
+  call void @"zevic_Zevic1_Expr_rtDecl"(ptr %t886, { ptr, i64 } { ptr @.str.985, i64 15 }, { ptr, i64 } { ptr @.str.986, i64 31 })
+  %t887 = load ptr, ptr %s0
+  call void @"zevic_Zevic1_Expr_rtDecl"(ptr %t887, { ptr, i64 } { ptr @.str.987, i64 13 }, { ptr, i64 } { ptr @.str.988, i64 32 })
+  %t888 = load ptr, ptr %s0
+  call void @"zevic_Zevic1_Ctx_FnCtx_Emit"(ptr %t888, { ptr, i64 } { ptr @.str.989, i64 28 })
+  br label %endif.264
+endif.264:
+  %t889 = load ptr, ptr %s0
+  call void @"zevic_Zevic1_Expr_rtDecl"(ptr %t889, { ptr, i64 } { ptr @.str.990, i64 16 }, { ptr, i64 } { ptr @.str.991, i64 45 })
+  %t890 = load ptr, ptr %s0
+  call void @"zevic_Zevic1_Expr_rtDecl"(ptr %t890, { ptr, i64 } { ptr @.str.992, i64 14 }, { ptr, i64 } { ptr @.str.993, i64 43 })
+  %t891 = load ptr, ptr %s0
+  call void @"zevic_Zevic1_Expr_rtDecl"(ptr %t891, { ptr, i64 } { ptr @.str.994, i64 14 }, { ptr, i64 } { ptr @.str.995, i64 46 })
+  %t892 = load ptr, ptr %s0
+  call void @"zevic_Zevic1_Expr_rtDecl"(ptr %t892, { ptr, i64 } { ptr @.str.996, i64 14 }, { ptr, i64 } { ptr @.str.997, i64 48 })
+  %t893 = load ptr, ptr %s0
+  call void @"zevic_Zevic1_Expr_rtDecl"(ptr %t893, { ptr, i64 } { ptr @.str.998, i64 14 }, { ptr, i64 } { ptr @.str.999, i64 43 })
+  store i64 0, ptr %s87
+  %t894 = load ptr, ptr %s20
+  store ptr %t894, ptr %s88
+  store i64 0, ptr %s89
+  br label %for.cond.265
+for.cond.265:
+  %t895 = load i64, ptr %s89
+  %t896 = load ptr, ptr %s88
+  %t897 = call i64 @"zevic_Array<Zevic1_Expr_FmtPiece>_Len"(ptr %t896)
+  %t898 = icmp slt i64 %t895, %t897
+  br i1 %t898, label %for.body.266, label %for.end.267
+for.body.266:
+  %t899 = load ptr, ptr %s88
+  %t900 = load i64, ptr %s89
+  %t901 = call ptr @"zevic_Array<Zevic1_Expr_FmtPiece>_Index"(ptr %t899, i64 %t900)
+  store ptr %t901, ptr %s90
+  %t902 = load i64, ptr %s89
+  %t903 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t902, i64 1)
+  %t904 = extractvalue { i64, i1 } %t903, 0
+  %t905 = extractvalue { i64, i1 } %t903, 1
+  br i1 %t905, label %panic.269, label %ok.268
+ok.268:
+  store i64 %t904, ptr %s89
+  %t906 = load ptr, ptr %s3
+  %t907 = load ptr, ptr %s90
+  %t908 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t907, i32 0, i32 0
+  %t909 = load { ptr, i64 }, ptr %t908
+  %t910 = call { ptr, i64 } @"zevic_Zevic1_Gen_StrConst"(ptr %t906, { ptr, i64 } %t909)
+  store { ptr, i64 } %t910, ptr %s91
+  %t911 = load ptr, ptr %s90
+  %t912 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t911, i32 0, i32 1
+  %t913 = load i1, ptr %t912
+  %t914 = xor i1 %t913, true
+  br i1 %t914, label %then.270, label %endif.272
+then.270:
   %t915 = load ptr, ptr %s0
-  %t916 = call { ptr, i64 } @"zevic_Zevic1_Ctx_FnCtx_Tmp"(ptr %t915)
-  store { ptr, i64 } %t916, ptr %s98
-  %t917 = load ptr, ptr %s0
-  %t918 = call ptr @zevic_sb_new()
-  %t919 = load { ptr, i64 }, ptr %s98
-  %t920 = extractvalue { ptr, i64 } %t919, 0
-  %t921 = extractvalue { ptr, i64 } %t919, 1
-  call void @zevic_sb_add(ptr %t918, ptr %t920, i64 %t921)
-  call void @zevic_sb_add(ptr %t918, ptr @.str.309, i64 26)
-  %t922 = load { ptr, i64 }, ptr %s96
+  %t916 = call ptr @zevic_sb_new()
+  call void @zevic_sb_add(ptr %t916, ptr @.str.1000, i64 32)
+  %t917 = load i64, ptr %s86
+  call void @zevic_i64_to_str(ptr %s92, i64 %t917)
+  %t918 = load { ptr, i64 }, ptr %s92
+  %t919 = extractvalue { ptr, i64 } %t918, 0
+  %t920 = extractvalue { ptr, i64 } %t918, 1
+  call void @zevic_sb_add(ptr %t916, ptr %t919, i64 %t920)
+  call void @zevic_sb_add(ptr %t916, ptr @.str.152, i64 6)
+  %t921 = load { ptr, i64 }, ptr %s91
+  %t922 = call { ptr, i64 } @"zevic_Zevic1_Expr_constPtr"({ ptr, i64 } %t921)
   %t923 = extractvalue { ptr, i64 } %t922, 0
   %t924 = extractvalue { ptr, i64 } %t922, 1
-  call void @zevic_sb_add(ptr %t918, ptr %t923, i64 %t924)
-  call void @zevic_sb_finish(ptr %s99, ptr %t918)
-  %t925 = load { ptr, i64 }, ptr %s99
-  call void @"zevic_Zevic1_Ctx_FnCtx_Emit"(ptr %t917, { ptr, i64 } %t925)
-  %t926 = call ptr @zevic_alloc(i64 24)
-  %t927 = load ptr, ptr %s3
-  %t928 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t927, i32 0, i32 2
-  %t929 = load ptr, ptr %t928
-  %t930 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t929, i32 0, i32 17
-  %t931 = load ptr, ptr %t930
-  %t932 = load { ptr, i64 }, ptr %s98
-  call void @"zevic_Zevic1_Ctx_Val_Init"(ptr %t926, ptr %t931, { ptr, i64 } %t932)
-  ret ptr %t926
-endif.251:
-  %t933 = load ptr, ptr %s0
-  %t934 = call ptr @"zevic_Zevic1_Ctx_FnCtx_UnitVal"(ptr %t933)
-  ret ptr %t934
+  call void @zevic_sb_add(ptr %t916, ptr %t923, i64 %t924)
+  call void @zevic_sb_add(ptr %t916, ptr @.str.342, i64 6)
+  %t925 = load ptr, ptr %s90
+  %t926 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t925, i32 0, i32 0
+  %t927 = load { ptr, i64 }, ptr %t926
+  %t928 = extractvalue { ptr, i64 } %t927, 0
+  %t929 = extractvalue { ptr, i64 } %t927, 1
+  call void @zevic_i64_to_str(ptr %s93, i64 %t929)
+  %t930 = load { ptr, i64 }, ptr %s93
+  %t931 = extractvalue { ptr, i64 } %t930, 0
+  %t932 = extractvalue { ptr, i64 } %t930, 1
+  call void @zevic_sb_add(ptr %t916, ptr %t931, i64 %t932)
+  call void @zevic_sb_add(ptr %t916, ptr @.str.290, i64 1)
+  call void @zevic_sb_finish(ptr %s94, ptr %t916)
+  %t933 = load { ptr, i64 }, ptr %s94
+  call void @"zevic_Zevic1_Ctx_FnCtx_Emit"(ptr %t915, { ptr, i64 } %t933)
+  br label %for.cond.265
+endif.272:
+  %t934 = load ptr, ptr %s68
+  %t935 = load i64, ptr %s87
+  %t936 = call ptr @"zevic_Array<Zevic1_Ctx_Val>_Index"(ptr %t934, i64 %t935)
+  store ptr %t936, ptr %s95
+  %t937 = load i64, ptr %s87
+  %t938 = call { i64, i1 } @llvm.sadd.with.overflow.i64(i64 %t937, i64 1)
+  %t939 = extractvalue { i64, i1 } %t938, 0
+  %t940 = extractvalue { i64, i1 } %t938, 1
+  br i1 %t940, label %panic.274, label %ok.273
+ok.273:
+  store i64 %t939, ptr %s87
+  %t941 = load ptr, ptr %s3
+  %t942 = load ptr, ptr %s95
+  %t943 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t942, i32 0, i32 0
+  %t944 = load ptr, ptr %t943
+  %t945 = call i1 @"zevic_Zevic1_Gen_Gen_IsErr"(ptr %t941, ptr %t944)
+  br i1 %t945, label %then.275, label %endif.277
+then.275:
+  br label %for.cond.265
+endif.277:
+  %t946 = load ptr, ptr %s90
+  %t947 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t946, i32 0, i32 2
+  %t948 = load i8, ptr %t947
+  %t949 = icmp eq i8 %t948, 100
+  br i1 %t949, label %or.end.279, label %or.rhs.278
+or.rhs.278:
+  %t950 = load ptr, ptr %s90
+  %t951 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t950, i32 0, i32 2
+  %t952 = load i8, ptr %t951
+  %t953 = icmp eq i8 %t952, 117
+  br label %or.end.279
+or.end.279:
+  %t954 = phi i1 [ true, %endif.277 ], [ %t953, %or.rhs.278 ]
+  br i1 %t954, label %or.end.281, label %or.rhs.280
+or.rhs.280:
+  %t955 = load ptr, ptr %s90
+  %t956 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t955, i32 0, i32 2
+  %t957 = load i8, ptr %t956
+  %t958 = icmp eq i8 %t957, 111
+  br label %or.end.281
+or.end.281:
+  %t959 = phi i1 [ true, %or.end.279 ], [ %t958, %or.rhs.280 ]
+  br i1 %t959, label %or.end.283, label %or.rhs.282
+or.rhs.282:
+  %t960 = load ptr, ptr %s90
+  %t961 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t960, i32 0, i32 2
+  %t962 = load i8, ptr %t961
+  %t963 = icmp eq i8 %t962, 120
+  br label %or.end.283
+or.end.283:
+  %t964 = phi i1 [ true, %or.end.281 ], [ %t963, %or.rhs.282 ]
+  br i1 %t964, label %or.end.285, label %or.rhs.284
+or.rhs.284:
+  %t965 = load ptr, ptr %s90
+  %t966 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t965, i32 0, i32 2
+  %t967 = load i8, ptr %t966
+  %t968 = icmp eq i8 %t967, 88
+  br label %or.end.285
+or.end.285:
+  %t969 = phi i1 [ true, %or.end.283 ], [ %t968, %or.rhs.284 ]
+  br i1 %t969, label %then.286, label %else.287
+then.286:
+  %t970 = load ptr, ptr %s95
+  %t971 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t970, i32 0, i32 1
+  %t972 = load { ptr, i64 }, ptr %t971
+  store { ptr, i64 } %t972, ptr %s96
+  %t973 = load ptr, ptr %s95
+  %t974 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t973, i32 0, i32 0
+  %t975 = load ptr, ptr %t974
+  %t976 = call i32 @"zevic_Zevic1_Types_Type_Bits"(ptr %t975)
+  store i32 %t976, ptr %s97
+  %t977 = load i32, ptr %s97
+  %t978 = icmp slt i32 %t977, 64
+  br i1 %t978, label %then.289, label %endif.291
+then.289:
+  %t979 = load ptr, ptr %s0
+  %t980 = call { ptr, i64 } @"zevic_Zevic1_Ctx_FnCtx_Tmp"(ptr %t979)
+  store { ptr, i64 } %t980, ptr %s96
+  %t981 = load ptr, ptr %s0
+  %t982 = call ptr @zevic_sb_new()
+  %t983 = load { ptr, i64 }, ptr %s96
+  %t984 = extractvalue { ptr, i64 } %t983, 0
+  %t985 = extractvalue { ptr, i64 } %t983, 1
+  call void @zevic_sb_add(ptr %t982, ptr %t984, i64 %t985)
+  call void @zevic_sb_add(ptr %t982, ptr @.str.311, i64 3)
+  %t986 = load ptr, ptr %s95
+  %t987 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t986, i32 0, i32 0
+  %t988 = load ptr, ptr %t987
+  %t989 = call i1 @"zevic_Zevic1_Types_Type_IsSigned"(ptr %t988)
+  br i1 %t989, label %then.292, label %else.293
+then.292:
+  br label %endif.294
+else.293:
+  br label %endif.294
+endif.294:
+  %t990 = phi { ptr, i64 } [ { ptr @.str.312, i64 4 }, %then.292 ], [ { ptr @.str.313, i64 4 }, %else.293 ]
+  %t991 = extractvalue { ptr, i64 } %t990, 0
+  %t992 = extractvalue { ptr, i64 } %t990, 1
+  call void @zevic_sb_add(ptr %t982, ptr %t991, i64 %t992)
+  call void @zevic_sb_add(ptr %t982, ptr @.str.314, i64 2)
+  %t993 = load i32, ptr %s97
+  %t994 = sext i32 %t993 to i64
+  call void @zevic_i64_to_str(ptr %s98, i64 %t994)
+  %t995 = load { ptr, i64 }, ptr %s98
+  %t996 = extractvalue { ptr, i64 } %t995, 0
+  %t997 = extractvalue { ptr, i64 } %t995, 1
+  call void @zevic_sb_add(ptr %t982, ptr %t996, i64 %t997)
+  call void @zevic_sb_add(ptr %t982, ptr @.str.95, i64 1)
+  %t998 = load ptr, ptr %s95
+  %t999 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t998, i32 0, i32 1
+  %t1000 = load { ptr, i64 }, ptr %t999
+  %t1001 = extractvalue { ptr, i64 } %t1000, 0
+  %t1002 = extractvalue { ptr, i64 } %t1000, 1
+  call void @zevic_sb_add(ptr %t982, ptr %t1001, i64 %t1002)
+  call void @zevic_sb_add(ptr %t982, ptr @.str.315, i64 7)
+  call void @zevic_sb_finish(ptr %s99, ptr %t982)
+  %t1003 = load { ptr, i64 }, ptr %s99
+  call void @"zevic_Zevic1_Ctx_FnCtx_Emit"(ptr %t981, { ptr, i64 } %t1003)
+  br label %endif.291
+endif.291:
+  %t1004 = load ptr, ptr %s0
+  %t1005 = call ptr @zevic_sb_new()
+  call void @zevic_sb_add(ptr %t1005, ptr @.str.1001, i64 30)
+  %t1006 = load i64, ptr %s86
+  call void @zevic_i64_to_str(ptr %s100, i64 %t1006)
+  %t1007 = load { ptr, i64 }, ptr %s100
+  %t1008 = extractvalue { ptr, i64 } %t1007, 0
+  %t1009 = extractvalue { ptr, i64 } %t1007, 1
+  call void @zevic_sb_add(ptr %t1005, ptr %t1008, i64 %t1009)
+  call void @zevic_sb_add(ptr %t1005, ptr @.str.152, i64 6)
+  %t1010 = load { ptr, i64 }, ptr %s91
+  %t1011 = call { ptr, i64 } @"zevic_Zevic1_Expr_constPtr"({ ptr, i64 } %t1010)
+  %t1012 = extractvalue { ptr, i64 } %t1011, 0
+  %t1013 = extractvalue { ptr, i64 } %t1011, 1
+  call void @zevic_sb_add(ptr %t1005, ptr %t1012, i64 %t1013)
+  call void @zevic_sb_add(ptr %t1005, ptr @.str.342, i64 6)
+  %t1014 = load { ptr, i64 }, ptr %s96
+  %t1015 = extractvalue { ptr, i64 } %t1014, 0
+  %t1016 = extractvalue { ptr, i64 } %t1014, 1
+  call void @zevic_sb_add(ptr %t1005, ptr %t1015, i64 %t1016)
+  call void @zevic_sb_add(ptr %t1005, ptr @.str.290, i64 1)
+  call void @zevic_sb_finish(ptr %s101, ptr %t1005)
+  %t1017 = load { ptr, i64 }, ptr %s101
+  call void @"zevic_Zevic1_Ctx_FnCtx_Emit"(ptr %t1004, { ptr, i64 } %t1017)
+  br label %endif.288
+else.287:
+  %t1018 = load ptr, ptr %s90
+  %t1019 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t1018, i32 0, i32 2
+  %t1020 = load i8, ptr %t1019
+  %t1021 = call i1 @"zevic_Zevic1_Expr_isFloatConv"(i8 %t1020)
+  br i1 %t1021, label %then.295, label %else.296
+then.295:
+  %t1022 = load ptr, ptr %s95
+  %t1023 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t1022, i32 0, i32 1
+  %t1024 = load { ptr, i64 }, ptr %t1023
+  store { ptr, i64 } %t1024, ptr %s102
+  %t1025 = load ptr, ptr %s95
+  %t1026 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t1025, i32 0, i32 0
+  %t1027 = load ptr, ptr %t1026
+  %t1028 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t1027, i32 0, i32 5
+  %t1029 = load i32, ptr %t1028
+  %t1030 = load ptr, ptr %s3
+  %t1031 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t1030, i32 0, i32 2
+  %t1032 = load ptr, ptr %t1031
+  %t1033 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t1032, i32 0, i32 13
+  %t1034 = load ptr, ptr %t1033
+  %t1035 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t1034, i32 0, i32 5
+  %t1036 = load i32, ptr %t1035
+  %t1037 = icmp eq i32 %t1029, %t1036
+  br i1 %t1037, label %then.298, label %endif.300
+then.298:
+  %t1038 = load ptr, ptr %s0
+  %t1039 = call { ptr, i64 } @"zevic_Zevic1_Ctx_FnCtx_Tmp"(ptr %t1038)
+  store { ptr, i64 } %t1039, ptr %s102
+  %t1040 = load ptr, ptr %s0
+  %t1041 = call ptr @zevic_sb_new()
+  %t1042 = load { ptr, i64 }, ptr %s102
+  %t1043 = extractvalue { ptr, i64 } %t1042, 0
+  %t1044 = extractvalue { ptr, i64 } %t1042, 1
+  call void @zevic_sb_add(ptr %t1041, ptr %t1043, i64 %t1044)
+  call void @zevic_sb_add(ptr %t1041, ptr @.str.320, i64 15)
+  %t1045 = load ptr, ptr %s95
+  %t1046 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t1045, i32 0, i32 1
+  %t1047 = load { ptr, i64 }, ptr %t1046
+  %t1048 = extractvalue { ptr, i64 } %t1047, 0
+  %t1049 = extractvalue { ptr, i64 } %t1047, 1
+  call void @zevic_sb_add(ptr %t1041, ptr %t1048, i64 %t1049)
+  call void @zevic_sb_add(ptr %t1041, ptr @.str.321, i64 10)
+  call void @zevic_sb_finish(ptr %s103, ptr %t1041)
+  %t1050 = load { ptr, i64 }, ptr %s103
+  call void @"zevic_Zevic1_Ctx_FnCtx_Emit"(ptr %t1040, { ptr, i64 } %t1050)
+  br label %endif.300
+endif.300:
+  %t1051 = load ptr, ptr %s0
+  %t1052 = call ptr @zevic_sb_new()
+  call void @zevic_sb_add(ptr %t1052, ptr @.str.1002, i64 30)
+  %t1053 = load i64, ptr %s86
+  call void @zevic_i64_to_str(ptr %s104, i64 %t1053)
+  %t1054 = load { ptr, i64 }, ptr %s104
+  %t1055 = extractvalue { ptr, i64 } %t1054, 0
+  %t1056 = extractvalue { ptr, i64 } %t1054, 1
+  call void @zevic_sb_add(ptr %t1052, ptr %t1055, i64 %t1056)
+  call void @zevic_sb_add(ptr %t1052, ptr @.str.152, i64 6)
+  %t1057 = load { ptr, i64 }, ptr %s91
+  %t1058 = call { ptr, i64 } @"zevic_Zevic1_Expr_constPtr"({ ptr, i64 } %t1057)
+  %t1059 = extractvalue { ptr, i64 } %t1058, 0
+  %t1060 = extractvalue { ptr, i64 } %t1058, 1
+  call void @zevic_sb_add(ptr %t1052, ptr %t1059, i64 %t1060)
+  call void @zevic_sb_add(ptr %t1052, ptr @.str.1003, i64 9)
+  %t1061 = load { ptr, i64 }, ptr %s102
+  %t1062 = extractvalue { ptr, i64 } %t1061, 0
+  %t1063 = extractvalue { ptr, i64 } %t1061, 1
+  call void @zevic_sb_add(ptr %t1052, ptr %t1062, i64 %t1063)
+  call void @zevic_sb_add(ptr %t1052, ptr @.str.290, i64 1)
+  call void @zevic_sb_finish(ptr %s105, ptr %t1052)
+  %t1064 = load { ptr, i64 }, ptr %s105
+  call void @"zevic_Zevic1_Ctx_FnCtx_Emit"(ptr %t1051, { ptr, i64 } %t1064)
+  br label %endif.297
+else.296:
+  %t1065 = load ptr, ptr %s90
+  %t1066 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t1065, i32 0, i32 2
+  %t1067 = load i8, ptr %t1066
+  %t1068 = icmp eq i8 %t1067, 98
+  br i1 %t1068, label %then.301, label %else.302
+then.301:
+  %t1069 = load ptr, ptr %s3
+  %t1070 = call { ptr, i64 } @"zevic_Zevic1_Gen_StrConst"(ptr %t1069, { ptr, i64 } { ptr @.str.424, i64 4 })
+  store { ptr, i64 } %t1070, ptr %s106
+  %t1071 = load ptr, ptr %s3
+  %t1072 = call { ptr, i64 } @"zevic_Zevic1_Gen_StrConst"(ptr %t1071, { ptr, i64 } { ptr @.str.425, i64 5 })
+  store { ptr, i64 } %t1072, ptr %s107
+  %t1073 = load ptr, ptr %s0
+  %t1074 = call { ptr, i64 } @"zevic_Zevic1_Ctx_FnCtx_Tmp"(ptr %t1073)
+  store { ptr, i64 } %t1074, ptr %s108
+  %t1075 = load ptr, ptr %s0
+  %t1076 = call { ptr, i64 } @"zevic_Zevic1_Ctx_FnCtx_Tmp"(ptr %t1075)
+  store { ptr, i64 } %t1076, ptr %s109
+  %t1077 = load ptr, ptr %s0
+  %t1078 = call ptr @zevic_sb_new()
+  %t1079 = load { ptr, i64 }, ptr %s108
+  %t1080 = extractvalue { ptr, i64 } %t1079, 0
+  %t1081 = extractvalue { ptr, i64 } %t1079, 1
+  call void @zevic_sb_add(ptr %t1078, ptr %t1080, i64 %t1081)
+  call void @zevic_sb_add(ptr %t1078, ptr @.str.351, i64 13)
+  %t1082 = load ptr, ptr %s95
+  %t1083 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t1082, i32 0, i32 1
+  %t1084 = load { ptr, i64 }, ptr %t1083
+  %t1085 = extractvalue { ptr, i64 } %t1084, 0
+  %t1086 = extractvalue { ptr, i64 } %t1084, 1
+  call void @zevic_sb_add(ptr %t1078, ptr %t1085, i64 %t1086)
+  call void @zevic_sb_add(ptr %t1078, ptr @.str.152, i64 6)
+  %t1087 = load { ptr, i64 }, ptr %s106
+  %t1088 = call { ptr, i64 } @"zevic_Zevic1_Expr_constPtr"({ ptr, i64 } %t1087)
+  %t1089 = extractvalue { ptr, i64 } %t1088, 0
+  %t1090 = extractvalue { ptr, i64 } %t1088, 1
+  call void @zevic_sb_add(ptr %t1078, ptr %t1089, i64 %t1090)
+  call void @zevic_sb_add(ptr %t1078, ptr @.str.152, i64 6)
+  %t1091 = load { ptr, i64 }, ptr %s107
+  %t1092 = call { ptr, i64 } @"zevic_Zevic1_Expr_constPtr"({ ptr, i64 } %t1091)
+  %t1093 = extractvalue { ptr, i64 } %t1092, 0
+  %t1094 = extractvalue { ptr, i64 } %t1092, 1
+  call void @zevic_sb_add(ptr %t1078, ptr %t1093, i64 %t1094)
+  call void @zevic_sb_finish(ptr %s110, ptr %t1078)
+  %t1095 = load { ptr, i64 }, ptr %s110
+  call void @"zevic_Zevic1_Ctx_FnCtx_Emit"(ptr %t1077, { ptr, i64 } %t1095)
+  %t1096 = load ptr, ptr %s0
+  %t1097 = call ptr @zevic_sb_new()
+  %t1098 = load { ptr, i64 }, ptr %s109
+  %t1099 = extractvalue { ptr, i64 } %t1098, 0
+  %t1100 = extractvalue { ptr, i64 } %t1098, 1
+  call void @zevic_sb_add(ptr %t1097, ptr %t1099, i64 %t1100)
+  call void @zevic_sb_add(ptr %t1097, ptr @.str.351, i64 13)
+  %t1101 = load ptr, ptr %s95
+  %t1102 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t1101, i32 0, i32 1
+  %t1103 = load { ptr, i64 }, ptr %t1102
+  %t1104 = extractvalue { ptr, i64 } %t1103, 0
+  %t1105 = extractvalue { ptr, i64 } %t1103, 1
+  call void @zevic_sb_add(ptr %t1097, ptr %t1104, i64 %t1105)
+  call void @zevic_sb_add(ptr %t1097, ptr @.str.1004, i64 14)
+  call void @zevic_sb_finish(ptr %s111, ptr %t1097)
+  %t1106 = load { ptr, i64 }, ptr %s111
+  call void @"zevic_Zevic1_Ctx_FnCtx_Emit"(ptr %t1096, { ptr, i64 } %t1106)
+  %t1107 = load ptr, ptr %s0
+  %t1108 = call ptr @zevic_sb_new()
+  call void @zevic_sb_add(ptr %t1108, ptr @.str.1005, i64 30)
+  %t1109 = load i64, ptr %s86
+  call void @zevic_i64_to_str(ptr %s112, i64 %t1109)
+  %t1110 = load { ptr, i64 }, ptr %s112
+  %t1111 = extractvalue { ptr, i64 } %t1110, 0
+  %t1112 = extractvalue { ptr, i64 } %t1110, 1
+  call void @zevic_sb_add(ptr %t1108, ptr %t1111, i64 %t1112)
+  call void @zevic_sb_add(ptr %t1108, ptr @.str.152, i64 6)
+  %t1113 = load { ptr, i64 }, ptr %s91
+  %t1114 = call { ptr, i64 } @"zevic_Zevic1_Expr_constPtr"({ ptr, i64 } %t1113)
+  %t1115 = extractvalue { ptr, i64 } %t1114, 0
+  %t1116 = extractvalue { ptr, i64 } %t1114, 1
+  call void @zevic_sb_add(ptr %t1108, ptr %t1115, i64 %t1116)
+  call void @zevic_sb_add(ptr %t1108, ptr @.str.152, i64 6)
+  %t1117 = load { ptr, i64 }, ptr %s108
+  %t1118 = extractvalue { ptr, i64 } %t1117, 0
+  %t1119 = extractvalue { ptr, i64 } %t1117, 1
+  call void @zevic_sb_add(ptr %t1108, ptr %t1118, i64 %t1119)
+  call void @zevic_sb_add(ptr %t1108, ptr @.str.342, i64 6)
+  %t1120 = load { ptr, i64 }, ptr %s109
+  %t1121 = extractvalue { ptr, i64 } %t1120, 0
+  %t1122 = extractvalue { ptr, i64 } %t1120, 1
+  call void @zevic_sb_add(ptr %t1108, ptr %t1121, i64 %t1122)
+  call void @zevic_sb_add(ptr %t1108, ptr @.str.290, i64 1)
+  call void @zevic_sb_finish(ptr %s113, ptr %t1108)
+  %t1123 = load { ptr, i64 }, ptr %s113
+  call void @"zevic_Zevic1_Ctx_FnCtx_Emit"(ptr %t1107, { ptr, i64 } %t1123)
+  br label %endif.303
+else.302:
+  %t1124 = load ptr, ptr %s90
+  %t1125 = getelementptr inbounds { { ptr, i64 }, i1, i8, { ptr, i64 } }, ptr %t1124, i32 0, i32 2
+  %t1126 = load i8, ptr %t1125
+  %t1127 = icmp eq i8 %t1126, 115
+  br i1 %t1127, label %then.304, label %else.305
+then.304:
+  %t1128 = load ptr, ptr %s0
+  %t1129 = load ptr, ptr %s95
+  %t1130 = call { { ptr, i64 }, { ptr, i64 } } @"zevic_Zevic1_Expr_strParts"(ptr %t1128, ptr %t1129)
+  %t1131 = extractvalue { { ptr, i64 }, { ptr, i64 } } %t1130, 0
+  store { ptr, i64 } %t1131, ptr %s114
+  %t1132 = extractvalue { { ptr, i64 }, { ptr, i64 } } %t1130, 1
+  store { ptr, i64 } %t1132, ptr %s115
+  %t1133 = load ptr, ptr %s0
+  %t1134 = call ptr @zevic_sb_new()
+  call void @zevic_sb_add(ptr %t1134, ptr @.str.1005, i64 30)
+  %t1135 = load i64, ptr %s86
+  call void @zevic_i64_to_str(ptr %s116, i64 %t1135)
+  %t1136 = load { ptr, i64 }, ptr %s116
+  %t1137 = extractvalue { ptr, i64 } %t1136, 0
+  %t1138 = extractvalue { ptr, i64 } %t1136, 1
+  call void @zevic_sb_add(ptr %t1134, ptr %t1137, i64 %t1138)
+  call void @zevic_sb_add(ptr %t1134, ptr @.str.152, i64 6)
+  %t1139 = load { ptr, i64 }, ptr %s91
+  %t1140 = call { ptr, i64 } @"zevic_Zevic1_Expr_constPtr"({ ptr, i64 } %t1139)
+  %t1141 = extractvalue { ptr, i64 } %t1140, 0
+  %t1142 = extractvalue { ptr, i64 } %t1140, 1
+  call void @zevic_sb_add(ptr %t1134, ptr %t1141, i64 %t1142)
+  call void @zevic_sb_add(ptr %t1134, ptr @.str.152, i64 6)
+  %t1143 = load { ptr, i64 }, ptr %s114
+  %t1144 = extractvalue { ptr, i64 } %t1143, 0
+  %t1145 = extractvalue { ptr, i64 } %t1143, 1
+  call void @zevic_sb_add(ptr %t1134, ptr %t1144, i64 %t1145)
+  call void @zevic_sb_add(ptr %t1134, ptr @.str.342, i64 6)
+  %t1146 = load { ptr, i64 }, ptr %s115
+  %t1147 = extractvalue { ptr, i64 } %t1146, 0
+  %t1148 = extractvalue { ptr, i64 } %t1146, 1
+  call void @zevic_sb_add(ptr %t1134, ptr %t1147, i64 %t1148)
+  call void @zevic_sb_add(ptr %t1134, ptr @.str.290, i64 1)
+  call void @zevic_sb_finish(ptr %s117, ptr %t1134)
+  %t1149 = load { ptr, i64 }, ptr %s117
+  call void @"zevic_Zevic1_Ctx_FnCtx_Emit"(ptr %t1133, { ptr, i64 } %t1149)
+  br label %endif.306
+else.305:
+  %t1150 = load ptr, ptr %s0
+  %t1151 = call ptr @zevic_sb_new()
+  call void @zevic_sb_add(ptr %t1151, ptr @.str.1006, i64 30)
+  %t1152 = load i64, ptr %s86
+  call void @zevic_i64_to_str(ptr %s118, i64 %t1152)
+  %t1153 = load { ptr, i64 }, ptr %s118
+  %t1154 = extractvalue { ptr, i64 } %t1153, 0
+  %t1155 = extractvalue { ptr, i64 } %t1153, 1
+  call void @zevic_sb_add(ptr %t1151, ptr %t1154, i64 %t1155)
+  call void @zevic_sb_add(ptr %t1151, ptr @.str.152, i64 6)
+  %t1156 = load { ptr, i64 }, ptr %s91
+  %t1157 = call { ptr, i64 } @"zevic_Zevic1_Expr_constPtr"({ ptr, i64 } %t1156)
+  %t1158 = extractvalue { ptr, i64 } %t1157, 0
+  %t1159 = extractvalue { ptr, i64 } %t1157, 1
+  call void @zevic_sb_add(ptr %t1151, ptr %t1158, i64 %t1159)
+  call void @zevic_sb_add(ptr %t1151, ptr @.str.343, i64 6)
+  %t1160 = load ptr, ptr %s95
+  %t1161 = getelementptr inbounds { ptr, { ptr, i64 } }, ptr %t1160, i32 0, i32 1
+  %t1162 = load { ptr, i64 }, ptr %t1161
+  %t1163 = extractvalue { ptr, i64 } %t1162, 0
+  %t1164 = extractvalue { ptr, i64 } %t1162, 1
+  call void @zevic_sb_add(ptr %t1151, ptr %t1163, i64 %t1164)
+  call void @zevic_sb_add(ptr %t1151, ptr @.str.290, i64 1)
+  call void @zevic_sb_finish(ptr %s119, ptr %t1151)
+  %t1165 = load { ptr, i64 }, ptr %s119
+  call void @"zevic_Zevic1_Ctx_FnCtx_Emit"(ptr %t1150, { ptr, i64 } %t1165)
+  br label %endif.306
+endif.306:
+  br label %endif.303
+endif.303:
+  br label %endif.297
+endif.297:
+  br label %endif.288
+endif.288:
+  br label %for.cond.265
+for.end.267:
+  %t1166 = load i64, ptr %s2
+  %t1167 = icmp eq i64 %t1166, 2
+  br i1 %t1167, label %then.307, label %endif.309
+then.307:
+  %t1168 = load ptr, ptr %s0
+  %t1169 = load ptr, ptr %s3
+  %t1170 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t1169, i32 0, i32 2
+  %t1171 = load ptr, ptr %t1170
+  %t1172 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t1171, i32 0, i32 17
+  %t1173 = load ptr, ptr %t1172
+  %t1174 = call { ptr, i64 } @"zevic_Zevic1_Ctx_FnCtx_NewSlot"(ptr %t1168, ptr %t1173)
+  store { ptr, i64 } %t1174, ptr %s120
+  %t1175 = load ptr, ptr %s0
+  %t1176 = call ptr @zevic_sb_new()
+  call void @zevic_sb_add(ptr %t1176, ptr @.str.1007, i64 29)
+  %t1177 = load { ptr, i64 }, ptr %s120
+  %t1178 = extractvalue { ptr, i64 } %t1177, 0
+  %t1179 = extractvalue { ptr, i64 } %t1177, 1
+  call void @zevic_sb_add(ptr %t1176, ptr %t1178, i64 %t1179)
+  call void @zevic_sb_add(ptr %t1176, ptr @.str.290, i64 1)
+  call void @zevic_sb_finish(ptr %s121, ptr %t1176)
+  %t1180 = load { ptr, i64 }, ptr %s121
+  call void @"zevic_Zevic1_Ctx_FnCtx_Emit"(ptr %t1175, { ptr, i64 } %t1180)
+  %t1181 = load ptr, ptr %s0
+  %t1182 = call { ptr, i64 } @"zevic_Zevic1_Ctx_FnCtx_Tmp"(ptr %t1181)
+  store { ptr, i64 } %t1182, ptr %s122
+  %t1183 = load ptr, ptr %s0
+  %t1184 = call ptr @zevic_sb_new()
+  %t1185 = load { ptr, i64 }, ptr %s122
+  %t1186 = extractvalue { ptr, i64 } %t1185, 0
+  %t1187 = extractvalue { ptr, i64 } %t1185, 1
+  call void @zevic_sb_add(ptr %t1184, ptr %t1186, i64 %t1187)
+  call void @zevic_sb_add(ptr %t1184, ptr @.str.309, i64 26)
+  %t1188 = load { ptr, i64 }, ptr %s120
+  %t1189 = extractvalue { ptr, i64 } %t1188, 0
+  %t1190 = extractvalue { ptr, i64 } %t1188, 1
+  call void @zevic_sb_add(ptr %t1184, ptr %t1189, i64 %t1190)
+  call void @zevic_sb_finish(ptr %s123, ptr %t1184)
+  %t1191 = load { ptr, i64 }, ptr %s123
+  call void @"zevic_Zevic1_Ctx_FnCtx_Emit"(ptr %t1183, { ptr, i64 } %t1191)
+  %t1192 = call ptr @zevic_alloc(i64 24)
+  %t1193 = load ptr, ptr %s3
+  %t1194 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t1193, i32 0, i32 2
+  %t1195 = load ptr, ptr %t1194
+  %t1196 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t1195, i32 0, i32 17
+  %t1197 = load ptr, ptr %t1196
+  %t1198 = load { ptr, i64 }, ptr %s122
+  call void @"zevic_Zevic1_Ctx_Val_Init"(ptr %t1192, ptr %t1197, { ptr, i64 } %t1198)
+  ret ptr %t1192
+endif.309:
+  %t1199 = load ptr, ptr %s0
+  %t1200 = call ptr @"zevic_Zevic1_Ctx_FnCtx_UnitVal"(ptr %t1199)
+  ret ptr %t1200
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5877)
-  unreachable
-panic.20:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.281, i32 5889)
-  unreachable
-panic.25:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5891)
-  unreachable
-panic.27:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.281, i32 5891)
-  unreachable
-panic.29:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5892)
-  unreachable
-panic.31:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5895)
-  unreachable
-panic.35:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5895)
-  unreachable
-panic.37:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.281, i32 5895)
-  unreachable
-panic.42:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5897)
-  unreachable
-panic.47:
   call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5906)
   unreachable
-panic.54:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.281, i32 5910)
+panic.20:
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.281, i32 5918)
   unreachable
-panic.56:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5911)
+panic.25:
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5920)
   unreachable
-panic.58:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.281, i32 5911)
+panic.27:
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.281, i32 5920)
   unreachable
-panic.60:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5912)
-  unreachable
-panic.67:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.281, i32 5914)
-  unreachable
-panic.71:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.281, i32 5914)
-  unreachable
-panic.73:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5915)
-  unreachable
-panic.75:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.281, i32 5915)
-  unreachable
-panic.77:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5916)
-  unreachable
-panic.81:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.281, i32 5919)
-  unreachable
-panic.86:
+panic.29:
   call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5921)
   unreachable
-panic.93:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.281, i32 5922)
-  unreachable
-panic.97:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.281, i32 5922)
-  unreachable
-panic.99:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5923)
-  unreachable
-panic.101:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.281, i32 5923)
-  unreachable
-panic.103:
+panic.31:
   call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5924)
   unreachable
-panic.107:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.281, i32 5927)
+panic.35:
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5924)
   unreachable
-panic.112:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.281, i32 5931)
+panic.37:
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.281, i32 5924)
   unreachable
-panic.117:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.281, i32 5931)
+panic.42:
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5926)
   unreachable
-panic.139:
+panic.47:
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5935)
+  unreachable
+panic.54:
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.281, i32 5939)
+  unreachable
+panic.56:
   call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5940)
   unreachable
-panic.147:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5948)
+panic.58:
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.281, i32 5940)
   unreachable
-panic.152:
+panic.60:
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5941)
+  unreachable
+panic.67:
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.281, i32 5943)
+  unreachable
+panic.71:
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.281, i32 5943)
+  unreachable
+panic.73:
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5944)
+  unreachable
+panic.75:
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.281, i32 5944)
+  unreachable
+panic.77:
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5945)
+  unreachable
+panic.81:
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.281, i32 5948)
+  unreachable
+panic.86:
   call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5950)
   unreachable
-panic.154:
+panic.93:
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.281, i32 5951)
+  unreachable
+panic.97:
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.281, i32 5951)
+  unreachable
+panic.99:
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5952)
+  unreachable
+panic.101:
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.281, i32 5952)
+  unreachable
+panic.103:
   call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5953)
   unreachable
-panic.159:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5954)
+panic.107:
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.281, i32 5956)
   unreachable
-panic.164:
+panic.112:
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5958)
+  unreachable
+panic.119:
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.281, i32 5959)
+  unreachable
+panic.121:
   call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5960)
   unreachable
-panic.169:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5965)
+panic.126:
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5966)
   unreachable
-panic.214:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6004)
+panic.128:
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.281, i32 5966)
   unreachable
-panic.219:
+panic.149:
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5981)
+  unreachable
+panic.153:
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.281, i32 5984)
+  unreachable
+panic.158:
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.281, i32 5988)
+  unreachable
+panic.163:
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.281, i32 5988)
+  unreachable
+panic.185:
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 5997)
+  unreachable
+panic.193:
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6005)
+  unreachable
+panic.198:
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6007)
+  unreachable
+panic.200:
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6010)
+  unreachable
+panic.205:
   call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6011)
+  unreachable
+panic.210:
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6017)
+  unreachable
+panic.215:
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6022)
+  unreachable
+panic.269:
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6065)
+  unreachable
+panic.274:
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6072)
   unreachable
 }
 
@@ -61715,14 +62576,14 @@ then.0:
   %t13 = load ptr, ptr %t12
   %t14 = load { i32, i32, i32 }, ptr %s2
   %t15 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t15, ptr @.str.991, i64 22)
+  call void @zevic_sb_add(ptr %t15, ptr @.str.1008, i64 22)
   %t16 = load ptr, ptr %s1
   %t17 = getelementptr inbounds { ptr, { ptr, i64 }, { ptr, i64 }, i1, i1, { ptr, i64 }, { ptr, i64 }, i1, { i32, [1 x i64] }, { i32, [1 x i64] } }, ptr %t16, i32 0, i32 1
   %t18 = load { ptr, i64 }, ptr %t17
   %t19 = extractvalue { ptr, i64 } %t18, 0
   %t20 = extractvalue { ptr, i64 } %t18, 1
   call void @zevic_sb_add(ptr %t15, ptr %t19, i64 %t20)
-  call void @zevic_sb_add(ptr %t15, ptr @.str.992, i64 61)
+  call void @zevic_sb_add(ptr %t15, ptr @.str.1009, i64 61)
   call void @zevic_sb_finish(ptr %s5, ptr %t15)
   %t21 = load { ptr, i64 }, ptr %s5
   call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t13, { i32, i32, i32 } %t14, { ptr, i64 } %t21)
@@ -61744,21 +62605,21 @@ then.3:
   %t33 = load ptr, ptr %t32
   %t34 = load { i32, i32, i32 }, ptr %s2
   %t35 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t35, ptr @.str.993, i64 4)
+  call void @zevic_sb_add(ptr %t35, ptr @.str.1010, i64 4)
   %t36 = load ptr, ptr %s1
   %t37 = getelementptr inbounds { ptr, { ptr, i64 }, { ptr, i64 }, i1, i1, { ptr, i64 }, { ptr, i64 }, i1, { i32, [1 x i64] }, { i32, [1 x i64] } }, ptr %t36, i32 0, i32 2
   %t38 = load { ptr, i64 }, ptr %t37
   %t39 = extractvalue { ptr, i64 } %t38, 0
   %t40 = extractvalue { ptr, i64 } %t38, 1
   call void @zevic_sb_add(ptr %t35, ptr %t39, i64 %t40)
-  call void @zevic_sb_add(ptr %t35, ptr @.str.994, i64 11)
+  call void @zevic_sb_add(ptr %t35, ptr @.str.1011, i64 11)
   %t41 = load ptr, ptr %s1
   %t42 = getelementptr inbounds { ptr, { ptr, i64 }, { ptr, i64 }, i1, i1, { ptr, i64 }, { ptr, i64 }, i1, { i32, [1 x i64] }, { i32, [1 x i64] } }, ptr %t41, i32 0, i32 1
   %t43 = load { ptr, i64 }, ptr %t42
   %t44 = extractvalue { ptr, i64 } %t43, 0
   %t45 = extractvalue { ptr, i64 } %t43, 1
   call void @zevic_sb_add(ptr %t35, ptr %t44, i64 %t45)
-  call void @zevic_sb_add(ptr %t35, ptr @.str.995, i64 62)
+  call void @zevic_sb_add(ptr %t35, ptr @.str.1012, i64 62)
   call void @zevic_sb_finish(ptr %s6, ptr %t35)
   %t46 = load { ptr, i64 }, ptr %s6
   call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t33, { i32, i32, i32 } %t34, { ptr, i64 } %t46)
@@ -61834,7 +62695,7 @@ endif.16:
   %t91 = call ptr @"zevic_Zevic1_Types_TypeTable_Fn"(ptr %t84, ptr %t87, ptr %t90)
   store ptr %t91, ptr %s13
   %t92 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t92, ptr @.str.996, i64 6)
+  call void @zevic_sb_add(ptr %t92, ptr @.str.1013, i64 6)
   %t93 = load ptr, ptr %s9
   %t94 = getelementptr inbounds { ptr, { i32, [1 x i64] }, ptr, { ptr, i64 }, ptr, ptr, i1, i1, i1, i1 }, ptr %t93, i32 0, i32 3
   %t95 = load { ptr, i64 }, ptr %t94
@@ -62011,7 +62872,7 @@ then.33:
   %t211 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t210, i32 0, i32 13
   %t212 = load ptr, ptr %t211
   %t213 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t213, ptr @.str.997, i64 7)
+  call void @zevic_sb_add(ptr %t213, ptr @.str.1014, i64 7)
   %t214 = load { ptr, i64 }, ptr %s25
   %t215 = extractvalue { ptr, i64 } %t214, 0
   %t216 = extractvalue { ptr, i64 } %t214, 1
@@ -62021,7 +62882,7 @@ then.33:
   %t218 = extractvalue { ptr, i64 } %t217, 0
   %t219 = extractvalue { ptr, i64 } %t217, 1
   call void @zevic_sb_add(ptr %t213, ptr %t218, i64 %t219)
-  call void @zevic_sb_add(ptr %t213, ptr @.str.998, i64 10)
+  call void @zevic_sb_add(ptr %t213, ptr @.str.1015, i64 10)
   %t220 = load { ptr, i64 }, ptr %s17
   %t221 = extractvalue { ptr, i64 } %t220, 0
   %t222 = extractvalue { ptr, i64 } %t220, 1
@@ -62038,7 +62899,7 @@ then.33:
   %t229 = extractvalue { ptr, i64 } %t228, 0
   %t230 = extractvalue { ptr, i64 } %t228, 1
   call void @zevic_sb_add(ptr %t213, ptr %t229, i64 %t230)
-  call void @zevic_sb_add(ptr %t213, ptr @.str.999, i64 19)
+  call void @zevic_sb_add(ptr %t213, ptr @.str.1016, i64 19)
   call void @zevic_sb_finish(ptr %s26, ptr %t213)
   %t231 = load { ptr, i64 }, ptr %s26
   call void @"zevic_Zevic1_Gen_Sb_Put"(ptr %t212, { ptr, i64 } %t231)
@@ -62051,7 +62912,7 @@ then.36:
   %t234 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t233, i32 0, i32 13
   %t235 = load ptr, ptr %t234
   %t236 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t236, ptr @.str.997, i64 7)
+  call void @zevic_sb_add(ptr %t236, ptr @.str.1014, i64 7)
   %t237 = load { ptr, i64 }, ptr %s25
   %t238 = extractvalue { ptr, i64 } %t237, 0
   %t239 = extractvalue { ptr, i64 } %t237, 1
@@ -62061,7 +62922,7 @@ then.36:
   %t241 = extractvalue { ptr, i64 } %t240, 0
   %t242 = extractvalue { ptr, i64 } %t240, 1
   call void @zevic_sb_add(ptr %t236, ptr %t241, i64 %t242)
-  call void @zevic_sb_add(ptr %t236, ptr @.str.998, i64 10)
+  call void @zevic_sb_add(ptr %t236, ptr @.str.1015, i64 10)
   %t243 = load { ptr, i64 }, ptr %s17
   %t244 = extractvalue { ptr, i64 } %t243, 0
   %t245 = extractvalue { ptr, i64 } %t243, 1
@@ -62088,7 +62949,7 @@ else.37:
   %t256 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t255, i32 0, i32 13
   %t257 = load ptr, ptr %t256
   %t258 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t258, ptr @.str.997, i64 7)
+  call void @zevic_sb_add(ptr %t258, ptr @.str.1014, i64 7)
   %t259 = load { ptr, i64 }, ptr %s25
   %t260 = extractvalue { ptr, i64 } %t259, 0
   %t261 = extractvalue { ptr, i64 } %t259, 1
@@ -62098,7 +62959,7 @@ else.37:
   %t263 = extractvalue { ptr, i64 } %t262, 0
   %t264 = extractvalue { ptr, i64 } %t262, 1
   call void @zevic_sb_add(ptr %t258, ptr %t263, i64 %t264)
-  call void @zevic_sb_add(ptr %t258, ptr @.str.998, i64 10)
+  call void @zevic_sb_add(ptr %t258, ptr @.str.1015, i64 10)
   %t265 = load { ptr, i64 }, ptr %s17
   %t266 = extractvalue { ptr, i64 } %t265, 0
   %t267 = extractvalue { ptr, i64 } %t265, 1
@@ -62138,7 +62999,7 @@ endif.19:
   %t283 = call ptr @zevic_alloc(i64 24)
   %t284 = load ptr, ptr %s13
   %t285 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t285, ptr @.str.1000, i64 8)
+  call void @zevic_sb_add(ptr %t285, ptr @.str.1017, i64 8)
   %t286 = load { ptr, i64 }, ptr %s15
   %t287 = extractvalue { ptr, i64 } %t286, 0
   %t288 = extractvalue { ptr, i64 } %t286, 1
@@ -62149,10 +63010,10 @@ endif.19:
   call void @"zevic_Zevic1_Ctx_Val_Init"(ptr %t283, ptr %t284, { ptr, i64 } %t289)
   ret ptr %t283
 panic.10:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6062)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6131)
   unreachable
 panic.27:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6080)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6149)
   unreachable
 }
 
@@ -62368,7 +63229,7 @@ then.11:
   %t54 = load ptr, ptr %t53
   %t55 = load { i32, i32, i32 }, ptr %s4
   %t56 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t56, ptr @.str.1001, i64 18)
+  call void @zevic_sb_add(ptr %t56, ptr @.str.1018, i64 18)
   %t57 = load ptr, ptr %s1
   %t58 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t57, i32 0, i32 20
   %t59 = load ptr, ptr %t58
@@ -62378,7 +63239,7 @@ then.11:
   %t62 = extractvalue { ptr, i64 } %t61, 0
   %t63 = extractvalue { ptr, i64 } %t61, 1
   call void @zevic_sb_add(ptr %t56, ptr %t62, i64 %t63)
-  call void @zevic_sb_add(ptr %t56, ptr @.str.1002, i64 35)
+  call void @zevic_sb_add(ptr %t56, ptr @.str.1019, i64 35)
   %t64 = load ptr, ptr %s12
   %t65 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t64, i32 0, i32 2
   %t66 = load ptr, ptr %t65
@@ -62388,7 +63249,7 @@ then.11:
   %t69 = extractvalue { ptr, i64 } %t68, 0
   %t70 = extractvalue { ptr, i64 } %t68, 1
   call void @zevic_sb_add(ptr %t56, ptr %t69, i64 %t70)
-  call void @zevic_sb_add(ptr %t56, ptr @.str.1003, i64 12)
+  call void @zevic_sb_add(ptr %t56, ptr @.str.1020, i64 12)
   call void @zevic_sb_finish(ptr %s15, ptr %t56)
   %t71 = load { ptr, i64 }, ptr %s15
   call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t54, { i32, i32, i32 } %t55, { ptr, i64 } %t71)
@@ -62501,21 +63362,21 @@ pat.tag.28:
   %t141 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t140, i32 0, i32 1
   %t142 = load { i32, i32, i32 }, ptr %t141
   %t143 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t143, ptr @.str.1004, i64 34)
+  call void @zevic_sb_add(ptr %t143, ptr @.str.1021, i64 34)
   %t144 = load ptr, ptr %s18
   %t145 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t144, i32 0, i32 3
   %t146 = load { ptr, i64 }, ptr %t145
   %t147 = extractvalue { ptr, i64 } %t146, 0
   %t148 = extractvalue { ptr, i64 } %t146, 1
   call void @zevic_sb_add(ptr %t143, ptr %t147, i64 %t148)
-  call void @zevic_sb_add(ptr %t143, ptr @.str.1005, i64 34)
+  call void @zevic_sb_add(ptr %t143, ptr @.str.1022, i64 34)
   %t149 = load ptr, ptr %s18
   %t150 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t149, i32 0, i32 3
   %t151 = load { ptr, i64 }, ptr %t150
   %t152 = extractvalue { ptr, i64 } %t151, 0
   %t153 = extractvalue { ptr, i64 } %t151, 1
   call void @zevic_sb_add(ptr %t143, ptr %t152, i64 %t153)
-  call void @zevic_sb_add(ptr %t143, ptr @.str.1006, i64 7)
+  call void @zevic_sb_add(ptr %t143, ptr @.str.1023, i64 7)
   call void @zevic_sb_finish(ptr %s22, ptr %t143)
   %t154 = load { ptr, i64 }, ptr %s22
   call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t139, { i32, i32, i32 } %t142, { ptr, i64 } %t154)
@@ -62573,7 +63434,7 @@ then.35:
   %t188 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t187, i32 0, i32 1
   %t189 = load { i32, i32, i32 }, ptr %t188
   %t190 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t190, ptr @.str.1007, i64 11)
+  call void @zevic_sb_add(ptr %t190, ptr @.str.1024, i64 11)
   %t191 = load ptr, ptr %s18
   %t192 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t191, i32 0, i32 3
   %t193 = load { ptr, i64 }, ptr %t192
@@ -62587,7 +63448,7 @@ then.35:
   %t199 = extractvalue { ptr, i64 } %t198, 0
   %t200 = extractvalue { ptr, i64 } %t198, 1
   call void @zevic_sb_add(ptr %t190, ptr %t199, i64 %t200)
-  call void @zevic_sb_add(ptr %t190, ptr @.str.1008, i64 8)
+  call void @zevic_sb_add(ptr %t190, ptr @.str.1025, i64 8)
   %t201 = load ptr, ptr %s23
   %t202 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t201, i32 0, i32 2
   %t203 = load ptr, ptr %s23
@@ -62602,7 +63463,7 @@ then.35:
   %t211 = extractvalue { ptr, i64 } %t210, 0
   %t212 = extractvalue { ptr, i64 } %t210, 1
   call void @zevic_sb_add(ptr %t190, ptr %t211, i64 %t212)
-  call void @zevic_sb_add(ptr %t190, ptr @.str.1009, i64 18)
+  call void @zevic_sb_add(ptr %t190, ptr @.str.1026, i64 18)
   call void @zevic_sb_finish(ptr %s26, ptr %t190)
   %t213 = load { ptr, i64 }, ptr %s26
   call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t186, { i32, i32, i32 } %t189, { ptr, i64 } %t213)
@@ -62847,14 +63708,14 @@ then.65:
   %t360 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t359, i32 0, i32 1
   %t361 = load { i32, i32, i32 }, ptr %t360
   %t362 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t362, ptr @.str.1010, i64 48)
+  call void @zevic_sb_add(ptr %t362, ptr @.str.1027, i64 48)
   %t363 = load ptr, ptr %s39
   %t364 = getelementptr inbounds { { ptr, i64 }, ptr, i1, { ptr, i64 }, { i32, i32, i32 } }, ptr %t363, i32 0, i32 0
   %t365 = load { ptr, i64 }, ptr %t364
   %t366 = extractvalue { ptr, i64 } %t365, 0
   %t367 = extractvalue { ptr, i64 } %t365, 1
   call void @zevic_sb_add(ptr %t362, ptr %t366, i64 %t367)
-  call void @zevic_sb_add(ptr %t362, ptr @.str.1011, i64 138)
+  call void @zevic_sb_add(ptr %t362, ptr @.str.1028, i64 138)
   call void @zevic_sb_finish(ptr %s43, ptr %t362)
   %t368 = load { ptr, i64 }, ptr %s43
   call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t358, { i32, i32, i32 } %t361, { ptr, i64 } %t368)
@@ -63116,7 +63977,7 @@ match.end.80:
   store ptr %t523, ptr %t520
   %t524 = load ptr, ptr %s51
   %t525 = getelementptr inbounds { ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, i64, i64, { i32, [1 x i64] }, { ptr, i64 }, { ptr, i64 }, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, i1, { ptr, i64 }, { i32, [1 x i64] }, i1, ptr }, ptr %t524, i32 0, i32 12
-  store { ptr, i64 } { ptr @.str.1012, i64 5 }, ptr %t525
+  store { ptr, i64 } { ptr @.str.1029, i64 5 }, ptr %t525
   %t526 = load ptr, ptr %s1
   %t527 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t526, i32 0, i32 17
   %t528 = load { i32, [1 x i64] }, ptr %t527
@@ -63142,7 +64003,7 @@ then.85:
   %t541 = extractvalue { ptr, i64 } %t540, 0
   %t542 = extractvalue { ptr, i64 } %t540, 1
   call void @zevic_sb_add(ptr %t539, ptr %t541, i64 %t542)
-  call void @zevic_sb_add(ptr %t539, ptr @.str.1013, i64 45)
+  call void @zevic_sb_add(ptr %t539, ptr @.str.1030, i64 45)
   %t543 = load i64, ptr %s52
   call void @zevic_i64_to_str(ptr %s55, i64 %t543)
   %t544 = load { ptr, i64 }, ptr %s55
@@ -63274,7 +64135,7 @@ ok.96:
   %t625 = extractvalue { ptr, i64 } %t624, 0
   %t626 = extractvalue { ptr, i64 } %t624, 1
   call void @zevic_sb_add(ptr %t623, ptr %t625, i64 %t626)
-  call void @zevic_sb_add(ptr %t623, ptr @.str.1013, i64 45)
+  call void @zevic_sb_add(ptr %t623, ptr @.str.1030, i64 45)
   %t627 = load i64, ptr %s52
   call void @zevic_i64_to_str(ptr %s68, i64 %t627)
   %t628 = load { ptr, i64 }, ptr %s68
@@ -63323,7 +64184,7 @@ ok.98:
   store ptr %t659, ptr %s71
   br label %for.cond.93
 for.end.95:
-  store { ptr, i64 } { ptr @.str.1014, i64 8 }, ptr %s72
+  store { ptr, i64 } { ptr @.str.1031, i64 8 }, ptr %s72
   store i64 0, ptr %s73
   br label %while.cond.100
 while.cond.100:
@@ -63395,7 +64256,7 @@ then.103:
   %t710 = call ptr @zevic_alloc(i64 24)
   %t711 = load ptr, ptr %s75
   %t712 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t712, ptr @.str.1015, i64 2)
+  call void @zevic_sb_add(ptr %t712, ptr @.str.1032, i64 2)
   %t713 = load i64, ptr %s73
   call void @zevic_i64_to_str(ptr %s79, i64 %t713)
   %t714 = load { ptr, i64 }, ptr %s79
@@ -63569,7 +64430,7 @@ else.128:
   %t827 = load { i32, i32, i32 }, ptr %t826
   %t828 = load ptr, ptr %s85
   %t829 = load ptr, ptr %s87
-  %t830 = call ptr @"zevic_Zevic1_Expr_coerce"(ptr %t824, { i32, i32, i32 } %t827, ptr %t828, ptr %t829, { ptr, i64 } { ptr @.str.1016, i64 24 })
+  %t830 = call ptr @"zevic_Zevic1_Expr_coerce"(ptr %t824, { i32, i32, i32 } %t827, ptr %t828, ptr %t829, { ptr, i64 } { ptr @.str.1033, i64 24 })
   store ptr %t830, ptr %s85
   %t831 = load ptr, ptr %s3
   %t832 = load ptr, ptr %s85
@@ -63613,7 +64474,7 @@ endif.126:
   br label %endif.123
 endif.123:
   %t852 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t852, ptr @.str.1017, i64 7)
+  call void @zevic_sb_add(ptr %t852, ptr @.str.1034, i64 7)
   %t853 = load ptr, ptr %s3
   %t854 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t853, i32 0, i32 19
   %t855 = load i64, ptr %t854
@@ -63676,7 +64537,7 @@ endif.139:
   %t894 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t893, i32 0, i32 13
   %t895 = load ptr, ptr %t894
   %t896 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t896, ptr @.str.997, i64 7)
+  call void @zevic_sb_add(ptr %t896, ptr @.str.1014, i64 7)
   %t897 = load { ptr, i64 }, ptr %s92
   %t898 = extractvalue { ptr, i64 } %t897, 0
   %t899 = extractvalue { ptr, i64 } %t897, 1
@@ -63691,7 +64552,7 @@ endif.139:
   %t904 = extractvalue { ptr, i64 } %t903, 0
   %t905 = extractvalue { ptr, i64 } %t903, 1
   call void @zevic_sb_add(ptr %t896, ptr %t904, i64 %t905)
-  call void @zevic_sb_add(ptr %t896, ptr @.str.1018, i64 11)
+  call void @zevic_sb_add(ptr %t896, ptr @.str.1035, i64 11)
   %t906 = load ptr, ptr %s51
   %t907 = getelementptr inbounds { ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, i64, i64, { i32, [1 x i64] }, { ptr, i64 }, { ptr, i64 }, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, i1, { ptr, i64 }, { i32, [1 x i64] }, i1, ptr }, ptr %t906, i32 0, i32 5
   %t908 = load ptr, ptr %t907
@@ -63713,7 +64574,7 @@ endif.139:
   %t922 = extractvalue { ptr, i64 } %t921, 0
   %t923 = extractvalue { ptr, i64 } %t921, 1
   call void @zevic_sb_add(ptr %t896, ptr %t922, i64 %t923)
-  call void @zevic_sb_add(ptr %t896, ptr @.str.1019, i64 3)
+  call void @zevic_sb_add(ptr %t896, ptr @.str.1036, i64 3)
   call void @zevic_sb_finish(ptr %s93, ptr %t896)
   %t924 = load { ptr, i64 }, ptr %s93
   call void @"zevic_Zevic1_Gen_Sb_Put"(ptr %t895, { ptr, i64 } %t924)
@@ -63937,12 +64798,12 @@ endif.142:
   %t1056 = extractvalue { ptr, i64 } %t1055, 0
   %t1057 = extractvalue { ptr, i64 } %t1055, 1
   call void @zevic_sb_add(ptr %t1054, ptr %t1056, i64 %t1057)
-  call void @zevic_sb_add(ptr %t1054, ptr @.str.1020, i64 41)
+  call void @zevic_sb_add(ptr %t1054, ptr @.str.1037, i64 41)
   %t1058 = load { ptr, i64 }, ptr %s91
   %t1059 = extractvalue { ptr, i64 } %t1058, 0
   %t1060 = extractvalue { ptr, i64 } %t1058, 1
   call void @zevic_sb_add(ptr %t1054, ptr %t1059, i64 %t1060)
-  call void @zevic_sb_add(ptr %t1054, ptr @.str.1021, i64 4)
+  call void @zevic_sb_add(ptr %t1054, ptr @.str.1038, i64 4)
   call void @zevic_sb_finish(ptr %s118, ptr %t1054)
   %t1061 = load { ptr, i64 }, ptr %s118
   call void @"zevic_Zevic1_Ctx_FnCtx_Emit"(ptr %t1053, { ptr, i64 } %t1061)
@@ -64002,43 +64863,43 @@ endif.162:
   call void @"zevic_Zevic1_Ctx_Val_Init"(ptr %t1095, ptr %t1096, { ptr, i64 } %t1097)
   ret ptr %t1095
 panic.41:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6147)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6216)
   unreachable
 panic.46:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6154)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6223)
   unreachable
 panic.51:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6156)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6225)
   unreachable
 panic.79:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6179)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6248)
   unreachable
 panic.89:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6196)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6265)
   unreachable
 panic.97:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6208)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6277)
   unreachable
 panic.99:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6212)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6281)
   unreachable
 panic.107:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6226)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6295)
   unreachable
 panic.134:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6250)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6319)
   unreachable
 panic.144:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6259)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6328)
   unreachable
 panic.152:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6269)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6338)
   unreachable
 panic.157:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6272)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6341)
   unreachable
 panic.159:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6275)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6344)
   unreachable
 }
 
@@ -64522,7 +65383,7 @@ entry:
   %s2 = alloca i64, align 8
   %s3 = alloca { ptr, i64 }, align 8
   store i8 %p0, ptr %s0
-  store { ptr, i64 } { ptr @.str.956, i64 14 }, ptr %s1
+  store { ptr, i64 } { ptr @.str.972, i64 14 }, ptr %s1
   store i64 0, ptr %s2
   br label %while.cond.0
 while.cond.0:
@@ -64575,16 +65436,16 @@ ok.12:
 while.end.2:
   ret { ptr, i64 } { ptr @.str.130, i64 1 }
 panic.4:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.281, i32 6318)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.281, i32 6387)
   unreachable
 panic.9:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6319)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6388)
   unreachable
 panic.11:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.281, i32 6319)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.281, i32 6388)
   unreachable
 panic.13:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6321)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.281, i32 6390)
   unreachable
 }
 
@@ -64771,10 +65632,10 @@ while.end.4:
   %t35 = load { i32, [1 x i64] }, ptr %s4
   ret { i32, [1 x i64] } %t35
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 26)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 26)
   unreachable
 panic.9:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 31)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 31)
   unreachable
 }
 
@@ -64918,7 +65779,7 @@ entry:
   %t65 = load ptr, ptr %s0
   %t66 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t65, i32 0, i32 2
   %t67 = load ptr, ptr %t66
-  %t68 = call ptr @"zevic_Zevic1_Types_TypeTable_Param"(ptr %t67, { ptr, i64 } { ptr @.str.1023, i64 5 })
+  %t68 = call ptr @"zevic_Zevic1_Types_TypeTable_Param"(ptr %t67, { ptr, i64 } { ptr @.str.1040, i64 5 })
   store ptr %t68, ptr %t64
   %t69 = load ptr, ptr %s1
   %t70 = getelementptr inbounds { ptr, ptr, ptr, { ptr, i64 }, ptr }, ptr %t69, i32 0, i32 0
@@ -64982,10 +65843,10 @@ for.end.7:
 for.end.2:
   ret void
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 91)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 91)
   unreachable
 panic.9:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 92)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 92)
   unreachable
 }
 
@@ -65017,7 +65878,7 @@ entry:
   %t2 = load { ptr, i64 }, ptr %t1
   %t4 = extractvalue { ptr, i64 } %t2, 0
   %t5 = extractvalue { ptr, i64 } %t2, 1
-  %t6 = call i32 @zevic_str_eq(ptr %t4, i64 %t5, ptr @.str.1024, i64 10)
+  %t6 = call i32 @zevic_str_eq(ptr %t4, i64 %t5, ptr @.str.1041, i64 10)
   %t3 = icmp ne i32 %t6, 0
   br i1 %t3, label %then.0, label %endif.2
 then.0:
@@ -65062,7 +65923,7 @@ entry:
   %t0 = load ptr, ptr %s0
   %t1 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t0, i32 0, i32 0
   %t2 = load ptr, ptr %t1
-  %t3 = call { i32, [1 x i64] } @"zevic_Zevic1_Resolve_Program_FindModule"(ptr %t2, { ptr, i64 } { ptr @.str.1024, i64 10 })
+  %t3 = call { i32, [1 x i64] } @"zevic_Zevic1_Resolve_Program_FindModule"(ptr %t2, { ptr, i64 } { ptr @.str.1041, i64 10 })
   store { i32, [1 x i64] } %t3, ptr %s2
   %t6 = getelementptr inbounds { i32, [1 x i64] }, ptr %s2, i32 0, i32 0
   %t4 = load i32, ptr %t6
@@ -65301,14 +66162,14 @@ then.18:
   %t84 = extractvalue { ptr, i64 } %t83, 0
   %t85 = extractvalue { ptr, i64 } %t83, 1
   call void @zevic_sb_add(ptr %t80, ptr %t84, i64 %t85)
-  call void @zevic_sb_add(ptr %t80, ptr @.str.1025, i64 24)
+  call void @zevic_sb_add(ptr %t80, ptr @.str.1042, i64 24)
   %t86 = load ptr, ptr %s11
   %t87 = getelementptr inbounds { i64, { ptr, i64 }, ptr, ptr, ptr, ptr, i1, i32 }, ptr %t86, i32 0, i32 1
   %t88 = load { ptr, i64 }, ptr %t87
   %t89 = extractvalue { ptr, i64 } %t88, 0
   %t90 = extractvalue { ptr, i64 } %t88, 1
   call void @zevic_sb_add(ptr %t80, ptr %t89, i64 %t90)
-  call void @zevic_sb_add(ptr %t80, ptr @.str.1026, i64 59)
+  call void @zevic_sb_add(ptr %t80, ptr @.str.1043, i64 59)
   call void @zevic_sb_finish(ptr %s14, ptr %t80)
   %t91 = load { ptr, i64 }, ptr %s14
   call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t78, { i32, i32, i32 } %t79, { ptr, i64 } %t91)
@@ -65346,7 +66207,7 @@ pat.tag.24:
   %t112 = load ptr, ptr %t111
   %t113 = load { i32, i32, i32 }, ptr %s3
   %t114 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t114, ptr @.str.1027, i64 8)
+  call void @zevic_sb_add(ptr %t114, ptr @.str.1044, i64 8)
   %t115 = load ptr, ptr %s11
   %t116 = getelementptr inbounds { i64, { ptr, i64 }, ptr, ptr, ptr, ptr, i1, i32 }, ptr %t115, i32 0, i32 1
   %t117 = load { ptr, i64 }, ptr %t116
@@ -65485,13 +66346,13 @@ match.end.34:
   %t196 = insertvalue { { i32, [1 x i64] }, i64 } %t195, i64 0, 1
   ret { { i32, [1 x i64] }, i64 } %t196
 panic.6:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 131)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 131)
   unreachable
 panic.22:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 142)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 142)
   unreachable
 panic.28:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 153)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 153)
   unreachable
 }
 
@@ -65686,10 +66547,10 @@ match.end.5:
   %t92 = phi i1 [ false, %for.end.15 ], [ %t84, %for.end.30 ], [ %t91, %pat.tag.37 ], [ false, %arm.next.36 ]
   ret i1 %t92
 panic.17:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 178)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 178)
   unreachable
 panic.32:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 186)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 186)
   unreachable
 }
 
@@ -65794,10 +66655,10 @@ endif.18:
 for.end.2:
   ret i1 false
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 200)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 200)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 204)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 204)
   unreachable
 }
 
@@ -65856,7 +66717,7 @@ then.3:
   %t23 = extractvalue { ptr, i64 } %t22, 0
   %t24 = extractvalue { ptr, i64 } %t22, 1
   call void @zevic_sb_add(ptr %t19, ptr %t23, i64 %t24)
-  call void @zevic_sb_add(ptr %t19, ptr @.str.1028, i64 25)
+  call void @zevic_sb_add(ptr %t19, ptr @.str.1045, i64 25)
   call void @zevic_sb_finish(ptr %s5, ptr %t19)
   %t25 = load { ptr, i64 }, ptr %s5
   call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t17, { i32, i32, i32 } %t18, { ptr, i64 } %t25)
@@ -65973,7 +66834,7 @@ and.rhs.17:
   %t91 = load { ptr, i64 }, ptr %t90
   %t93 = extractvalue { ptr, i64 } %t91, 0
   %t94 = extractvalue { ptr, i64 } %t91, 1
-  %t95 = call i32 @zevic_str_eq(ptr %t93, i64 %t94, ptr @.str.1029, i64 16)
+  %t95 = call i32 @zevic_str_eq(ptr %t93, i64 %t94, ptr @.str.1046, i64 16)
   %t92 = icmp ne i32 %t95, 0
   br label %and.end.18
 and.end.18:
@@ -65985,7 +66846,7 @@ and.rhs.19:
   %t99 = load { ptr, i64 }, ptr %t98
   %t101 = extractvalue { ptr, i64 } %t99, 0
   %t102 = extractvalue { ptr, i64 } %t99, 1
-  %t103 = call i32 @zevic_str_eq(ptr %t101, i64 %t102, ptr @.str.1030, i64 3)
+  %t103 = call i32 @zevic_str_eq(ptr %t101, i64 %t102, ptr @.str.1047, i64 3)
   %t100 = icmp ne i32 %t103, 0
   br label %and.end.20
 and.end.20:
@@ -66074,7 +66935,7 @@ pat.tag.4:
   store { i32, i32, i32 } zeroinitializer, ptr %s4
   call void @"zevic_Zevic1_Token_Pos_Init"(ptr %s4, i32 0, i32 0, i32 0)
   %t34 = load { i32, i32, i32 }, ptr %s4
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t33, { i32, i32, i32 } %t34, { ptr, i64 } { ptr @.str.1031, i64 67 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t33, { i32, i32, i32 } %t34, { ptr, i64 } { ptr @.str.1048, i64 67 })
   %t35 = load ptr, ptr %s0
   %t36 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t35, i32 0, i32 3
   %t37 = load ptr, ptr %t36
@@ -66668,25 +67529,25 @@ then.61:
 endif.63:
   ret void
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 270)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 270)
   unreachable
 panic.22:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 274)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 274)
   unreachable
 panic.35:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 282)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 282)
   unreachable
 panic.40:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 287)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 287)
   unreachable
 panic.48:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 291)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 291)
   unreachable
 panic.53:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 298)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 298)
   unreachable
 panic.55:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 302)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 302)
   unreachable
 }
 
@@ -66714,7 +67575,7 @@ arm.next.1:
   %t10 = icmp eq i32 %t9, 1
   br i1 %t10, label %pat.tag.4, label %arm.next.3
 pat.tag.4:
-  call void @zevic_panic(ptr @.str.1032, i64 24, ptr @.str.1022, i32 319)
+  call void @zevic_panic(ptr @.str.1049, i64 24, ptr @.str.1039, i32 319)
   unreachable
 arm.next.3:
   unreachable
@@ -66976,7 +67837,7 @@ then.27:
   %t146 = load ptr, ptr %s18
   %t147 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t146, i32 0, i32 1
   %t148 = load { i32, i32, i32 }, ptr %t147
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t145, { i32, i32, i32 } %t148, { ptr, i64 } { ptr @.str.1033, i64 37 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t145, { i32, i32, i32 } %t148, { ptr, i64 } { ptr @.str.1050, i64 37 })
   store i1 true, ptr %s15
   br label %endif.29
 else.28:
@@ -67026,7 +67887,7 @@ then.33:
   %t176 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t175, i32 0, i32 1
   %t177 = load { i32, i32, i32 }, ptr %t176
   %t178 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t178, ptr @.str.1034, i64 56)
+  call void @zevic_sb_add(ptr %t178, ptr @.str.1051, i64 56)
   %t179 = load ptr, ptr %s20
   %t180 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t179, i32 0, i32 1
   %t181 = load { ptr, i64 }, ptr %t180
@@ -67060,7 +67921,7 @@ arm.next.36:
   %t197 = load ptr, ptr %s3
   %t198 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t197, i32 0, i32 1
   %t199 = load { i32, i32, i32 }, ptr %t198
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t196, { i32, i32, i32 } %t199, { ptr, i64 } { ptr @.str.1035, i64 15 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t196, { i32, i32, i32 } %t199, { ptr, i64 } { ptr @.str.1052, i64 15 })
   %t200 = load ptr, ptr %s0
   %t201 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t200, i32 0, i32 3
   %t202 = load ptr, ptr %t201
@@ -67071,13 +67932,13 @@ match.end.0:
   %t203 = phi ptr [ %t37, %for.end.5 ], [ %t82, %for.end.12 ], [ %t98, %pat.tag.16 ], [ %t185, %endif.35 ], [ %t193, %pat.tag.37 ], [ %t202, %arm.next.36 ]
   ret ptr %t203
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 327)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 327)
   unreachable
 panic.14:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 334)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 334)
   unreachable
 panic.23:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 347)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 347)
   unreachable
 }
 
@@ -67205,7 +68066,7 @@ pat.tag.15:
   %t46 = load ptr, ptr %s3
   %t47 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t46, i32 0, i32 1
   %t48 = load { i32, i32, i32 }, ptr %t47
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t45, { i32, i32, i32 } %t48, { ptr, i64 } { ptr @.str.1036, i64 50 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t45, { i32, i32, i32 } %t48, { ptr, i64 } { ptr @.str.1053, i64 50 })
   %t49 = load ptr, ptr %s0
   %t50 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t49, i32 0, i32 3
   %t51 = load ptr, ptr %t50
@@ -67251,7 +68112,7 @@ then.19:
   %t78 = extractvalue { ptr, i64 } %t77, 0
   %t79 = extractvalue { ptr, i64 } %t77, 1
   call void @zevic_sb_add(ptr %t76, ptr %t78, i64 %t79)
-  call void @zevic_sb_add(ptr %t76, ptr @.str.1028, i64 25)
+  call void @zevic_sb_add(ptr %t76, ptr @.str.1045, i64 25)
   call void @zevic_sb_finish(ptr %s12, ptr %t76)
   %t80 = load { ptr, i64 }, ptr %s12
   call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t72, { i32, i32, i32 } %t75, { ptr, i64 } %t80)
@@ -67272,7 +68133,7 @@ match.end.16:
   %t85 = load { ptr, i64 }, ptr %s6
   %t87 = extractvalue { ptr, i64 } %t85, 0
   %t88 = extractvalue { ptr, i64 } %t85, 1
-  %t89 = call i32 @zevic_str_eq(ptr %t87, i64 %t88, ptr @.str.1037, i64 5)
+  %t89 = call i32 @zevic_str_eq(ptr %t87, i64 %t88, ptr @.str.1054, i64 5)
   %t86 = icmp ne i32 %t89, 0
   br i1 %t86, label %then.24, label %endif.26
 then.24:
@@ -67360,7 +68221,7 @@ else.39:
   %t142 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t141, i32 0, i32 1
   %t143 = load { i32, i32, i32 }, ptr %t142
   %t144 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t144, ptr @.str.1038, i64 14)
+  call void @zevic_sb_add(ptr %t144, ptr @.str.1055, i64 14)
   %t145 = load ptr, ptr %s3
   %t146 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t145, i32 0, i32 23
   %t147 = load ptr, ptr %t146
@@ -67392,7 +68253,7 @@ pat.tag.42:
   %t163 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t162, i32 0, i32 1
   %t164 = load { i32, i32, i32 }, ptr %t163
   %t165 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t165, ptr @.str.1038, i64 14)
+  call void @zevic_sb_add(ptr %t165, ptr @.str.1055, i64 14)
   %t166 = load ptr, ptr %s3
   %t167 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t166, i32 0, i32 23
   %t168 = load ptr, ptr %t167
@@ -67498,7 +68359,7 @@ then.49:
   %t235 = extractvalue { ptr, i64 } %t234, 0
   %t236 = extractvalue { ptr, i64 } %t234, 1
   call void @zevic_sb_add(ptr %t231, ptr %t235, i64 %t236)
-  call void @zevic_sb_add(ptr %t231, ptr @.str.1039, i64 15)
+  call void @zevic_sb_add(ptr %t231, ptr @.str.1056, i64 15)
   call void @zevic_sb_finish(ptr %s34, ptr %t231)
   %t237 = load { ptr, i64 }, ptr %s34
   call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t227, { i32, i32, i32 } %t230, { ptr, i64 } %t237)
@@ -67552,14 +68413,14 @@ then.56:
   %t270 = extractvalue { ptr, i64 } %t269, 0
   %t271 = extractvalue { ptr, i64 } %t269, 1
   call void @zevic_sb_add(ptr %t266, ptr %t270, i64 %t271)
-  call void @zevic_sb_add(ptr %t266, ptr @.str.1040, i64 60)
+  call void @zevic_sb_add(ptr %t266, ptr @.str.1057, i64 60)
   %t272 = load ptr, ptr %s20
   %t273 = getelementptr inbounds { ptr, { ptr, i64 }, { ptr, i64 }, i1, i1, { ptr, i64 }, { ptr, i64 }, i1, { i32, [1 x i64] }, { i32, [1 x i64] } }, ptr %t272, i32 0, i32 1
   %t274 = load { ptr, i64 }, ptr %t273
   %t275 = extractvalue { ptr, i64 } %t274, 0
   %t276 = extractvalue { ptr, i64 } %t274, 1
   call void @zevic_sb_add(ptr %t266, ptr %t275, i64 %t276)
-  call void @zevic_sb_add(ptr %t266, ptr @.str.1041, i64 31)
+  call void @zevic_sb_add(ptr %t266, ptr @.str.1058, i64 31)
   call void @zevic_sb_finish(ptr %s38, ptr %t266)
   %t277 = load { ptr, i64 }, ptr %s38
   call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t262, { i32, i32, i32 } %t265, { ptr, i64 } %t277)
@@ -67622,7 +68483,7 @@ for.end.61:
   %t315 = call ptr @"zevic_Zevic1_Gen_Instantiate"(ptr %t309, ptr %t310, ptr %t311, { i32, i32, i32 } %t314)
   ret ptr %t315
 panic.63:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 434)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 434)
   unreachable
 }
 
@@ -67658,7 +68519,7 @@ entry:
   %t2 = call i1 @"zevic_Zevic1_Gen_Gen_IsErr"(ptr %t0, ptr %t1)
   br i1 %t2, label %then.0, label %endif.2
 then.0:
-  call void @"zevic_Zevic_Console_Println"({ ptr, i64 } { ptr @.str.1042, i64 7 })
+  call void @"zevic_Zevic_Console_Println"({ ptr, i64 } { ptr @.str.1059, i64 7 })
   ret void
 endif.2:
   %t3 = load ptr, ptr %s0
@@ -67673,7 +68534,7 @@ endif.2:
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t7, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t7, ptr @.str.1043, i64 8)
+  call void @zevic_sb_add(ptr %t7, ptr @.str.1060, i64 8)
   %t13 = load ptr, ptr %s1
   %t14 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t13, i32 0, i32 0
   %t15 = load { i32 }, ptr %t14
@@ -67684,7 +68545,7 @@ endif.2:
   %t19 = extractvalue { ptr, i64 } %t18, 0
   %t20 = extractvalue { ptr, i64 } %t18, 1
   call void @zevic_sb_add(ptr %t7, ptr %t19, i64 %t20)
-  call void @zevic_sb_add(ptr %t7, ptr @.str.1044, i64 6)
+  call void @zevic_sb_add(ptr %t7, ptr @.str.1061, i64 6)
   %t21 = load ptr, ptr %s1
   %t22 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t21, i32 0, i32 10
   %t23 = load i64, ptr %t22
@@ -67693,7 +68554,7 @@ endif.2:
   %t25 = extractvalue { ptr, i64 } %t24, 0
   %t26 = extractvalue { ptr, i64 } %t24, 1
   call void @zevic_sb_add(ptr %t7, ptr %t25, i64 %t26)
-  call void @zevic_sb_add(ptr %t7, ptr @.str.1045, i64 7)
+  call void @zevic_sb_add(ptr %t7, ptr @.str.1062, i64 7)
   %t27 = load ptr, ptr %s1
   %t28 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t27, i32 0, i32 11
   %t29 = load i64, ptr %t28
@@ -67702,14 +68563,14 @@ endif.2:
   %t31 = extractvalue { ptr, i64 } %t30, 0
   %t32 = extractvalue { ptr, i64 } %t30, 1
   call void @zevic_sb_add(ptr %t7, ptr %t31, i64 %t32)
-  call void @zevic_sb_add(ptr %t7, ptr @.str.1046, i64 4)
+  call void @zevic_sb_add(ptr %t7, ptr @.str.1063, i64 4)
   %t33 = load ptr, ptr %s1
   %t34 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t33, i32 0, i32 12
   %t35 = load { ptr, i64 }, ptr %t34
   %t36 = extractvalue { ptr, i64 } %t35, 0
   %t37 = extractvalue { ptr, i64 } %t35, 1
   call void @zevic_sb_add(ptr %t7, ptr %t36, i64 %t37)
-  call void @zevic_sb_add(ptr %t7, ptr @.str.1047, i64 7)
+  call void @zevic_sb_add(ptr %t7, ptr @.str.1064, i64 7)
   %t38 = load ptr, ptr %s1
   %t39 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t38, i32 0, i32 13
   %t40 = load i32, ptr %t39
@@ -67747,7 +68608,7 @@ for.body.4:
 ok.6:
   store i64 %t58, ptr %s8
   %t60 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t60, ptr @.str.1048, i64 8)
+  call void @zevic_sb_add(ptr %t60, ptr @.str.1065, i64 8)
   %t61 = load ptr, ptr %s9
   %t62 = getelementptr inbounds { { ptr, i64 }, ptr }, ptr %t61, i32 0, i32 0
   %t63 = load { ptr, i64 }, ptr %t62
@@ -67822,14 +68683,14 @@ match.end.13:
   %t104 = phi { ptr, i64 } [ %t100, %pat.tag.15 ], [ { ptr @.str.177, i64 1 }, %pat.tag.17 ]
   store { ptr, i64 } %t104, ptr %s15
   %t105 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t105, ptr @.str.1049, i64 10)
+  call void @zevic_sb_add(ptr %t105, ptr @.str.1066, i64 10)
   %t106 = load ptr, ptr %s13
   %t107 = getelementptr inbounds { { ptr, i64 }, i32, i1, ptr, { i32, [1 x i64] } }, ptr %t106, i32 0, i32 0
   %t108 = load { ptr, i64 }, ptr %t107
   %t109 = extractvalue { ptr, i64 } %t108, 0
   %t110 = extractvalue { ptr, i64 } %t108, 1
   call void @zevic_sb_add(ptr %t105, ptr %t109, i64 %t110)
-  call void @zevic_sb_add(ptr %t105, ptr @.str.1050, i64 5)
+  call void @zevic_sb_add(ptr %t105, ptr @.str.1067, i64 5)
   %t111 = load ptr, ptr %s13
   %t112 = getelementptr inbounds { { ptr, i64 }, i32, i1, ptr, { i32, [1 x i64] } }, ptr %t111, i32 0, i32 1
   %t113 = load i32, ptr %t112
@@ -67839,7 +68700,7 @@ match.end.13:
   %t116 = extractvalue { ptr, i64 } %t115, 0
   %t117 = extractvalue { ptr, i64 } %t115, 1
   call void @zevic_sb_add(ptr %t105, ptr %t116, i64 %t117)
-  call void @zevic_sb_add(ptr %t105, ptr @.str.1051, i64 7)
+  call void @zevic_sb_add(ptr %t105, ptr @.str.1068, i64 7)
   %t118 = load ptr, ptr %s13
   %t119 = getelementptr inbounds { { ptr, i64 }, i32, i1, ptr, { i32, [1 x i64] } }, ptr %t118, i32 0, i32 2
   %t120 = load i1, ptr %t119
@@ -67855,7 +68716,7 @@ endif.20:
   %t123 = extractvalue { ptr, i64 } %t122, 0
   %t124 = extractvalue { ptr, i64 } %t122, 1
   call void @zevic_sb_add(ptr %t105, ptr %t123, i64 %t124)
-  call void @zevic_sb_add(ptr %t105, ptr @.str.1052, i64 9)
+  call void @zevic_sb_add(ptr %t105, ptr @.str.1069, i64 9)
   %t125 = load { ptr, i64 }, ptr %s15
   %t126 = extractvalue { ptr, i64 } %t125, 0
   %t127 = extractvalue { ptr, i64 } %t125, 1
@@ -67888,7 +68749,7 @@ for.body.22:
 ok.24:
   store i64 %t141, ptr %s20
   %t143 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t143, ptr @.str.1053, i64 4)
+  call void @zevic_sb_add(ptr %t143, ptr @.str.1070, i64 4)
   %t144 = load ptr, ptr %s21
   %t145 = getelementptr inbounds { { ptr, i64 }, ptr }, ptr %t144, i32 0, i32 0
   %t146 = load { ptr, i64 }, ptr %t145
@@ -67913,13 +68774,13 @@ for.end.23:
 for.end.10:
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 449)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 449)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 452)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 452)
   unreachable
 panic.25:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 455)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 455)
   unreachable
 }
 
@@ -68382,13 +69243,13 @@ match.end.45:
   call void @"zevic_Zevic1_Gen_dumpType"(ptr %t264, ptr %t273)
   ret void
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 463)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 463)
   unreachable
 panic.9:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 464)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 464)
   unreachable
 panic.14:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 465)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 465)
   unreachable
 }
 
@@ -68733,13 +69594,13 @@ match.end.34:
   %t193 = load ptr, ptr %s5
   ret ptr %t193
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 511)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 511)
   unreachable
 panic.29:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 527)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 527)
   unreachable
 panic.43:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 540)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 540)
   unreachable
 }
 
@@ -68928,7 +69789,7 @@ and.end.3:
   %t12 = phi i1 [ false, %ok.0 ], [ %t11, %and.rhs.2 ]
   ret i1 %t12
 panic.1:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1022, i32 577)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1039, i32 577)
   unreachable
 }
 
@@ -69019,7 +69880,7 @@ arm.next.6:
   %t42 = icmp eq i32 %t41, 1
   br i1 %t42, label %pat.tag.9, label %arm.next.8
 pat.tag.9:
-  call void @zevic_panic(ptr @.str.1054, i64 38, ptr @.str.1022, i32 590)
+  call void @zevic_panic(ptr @.str.1071, i64 38, ptr @.str.1039, i32 590)
   unreachable
 arm.next.8:
   unreachable
@@ -69209,7 +70070,7 @@ match.end.0:
   %t59 = phi { i32, [1 x i64] } [ %t53, %for.end.5 ], [ %t58, %pat.tag.14 ]
   ret { i32, [1 x i64] } %t59
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 604)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 604)
   unreachable
 }
 
@@ -69349,7 +70210,7 @@ match.end.0:
   %t76 = load ptr, ptr %s4
   ret ptr %t76
 panic.9:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 623)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 623)
   unreachable
 }
 
@@ -69593,14 +70454,14 @@ then.23:
   %t142 = extractvalue { ptr, i64 } %t141, 0
   %t143 = extractvalue { ptr, i64 } %t141, 1
   call void @zevic_sb_add(ptr %t138, ptr %t142, i64 %t143)
-  call void @zevic_sb_add(ptr %t138, ptr @.str.1055, i64 27)
+  call void @zevic_sb_add(ptr %t138, ptr @.str.1072, i64 27)
   %t144 = load ptr, ptr %s1
   %t145 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t144, i32 0, i32 1
   %t146 = load { ptr, i64 }, ptr %t145
   %t147 = extractvalue { ptr, i64 } %t146, 0
   %t148 = extractvalue { ptr, i64 } %t146, 1
   call void @zevic_sb_add(ptr %t138, ptr %t147, i64 %t148)
-  call void @zevic_sb_add(ptr %t138, ptr @.str.1056, i64 21)
+  call void @zevic_sb_add(ptr %t138, ptr @.str.1073, i64 21)
   call void @zevic_sb_finish(ptr %s19, ptr %t138)
   %t149 = load { ptr, i64 }, ptr %s19
   call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t134, { i32, i32, i32 } %t137, { ptr, i64 } %t149)
@@ -69622,10 +70483,10 @@ for.end.17:
   %t159 = load ptr, ptr %t158
   ret ptr %t159
 panic.14:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 647)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 647)
   unreachable
 panic.19:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 651)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 651)
   unreachable
 }
 
@@ -69713,10 +70574,10 @@ endif.17:
 for.end.10:
   ret i1 false
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 673)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 673)
   unreachable
 panic.14:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 674)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 674)
   unreachable
 }
 
@@ -69953,16 +70814,16 @@ endif.37:
 for.end.19:
   ret void
 panic.9:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 688)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 688)
   unreachable
 panic.11:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 689)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 689)
   unreachable
 panic.21:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 695)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 695)
   unreachable
 panic.31:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 700)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 700)
   unreachable
 }
 
@@ -70145,10 +71006,10 @@ for.end.10:
   %t91 = insertvalue { { i32, [1 x i64] }, i1 } %t90, i1 %t89, 1
   ret { { i32, [1 x i64] }, i1 } %t91
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 719)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 719)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 724)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 724)
   unreachable
 }
 
@@ -70299,7 +71160,7 @@ arm.next.6:
   %t53 = icmp eq i32 %t52, 1
   br i1 %t53, label %pat.tag.9, label %arm.next.8
 pat.tag.9:
-  call void @zevic_panic(ptr @.str.1057, i64 31, ptr @.str.1022, i32 755)
+  call void @zevic_panic(ptr @.str.1074, i64 31, ptr @.str.1039, i32 755)
   unreachable
 arm.next.8:
   unreachable
@@ -70447,7 +71308,7 @@ for.end.2:
   %t27 = extractvalue { ptr, i64 } %t26, 0
   %t28 = extractvalue { ptr, i64 } %t26, 1
   call void @zevic_sb_add(ptr %t24, ptr %t27, i64 %t28)
-  call void @zevic_sb_add(ptr %t24, ptr @.str.1058, i64 5)
+  call void @zevic_sb_add(ptr %t24, ptr @.str.1075, i64 5)
   %t29 = load ptr, ptr %s1
   %t30 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t29, i32 0, i32 1
   %t31 = load { ptr, i64 }, ptr %t30
@@ -70458,7 +71319,7 @@ for.end.2:
   %t34 = load { ptr, i64 }, ptr %s6
   ret { ptr, i64 } %t34
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 769)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 769)
   unreachable
 }
 
@@ -70575,7 +71436,7 @@ match.end.8:
   %t61 = insertvalue { ptr, ptr } %t60, ptr %t59, 1
   ret { ptr, ptr } %t61
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 777)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 777)
   unreachable
 }
 
@@ -70827,7 +71688,7 @@ then.30:
   %t132 = extractvalue { ptr, i64 } %t131, 0
   %t133 = extractvalue { ptr, i64 } %t131, 1
   call void @zevic_sb_add(ptr %t128, ptr %t132, i64 %t133)
-  call void @zevic_sb_add(ptr %t128, ptr @.str.1059, i64 18)
+  call void @zevic_sb_add(ptr %t128, ptr @.str.1076, i64 18)
   %t134 = load ptr, ptr %s13
   %t135 = getelementptr inbounds { ptr, ptr }, ptr %t134, i32 0, i32 0
   %t136 = load ptr, ptr %t135
@@ -70836,7 +71697,7 @@ then.30:
   %t139 = extractvalue { ptr, i64 } %t138, 0
   %t140 = extractvalue { ptr, i64 } %t138, 1
   call void @zevic_sb_add(ptr %t128, ptr %t139, i64 %t140)
-  call void @zevic_sb_add(ptr %t128, ptr @.str.1060, i64 13)
+  call void @zevic_sb_add(ptr %t128, ptr @.str.1077, i64 13)
   %t141 = load ptr, ptr %s19
   %t142 = getelementptr inbounds { ptr, ptr }, ptr %t141, i32 0, i32 1
   %t143 = load ptr, ptr %t142
@@ -70854,7 +71715,7 @@ then.30:
   %t153 = extractvalue { ptr, i64 } %t152, 0
   %t154 = extractvalue { ptr, i64 } %t152, 1
   call void @zevic_sb_add(ptr %t128, ptr %t153, i64 %t154)
-  call void @zevic_sb_add(ptr %t128, ptr @.str.1061, i64 18)
+  call void @zevic_sb_add(ptr %t128, ptr @.str.1078, i64 18)
   %t155 = load ptr, ptr %s13
   %t156 = getelementptr inbounds { ptr, ptr }, ptr %t155, i32 0, i32 0
   %t157 = load ptr, ptr %t156
@@ -70863,7 +71724,7 @@ then.30:
   %t160 = extractvalue { ptr, i64 } %t159, 0
   %t161 = extractvalue { ptr, i64 } %t159, 1
   call void @zevic_sb_add(ptr %t128, ptr %t160, i64 %t161)
-  call void @zevic_sb_add(ptr %t128, ptr @.str.1062, i64 11)
+  call void @zevic_sb_add(ptr %t128, ptr @.str.1079, i64 11)
   call void @zevic_sb_finish(ptr %s20, ptr %t128)
   %t162 = load { ptr, i64 }, ptr %s20
   call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t124, { i32, i32, i32 } %t127, { ptr, i64 } %t162)
@@ -70913,14 +71774,14 @@ else.21:
   %t187 = extractvalue { ptr, i64 } %t186, 0
   %t188 = extractvalue { ptr, i64 } %t186, 1
   call void @zevic_sb_add(ptr %t176, ptr %t187, i64 %t188)
-  call void @zevic_sb_add(ptr %t176, ptr @.str.1063, i64 10)
+  call void @zevic_sb_add(ptr %t176, ptr @.str.1080, i64 10)
   %t189 = load ptr, ptr %s9
   %t190 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t189, i32 0, i32 1
   %t191 = load { ptr, i64 }, ptr %t190
   %t192 = extractvalue { ptr, i64 } %t191, 0
   %t193 = extractvalue { ptr, i64 } %t191, 1
   call void @zevic_sb_add(ptr %t176, ptr %t192, i64 %t193)
-  call void @zevic_sb_add(ptr %t176, ptr @.str.1064, i64 10)
+  call void @zevic_sb_add(ptr %t176, ptr @.str.1081, i64 10)
   call void @zevic_sb_finish(ptr %s21, ptr %t176)
   %t194 = load { ptr, i64 }, ptr %s21
   call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t172, { i32, i32, i32 } %t175, { ptr, i64 } %t194)
@@ -71183,7 +72044,7 @@ then.73:
   %t360 = extractvalue { ptr, i64 } %t359, 0
   %t361 = extractvalue { ptr, i64 } %t359, 1
   call void @zevic_sb_add(ptr %t351, ptr %t360, i64 %t361)
-  call void @zevic_sb_add(ptr %t351, ptr @.str.1065, i64 37)
+  call void @zevic_sb_add(ptr %t351, ptr @.str.1082, i64 37)
   %t362 = load ptr, ptr %s13
   %t363 = getelementptr inbounds { ptr, ptr }, ptr %t362, i32 0, i32 1
   %t364 = load ptr, ptr %t363
@@ -71192,7 +72053,7 @@ then.73:
   %t367 = extractvalue { ptr, i64 } %t366, 0
   %t368 = extractvalue { ptr, i64 } %t366, 1
   call void @zevic_sb_add(ptr %t351, ptr %t367, i64 %t368)
-  call void @zevic_sb_add(ptr %t351, ptr @.str.1066, i64 17)
+  call void @zevic_sb_add(ptr %t351, ptr @.str.1083, i64 17)
   %t369 = load ptr, ptr %s13
   %t370 = getelementptr inbounds { ptr, ptr }, ptr %t369, i32 0, i32 0
   %t371 = load ptr, ptr %t370
@@ -71204,11 +72065,11 @@ then.76:
 else.77:
   br label %endif.78
 endif.78:
-  %t374 = phi { ptr, i64 } [ { ptr @.str.1067, i64 4 }, %then.76 ], [ { ptr @.str.83, i64 0 }, %else.77 ]
+  %t374 = phi { ptr, i64 } [ { ptr @.str.1084, i64 4 }, %then.76 ], [ { ptr @.str.83, i64 0 }, %else.77 ]
   %t375 = extractvalue { ptr, i64 } %t374, 0
   %t376 = extractvalue { ptr, i64 } %t374, 1
   call void @zevic_sb_add(ptr %t351, ptr %t375, i64 %t376)
-  call void @zevic_sb_add(ptr %t351, ptr @.str.1068, i64 3)
+  call void @zevic_sb_add(ptr %t351, ptr @.str.1085, i64 3)
   %t377 = load ptr, ptr %s13
   %t378 = getelementptr inbounds { ptr, ptr }, ptr %t377, i32 0, i32 0
   %t379 = load ptr, ptr %t378
@@ -71235,16 +72096,16 @@ for.end.12:
 for.end.7:
   ret void
 panic.9:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 798)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 798)
   unreachable
 panic.14:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 801)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 801)
   unreachable
 panic.27:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 807)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 807)
   unreachable
 panic.68:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 841)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 841)
   unreachable
 }
 
@@ -71315,7 +72176,7 @@ or.end.3:
   %t26 = load { ptr, i64 }, ptr %s1
   %t28 = extractvalue { ptr, i64 } %t26, 0
   %t29 = extractvalue { ptr, i64 } %t26, 1
-  %t30 = call i32 @zevic_str_eq(ptr %t28, i64 %t29, ptr @.str.1069, i64 9)
+  %t30 = call i32 @zevic_str_eq(ptr %t28, i64 %t29, ptr @.str.1086, i64 9)
   %t27 = icmp ne i32 %t30, 0
   br i1 %t27, label %then.4, label %endif.6
 then.4:
@@ -71934,7 +72795,7 @@ then.40:
   %t187 = extractvalue { ptr, i64 } %t186, 0
   %t188 = extractvalue { ptr, i64 } %t186, 1
   call void @zevic_sb_add(ptr %t183, ptr %t187, i64 %t188)
-  call void @zevic_sb_add(ptr %t183, ptr @.str.1070, i64 51)
+  call void @zevic_sb_add(ptr %t183, ptr @.str.1087, i64 51)
   call void @zevic_sb_finish(ptr %s28, ptr %t183)
   %t189 = load { ptr, i64 }, ptr %s28
   call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t179, { i32, i32, i32 } %t182, { ptr, i64 } %t189)
@@ -71959,7 +72820,7 @@ then.43:
   %t203 = extractvalue { ptr, i64 } %t202, 0
   %t204 = extractvalue { ptr, i64 } %t202, 1
   call void @zevic_sb_add(ptr %t199, ptr %t203, i64 %t204)
-  call void @zevic_sb_add(ptr %t199, ptr @.str.1071, i64 35)
+  call void @zevic_sb_add(ptr %t199, ptr @.str.1088, i64 35)
   %t205 = load ptr, ptr %s8
   %t206 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t205, i32 0, i32 3
   %t207 = load { ptr, i64 }, ptr %t206
@@ -71993,7 +72854,7 @@ then.43:
   %t226 = extractvalue { ptr, i64 } %t225, 0
   %t227 = extractvalue { ptr, i64 } %t225, 1
   call void @zevic_sb_add(ptr %t222, ptr %t226, i64 %t227)
-  call void @zevic_sb_add(ptr %t222, ptr @.str.1072, i64 27)
+  call void @zevic_sb_add(ptr %t222, ptr @.str.1089, i64 27)
   %t228 = load ptr, ptr %s24
   %t229 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t228, i32 0, i32 1
   %t230 = load { ptr, i64 }, ptr %t229
@@ -72016,16 +72877,16 @@ for.end.34:
 while.end.2:
   ret void
 panic.6:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 892)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 892)
   unreachable
 panic.22:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 906)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 906)
   unreachable
 panic.31:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 914)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 914)
   unreachable
 panic.36:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 920)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 920)
   unreachable
 }
 
@@ -72253,7 +73114,7 @@ or.end.23:
   %t107 = phi i1 [ true, %endif.2 ], [ %t106, %and.end.25 ]
   ret i1 %t107
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 969)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 969)
   unreachable
 }
 
@@ -72345,14 +73206,14 @@ then.13:
   %t36 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t35, i32 0, i32 1
   %t37 = load { i32, i32, i32 }, ptr %t36
   %t38 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t38, ptr @.str.1007, i64 11)
+  call void @zevic_sb_add(ptr %t38, ptr @.str.1024, i64 11)
   %t39 = load ptr, ptr %s6
   %t40 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t39, i32 0, i32 3
   %t41 = load { ptr, i64 }, ptr %t40
   %t42 = extractvalue { ptr, i64 } %t41, 0
   %t43 = extractvalue { ptr, i64 } %t41, 1
   call void @zevic_sb_add(ptr %t38, ptr %t42, i64 %t43)
-  call void @zevic_sb_add(ptr %t38, ptr @.str.1073, i64 21)
+  call void @zevic_sb_add(ptr %t38, ptr @.str.1090, i64 21)
   %t44 = load ptr, ptr %s2
   %t45 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t44, i32 0, i32 3
   %t46 = load { ptr, i64 }, ptr %t45
@@ -72366,7 +73227,7 @@ then.13:
   %t52 = extractvalue { ptr, i64 } %t51, 0
   %t53 = extractvalue { ptr, i64 } %t51, 1
   call void @zevic_sb_add(ptr %t38, ptr %t52, i64 %t53)
-  call void @zevic_sb_add(ptr %t38, ptr @.str.1074, i64 45)
+  call void @zevic_sb_add(ptr %t38, ptr @.str.1091, i64 45)
   call void @zevic_sb_finish(ptr %s8, ptr %t38)
   %t54 = load { ptr, i64 }, ptr %s8
   call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t34, { i32, i32, i32 } %t37, { ptr, i64 } %t54)
@@ -72409,14 +73270,14 @@ then.22:
   %t81 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t80, i32 0, i32 1
   %t82 = load ptr, ptr %t81
   %t83 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t83, ptr @.str.1075, i64 39)
+  call void @zevic_sb_add(ptr %t83, ptr @.str.1092, i64 39)
   %t84 = load ptr, ptr %s7
   %t85 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t84, i32 0, i32 1
   %t86 = load { ptr, i64 }, ptr %t85
   %t87 = extractvalue { ptr, i64 } %t86, 0
   %t88 = extractvalue { ptr, i64 } %t86, 1
   call void @zevic_sb_add(ptr %t83, ptr %t87, i64 %t88)
-  call void @zevic_sb_add(ptr %t83, ptr @.str.1076, i64 19)
+  call void @zevic_sb_add(ptr %t83, ptr @.str.1093, i64 19)
   call void @zevic_sb_finish(ptr %s14, ptr %t83)
   %t89 = load { ptr, i64 }, ptr %s14
   call void @"zevic_Zevic1_Diag_Diag_Note"(ptr %t82, { ptr, i64 } %t89)
@@ -72461,7 +73322,7 @@ then.30:
   %t109 = load ptr, ptr %s0
   %t110 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t109, i32 0, i32 1
   %t111 = load ptr, ptr %t110
-  call void @"zevic_Zevic1_Diag_Diag_Note"(ptr %t111, { ptr, i64 } { ptr @.str.1077, i64 44 })
+  call void @"zevic_Zevic1_Diag_Diag_Note"(ptr %t111, { ptr, i64 } { ptr @.str.1094, i64 44 })
   br label %endif.32
 endif.32:
   br label %endif.29
@@ -72554,14 +73415,14 @@ then.43:
   %t170 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t169, i32 0, i32 1
   %t171 = load { i32, i32, i32 }, ptr %t170
   %t172 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t172, ptr @.str.1078, i64 16)
+  call void @zevic_sb_add(ptr %t172, ptr @.str.1095, i64 16)
   %t173 = load ptr, ptr %s2
   %t174 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t173, i32 0, i32 3
   %t175 = load { ptr, i64 }, ptr %t174
   %t176 = extractvalue { ptr, i64 } %t175, 0
   %t177 = extractvalue { ptr, i64 } %t175, 1
   call void @zevic_sb_add(ptr %t172, ptr %t176, i64 %t177)
-  call void @zevic_sb_add(ptr %t172, ptr @.str.1079, i64 11)
+  call void @zevic_sb_add(ptr %t172, ptr @.str.1096, i64 11)
   %t178 = load ptr, ptr %s1
   %t179 = getelementptr inbounds { ptr, { i32, [1 x i64] }, ptr, { ptr, i64 }, ptr, ptr, i1, i1, i1, i1 }, ptr %t178, i32 0, i32 5
   %t180 = load ptr, ptr %t179
@@ -72570,7 +73431,7 @@ then.43:
   %t183 = extractvalue { ptr, i64 } %t182, 0
   %t184 = extractvalue { ptr, i64 } %t182, 1
   call void @zevic_sb_add(ptr %t172, ptr %t183, i64 %t184)
-  call void @zevic_sb_add(ptr %t172, ptr @.str.1080, i64 56)
+  call void @zevic_sb_add(ptr %t172, ptr @.str.1097, i64 56)
   call void @zevic_sb_finish(ptr %s18, ptr %t172)
   %t185 = load { ptr, i64 }, ptr %s18
   call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t168, { i32, i32, i32 } %t171, { ptr, i64 } %t185)
@@ -72580,10 +73441,10 @@ endif.45:
 endif.40:
   ret void
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 985)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 985)
   unreachable
 panic.9:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 990)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 990)
   unreachable
 }
 
@@ -72691,7 +73552,7 @@ pat.tag.13:
   %t37 = load ptr, ptr %t36
   store ptr %t37, ptr %s8
   %t38 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t38, ptr @.str.1081, i64 6)
+  call void @zevic_sb_add(ptr %t38, ptr @.str.1098, i64 6)
   %t39 = load ptr, ptr %s8
   %t40 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t39, i32 0, i32 1
   %t41 = load { ptr, i64 }, ptr %t40
@@ -72716,7 +73577,7 @@ arm.next.12:
   br i1 %t52, label %pat.tag.15, label %arm.next.14
 pat.tag.15:
   %t54 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t54, ptr @.str.1081, i64 6)
+  call void @zevic_sb_add(ptr %t54, ptr @.str.1098, i64 6)
   %t55 = load ptr, ptr %s1
   %t56 = getelementptr inbounds { ptr, { ptr, i64 }, { ptr, i64 }, i1, i1, { ptr, i64 }, { ptr, i64 }, i1, { i32, [1 x i64] }, { i32, [1 x i64] } }, ptr %t55, i32 0, i32 6
   %t57 = load { ptr, i64 }, ptr %t56
@@ -72882,14 +73743,14 @@ then.36:
   %t152 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t151, i32 0, i32 1
   %t153 = load { i32, i32, i32 }, ptr %t152
   %t154 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t154, ptr @.str.1082, i64 12)
+  call void @zevic_sb_add(ptr %t154, ptr @.str.1099, i64 12)
   %t155 = load ptr, ptr %s4
   %t156 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t155, i32 0, i32 3
   %t157 = load { ptr, i64 }, ptr %t156
   %t158 = extractvalue { ptr, i64 } %t157, 0
   %t159 = extractvalue { ptr, i64 } %t157, 1
   call void @zevic_sb_add(ptr %t154, ptr %t158, i64 %t159)
-  call void @zevic_sb_add(ptr %t154, ptr @.str.1083, i64 19)
+  call void @zevic_sb_add(ptr %t154, ptr @.str.1100, i64 19)
   call void @zevic_sb_finish(ptr %s20, ptr %t154)
   %t160 = load { ptr, i64 }, ptr %s20
   call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t150, { i32, i32, i32 } %t153, { ptr, i64 } %t160)
@@ -72897,7 +73758,7 @@ then.36:
   %t162 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t161, i32 0, i32 1
   %t163 = load ptr, ptr %t162
   %t164 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t164, ptr @.str.1084, i64 28)
+  call void @zevic_sb_add(ptr %t164, ptr @.str.1101, i64 28)
   %t165 = load ptr, ptr %s19
   %t166 = getelementptr inbounds { ptr, { i32, [1 x i64] }, ptr, { ptr, i64 }, ptr, ptr, i1, i1, i1, i1 }, ptr %t165, i32 0, i32 0
   %t167 = load ptr, ptr %t166
@@ -73190,7 +74051,7 @@ then.70:
   %t343 = load ptr, ptr %s4
   %t344 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t343, i32 0, i32 1
   %t345 = load { i32, i32, i32 }, ptr %t344
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t342, { i32, i32, i32 } %t345, { ptr, i64 } { ptr @.str.1085, i64 48 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t342, { i32, i32, i32 } %t345, { ptr, i64 } { ptr @.str.1102, i64 48 })
   br label %endif.72
 endif.72:
   %t346 = load i1, ptr %s6
@@ -73201,7 +74062,7 @@ and.rhs.73:
   %t349 = load { ptr, i64 }, ptr %t348
   %t351 = extractvalue { ptr, i64 } %t349, 0
   %t352 = extractvalue { ptr, i64 } %t349, 1
-  %t353 = call i32 @zevic_str_eq(ptr %t351, i64 %t352, ptr @.str.1086, i64 4)
+  %t353 = call i32 @zevic_str_eq(ptr %t351, i64 %t352, ptr @.str.1103, i64 4)
   %t350 = icmp ne i32 %t353, 0
   br label %and.end.74
 and.end.74:
@@ -73213,7 +74074,7 @@ and.rhs.75:
   %t357 = load { ptr, i64 }, ptr %t356
   %t359 = extractvalue { ptr, i64 } %t357, 0
   %t360 = extractvalue { ptr, i64 } %t357, 1
-  %t361 = call i32 @zevic_str_eq(ptr %t359, i64 %t360, ptr @.str.1086, i64 4)
+  %t361 = call i32 @zevic_str_eq(ptr %t359, i64 %t360, ptr @.str.1103, i64 4)
   %t358 = icmp ne i32 %t361, 0
   br label %and.end.76
 and.end.76:
@@ -73226,7 +74087,7 @@ then.77:
   %t366 = load ptr, ptr %s4
   %t367 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t366, i32 0, i32 1
   %t368 = load { i32, i32, i32 }, ptr %t367
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t365, { i32, i32, i32 } %t368, { ptr, i64 } { ptr @.str.1087, i64 25 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t365, { i32, i32, i32 } %t368, { ptr, i64 } { ptr @.str.1104, i64 25 })
   br label %endif.79
 endif.79:
   %t369 = load ptr, ptr %s0
@@ -73249,10 +74110,10 @@ endif.82:
   %t380 = load ptr, ptr %s31
   ret ptr %t380
 panic.28:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 1041)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 1041)
   unreachable
 panic.45:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 1061)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 1061)
   unreachable
 }
 
@@ -73262,7 +74123,7 @@ entry:
   %s1 = alloca { ptr, i64 }, align 8
   %s2 = alloca { ptr, i64 }, align 8
   store i64 %p0, ptr %s0
-  store { ptr, i64 } { ptr @.str.1088, i64 16 }, ptr %s1
+  store { ptr, i64 } { ptr @.str.1105, i64 16 }, ptr %s1
   %t0 = load { ptr, i64 }, ptr %s1
   %t1 = load i64, ptr %s0
   %t2 = load i64, ptr %s0
@@ -73281,10 +74142,10 @@ ok.2:
   %t10 = load { ptr, i64 }, ptr %s2
   ret { ptr, i64 } %t10
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 1102)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 1102)
   unreachable
 panic.3:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1022, i32 1102)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1039, i32 1102)
   unreachable
 }
 
@@ -73355,16 +74216,16 @@ while.end.4:
   %t30 = load { ptr, i64 }, ptr %s2
   ret { ptr, i64 } %t30
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 1107)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 1107)
   unreachable
 panic.6:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 1109)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 1109)
   unreachable
 panic.8:
-  call void @zevic_panic(ptr @.str.285, i64 28, ptr @.str.1022, i32 1109)
+  call void @zevic_panic(ptr @.str.285, i64 28, ptr @.str.1039, i32 1109)
   unreachable
 panic.10:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 1111)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 1111)
   unreachable
 }
 
@@ -73470,7 +74331,7 @@ ok.19:
 endif.18:
   %t46 = load { ptr, i64 }, ptr %s1
   %t47 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t47, ptr @.str.1089, i64 1)
+  call void @zevic_sb_add(ptr %t47, ptr @.str.1106, i64 1)
   %t48 = load i32, ptr %s5
   %t49 = sext i32 %t48 to i64
   %t50 = call { ptr, i64 } @"zevic_Zevic1_Gen_HexN"(i64 %t49, i64 2)
@@ -73521,19 +74382,19 @@ ok.23:
   %t80 = load { ptr, i64 }, ptr %s1
   ret { ptr, i64 } %t80
 panic.4:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1022, i32 1122)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1039, i32 1122)
   unreachable
 panic.15:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 1124)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 1124)
   unreachable
 panic.20:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1022, i32 1127)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1039, i32 1127)
   unreachable
 panic.22:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 1129)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 1129)
   unreachable
 panic.24:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1022, i32 1132)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1039, i32 1132)
   unreachable
 }
 
@@ -73602,7 +74463,7 @@ arm.next.1:
   br i1 %t27, label %pat.tag.4, label %arm.next.3
 pat.tag.4:
   %t29 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t29, ptr @.str.1090, i64 6)
+  call void @zevic_sb_add(ptr %t29, ptr @.str.1107, i64 6)
   %t30 = load ptr, ptr %s0
   %t31 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t30, i32 0, i32 15
   %t32 = load i64, ptr %t31
@@ -73649,13 +74510,13 @@ ok.7:
   %t60 = extractvalue { ptr, i64 } %t59, 0
   %t61 = extractvalue { ptr, i64 } %t59, 1
   call void @zevic_sb_add(ptr %t51, ptr %t60, i64 %t61)
-  call void @zevic_sb_add(ptr %t51, ptr @.str.1091, i64 9)
+  call void @zevic_sb_add(ptr %t51, ptr @.str.1108, i64 9)
   %t62 = load { ptr, i64 }, ptr %s1
   %t63 = call { ptr, i64 } @"zevic_Zevic1_Gen_llEscape"({ ptr, i64 } %t62)
   %t64 = extractvalue { ptr, i64 } %t63, 0
   %t65 = extractvalue { ptr, i64 } %t63, 1
   call void @zevic_sb_add(ptr %t51, ptr %t64, i64 %t65)
-  call void @zevic_sb_add(ptr %t51, ptr @.str.1092, i64 5)
+  call void @zevic_sb_add(ptr %t51, ptr @.str.1109, i64 5)
   call void @zevic_sb_finish(ptr %s12, ptr %t51)
   %t66 = load { ptr, i64 }, ptr %s12
   call void @"zevic_Zevic1_Gen_Sb_Put"(ptr %t50, { ptr, i64 } %t66)
@@ -73679,15 +74540,15 @@ match.end.0:
   %t75 = extractvalue { ptr, i64 } %t74, 0
   %t76 = extractvalue { ptr, i64 } %t74, 1
   call void @zevic_sb_add(ptr %t69, ptr %t75, i64 %t76)
-  call void @zevic_sb_add(ptr %t69, ptr @.str.1093, i64 2)
+  call void @zevic_sb_add(ptr %t69, ptr @.str.1110, i64 2)
   call void @zevic_sb_finish(ptr %s15, ptr %t69)
   %t77 = load { ptr, i64 }, ptr %s15
   ret { ptr, i64 } %t77
 panic.6:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 1145)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 1145)
   unreachable
 panic.8:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1022, i32 1147)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1039, i32 1147)
   unreachable
 }
 
@@ -73795,7 +74656,7 @@ and.end.3:
   br i1 %t38, label %then.6, label %endif.8
 then.6:
   %t39 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t39, ptr @.str.1094, i64 5)
+  call void @zevic_sb_add(ptr %t39, ptr @.str.1111, i64 5)
   %t40 = load { ptr, i64 }, ptr %s2
   %t41 = load { ptr, i64 }, ptr %s3
   %t42 = extractvalue { ptr, i64 } %t41, 0
@@ -73821,10 +74682,10 @@ endif.8:
   %t55 = load { ptr, i64 }, ptr %s2
   ret { ptr, i64 } %t55
 panic.5:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1022, i32 1167)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1039, i32 1167)
   unreachable
 panic.10:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1022, i32 1168)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1039, i32 1168)
   unreachable
 }
 
@@ -73906,13 +74767,13 @@ endif.14:
   %t33 = phi { ptr, i64 } [ { ptr @.str.96, i64 1 }, %then.12 ], [ %t32, %ok.15 ]
   ret { ptr, i64 } %t33
 panic.4:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1095, i32 13)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1112, i32 13)
   unreachable
 panic.11:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1095, i32 15)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1112, i32 15)
   unreachable
 panic.16:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1095, i32 17)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1112, i32 17)
   unreachable
 }
 
@@ -73938,7 +74799,7 @@ and.rhs.0:
   %t8 = extractvalue { ptr, i64 } %t7, 0
   %t9 = extractvalue { ptr, i64 } %t7, 1
   call void @zevic_sb_add(ptr %t6, ptr %t8, i64 %t9)
-  call void @zevic_sb_add(ptr %t6, ptr @.str.1096, i64 26)
+  call void @zevic_sb_add(ptr %t6, ptr @.str.1113, i64 26)
   call void @zevic_sb_finish(ptr %s2, ptr %t6)
   %t10 = load { ptr, i64 }, ptr %s2
   %t11 = call i1 @"zevic_Zevic_Fs_IsFile"({ ptr, i64 } %t10)
@@ -73962,7 +74823,7 @@ entry:
   %s9 = alloca { ptr, i64 }, align 8
   %s10 = alloca { i32, [2 x i64] }, align 8
   %s11 = alloca { i32, [2 x i64] }, align 8
-  %t0 = call { i32, [2 x i64] } @"zevic_Zevic_Env_Get"({ ptr, i64 } { ptr @.str.1097, i64 10 })
+  %t0 = call { i32, [2 x i64] } @"zevic_Zevic_Env_Get"({ ptr, i64 } { ptr @.str.1114, i64 10 })
   store { i32, [2 x i64] } %t0, ptr %s0
   %t3 = getelementptr inbounds { i32, [2 x i64] }, ptr %s0, i32 0, i32 0
   %t1 = load i32, ptr %t3
@@ -74021,7 +74882,7 @@ match.end.0:
   %t33 = extractvalue { ptr, i64 } %t32, 0
   %t34 = extractvalue { ptr, i64 } %t32, 1
   call void @zevic_sb_add(ptr %t31, ptr %t33, i64 %t34)
-  call void @zevic_sb_add(ptr %t31, ptr @.str.1098, i64 15)
+  call void @zevic_sb_add(ptr %t31, ptr @.str.1115, i64 15)
   call void @zevic_sb_finish(ptr %s4, ptr %t31)
   %t35 = load { ptr, i64 }, ptr %s4
   %t36 = getelementptr inbounds { ptr, i64 }, ptr %t28, i64 0
@@ -74031,7 +74892,7 @@ match.end.0:
   %t39 = extractvalue { ptr, i64 } %t38, 0
   %t40 = extractvalue { ptr, i64 } %t38, 1
   call void @zevic_sb_add(ptr %t37, ptr %t39, i64 %t40)
-  call void @zevic_sb_add(ptr %t37, ptr @.str.1099, i64 3)
+  call void @zevic_sb_add(ptr %t37, ptr @.str.1116, i64 3)
   call void @zevic_sb_finish(ptr %s5, ptr %t37)
   %t41 = load { ptr, i64 }, ptr %s5
   %t42 = getelementptr inbounds { ptr, i64 }, ptr %t28, i64 1
@@ -74091,7 +74952,7 @@ for.end.12:
   %t70 = load { i32, [2 x i64] }, ptr %s11
   ret { i32, [2 x i64] } %t70
 panic.14:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1095, i32 33)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1112, i32 33)
   unreachable
 }
 
@@ -74237,19 +75098,19 @@ ok.23:
 endif.20:
   ret i32 99
 panic.6:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 18)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 18)
   unreachable
 panic.13:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 19)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 19)
   unreachable
 panic.15:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 19)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 19)
   unreachable
 panic.22:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 20)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 20)
   unreachable
 panic.24:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 20)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 20)
   unreachable
 }
 
@@ -74293,7 +75154,7 @@ endif.4:
   %t17 = phi i32 [ %t16, %ok.5 ], [ -1, %else.3 ]
   ret i32 %t17
 panic.6:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1100, i32 25)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1117, i32 25)
   unreachable
 }
 
@@ -74365,7 +75226,7 @@ entry:
   %t0 = load { ptr, i64 }, ptr %s0
   %t2 = extractvalue { ptr, i64 } %t0, 0
   %t3 = extractvalue { ptr, i64 } %t0, 1
-  %t4 = call i32 @zevic_str_eq(ptr %t2, i64 %t3, ptr @.str.1101, i64 6)
+  %t4 = call i32 @zevic_str_eq(ptr %t2, i64 %t3, ptr @.str.1118, i64 6)
   %t1 = icmp ne i32 %t4, 0
   br i1 %t1, label %pat.ok.2, label %arm.next.1
 pat.ok.2:
@@ -74383,7 +75244,7 @@ arm.next.1:
   %t11 = load { ptr, i64 }, ptr %s0
   %t13 = extractvalue { ptr, i64 } %t11, 0
   %t14 = extractvalue { ptr, i64 } %t11, 1
-  %t15 = call i32 @zevic_str_eq(ptr %t13, i64 %t14, ptr @.str.1102, i64 6)
+  %t15 = call i32 @zevic_str_eq(ptr %t13, i64 %t14, ptr @.str.1119, i64 6)
   %t12 = icmp ne i32 %t15, 0
   br i1 %t12, label %pat.ok.4, label %arm.next.3
 pat.ok.4:
@@ -74401,7 +75262,7 @@ arm.next.3:
   %t22 = load { ptr, i64 }, ptr %s0
   %t24 = extractvalue { ptr, i64 } %t22, 0
   %t25 = extractvalue { ptr, i64 } %t22, 1
-  %t26 = call i32 @zevic_str_eq(ptr %t24, i64 %t25, ptr @.str.1103, i64 2)
+  %t26 = call i32 @zevic_str_eq(ptr %t24, i64 %t25, ptr @.str.1120, i64 2)
   %t23 = icmp ne i32 %t26, 0
   br i1 %t23, label %pat.ok.6, label %arm.next.5
 pat.ok.6:
@@ -74419,7 +75280,7 @@ arm.next.5:
   %t33 = load { ptr, i64 }, ptr %s0
   %t35 = extractvalue { ptr, i64 } %t33, 0
   %t36 = extractvalue { ptr, i64 } %t33, 1
-  %t37 = call i32 @zevic_str_eq(ptr %t35, i64 %t36, ptr @.str.1104, i64 2)
+  %t37 = call i32 @zevic_str_eq(ptr %t35, i64 %t36, ptr @.str.1121, i64 2)
   %t34 = icmp ne i32 %t37, 0
   br i1 %t34, label %pat.ok.8, label %arm.next.7
 pat.ok.8:
@@ -74437,7 +75298,7 @@ arm.next.7:
   %t44 = load { ptr, i64 }, ptr %s0
   %t46 = extractvalue { ptr, i64 } %t44, 0
   %t47 = extractvalue { ptr, i64 } %t44, 1
-  %t48 = call i32 @zevic_str_eq(ptr %t46, i64 %t47, ptr @.str.1105, i64 3)
+  %t48 = call i32 @zevic_str_eq(ptr %t46, i64 %t47, ptr @.str.1122, i64 3)
   %t45 = icmp ne i32 %t48, 0
   br i1 %t45, label %pat.ok.10, label %arm.next.9
 pat.ok.10:
@@ -74455,7 +75316,7 @@ arm.next.9:
   %t55 = load { ptr, i64 }, ptr %s0
   %t57 = extractvalue { ptr, i64 } %t55, 0
   %t58 = extractvalue { ptr, i64 } %t55, 1
-  %t59 = call i32 @zevic_str_eq(ptr %t57, i64 %t58, ptr @.str.1106, i64 3)
+  %t59 = call i32 @zevic_str_eq(ptr %t57, i64 %t58, ptr @.str.1123, i64 3)
   %t56 = icmp ne i32 %t59, 0
   br i1 %t56, label %pat.ok.12, label %arm.next.11
 pat.ok.12:
@@ -74473,7 +75334,7 @@ arm.next.11:
   %t66 = load { ptr, i64 }, ptr %s0
   %t68 = extractvalue { ptr, i64 } %t66, 0
   %t69 = extractvalue { ptr, i64 } %t66, 1
-  %t70 = call i32 @zevic_str_eq(ptr %t68, i64 %t69, ptr @.str.1107, i64 5)
+  %t70 = call i32 @zevic_str_eq(ptr %t68, i64 %t69, ptr @.str.1124, i64 5)
   %t67 = icmp ne i32 %t70, 0
   br i1 %t67, label %pat.ok.14, label %arm.next.13
 pat.ok.14:
@@ -74491,7 +75352,7 @@ arm.next.13:
   %t77 = load { ptr, i64 }, ptr %s0
   %t79 = extractvalue { ptr, i64 } %t77, 0
   %t80 = extractvalue { ptr, i64 } %t77, 1
-  %t81 = call i32 @zevic_str_eq(ptr %t79, i64 %t80, ptr @.str.1108, i64 6)
+  %t81 = call i32 @zevic_str_eq(ptr %t79, i64 %t80, ptr @.str.1125, i64 6)
   %t78 = icmp ne i32 %t81, 0
   br i1 %t78, label %pat.ok.16, label %arm.next.15
 pat.ok.16:
@@ -74509,7 +75370,7 @@ arm.next.15:
   %t88 = load { ptr, i64 }, ptr %s0
   %t90 = extractvalue { ptr, i64 } %t88, 0
   %t91 = extractvalue { ptr, i64 } %t88, 1
-  %t92 = call i32 @zevic_str_eq(ptr %t90, i64 %t91, ptr @.str.1109, i64 4)
+  %t92 = call i32 @zevic_str_eq(ptr %t90, i64 %t91, ptr @.str.1126, i64 4)
   %t89 = icmp ne i32 %t92, 0
   br i1 %t89, label %pat.ok.18, label %arm.next.17
 pat.ok.18:
@@ -74527,7 +75388,7 @@ arm.next.17:
   %t99 = load { ptr, i64 }, ptr %s0
   %t101 = extractvalue { ptr, i64 } %t99, 0
   %t102 = extractvalue { ptr, i64 } %t99, 1
-  %t103 = call i32 @zevic_str_eq(ptr %t101, i64 %t102, ptr @.str.1110, i64 9)
+  %t103 = call i32 @zevic_str_eq(ptr %t101, i64 %t102, ptr @.str.1127, i64 9)
   %t100 = icmp ne i32 %t103, 0
   br i1 %t100, label %pat.ok.20, label %arm.next.19
 pat.ok.20:
@@ -74545,7 +75406,7 @@ arm.next.19:
   %t110 = load { ptr, i64 }, ptr %s0
   %t112 = extractvalue { ptr, i64 } %t110, 0
   %t113 = extractvalue { ptr, i64 } %t110, 1
-  %t114 = call i32 @zevic_str_eq(ptr %t112, i64 %t113, ptr @.str.1111, i64 6)
+  %t114 = call i32 @zevic_str_eq(ptr %t112, i64 %t113, ptr @.str.1128, i64 6)
   %t111 = icmp ne i32 %t114, 0
   br i1 %t111, label %pat.ok.22, label %arm.next.21
 pat.ok.22:
@@ -74581,7 +75442,7 @@ arm.next.23:
   %t132 = load { ptr, i64 }, ptr %s0
   %t134 = extractvalue { ptr, i64 } %t132, 0
   %t135 = extractvalue { ptr, i64 } %t132, 1
-  %t136 = call i32 @zevic_str_eq(ptr %t134, i64 %t135, ptr @.str.1112, i64 6)
+  %t136 = call i32 @zevic_str_eq(ptr %t134, i64 %t135, ptr @.str.1129, i64 6)
   %t133 = icmp ne i32 %t136, 0
   br i1 %t133, label %pat.ok.26, label %arm.next.25
 pat.ok.26:
@@ -74599,7 +75460,7 @@ arm.next.25:
   %t143 = load { ptr, i64 }, ptr %s0
   %t145 = extractvalue { ptr, i64 } %t143, 0
   %t146 = extractvalue { ptr, i64 } %t143, 1
-  %t147 = call i32 @zevic_str_eq(ptr %t145, i64 %t146, ptr @.str.1113, i64 6)
+  %t147 = call i32 @zevic_str_eq(ptr %t145, i64 %t146, ptr @.str.1130, i64 6)
   %t144 = icmp ne i32 %t147, 0
   br i1 %t144, label %pat.ok.28, label %arm.next.27
 pat.ok.28:
@@ -74617,7 +75478,7 @@ arm.next.27:
   %t154 = load { ptr, i64 }, ptr %s0
   %t156 = extractvalue { ptr, i64 } %t154, 0
   %t157 = extractvalue { ptr, i64 } %t154, 1
-  %t158 = call i32 @zevic_str_eq(ptr %t156, i64 %t157, ptr @.str.1114, i64 2)
+  %t158 = call i32 @zevic_str_eq(ptr %t156, i64 %t157, ptr @.str.1131, i64 2)
   %t155 = icmp ne i32 %t158, 0
   br i1 %t155, label %pat.ok.30, label %arm.next.29
 pat.ok.30:
@@ -74653,7 +75514,7 @@ arm.next.31:
   %t176 = load { ptr, i64 }, ptr %s0
   %t178 = extractvalue { ptr, i64 } %t176, 0
   %t179 = extractvalue { ptr, i64 } %t176, 1
-  %t180 = call i32 @zevic_str_eq(ptr %t178, i64 %t179, ptr @.str.1115, i64 5)
+  %t180 = call i32 @zevic_str_eq(ptr %t178, i64 %t179, ptr @.str.1132, i64 5)
   %t177 = icmp ne i32 %t180, 0
   br i1 %t177, label %pat.ok.34, label %arm.next.33
 pat.ok.34:
@@ -74671,7 +75532,7 @@ arm.next.33:
   %t187 = load { ptr, i64 }, ptr %s0
   %t189 = extractvalue { ptr, i64 } %t187, 0
   %t190 = extractvalue { ptr, i64 } %t187, 1
-  %t191 = call i32 @zevic_str_eq(ptr %t189, i64 %t190, ptr @.str.1116, i64 4)
+  %t191 = call i32 @zevic_str_eq(ptr %t189, i64 %t190, ptr @.str.1133, i64 4)
   %t188 = icmp ne i32 %t191, 0
   br i1 %t188, label %pat.ok.36, label %arm.next.35
 pat.ok.36:
@@ -74689,7 +75550,7 @@ arm.next.35:
   %t198 = load { ptr, i64 }, ptr %s0
   %t200 = extractvalue { ptr, i64 } %t198, 0
   %t201 = extractvalue { ptr, i64 } %t198, 1
-  %t202 = call i32 @zevic_str_eq(ptr %t200, i64 %t201, ptr @.str.1117, i64 3)
+  %t202 = call i32 @zevic_str_eq(ptr %t200, i64 %t201, ptr @.str.1134, i64 3)
   %t199 = icmp ne i32 %t202, 0
   br i1 %t199, label %pat.ok.38, label %arm.next.37
 pat.ok.38:
@@ -74707,7 +75568,7 @@ arm.next.37:
   %t209 = load { ptr, i64 }, ptr %s0
   %t211 = extractvalue { ptr, i64 } %t209, 0
   %t212 = extractvalue { ptr, i64 } %t209, 1
-  %t213 = call i32 @zevic_str_eq(ptr %t211, i64 %t212, ptr @.str.1118, i64 2)
+  %t213 = call i32 @zevic_str_eq(ptr %t211, i64 %t212, ptr @.str.1135, i64 2)
   %t210 = icmp ne i32 %t213, 0
   br i1 %t210, label %pat.ok.40, label %arm.next.39
 pat.ok.40:
@@ -74725,7 +75586,7 @@ arm.next.39:
   %t220 = load { ptr, i64 }, ptr %s0
   %t222 = extractvalue { ptr, i64 } %t220, 0
   %t223 = extractvalue { ptr, i64 } %t220, 1
-  %t224 = call i32 @zevic_str_eq(ptr %t222, i64 %t223, ptr @.str.1119, i64 5)
+  %t224 = call i32 @zevic_str_eq(ptr %t222, i64 %t223, ptr @.str.1136, i64 5)
   %t221 = icmp ne i32 %t224, 0
   br i1 %t221, label %pat.ok.42, label %arm.next.41
 pat.ok.42:
@@ -74743,7 +75604,7 @@ arm.next.41:
   %t231 = load { ptr, i64 }, ptr %s0
   %t233 = extractvalue { ptr, i64 } %t231, 0
   %t234 = extractvalue { ptr, i64 } %t231, 1
-  %t235 = call i32 @zevic_str_eq(ptr %t233, i64 %t234, ptr @.str.1120, i64 6)
+  %t235 = call i32 @zevic_str_eq(ptr %t233, i64 %t234, ptr @.str.1137, i64 6)
   %t232 = icmp ne i32 %t235, 0
   br i1 %t232, label %pat.ok.44, label %arm.next.43
 pat.ok.44:
@@ -74797,7 +75658,7 @@ arm.next.47:
   %t264 = load { ptr, i64 }, ptr %s0
   %t266 = extractvalue { ptr, i64 } %t264, 0
   %t267 = extractvalue { ptr, i64 } %t264, 1
-  %t268 = call i32 @zevic_str_eq(ptr %t266, i64 %t267, ptr @.str.1121, i64 5)
+  %t268 = call i32 @zevic_str_eq(ptr %t266, i64 %t267, ptr @.str.1138, i64 5)
   %t265 = icmp ne i32 %t268, 0
   br i1 %t265, label %pat.ok.50, label %arm.next.49
 pat.ok.50:
@@ -74815,7 +75676,7 @@ arm.next.49:
   %t275 = load { ptr, i64 }, ptr %s0
   %t277 = extractvalue { ptr, i64 } %t275, 0
   %t278 = extractvalue { ptr, i64 } %t275, 1
-  %t279 = call i32 @zevic_str_eq(ptr %t277, i64 %t278, ptr @.str.1122, i64 5)
+  %t279 = call i32 @zevic_str_eq(ptr %t277, i64 %t278, ptr @.str.1139, i64 5)
   %t276 = icmp ne i32 %t279, 0
   br i1 %t276, label %pat.ok.52, label %arm.next.51
 pat.ok.52:
@@ -74833,7 +75694,7 @@ arm.next.51:
   %t286 = load { ptr, i64 }, ptr %s0
   %t288 = extractvalue { ptr, i64 } %t286, 0
   %t289 = extractvalue { ptr, i64 } %t286, 1
-  %t290 = call i32 @zevic_str_eq(ptr %t288, i64 %t289, ptr @.str.1123, i64 5)
+  %t290 = call i32 @zevic_str_eq(ptr %t288, i64 %t289, ptr @.str.1140, i64 5)
   %t287 = icmp ne i32 %t290, 0
   br i1 %t287, label %pat.ok.54, label %arm.next.53
 pat.ok.54:
@@ -74920,14 +75781,14 @@ entry:
   %t0 = load { ptr, i64 }, ptr %s0
   %t2 = extractvalue { ptr, i64 } %t0, 0
   %t3 = extractvalue { ptr, i64 } %t0, 1
-  %t4 = call i32 @zevic_str_eq(ptr %t2, i64 %t3, ptr @.str.1124, i64 5)
+  %t4 = call i32 @zevic_str_eq(ptr %t2, i64 %t3, ptr @.str.1141, i64 5)
   %t1 = icmp ne i32 %t4, 0
   br i1 %t1, label %or.end.1, label %or.rhs.0
 or.rhs.0:
   %t5 = load { ptr, i64 }, ptr %s0
   %t7 = extractvalue { ptr, i64 } %t5, 0
   %t8 = extractvalue { ptr, i64 } %t5, 1
-  %t9 = call i32 @zevic_str_eq(ptr %t7, i64 %t8, ptr @.str.1125, i64 6)
+  %t9 = call i32 @zevic_str_eq(ptr %t7, i64 %t8, ptr @.str.1142, i64 6)
   %t6 = icmp ne i32 %t9, 0
   br label %or.end.1
 or.end.1:
@@ -74947,7 +75808,7 @@ or.rhs.4:
   %t17 = load { ptr, i64 }, ptr %s0
   %t19 = extractvalue { ptr, i64 } %t17, 0
   %t20 = extractvalue { ptr, i64 } %t17, 1
-  %t21 = call i32 @zevic_str_eq(ptr %t19, i64 %t20, ptr @.str.1126, i64 5)
+  %t21 = call i32 @zevic_str_eq(ptr %t19, i64 %t20, ptr @.str.1143, i64 5)
   %t18 = icmp ne i32 %t21, 0
   br label %or.end.5
 or.end.5:
@@ -74957,7 +75818,7 @@ or.rhs.6:
   %t23 = load { ptr, i64 }, ptr %s0
   %t25 = extractvalue { ptr, i64 } %t23, 0
   %t26 = extractvalue { ptr, i64 } %t23, 1
-  %t27 = call i32 @zevic_str_eq(ptr %t25, i64 %t26, ptr @.str.1127, i64 5)
+  %t27 = call i32 @zevic_str_eq(ptr %t25, i64 %t26, ptr @.str.1144, i64 5)
   %t24 = icmp ne i32 %t27, 0
   br label %or.end.7
 or.end.7:
@@ -74967,7 +75828,7 @@ or.rhs.8:
   %t29 = load { ptr, i64 }, ptr %s0
   %t31 = extractvalue { ptr, i64 } %t29, 0
   %t32 = extractvalue { ptr, i64 } %t29, 1
-  %t33 = call i32 @zevic_str_eq(ptr %t31, i64 %t32, ptr @.str.1128, i64 5)
+  %t33 = call i32 @zevic_str_eq(ptr %t31, i64 %t32, ptr @.str.1145, i64 5)
   %t30 = icmp ne i32 %t33, 0
   br label %or.end.9
 or.end.9:
@@ -74977,7 +75838,7 @@ or.rhs.10:
   %t35 = load { ptr, i64 }, ptr %s0
   %t37 = extractvalue { ptr, i64 } %t35, 0
   %t38 = extractvalue { ptr, i64 } %t35, 1
-  %t39 = call i32 @zevic_str_eq(ptr %t37, i64 %t38, ptr @.str.1129, i64 4)
+  %t39 = call i32 @zevic_str_eq(ptr %t37, i64 %t38, ptr @.str.1146, i64 4)
   %t36 = icmp ne i32 %t39, 0
   br label %or.end.11
 or.end.11:
@@ -75594,73 +76455,73 @@ endif.93:
   %t143 = load i64, ptr %s5
   ret i64 %t143
 panic.1:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1100, i32 91)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1117, i32 91)
   unreachable
 panic.6:
-  call void @zevic_panic(ptr @.str.94, i64 16, ptr @.str.1100, i32 93)
+  call void @zevic_panic(ptr @.str.94, i64 16, ptr @.str.1117, i32 93)
   unreachable
 panic.8:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 93)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 93)
   unreachable
 panic.13:
-  call void @zevic_panic(ptr @.str.94, i64 16, ptr @.str.1100, i32 93)
+  call void @zevic_panic(ptr @.str.94, i64 16, ptr @.str.1117, i32 93)
   unreachable
 panic.15:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 93)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 93)
   unreachable
 panic.20:
-  call void @zevic_panic(ptr @.str.94, i64 16, ptr @.str.1100, i32 93)
+  call void @zevic_panic(ptr @.str.94, i64 16, ptr @.str.1117, i32 93)
   unreachable
 panic.22:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 93)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 93)
   unreachable
 panic.29:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 94)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 94)
   unreachable
 panic.37:
-  call void @zevic_panic(ptr @.str.376, i64 17, ptr @.str.1100, i32 95)
+  call void @zevic_panic(ptr @.str.376, i64 17, ptr @.str.1117, i32 95)
   unreachable
 panic.39:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 95)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 95)
   unreachable
 panic.44:
-  call void @zevic_panic(ptr @.str.376, i64 17, ptr @.str.1100, i32 95)
+  call void @zevic_panic(ptr @.str.376, i64 17, ptr @.str.1117, i32 95)
   unreachable
 panic.46:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 95)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 95)
   unreachable
 panic.48:
-  call void @zevic_panic(ptr @.str.376, i64 17, ptr @.str.1100, i32 95)
+  call void @zevic_panic(ptr @.str.376, i64 17, ptr @.str.1117, i32 95)
   unreachable
 panic.50:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 95)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 95)
   unreachable
 panic.55:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 98)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 98)
   unreachable
 panic.57:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1100, i32 98)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1117, i32 98)
   unreachable
 panic.59:
-  call void @zevic_panic(ptr @.str.94, i64 16, ptr @.str.1100, i32 99)
+  call void @zevic_panic(ptr @.str.94, i64 16, ptr @.str.1117, i32 99)
   unreachable
 panic.61:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 99)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 99)
   unreachable
 panic.66:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 100)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 100)
   unreachable
 panic.68:
-  call void @zevic_panic(ptr @.str.376, i64 17, ptr @.str.1100, i32 100)
+  call void @zevic_panic(ptr @.str.376, i64 17, ptr @.str.1117, i32 100)
   unreachable
 panic.70:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 100)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 100)
   unreachable
 panic.72:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 100)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 100)
   unreachable
 panic.74:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 101)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 101)
   unreachable
 }
 
@@ -75822,46 +76683,46 @@ while.end.25:
   %t77 = trunc i64 %t76 to i32
   ret i32 %t77
 panic.1:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1100, i32 111)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1117, i32 111)
   unreachable
 panic.9:
-  call void @zevic_panic(ptr @.str.376, i64 17, ptr @.str.1100, i32 113)
+  call void @zevic_panic(ptr @.str.376, i64 17, ptr @.str.1117, i32 113)
   unreachable
 panic.11:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 113)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 113)
   unreachable
 panic.16:
-  call void @zevic_panic(ptr @.str.376, i64 17, ptr @.str.1100, i32 113)
+  call void @zevic_panic(ptr @.str.376, i64 17, ptr @.str.1117, i32 113)
   unreachable
 panic.18:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 113)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 113)
   unreachable
 panic.20:
-  call void @zevic_panic(ptr @.str.376, i64 17, ptr @.str.1100, i32 113)
+  call void @zevic_panic(ptr @.str.376, i64 17, ptr @.str.1117, i32 113)
   unreachable
 panic.22:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 113)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 113)
   unreachable
 panic.27:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 116)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 116)
   unreachable
 panic.29:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 116)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 116)
   unreachable
 panic.31:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1100, i32 116)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1117, i32 116)
   unreachable
 panic.33:
-  call void @zevic_panic(ptr @.str.376, i64 17, ptr @.str.1100, i32 116)
+  call void @zevic_panic(ptr @.str.376, i64 17, ptr @.str.1117, i32 116)
   unreachable
 panic.35:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 116)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 116)
   unreachable
 panic.37:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 116)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 116)
   unreachable
 panic.39:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 117)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 117)
   unreachable
 }
 
@@ -75957,7 +76818,7 @@ entry:
 then.0:
   %t11 = load ptr, ptr %s4
   %t12 = getelementptr inbounds { { ptr, i64 }, i32, i64 }, ptr %t11, i32 0, i32 0
-  store { ptr, i64 } { ptr @.str.1130, i64 26 }, ptr %t12
+  store { ptr, i64 } { ptr @.str.1147, i64 26 }, ptr %t12
   %t13 = load ptr, ptr %s4
   ret ptr %t13
 endif.2:
@@ -76098,7 +76959,7 @@ or.end.39:
 then.42:
   %t85 = load ptr, ptr %s4
   %t86 = getelementptr inbounds { { ptr, i64 }, i32, i64 }, ptr %t85, i32 0, i32 0
-  store { ptr, i64 } { ptr @.str.1131, i64 39 }, ptr %t86
+  store { ptr, i64 } { ptr @.str.1148, i64 39 }, ptr %t86
   %t87 = load ptr, ptr %s4
   ret ptr %t87
 endif.44:
@@ -76158,7 +77019,7 @@ then.56:
 else.57:
   br label %endif.58
 endif.58:
-  %t124 = phi { ptr, i64 } [ { ptr @.str.1132, i64 72 }, %then.56 ], [ { ptr @.str.1133, i64 22 }, %else.57 ]
+  %t124 = phi { ptr, i64 } [ { ptr @.str.1149, i64 72 }, %then.56 ], [ { ptr @.str.1150, i64 22 }, %else.57 ]
   store { ptr, i64 } %t124, ptr %t121
   br label %endif.55
 endif.55:
@@ -76184,7 +77045,7 @@ or.end.63:
 then.64:
   %t135 = load ptr, ptr %s4
   %t136 = getelementptr inbounds { { ptr, i64 }, i32, i64 }, ptr %t135, i32 0, i32 0
-  store { ptr, i64 } { ptr @.str.1134, i64 39 }, ptr %t136
+  store { ptr, i64 } { ptr @.str.1151, i64 39 }, ptr %t136
   %t137 = load ptr, ptr %s4
   ret ptr %t137
 endif.66:
@@ -76231,7 +77092,7 @@ or.end.75:
 then.76:
   %t159 = load ptr, ptr %s4
   %t160 = getelementptr inbounds { { ptr, i64 }, i32, i64 }, ptr %t159, i32 0, i32 0
-  store { ptr, i64 } { ptr @.str.1135, i64 24 }, ptr %t160
+  store { ptr, i64 } { ptr @.str.1152, i64 24 }, ptr %t160
   %t161 = load ptr, ptr %s4
   %t162 = getelementptr inbounds { { ptr, i64 }, i32, i64 }, ptr %t161, i32 0, i32 2
   %t163 = load i64, ptr %s5
@@ -76283,7 +77144,7 @@ or.end.88:
 then.89:
   %t188 = load ptr, ptr %s4
   %t189 = getelementptr inbounds { { ptr, i64 }, i32, i64 }, ptr %t188, i32 0, i32 0
-  store { ptr, i64 } { ptr @.str.1135, i64 24 }, ptr %t189
+  store { ptr, i64 } { ptr @.str.1152, i64 24 }, ptr %t189
   %t190 = load ptr, ptr %s4
   %t191 = getelementptr inbounds { { ptr, i64 }, i32, i64 }, ptr %t190, i32 0, i32 2
   %t192 = load i64, ptr %s5
@@ -76322,7 +77183,7 @@ or.end.95:
 then.98:
   %t209 = load ptr, ptr %s4
   %t210 = getelementptr inbounds { { ptr, i64 }, i32, i64 }, ptr %t209, i32 0, i32 0
-  store { ptr, i64 } { ptr @.str.1136, i64 45 }, ptr %t210
+  store { ptr, i64 } { ptr @.str.1153, i64 45 }, ptr %t210
   %t211 = load ptr, ptr %s4
   ret ptr %t211
 endif.100:
@@ -76335,7 +77196,7 @@ endif.100:
 else.60:
   %t216 = load ptr, ptr %s4
   %t217 = getelementptr inbounds { { ptr, i64 }, i32, i64 }, ptr %t216, i32 0, i32 0
-  store { ptr, i64 } { ptr @.str.1137, i64 23 }, ptr %t217
+  store { ptr, i64 } { ptr @.str.1154, i64 23 }, ptr %t217
   br label %endif.61
 endif.61:
   br label %endif.33
@@ -76359,46 +77220,46 @@ endif.9:
   %t218 = load ptr, ptr %s4
   ret ptr %t218
 panic.4:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1100, i32 146)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1117, i32 146)
   unreachable
 panic.6:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 147)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 147)
   unreachable
 panic.35:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 158)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 158)
   unreachable
 panic.41:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 158)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 158)
   unreachable
 panic.46:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 162)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 162)
   unreachable
 panic.48:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 162)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 162)
   unreachable
 panic.50:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 162)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 162)
   unreachable
 panic.52:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 163)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 163)
   unreachable
 panic.68:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 173)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 173)
   unreachable
 panic.80:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 183)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 183)
   unreachable
 panic.82:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 183)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 183)
   unreachable
 panic.84:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 184)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 184)
   unreachable
 panic.86:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 185)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 185)
   unreachable
 panic.93:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 192)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 192)
   unreachable
 }
 
@@ -76574,28 +77435,28 @@ while.end.2:
   %t76 = load i64, ptr %s1
   ret i64 %t76
 panic.4:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1100, i32 210)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1117, i32 210)
   unreachable
 panic.9:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 212)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 212)
   unreachable
 panic.14:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 214)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 214)
   unreachable
 panic.22:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 219)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 219)
   unreachable
 panic.27:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 222)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 222)
   unreachable
 panic.34:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 224)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 224)
   unreachable
 panic.43:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 227)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 227)
   unreachable
 panic.45:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 230)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 230)
   unreachable
 }
 
@@ -76723,28 +77584,28 @@ while.end.2:
   %t56 = load i64, ptr %s1
   ret i64 %t56
 panic.4:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1100, i32 239)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1117, i32 239)
   unreachable
 panic.9:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 241)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 241)
   unreachable
 panic.14:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 243)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 243)
   unreachable
 panic.18:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 244)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 244)
   unreachable
 panic.22:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 244)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 244)
   unreachable
 panic.27:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 245)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 245)
   unreachable
 panic.29:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 245)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 245)
   unreachable
 panic.31:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 247)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 247)
   unreachable
 }
 
@@ -76773,7 +77634,7 @@ ok.0:
   store i64 %t11, ptr %t5
   ret void
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 260)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 260)
   unreachable
 }
 
@@ -76896,7 +77757,7 @@ ok.0:
   %t10 = call i32 @"zevic_Zevic1_Lexer_byteAt"({ ptr, i64 } %t2, i64 %t8)
   ret i32 %t10
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 296)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 296)
   unreachable
 }
 
@@ -76990,22 +77851,22 @@ endif.9:
   %t49 = load i32, ptr %s2
   ret i32 %t49
 panic.4:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1100, i32 302)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1117, i32 302)
   unreachable
 panic.6:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 303)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 303)
   unreachable
 panic.11:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 305)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 305)
   unreachable
 panic.13:
-  call void @zevic_panic(ptr @.str.94, i64 16, ptr @.str.1100, i32 307)
+  call void @zevic_panic(ptr @.str.94, i64 16, ptr @.str.1117, i32 307)
   unreachable
 panic.15:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 307)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 307)
   unreachable
 panic.20:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 308)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 308)
   unreachable
 }
 
@@ -77478,70 +78339,70 @@ then.115:
 endif.117:
   ret i1 false
 panic.13:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 331)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 331)
   unreachable
 panic.17:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 332)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 332)
   unreachable
 panic.21:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 332)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 332)
   unreachable
 panic.31:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 334)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 334)
   unreachable
 panic.35:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 336)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 336)
   unreachable
 panic.39:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 336)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 336)
   unreachable
 panic.44:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 338)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 338)
   unreachable
 panic.53:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 340)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 340)
   unreachable
 panic.57:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 340)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 340)
   unreachable
 panic.62:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 341)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 341)
   unreachable
 panic.64:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 342)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 342)
   unreachable
 panic.68:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 343)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 343)
   unreachable
 panic.72:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 343)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 343)
   unreachable
 panic.77:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 344)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 344)
   unreachable
 panic.79:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 345)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 345)
   unreachable
 panic.81:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 347)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 347)
   unreachable
 panic.88:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 358)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 358)
   unreachable
 panic.92:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 358)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 358)
   unreachable
 panic.99:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 359)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 359)
   unreachable
 panic.103:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 359)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 359)
   unreachable
 panic.110:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 360)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 360)
   unreachable
 panic.114:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 360)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 360)
   unreachable
 }
 
@@ -77662,10 +78523,10 @@ endif.22:
   %t61 = call ptr @"zevic_Zevic1_Lexer_Lexer_push"(ptr %t57, { i32 } %t59, { i32, i32, i32 } %t60)
   ret void
 panic.3:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 365)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 365)
   unreachable
 panic.11:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 371)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 371)
   unreachable
 }
 
@@ -77703,7 +78564,7 @@ then.3:
   %t16 = getelementptr inbounds { i32, { ptr, i64 }, i64, i64, i32, i32, ptr, ptr, i64, ptr }, ptr %t15, i32 0, i32 9
   %t17 = load ptr, ptr %t16
   %t18 = load { i32, i32, i32 }, ptr %s1
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t17, { i32, i32, i32 } %t18, { ptr, i64 } { ptr @.str.1138, i64 26 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t17, { i32, i32, i32 } %t18, { ptr, i64 } { ptr @.str.1155, i64 26 })
   ret void
 endif.5:
   %t19 = load ptr, ptr %s0
@@ -77778,10 +78639,10 @@ endif.10:
 while.end.2:
   ret void
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 399)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 399)
   unreachable
 panic.19:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 403)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 403)
   unreachable
 }
 
@@ -77835,7 +78696,7 @@ ok.3:
   %t22 = load { ptr, i64 }, ptr %s4
   %t24 = extractvalue { ptr, i64 } %t22, 0
   %t25 = extractvalue { ptr, i64 } %t22, 1
-  %t26 = call i32 @zevic_str_eq(ptr %t24, i64 %t25, ptr @.str.1139, i64 1)
+  %t26 = call i32 @zevic_str_eq(ptr %t24, i64 %t25, ptr @.str.1156, i64 1)
   %t23 = icmp ne i32 %t26, 0
   br i1 %t23, label %and.rhs.5, label %and.end.6
 and.rhs.5:
@@ -77910,7 +78771,7 @@ then.20:
   %t65 = getelementptr inbounds { i32, { ptr, i64 }, i64, i64, i32, i32, ptr, ptr, i64, ptr }, ptr %t64, i32 0, i32 9
   %t66 = load ptr, ptr %t65
   %t67 = load { i32, i32, i32 }, ptr %s1
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t66, { i32, i32, i32 } %t67, { ptr, i64 } { ptr @.str.1140, i64 124 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t66, { i32, i32, i32 } %t67, { ptr, i64 } { ptr @.str.1157, i64 124 })
   br label %endif.22
 else.21:
   %t68 = load { ptr, i64 }, ptr %s4
@@ -77927,12 +78788,12 @@ then.23:
   %t76 = extractvalue { ptr, i64 } %t75, 0
   %t77 = extractvalue { ptr, i64 } %t75, 1
   call void @zevic_sb_add(ptr %t74, ptr %t76, i64 %t77)
-  call void @zevic_sb_add(ptr %t74, ptr @.str.1141, i64 64)
+  call void @zevic_sb_add(ptr %t74, ptr @.str.1158, i64 64)
   %t78 = load { ptr, i64 }, ptr %s4
   %t79 = extractvalue { ptr, i64 } %t78, 0
   %t80 = extractvalue { ptr, i64 } %t78, 1
   call void @zevic_sb_add(ptr %t74, ptr %t79, i64 %t80)
-  call void @zevic_sb_add(ptr %t74, ptr @.str.1142, i64 15)
+  call void @zevic_sb_add(ptr %t74, ptr @.str.1159, i64 15)
   call void @zevic_sb_finish(ptr %s7, ptr %t74)
   %t81 = load { ptr, i64 }, ptr %s7
   call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t72, { i32, i32, i32 } %t73, { ptr, i64 } %t81)
@@ -77953,7 +78814,7 @@ endif.22:
   store { ptr, i64 } %t89, ptr %t88
   ret void
 panic.4:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1100, i32 419)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1117, i32 419)
   unreachable
 }
 
@@ -78013,7 +78874,7 @@ then.7:
   %t26 = getelementptr inbounds { i32, { ptr, i64 }, i64, i64, i32, i32, ptr, ptr, i64, ptr }, ptr %t25, i32 0, i32 9
   %t27 = load ptr, ptr %t26
   %t28 = load { i32, i32, i32 }, ptr %s1
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t27, { i32, i32, i32 } %t28, { ptr, i64 } { ptr @.str.1143, i64 70 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t27, { i32, i32, i32 } %t28, { ptr, i64 } { ptr @.str.1160, i64 70 })
   ret void
 endif.9:
   %t29 = load ptr, ptr %s0
@@ -78048,10 +78909,10 @@ ok.10:
   %t51 = call i32 @"zevic_Zevic1_Lexer_Lexer_advance"(ptr %t50)
   ret void
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 452)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 452)
   unreachable
 panic.11:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1100, i32 458)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1117, i32 458)
   unreachable
 }
 
@@ -78871,7 +79732,7 @@ then.174:
   %t277 = getelementptr inbounds { i32, { ptr, i64 }, i64, i64, i32, i32, ptr, ptr, i64, ptr }, ptr %t276, i32 0, i32 9
   %t278 = load ptr, ptr %t277
   %t279 = load { i32, i32, i32 }, ptr %s1
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t278, { i32, i32, i32 } %t279, { ptr, i64 } { ptr @.str.1144, i64 58 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t278, { i32, i32, i32 } %t279, { ptr, i64 } { ptr @.str.1161, i64 58 })
   br label %endif.176
 else.175:
   %t280 = load i32, ptr %s2
@@ -78882,7 +79743,7 @@ then.177:
   %t283 = getelementptr inbounds { i32, { ptr, i64 }, i64, i64, i32, i32, ptr, ptr, i64, ptr }, ptr %t282, i32 0, i32 9
   %t284 = load ptr, ptr %t283
   %t285 = load { i32, i32, i32 }, ptr %s1
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t284, { i32, i32, i32 } %t285, { ptr, i64 } { ptr @.str.1145, i64 24 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t284, { i32, i32, i32 } %t285, { ptr, i64 } { ptr @.str.1162, i64 24 })
   br label %endif.179
 else.178:
   %t286 = load ptr, ptr %s0
@@ -78890,7 +79751,7 @@ else.178:
   %t288 = load ptr, ptr %t287
   %t289 = load { i32, i32, i32 }, ptr %s1
   %t290 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t290, ptr @.str.1146, i64 22)
+  call void @zevic_sb_add(ptr %t290, ptr @.str.1163, i64 22)
   %t291 = load ptr, ptr %s0
   %t292 = getelementptr inbounds { i32, { ptr, i64 }, i64, i64, i32, i32, ptr, ptr, i64, ptr }, ptr %t291, i32 0, i32 1
   %t293 = load { ptr, i64 }, ptr %t292
@@ -79028,25 +79889,25 @@ endif.200:
 endif.193:
   ret void
 panic.90:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 517)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 517)
   unreachable
 panic.103:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 518)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 518)
   unreachable
 panic.181:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 571)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 571)
   unreachable
 panic.183:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1100, i32 571)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1117, i32 571)
   unreachable
 panic.188:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 579)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 579)
   unreachable
 panic.195:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 583)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 583)
   unreachable
 panic.202:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 586)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 586)
   unreachable
 }
 
@@ -79094,25 +79955,25 @@ endif.2:
   %t4 = mul i64 10, %t7
   %t5 = call ptr @zevic_alloc(i64 %t4)
   %t8 = getelementptr inbounds { ptr, i64 }, ptr %t5, i64 0
-  store { ptr, i64 } { ptr @.str.1147, i64 2 }, ptr %t8
+  store { ptr, i64 } { ptr @.str.951, i64 2 }, ptr %t8
   %t9 = getelementptr inbounds { ptr, i64 }, ptr %t5, i64 1
-  store { ptr, i64 } { ptr @.str.1148, i64 3 }, ptr %t9
+  store { ptr, i64 } { ptr @.str.952, i64 3 }, ptr %t9
   %t10 = getelementptr inbounds { ptr, i64 }, ptr %t5, i64 2
-  store { ptr, i64 } { ptr @.str.1149, i64 3 }, ptr %t10
+  store { ptr, i64 } { ptr @.str.953, i64 3 }, ptr %t10
   %t11 = getelementptr inbounds { ptr, i64 }, ptr %t5, i64 3
-  store { ptr, i64 } { ptr @.str.1150, i64 3 }, ptr %t11
+  store { ptr, i64 } { ptr @.str.954, i64 3 }, ptr %t11
   %t12 = getelementptr inbounds { ptr, i64 }, ptr %t5, i64 4
-  store { ptr, i64 } { ptr @.str.1151, i64 2 }, ptr %t12
+  store { ptr, i64 } { ptr @.str.955, i64 2 }, ptr %t12
   %t13 = getelementptr inbounds { ptr, i64 }, ptr %t5, i64 5
-  store { ptr, i64 } { ptr @.str.1152, i64 3 }, ptr %t13
+  store { ptr, i64 } { ptr @.str.956, i64 3 }, ptr %t13
   %t14 = getelementptr inbounds { ptr, i64 }, ptr %t5, i64 6
-  store { ptr, i64 } { ptr @.str.1153, i64 3 }, ptr %t14
+  store { ptr, i64 } { ptr @.str.957, i64 3 }, ptr %t14
   %t15 = getelementptr inbounds { ptr, i64 }, ptr %t5, i64 7
-  store { ptr, i64 } { ptr @.str.1154, i64 3 }, ptr %t15
+  store { ptr, i64 } { ptr @.str.958, i64 3 }, ptr %t15
   %t16 = getelementptr inbounds { ptr, i64 }, ptr %t5, i64 8
-  store { ptr, i64 } { ptr @.str.1155, i64 3 }, ptr %t16
+  store { ptr, i64 } { ptr @.str.959, i64 3 }, ptr %t16
   %t17 = getelementptr inbounds { ptr, i64 }, ptr %t5, i64 9
-  store { ptr, i64 } { ptr @.str.1156, i64 3 }, ptr %t17
+  store { ptr, i64 } { ptr @.str.960, i64 3 }, ptr %t17
   %t18 = call ptr @zevic_alloc(i64 24)
   %t19 = getelementptr inbounds { ptr, i64, i64 }, ptr %t18, i32 0, i32 0
   store ptr %t5, ptr %t19
@@ -79256,40 +80117,40 @@ endif.36:
 for.end.5:
   ret { ptr, i64 } { ptr @.str.83, i64 0 }
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 604)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 604)
   unreachable
 panic.9:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 606)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 606)
   unreachable
 panic.11:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 606)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 606)
   unreachable
 panic.13:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 606)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 606)
   unreachable
 panic.17:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 606)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 606)
   unreachable
 panic.19:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 606)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 606)
   unreachable
 panic.21:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 606)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 606)
   unreachable
 panic.23:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 606)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 606)
   unreachable
 panic.25:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 606)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 606)
   unreachable
 panic.27:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1100, i32 606)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1117, i32 606)
   unreachable
 panic.31:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 606)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 606)
   unreachable
 panic.33:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 606)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 606)
   unreachable
 }
 
@@ -79350,7 +80211,7 @@ then.10:
   %t23 = getelementptr inbounds { i32, { ptr, i64 }, i64, i64, i32, i32, ptr, ptr, i64, ptr }, ptr %t22, i32 0, i32 9
   %t24 = load ptr, ptr %t23
   %t25 = load { i32, i32, i32 }, ptr %s3
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t24, { i32, i32, i32 } %t25, { ptr, i64 } { ptr @.str.1157, i64 43 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t24, { i32, i32, i32 } %t25, { ptr, i64 } { ptr @.str.1164, i64 43 })
   %t26 = load ptr, ptr %s0
   %t27 = call i32 @"zevic_Zevic1_Lexer_Lexer_advance"(ptr %t26)
   br label %loop.body.0
@@ -79426,10 +80287,10 @@ endif.4:
 loop.end.1:
   unreachable
 panic.23:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 630)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 630)
   unreachable
 panic.25:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1100, i32 630)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1117, i32 630)
   unreachable
 }
 
@@ -79562,7 +80423,7 @@ then.15:
   %t49 = getelementptr inbounds { i32, { ptr, i64 }, i64, i64, i32, i32, ptr, ptr, i64, ptr }, ptr %t48, i32 0, i32 9
   %t50 = load ptr, ptr %t49
   %t51 = load { i32, i32, i32 }, ptr %s1
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t50, { i32, i32, i32 } %t51, { ptr, i64 } { ptr @.str.1158, i64 39 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t50, { i32, i32, i32 } %t51, { ptr, i64 } { ptr @.str.1165, i64 39 })
   br label %endif.17
 endif.17:
   br label %endif.8
@@ -79642,7 +80503,7 @@ then.27:
   %t95 = getelementptr inbounds { i32, { ptr, i64 }, i64, i64, i32, i32, ptr, ptr, i64, ptr }, ptr %t94, i32 0, i32 9
   %t96 = load ptr, ptr %t95
   %t97 = load { i32, i32, i32 }, ptr %s1
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t96, { i32, i32, i32 } %t97, { ptr, i64 } { ptr @.str.1159, i64 66 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t96, { i32, i32, i32 } %t97, { ptr, i64 } { ptr @.str.1166, i64 66 })
   br label %endif.29
 endif.29:
   br label %endif.22
@@ -79694,7 +80555,7 @@ ok.40:
 then.42:
   store i1 true, ptr %s4
   %t120 = load ptr, ptr %s2
-  call void @"zevic_Zevic1_Lexer_Buf_Put"(ptr %t120, { ptr, i64 } { ptr @.str.1160, i64 1 })
+  call void @"zevic_Zevic1_Lexer_Buf_Put"(ptr %t120, { ptr, i64 } { ptr @.str.1167, i64 1 })
   %t121 = load ptr, ptr %s0
   %t122 = call i32 @"zevic_Zevic1_Lexer_Lexer_advance"(ptr %t121)
   %t123 = load i64, ptr %s8
@@ -79818,7 +80679,7 @@ then.69:
   %t194 = load ptr, ptr %t193
   %t195 = load { i32, i32, i32 }, ptr %s1
   %t196 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t196, ptr @.str.1161, i64 12)
+  call void @zevic_sb_add(ptr %t196, ptr @.str.1168, i64 12)
   %t197 = load ptr, ptr %s0
   %t198 = getelementptr inbounds { i32, { ptr, i64 }, i64, i64, i32, i32, ptr, ptr, i64, ptr }, ptr %t197, i32 0, i32 1
   %t199 = load { ptr, i64 }, ptr %t198
@@ -79844,7 +80705,7 @@ ok.74:
   %t214 = extractvalue { ptr, i64 } %t213, 0
   %t215 = extractvalue { ptr, i64 } %t213, 1
   call void @zevic_sb_add(ptr %t196, ptr %t214, i64 %t215)
-  call void @zevic_sb_add(ptr %t196, ptr @.str.1162, i64 50)
+  call void @zevic_sb_add(ptr %t196, ptr @.str.1169, i64 50)
   call void @zevic_sb_finish(ptr %s14, ptr %t196)
   %t216 = load { ptr, i64 }, ptr %s14
   call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t194, { i32, i32, i32 } %t195, { ptr, i64 } %t216)
@@ -79882,7 +80743,7 @@ ok.81:
   %t234 = load { ptr, i64 }, ptr %s16
   %t236 = extractvalue { ptr, i64 } %t234, 0
   %t237 = extractvalue { ptr, i64 } %t234, 1
-  %t238 = call i32 @zevic_str_eq(ptr %t236, i64 %t237, ptr @.str.1163, i64 1)
+  %t238 = call i32 @zevic_str_eq(ptr %t236, i64 %t237, ptr @.str.1170, i64 1)
   %t235 = icmp ne i32 %t238, 0
   br label %and.end.80
 and.end.80:
@@ -79933,7 +80794,7 @@ ok.91:
   %t266 = load { ptr, i64 }, ptr %s21
   %t268 = extractvalue { ptr, i64 } %t266, 0
   %t269 = extractvalue { ptr, i64 } %t266, 1
-  %t270 = call i32 @zevic_str_eq(ptr %t268, i64 %t269, ptr @.str.1163, i64 1)
+  %t270 = call i32 @zevic_str_eq(ptr %t268, i64 %t269, ptr @.str.1170, i64 1)
   %t267 = icmp eq i32 %t270, 0
   br label %and.end.90
 and.end.90:
@@ -79945,7 +80806,7 @@ then.93:
   %t274 = load ptr, ptr %t273
   %t275 = load { i32, i32, i32 }, ptr %s1
   %t276 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t276, ptr @.str.1164, i64 47)
+  call void @zevic_sb_add(ptr %t276, ptr @.str.1171, i64 47)
   %t277 = load { ptr, i64 }, ptr %s11
   %t278 = extractvalue { ptr, i64 } %t277, 0
   %t279 = extractvalue { ptr, i64 } %t277, 1
@@ -79992,7 +80853,7 @@ then.102:
   %t299 = getelementptr inbounds { i32, { ptr, i64 }, i64, i64, i32, i32, ptr, ptr, i64, ptr }, ptr %t298, i32 0, i32 9
   %t300 = load ptr, ptr %t299
   %t301 = load { i32, i32, i32 }, ptr %s1
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t300, { i32, i32, i32 } %t301, { ptr, i64 } { ptr @.str.1165, i64 54 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t300, { i32, i32, i32 } %t301, { ptr, i64 } { ptr @.str.1172, i64 54 })
   br label %endif.104
 endif.104:
   store i64 0, ptr %s24
@@ -80071,7 +80932,7 @@ then.119:
   %t343 = getelementptr inbounds { i32, { ptr, i64 }, i64, i64, i32, i32, ptr, ptr, i64, ptr }, ptr %t342, i32 0, i32 9
   %t344 = load ptr, ptr %t343
   %t345 = load { i32, i32, i32 }, ptr %s1
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t344, { i32, i32, i32 } %t345, { ptr, i64 } { ptr @.str.1166, i64 66 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t344, { i32, i32, i32 } %t345, { ptr, i64 } { ptr @.str.1173, i64 66 })
   br label %endif.121
 endif.121:
   %t346 = load ptr, ptr %s0
@@ -80091,52 +80952,52 @@ endif.121:
   store { ptr, i64 } %t356, ptr %t355
   ret void
 panic.41:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 668)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 668)
   unreachable
 panic.49:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 673)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 673)
   unreachable
 panic.51:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1100, i32 673)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1117, i32 673)
   unreachable
 panic.56:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 677)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 677)
   unreachable
 panic.58:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1100, i32 677)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1117, i32 677)
   unreachable
 panic.66:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 686)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 686)
   unreachable
 panic.68:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 688)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 688)
   unreachable
 panic.73:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 692)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 692)
   unreachable
 panic.75:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1100, i32 692)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1117, i32 692)
   unreachable
 panic.82:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1100, i32 698)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1117, i32 698)
   unreachable
 panic.92:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1100, i32 705)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1117, i32 705)
   unreachable
 panic.101:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1100, i32 710)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1117, i32 710)
   unreachable
 panic.109:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1100, i32 719)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1117, i32 719)
   unreachable
 panic.111:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 720)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 720)
   unreachable
 panic.113:
-  call void @zevic_panic(ptr @.str.94, i64 16, ptr @.str.1100, i32 720)
+  call void @zevic_panic(ptr @.str.94, i64 16, ptr @.str.1117, i32 720)
   unreachable
 panic.118:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 724)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 724)
   unreachable
 }
 
@@ -80212,7 +81073,7 @@ then.7:
   %t33 = getelementptr inbounds { i32, { ptr, i64 }, i64, i64, i32, i32, ptr, ptr, i64, ptr }, ptr %t32, i32 0, i32 9
   %t34 = load ptr, ptr %t33
   %t35 = load { i32, i32, i32 }, ptr %s2
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t34, { i32, i32, i32 } %t35, { ptr, i64 } { ptr @.str.1167, i64 30 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t34, { i32, i32, i32 } %t35, { ptr, i64 } { ptr @.str.1174, i64 30 })
   ret void
 endif.9:
   %t36 = load { ptr, i64 }, ptr %s4
@@ -80225,7 +81086,7 @@ then.10:
   %t41 = getelementptr inbounds { i32, { ptr, i64 }, i64, i64, i32, i32, ptr, ptr, i64, ptr }, ptr %t40, i32 0, i32 9
   %t42 = load ptr, ptr %t41
   %t43 = load { i32, i32, i32 }, ptr %s2
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t42, { i32, i32, i32 } %t43, { ptr, i64 } { ptr @.str.1168, i64 23 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t42, { i32, i32, i32 } %t43, { ptr, i64 } { ptr @.str.1175, i64 23 })
   %t44 = load ptr, ptr %s0
   %t45 = call i32 @"zevic_Zevic1_Lexer_Lexer_advance"(ptr %t44)
   ret void
@@ -80299,7 +81160,7 @@ then.24:
   %t87 = getelementptr inbounds { i32, { ptr, i64 }, i64, i64, i32, i32, ptr, ptr, i64, ptr }, ptr %t86, i32 0, i32 9
   %t88 = load ptr, ptr %t87
   %t89 = load { i32, i32, i32 }, ptr %s2
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t88, { i32, i32, i32 } %t89, { ptr, i64 } { ptr @.str.1169, i64 34 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t88, { i32, i32, i32 } %t89, { ptr, i64 } { ptr @.str.1176, i64 34 })
   ret void
 endif.26:
   %t90 = load { ptr, i64 }, ptr %s4
@@ -80329,7 +81190,7 @@ then.31:
   %t104 = getelementptr inbounds { i32, { ptr, i64 }, i64, i64, i32, i32, ptr, ptr, i64, ptr }, ptr %t103, i32 0, i32 9
   %t105 = load ptr, ptr %t104
   %t106 = load { i32, i32, i32 }, ptr %s2
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t105, { i32, i32, i32 } %t106, { ptr, i64 } { ptr @.str.1170, i64 61 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t105, { i32, i32, i32 } %t106, { ptr, i64 } { ptr @.str.1177, i64 61 })
   br label %endif.33
 endif.33:
   br label %endif.15
@@ -80352,7 +81213,7 @@ then.36:
   %t116 = getelementptr inbounds { i32, { ptr, i64 }, i64, i64, i32, i32, ptr, ptr, i64, ptr }, ptr %t115, i32 0, i32 9
   %t117 = load ptr, ptr %t116
   %t118 = load { i32, i32, i32 }, ptr %s2
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t117, { i32, i32, i32 } %t118, { ptr, i64 } { ptr @.str.1171, i64 71 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t117, { i32, i32, i32 } %t118, { ptr, i64 } { ptr @.str.1178, i64 71 })
   br label %while.cond.39
 while.cond.39:
   %t119 = load ptr, ptr %s0
@@ -80440,16 +81301,16 @@ endif.56:
   store i64 %t164, ptr %t162
   ret void
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 740)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 740)
   unreachable
 panic.17:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 757)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 757)
   unreachable
 panic.28:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 772)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 772)
   unreachable
 panic.50:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 788)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 788)
   unreachable
 }
 
@@ -80714,7 +81575,7 @@ then.41:
   %t134 = load i32, ptr %s10
   call void @"zevic_Zevic1_Token_Pos_Init"(ptr %s20, i32 %t132, i32 %t133, i32 %t134)
   %t135 = load { i32, i32, i32 }, ptr %s20
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t130, { i32, i32, i32 } %t135, { ptr, i64 } { ptr @.str.1172, i64 29 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t130, { i32, i32, i32 } %t135, { ptr, i64 } { ptr @.str.1179, i64 29 })
   ret void
 endif.43:
   %t136 = load ptr, ptr %s7
@@ -80982,82 +81843,82 @@ then.105:
 endif.107:
   ret void
 panic.4:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1100, i32 807)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1117, i32 807)
   unreachable
 panic.11:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 809)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 809)
   unreachable
 panic.16:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 813)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 813)
   unreachable
 panic.21:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 813)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 813)
   unreachable
 panic.23:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 818)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 818)
   unreachable
 panic.25:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 818)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 818)
   unreachable
 panic.31:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 820)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 820)
   unreachable
 panic.35:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 820)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 820)
   unreachable
 panic.40:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 821)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 821)
   unreachable
 panic.48:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 830)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 830)
   unreachable
 panic.50:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1100, i32 830)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1117, i32 830)
   unreachable
 panic.52:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 830)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 830)
   unreachable
 panic.57:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1100, i32 833)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1117, i32 833)
   unreachable
 panic.62:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 835)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 835)
   unreachable
 panic.64:
-  call void @zevic_panic(ptr @.str.94, i64 16, ptr @.str.1100, i32 837)
+  call void @zevic_panic(ptr @.str.94, i64 16, ptr @.str.1117, i32 837)
   unreachable
 panic.66:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 837)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 837)
   unreachable
 panic.71:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 838)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 838)
   unreachable
 panic.73:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 840)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 840)
   unreachable
 panic.75:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 842)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 842)
   unreachable
 panic.86:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 854)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 854)
   unreachable
 panic.88:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1100, i32 854)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1117, i32 854)
   unreachable
 panic.93:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 857)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 857)
   unreachable
 panic.95:
-  call void @zevic_panic(ptr @.str.94, i64 16, ptr @.str.1100, i32 859)
+  call void @zevic_panic(ptr @.str.94, i64 16, ptr @.str.1117, i32 859)
   unreachable
 panic.97:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 859)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 859)
   unreachable
 panic.102:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 860)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 860)
   unreachable
 panic.104:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 862)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 862)
   unreachable
 }
 
@@ -81097,7 +81958,7 @@ then.3:
   %t13 = getelementptr inbounds { i32, { ptr, i64 }, i64, i64, i32, i32, ptr, ptr, i64, ptr }, ptr %t12, i32 0, i32 9
   %t14 = load ptr, ptr %t13
   %t15 = load { i32, i32, i32 }, ptr %s2
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t14, { i32, i32, i32 } %t15, { ptr, i64 } { ptr @.str.1173, i64 33 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t14, { i32, i32, i32 } %t15, { ptr, i64 } { ptr @.str.1180, i64 33 })
   ret void
 endif.5:
   %t16 = load i64, ptr %s4
@@ -81112,7 +81973,7 @@ ok.6:
 while.end.2:
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 879)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 879)
   unreachable
 }
 
@@ -81318,7 +82179,7 @@ then.33:
   %t89 = getelementptr inbounds { i32, { ptr, i64 }, i64, i64, i32, i32, ptr, ptr, i64, ptr }, ptr %t88, i32 0, i32 9
   %t90 = load ptr, ptr %t89
   %t91 = load { i32, i32, i32 }, ptr %s2
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t90, { i32, i32, i32 } %t91, { ptr, i64 } { ptr @.str.1174, i64 75 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t90, { i32, i32, i32 } %t91, { ptr, i64 } { ptr @.str.1181, i64 75 })
   br label %endif.35
 else.34:
   %t92 = load i64, ptr %s9
@@ -81345,7 +82206,7 @@ then.40:
   %t102 = getelementptr inbounds { i32, { ptr, i64 }, i64, i64, i32, i32, ptr, ptr, i64, ptr }, ptr %t101, i32 0, i32 9
   %t103 = load ptr, ptr %t102
   %t104 = load { i32, i32, i32 }, ptr %s2
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t103, { i32, i32, i32 } %t104, { ptr, i64 } { ptr @.str.1175, i64 30 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t103, { i32, i32, i32 } %t104, { ptr, i64 } { ptr @.str.1182, i64 30 })
   br label %while.cond.43
 while.cond.43:
   %t105 = load ptr, ptr %s0
@@ -81609,7 +82470,7 @@ then.110:
   %t243 = getelementptr inbounds { i32, { ptr, i64 }, i64, i64, i32, i32, ptr, ptr, i64, ptr }, ptr %t242, i32 0, i32 9
   %t244 = load ptr, ptr %t243
   %t245 = load { i32, i32, i32 }, ptr %s2
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t244, { i32, i32, i32 } %t245, { ptr, i64 } { ptr @.str.1176, i64 41 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t244, { i32, i32, i32 } %t245, { ptr, i64 } { ptr @.str.1183, i64 41 })
   %t246 = load ptr, ptr %s18
   %t247 = load { ptr, i64 }, ptr %s4
   %t248 = load i64, ptr %s10
@@ -81782,7 +82643,7 @@ then.153:
   %t338 = load i32, ptr %t337
   call void @"zevic_Zevic1_Token_Pos_Init"(ptr %s26, i32 %t334, i32 %t336, i32 %t338)
   %t339 = load { i32, i32, i32 }, ptr %s26
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t332, { i32, i32, i32 } %t339, { ptr, i64 } { ptr @.str.1177, i64 69 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t332, { i32, i32, i32 } %t339, { ptr, i64 } { ptr @.str.1184, i64 69 })
   br label %endif.155
 endif.155:
   %t340 = load i1, ptr %s22
@@ -81933,7 +82794,7 @@ then.188:
   %t419 = getelementptr inbounds { i32, { ptr, i64 }, i64, i64, i32, i32, ptr, ptr, i64, ptr }, ptr %t418, i32 0, i32 9
   %t420 = load ptr, ptr %t419
   %t421 = load { i32, i32, i32 }, ptr %s2
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t420, { i32, i32, i32 } %t421, { ptr, i64 } { ptr @.str.1178, i64 68 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t420, { i32, i32, i32 } %t421, { ptr, i64 } { ptr @.str.1185, i64 68 })
   br label %while.cond.191
 while.cond.191:
   %t422 = load ptr, ptr %s0
@@ -82137,139 +82998,139 @@ endif.17:
   store ptr %t534, ptr %t533
   ret void
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 887)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 887)
   unreachable
 panic.6:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 892)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 892)
   unreachable
 panic.10:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 892)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 892)
   unreachable
 panic.14:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 892)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 892)
   unreachable
 panic.19:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 895)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 895)
   unreachable
 panic.30:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 899)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 899)
   unreachable
 panic.37:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 904)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 904)
   unreachable
 panic.52:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 917)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 917)
   unreachable
 panic.58:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 920)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 920)
   unreachable
 panic.62:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 920)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 920)
   unreachable
 panic.67:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 921)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 921)
   unreachable
 panic.69:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 921)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 921)
   unreachable
 panic.73:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 924)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 924)
   unreachable
 panic.77:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 924)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 924)
   unreachable
 panic.81:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 924)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 924)
   unreachable
 panic.86:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 927)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 927)
   unreachable
 panic.88:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 930)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 930)
   unreachable
 panic.95:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 933)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 933)
   unreachable
 panic.97:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 934)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 934)
   unreachable
 panic.99:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 936)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 936)
   unreachable
 panic.109:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 943)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 943)
   unreachable
 panic.114:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1100, i32 948)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1117, i32 948)
   unreachable
 panic.119:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 951)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 951)
   unreachable
 panic.131:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 956)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 956)
   unreachable
 panic.138:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 960)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 960)
   unreachable
 panic.142:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 960)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 960)
   unreachable
 panic.146:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 960)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 960)
   unreachable
 panic.148:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 961)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 961)
   unreachable
 panic.152:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 963)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 963)
   unreachable
 panic.162:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 971)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 971)
   unreachable
 panic.167:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 972)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 972)
   unreachable
 panic.169:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 974)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 974)
   unreachable
 panic.171:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1100, i32 974)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1117, i32 974)
   unreachable
 panic.176:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 978)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 978)
   unreachable
 panic.178:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 981)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 981)
   unreachable
 panic.183:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 989)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 989)
   unreachable
 panic.202:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 1001)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 1001)
   unreachable
 panic.208:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 1004)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 1004)
   unreachable
 panic.212:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 1004)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 1004)
   unreachable
 panic.217:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 1005)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 1005)
   unreachable
 panic.219:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 1005)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 1005)
   unreachable
 panic.224:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 1011)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 1011)
   unreachable
 panic.226:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1100, i32 1014)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1117, i32 1014)
   unreachable
 panic.231:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 1016)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 1016)
   unreachable
 panic.236:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 1018)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 1018)
   unreachable
 }
 
@@ -82619,10 +83480,10 @@ endif.68:
   %t177 = load ptr, ptr %t176
   ret ptr %t177
 panic.28:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 1042)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 1042)
   unreachable
 panic.65:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1100, i32 1065)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1117, i32 1065)
   unreachable
 }
 
@@ -82747,7 +83608,7 @@ pat.tag.4:
   %t16 = getelementptr inbounds { i32, [2 x i64] }, ptr %s1, i32 0, i32 1
   %t17 = getelementptr inbounds { ptr }, ptr %t16, i32 0, i32 0
   %t18 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t18, ptr @.str.1179, i64 26)
+  call void @zevic_sb_add(ptr %t18, ptr @.str.1186, i64 26)
   %t19 = load { ptr, i64 }, ptr %s0
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
@@ -82881,7 +83742,7 @@ then.13:
 else.14:
   br label %endif.15
 endif.15:
-  %t102 = phi { ptr, i64 } [ { ptr @.str.1181, i64 9 }, %then.13 ], [ { ptr @.str.83, i64 0 }, %else.14 ]
+  %t102 = phi { ptr, i64 } [ { ptr @.str.1188, i64 9 }, %then.13 ], [ { ptr @.str.83, i64 0 }, %else.14 ]
   %t103 = extractvalue { ptr, i64 } %t102, 0
   %t104 = extractvalue { ptr, i64 } %t102, 1
   call void @zevic_sb_add(ptr %t93, ptr %t103, i64 %t104)
@@ -82934,7 +83795,7 @@ pat.or.17:
   br i1 %t126, label %then.23, label %endif.25
 then.23:
   %t130 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t130, ptr @.str.1182, i64 2)
+  call void @zevic_sb_add(ptr %t130, ptr @.str.1189, i64 2)
   %t131 = load ptr, ptr %s10
   %t132 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t131, i32 0, i32 5
   %t133 = load { ptr, i64 }, ptr %t132
@@ -82976,7 +83837,7 @@ pat.tag.27:
   br i1 %t151, label %then.28, label %endif.30
 then.28:
   %t155 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t155, ptr @.str.1182, i64 2)
+  call void @zevic_sb_add(ptr %t155, ptr @.str.1189, i64 2)
   %t156 = load ptr, ptr %s10
   %t157 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t156, i32 0, i32 5
   %t158 = load { ptr, i64 }, ptr %t157
@@ -83030,11 +83891,11 @@ then.38:
 else.39:
   br label %endif.40
 endif.40:
-  %t183 = phi { ptr, i64 } [ { ptr @.str.1183, i64 4 }, %then.38 ], [ { ptr @.str.1184, i64 4 }, %else.39 ]
+  %t183 = phi { ptr, i64 } [ { ptr @.str.1190, i64 4 }, %then.38 ], [ { ptr @.str.1191, i64 4 }, %else.39 ]
   %t184 = extractvalue { ptr, i64 } %t183, 0
   %t185 = extractvalue { ptr, i64 } %t183, 1
   call void @zevic_sb_add(ptr %t179, ptr %t184, i64 %t185)
-  call void @zevic_sb_add(ptr %t179, ptr @.str.1185, i64 1)
+  call void @zevic_sb_add(ptr %t179, ptr @.str.1192, i64 1)
   call void @zevic_sb_finish(ptr %s24, ptr %t179)
   %t186 = load { ptr, i64 }, ptr %s24
   call void @"zevic_Zevic_Console_Print"({ ptr, i64 } %t186)
@@ -83144,7 +84005,7 @@ ok.62:
   store i64 %t244, ptr %s25
   br label %while.cond.41
 while.end.43:
-  call void @"zevic_Zevic_Console_Print"({ ptr, i64 } { ptr @.str.1186, i64 1 })
+  call void @"zevic_Zevic_Console_Print"({ ptr, i64 } { ptr @.str.1193, i64 1 })
   br label %for.cond.33
 for.end.35:
   br label %match.end.10
@@ -83169,22 +84030,22 @@ endif.67:
   %t250 = phi i32 [ 1, %then.65 ], [ 0, %else.66 ]
   ret i32 %t250
 panic.9:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 31)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 31)
   unreachable
 panic.37:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 44)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 44)
   unreachable
 panic.45:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1180, i32 48)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1187, i32 48)
   unreachable
 panic.59:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 52)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 52)
   unreachable
 panic.61:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1180, i32 52)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1187, i32 52)
   unreachable
 panic.63:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 53)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 53)
   unreachable
 }
 
@@ -83226,7 +84087,7 @@ pat.tag.4:
   %t16 = getelementptr inbounds { i32, [2 x i64] }, ptr %s1, i32 0, i32 1
   %t17 = getelementptr inbounds { ptr }, ptr %t16, i32 0, i32 0
   %t18 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t18, ptr @.str.1179, i64 26)
+  call void @zevic_sb_add(ptr %t18, ptr @.str.1186, i64 26)
   %t19 = load { ptr, i64 }, ptr %s0
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
@@ -83467,7 +84328,7 @@ match.end.0:
   %t88 = extractvalue { ptr, i64 } %t87, 0
   %t89 = extractvalue { ptr, i64 } %t87, 1
   call void @zevic_sb_add(ptr %t86, ptr %t88, i64 %t89)
-  call void @zevic_sb_add(ptr %t86, ptr @.str.1187, i64 19)
+  call void @zevic_sb_add(ptr %t86, ptr @.str.1194, i64 19)
   call void @zevic_sb_finish(ptr %s6, ptr %t86)
   %t90 = load { ptr, i64 }, ptr %s6
   call void @"zevic_Zevic1_Resolve_Program_Init"(ptr %t18, { ptr, i64 } %t90)
@@ -83527,7 +84388,7 @@ arm.next.11:
   br i1 %t124, label %pat.tag.14, label %arm.next.13
 pat.tag.14:
   %t126 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t126, ptr @.str.1179, i64 26)
+  call void @zevic_sb_add(ptr %t126, ptr @.str.1186, i64 26)
   %t127 = load { ptr, i64 }, ptr %s10
   %t128 = extractvalue { ptr, i64 } %t127, 0
   %t129 = extractvalue { ptr, i64 } %t127, 1
@@ -83552,7 +84413,7 @@ for.end.7:
   %t137 = extractvalue { ptr, i64 } %t136, 0
   %t138 = extractvalue { ptr, i64 } %t136, 1
   call void @zevic_sb_add(ptr %t135, ptr %t137, i64 %t138)
-  call void @zevic_sb_add(ptr %t135, ptr @.str.1188, i64 28)
+  call void @zevic_sb_add(ptr %t135, ptr @.str.1195, i64 28)
   call void @zevic_sb_finish(ptr %s14, ptr %t135)
   %t139 = load { ptr, i64 }, ptr %s14
   store { ptr, i64 } %t139, ptr %s15
@@ -83593,7 +84454,7 @@ endif.20:
   %t160 = load { i32, [1 x i64] }, ptr %s18
   ret { i32, [1 x i64] } %t160
 panic.9:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 94)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 94)
   unreachable
 }
 
@@ -84480,7 +85341,7 @@ for.body.6:
 ok.8:
   store i64 %t55, ptr %s7
   %t57 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t57, ptr @.str.1189, i64 5)
+  call void @zevic_sb_add(ptr %t57, ptr @.str.1196, i64 5)
   %t58 = load ptr, ptr %s1
   %t59 = load ptr, ptr %s8
   %t60 = getelementptr inbounds { ptr, { i32, [1 x i64] }, ptr }, ptr %t59, i32 0, i32 0
@@ -84503,7 +85364,7 @@ then.10:
 else.11:
   br label %endif.12
 endif.12:
-  %t73 = phi { ptr, i64 } [ { ptr @.str.1190, i64 4 }, %then.10 ], [ { ptr @.str.83, i64 0 }, %else.11 ]
+  %t73 = phi { ptr, i64 } [ { ptr @.str.1197, i64 4 }, %then.10 ], [ { ptr @.str.83, i64 0 }, %else.11 ]
   %t74 = extractvalue { ptr, i64 } %t73, 0
   %t75 = extractvalue { ptr, i64 } %t73, 1
   call void @zevic_sb_add(ptr %t57, ptr %t74, i64 %t75)
@@ -84553,7 +85414,7 @@ then.18:
 else.19:
   br label %endif.20
 endif.20:
-  %t100 = phi { ptr, i64 } [ { ptr @.str.1190, i64 4 }, %then.18 ], [ { ptr @.str.83, i64 0 }, %else.19 ]
+  %t100 = phi { ptr, i64 } [ { ptr @.str.1197, i64 4 }, %then.18 ], [ { ptr @.str.83, i64 0 }, %else.19 ]
   %t101 = extractvalue { ptr, i64 } %t100, 0
   %t102 = extractvalue { ptr, i64 } %t100, 1
   call void @zevic_sb_add(ptr %t91, ptr %t101, i64 %t102)
@@ -84585,7 +85446,7 @@ for.body.22:
 ok.24:
   store i64 %t116, ptr %s15
   %t118 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t118, ptr @.str.1191, i64 6)
+  call void @zevic_sb_add(ptr %t118, ptr @.str.1198, i64 6)
   %t119 = load ptr, ptr %s16
   %t120 = getelementptr inbounds { i64, { ptr, i64 }, ptr, ptr, ptr, ptr, i1, i32 }, ptr %t119, i32 0, i32 1
   %t121 = load { ptr, i64 }, ptr %t120
@@ -84626,7 +85487,7 @@ ok.29:
   %t141 = load ptr, ptr %t140
   store ptr %t141, ptr %s21
   %t142 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t142, ptr @.str.1192, i64 9)
+  call void @zevic_sb_add(ptr %t142, ptr @.str.1199, i64 9)
   %t143 = load ptr, ptr %s1
   %t144 = load ptr, ptr %s21
   %t145 = getelementptr inbounds { i32, { i32, i32, i32 }, { ptr, i64 }, i1, { i32, i32, i32 }, ptr, ptr, i1, i1 }, ptr %t144, i32 0, i32 1
@@ -84717,12 +85578,12 @@ match.end.39:
   %t197 = phi { ptr, i64 } [ %t193, %pat.tag.41 ], [ { ptr @.str.130, i64 1 }, %pat.tag.43 ]
   store { ptr, i64 } %t197, ptr %s30
   %t198 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t198, ptr @.str.1193, i64 11)
+  call void @zevic_sb_add(ptr %t198, ptr @.str.1200, i64 11)
   %t199 = load { ptr, i64 }, ptr %s27
   %t200 = extractvalue { ptr, i64 } %t199, 0
   %t201 = extractvalue { ptr, i64 } %t199, 1
   call void @zevic_sb_add(ptr %t198, ptr %t200, i64 %t201)
-  call void @zevic_sb_add(ptr %t198, ptr @.str.1194, i64 4)
+  call void @zevic_sb_add(ptr %t198, ptr @.str.1201, i64 4)
   %t202 = load { ptr, i64 }, ptr %s30
   %t203 = extractvalue { ptr, i64 } %t202, 0
   %t204 = extractvalue { ptr, i64 } %t202, 1
@@ -84756,7 +85617,7 @@ ok.48:
   %t220 = load { ptr, i64 }, ptr %s32
   %t222 = extractvalue { ptr, i64 } %t220, 0
   %t223 = extractvalue { ptr, i64 } %t220, 1
-  %t224 = call i32 @zevic_str_eq(ptr %t222, i64 %t223, ptr @.str.1195, i64 6)
+  %t224 = call i32 @zevic_str_eq(ptr %t222, i64 %t223, ptr @.str.1202, i64 6)
   %t221 = icmp ne i32 %t224, 0
   br label %and.end.47
 and.end.47:
@@ -84810,12 +85671,12 @@ match.end.55:
   %t254 = phi { ptr, i64 } [ %t250, %pat.tag.57 ], [ { ptr @.str.130, i64 1 }, %pat.tag.59 ]
   store { ptr, i64 } %t254, ptr %s37
   %t255 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t255, ptr @.str.1193, i64 11)
+  call void @zevic_sb_add(ptr %t255, ptr @.str.1200, i64 11)
   %t256 = load { ptr, i64 }, ptr %s34
   %t257 = extractvalue { ptr, i64 } %t256, 0
   %t258 = extractvalue { ptr, i64 } %t256, 1
   call void @zevic_sb_add(ptr %t255, ptr %t257, i64 %t258)
-  call void @zevic_sb_add(ptr %t255, ptr @.str.1194, i64 4)
+  call void @zevic_sb_add(ptr %t255, ptr @.str.1201, i64 4)
   %t259 = load { ptr, i64 }, ptr %s37
   %t260 = extractvalue { ptr, i64 } %t259, 0
   %t261 = extractvalue { ptr, i64 } %t259, 1
@@ -84935,7 +85796,7 @@ then.79:
 else.80:
   br label %endif.81
 endif.81:
-  %t331 = phi { ptr, i64 } [ { ptr @.str.1196, i64 3 }, %then.79 ], [ { ptr @.str.1197, i64 4 }, %else.80 ]
+  %t331 = phi { ptr, i64 } [ { ptr @.str.1203, i64 3 }, %then.79 ], [ { ptr @.str.1204, i64 4 }, %else.80 ]
   br label %match.end.76
 arm.next.77:
   %t334 = getelementptr inbounds { i32, [1 x i64] }, ptr %s51, i32 0, i32 0
@@ -84947,7 +85808,7 @@ pat.tag.83:
 arm.next.82:
   unreachable
 match.end.76:
-  %t335 = phi { ptr, i64 } [ %t331, %endif.81 ], [ { ptr @.str.1197, i64 4 }, %pat.tag.83 ]
+  %t335 = phi { ptr, i64 } [ %t331, %endif.81 ], [ { ptr @.str.1204, i64 4 }, %pat.tag.83 ]
   store { ptr, i64 } %t335, ptr %s53
   %t338 = getelementptr inbounds { i32, [1 x i64] }, ptr %s51, i32 0, i32 0
   %t336 = load i32, ptr %t338
@@ -84987,7 +85848,7 @@ match.end.84:
   %t354 = phi { ptr, i64 } [ %t350, %endif.89 ], [ { ptr @.str.177, i64 1 }, %pat.tag.91 ]
   store { ptr, i64 } %t354, ptr %s55
   %t355 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t355, ptr @.str.1198, i64 9)
+  call void @zevic_sb_add(ptr %t355, ptr @.str.1205, i64 9)
   %t356 = load ptr, ptr %s50
   %t357 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t356, i32 0, i32 3
   %t358 = load { ptr, i64 }, ptr %t357
@@ -84999,7 +85860,7 @@ match.end.84:
   %t362 = extractvalue { ptr, i64 } %t361, 0
   %t363 = extractvalue { ptr, i64 } %t361, 1
   call void @zevic_sb_add(ptr %t355, ptr %t362, i64 %t363)
-  call void @zevic_sb_add(ptr %t355, ptr @.str.1199, i64 5)
+  call void @zevic_sb_add(ptr %t355, ptr @.str.1206, i64 5)
   %t364 = load { ptr, i64 }, ptr %s55
   %t365 = extractvalue { ptr, i64 } %t364, 0
   %t366 = extractvalue { ptr, i64 } %t364, 1
@@ -85039,7 +85900,7 @@ then.95:
 else.96:
   br label %endif.97
 endif.97:
-  %t386 = phi { ptr, i64 } [ { ptr @.str.1196, i64 3 }, %then.95 ], [ { ptr @.str.1197, i64 4 }, %else.96 ]
+  %t386 = phi { ptr, i64 } [ { ptr @.str.1203, i64 3 }, %then.95 ], [ { ptr @.str.1204, i64 4 }, %else.96 ]
   br label %match.end.92
 arm.next.93:
   %t389 = getelementptr inbounds { i32, [1 x i64] }, ptr %s57, i32 0, i32 0
@@ -85051,10 +85912,10 @@ pat.tag.99:
 arm.next.98:
   unreachable
 match.end.92:
-  %t390 = phi { ptr, i64 } [ %t386, %endif.97 ], [ { ptr @.str.1197, i64 4 }, %pat.tag.99 ]
+  %t390 = phi { ptr, i64 } [ %t386, %endif.97 ], [ { ptr @.str.1204, i64 4 }, %pat.tag.99 ]
   store { ptr, i64 } %t390, ptr %s59
   %t391 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t391, ptr @.str.1198, i64 9)
+  call void @zevic_sb_add(ptr %t391, ptr @.str.1205, i64 9)
   %t392 = load ptr, ptr %s41
   %t393 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t392, i32 0, i32 3
   %t394 = load { ptr, i64 }, ptr %t393
@@ -85098,7 +85959,7 @@ for.body.101:
 ok.103:
   store i64 %t413, ptr %s62
   %t415 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t415, ptr @.str.1200, i64 7)
+  call void @zevic_sb_add(ptr %t415, ptr @.str.1207, i64 7)
   %t416 = load ptr, ptr %s63
   %t417 = getelementptr inbounds { ptr, { ptr, i64 }, { ptr, i64 }, i1, i1, { ptr, i64 }, { ptr, i64 }, i1, { i32, [1 x i64] }, { i32, [1 x i64] } }, ptr %t416, i32 0, i32 1
   %t418 = load { ptr, i64 }, ptr %t417
@@ -85121,34 +85982,34 @@ for.end.102:
 for.end.15:
   ret i32 0
 panic.9:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 129)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 129)
   unreachable
 panic.17:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 132)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 132)
   unreachable
 panic.25:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 134)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 134)
   unreachable
 panic.30:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 137)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 137)
   unreachable
 panic.35:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 140)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 140)
   unreachable
 panic.49:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1180, i32 148)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1187, i32 148)
   unreachable
 panic.54:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1180, i32 149)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1187, i32 149)
   unreachable
 panic.64:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 157)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 157)
   unreachable
 panic.75:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 160)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 160)
   unreachable
 panic.104:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 181)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 181)
   unreachable
 }
 
@@ -85173,7 +86034,7 @@ entry:
   %t6 = extractvalue { ptr, i64 } %t5, 0
   %t7 = extractvalue { ptr, i64 } %t5, 1
   call void @zevic_sb_add(ptr %t2, ptr %t6, i64 %t7)
-  call void @zevic_sb_add(ptr %t2, ptr @.str.1201, i64 8)
+  call void @zevic_sb_add(ptr %t2, ptr @.str.1208, i64 8)
   %t8 = load ptr, ptr %s1
   %t9 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t8, i32 0, i32 10
   %t10 = load i64, ptr %t9
@@ -85182,7 +86043,7 @@ entry:
   %t12 = extractvalue { ptr, i64 } %t11, 0
   %t13 = extractvalue { ptr, i64 } %t11, 1
   call void @zevic_sb_add(ptr %t2, ptr %t12, i64 %t13)
-  call void @zevic_sb_add(ptr %t2, ptr @.str.1045, i64 7)
+  call void @zevic_sb_add(ptr %t2, ptr @.str.1062, i64 7)
   %t14 = load ptr, ptr %s1
   %t15 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t14, i32 0, i32 11
   %t16 = load i64, ptr %t15
@@ -85191,14 +86052,14 @@ entry:
   %t18 = extractvalue { ptr, i64 } %t17, 0
   %t19 = extractvalue { ptr, i64 } %t17, 1
   call void @zevic_sb_add(ptr %t2, ptr %t18, i64 %t19)
-  call void @zevic_sb_add(ptr %t2, ptr @.str.1046, i64 4)
+  call void @zevic_sb_add(ptr %t2, ptr @.str.1063, i64 4)
   %t20 = load ptr, ptr %s1
   %t21 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t20, i32 0, i32 12
   %t22 = load { ptr, i64 }, ptr %t21
   %t23 = extractvalue { ptr, i64 } %t22, 0
   %t24 = extractvalue { ptr, i64 } %t22, 1
   call void @zevic_sb_add(ptr %t2, ptr %t23, i64 %t24)
-  call void @zevic_sb_add(ptr %t2, ptr @.str.1047, i64 7)
+  call void @zevic_sb_add(ptr %t2, ptr @.str.1064, i64 7)
   %t25 = load ptr, ptr %s1
   %t26 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t25, i32 0, i32 13
   %t27 = load i32, ptr %t26
@@ -85208,7 +86069,7 @@ entry:
   %t30 = extractvalue { ptr, i64 } %t29, 0
   %t31 = extractvalue { ptr, i64 } %t29, 1
   call void @zevic_sb_add(ptr %t2, ptr %t30, i64 %t31)
-  call void @zevic_sb_add(ptr %t2, ptr @.str.1202, i64 4)
+  call void @zevic_sb_add(ptr %t2, ptr @.str.1209, i64 4)
   %t32 = load ptr, ptr %s1
   %t33 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t32, i32 0, i32 5
   %t34 = load i32, ptr %t33
@@ -85348,7 +86209,7 @@ endif.7:
   call void @"zevic_Array<Zevic1_Types_Variant>_Push"(ptr %t51, ptr %t52)
   ret void
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 203)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 203)
   unreachable
 }
 
@@ -85732,24 +86593,24 @@ for.end.2:
   call void @"zevic_Main_stShow"(ptr %t212, ptr %t217)
   %t218 = load ptr, ptr %s1
   %t219 = load ptr, ptr %s1
-  %t220 = call ptr @"zevic_Zevic1_Types_TypeTable_Param"(ptr %t219, { ptr, i64 } { ptr @.str.1203, i64 1 })
+  %t220 = call ptr @"zevic_Zevic1_Types_TypeTable_Param"(ptr %t219, { ptr, i64 } { ptr @.str.1210, i64 1 })
   call void @"zevic_Main_stShow"(ptr %t218, ptr %t220)
   %t223 = getelementptr { ptr, i64 }, ptr null, i32 1
   %t224 = ptrtoint ptr %t223 to i64
   %t221 = mul i64 11, %t224
   %t222 = call ptr @zevic_alloc(i64 %t221)
   %t225 = getelementptr inbounds { ptr, i64 }, ptr %t222, i64 0
-  store { ptr, i64 } { ptr @.str.1204, i64 5 }, ptr %t225
+  store { ptr, i64 } { ptr @.str.1211, i64 5 }, ptr %t225
   %t226 = getelementptr inbounds { ptr, i64 }, ptr %t222, i64 1
   store { ptr, i64 } { ptr @.str.664, i64 4 }, ptr %t226
   %t227 = getelementptr inbounds { ptr, i64 }, ptr %t222, i64 2
   store { ptr, i64 } { ptr @.str.665, i64 5 }, ptr %t227
   %t228 = getelementptr inbounds { ptr, i64 }, ptr %t222, i64 3
-  store { ptr, i64 } { ptr @.str.1205, i64 5 }, ptr %t228
+  store { ptr, i64 } { ptr @.str.1212, i64 5 }, ptr %t228
   %t229 = getelementptr inbounds { ptr, i64 }, ptr %t222, i64 4
-  store { ptr, i64 } { ptr @.str.1206, i64 6 }, ptr %t229
+  store { ptr, i64 } { ptr @.str.1213, i64 6 }, ptr %t229
   %t230 = getelementptr inbounds { ptr, i64 }, ptr %t222, i64 5
-  store { ptr, i64 } { ptr @.str.1207, i64 6 }, ptr %t230
+  store { ptr, i64 } { ptr @.str.1214, i64 6 }, ptr %t230
   %t231 = getelementptr inbounds { ptr, i64 }, ptr %t222, i64 6
   store { ptr, i64 } { ptr @.str.679, i64 7 }, ptr %t231
   %t232 = getelementptr inbounds { ptr, i64 }, ptr %t222, i64 7
@@ -85759,7 +86620,7 @@ for.end.2:
   %t234 = getelementptr inbounds { ptr, i64 }, ptr %t222, i64 9
   store { ptr, i64 } { ptr @.str.663, i64 7 }, ptr %t234
   %t235 = getelementptr inbounds { ptr, i64 }, ptr %t222, i64 10
-  store { ptr, i64 } { ptr @.str.1208, i64 6 }, ptr %t235
+  store { ptr, i64 } { ptr @.str.1215, i64 6 }, ptr %t235
   %t236 = call ptr @zevic_alloc(i64 24)
   %t237 = getelementptr inbounds { ptr, i64, i64 }, ptr %t236, i32 0, i32 0
   store ptr %t222, ptr %t237
@@ -85814,7 +86675,7 @@ arm.next.11:
   br i1 %t265, label %pat.tag.14, label %arm.next.13
 pat.tag.14:
   %t267 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t267, ptr @.str.1209, i64 8)
+  call void @zevic_sb_add(ptr %t267, ptr @.str.1216, i64 8)
   %t268 = load { ptr, i64 }, ptr %s9
   %t269 = extractvalue { ptr, i64 } %t268, 0
   %t270 = extractvalue { ptr, i64 } %t268, 1
@@ -85829,9 +86690,9 @@ match.end.10:
   br label %for.cond.5
 for.end.7:
   %t272 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t272, ptr @.str.1210, i64 17)
+  call void @zevic_sb_add(ptr %t272, ptr @.str.1217, i64 17)
   %t273 = load ptr, ptr %s1
-  %t274 = call { i32, [1 x i64] } @"zevic_Zevic1_Types_TypeTable_CByName"(ptr %t273, { ptr, i64 } { ptr @.str.1211, i64 5 })
+  %t274 = call { i32, [1 x i64] } @"zevic_Zevic1_Types_TypeTable_CByName"(ptr %t273, { ptr, i64 } { ptr @.str.1218, i64 5 })
   store { i32, [1 x i64] } %t274, ptr %s13
   %t277 = getelementptr inbounds { i32, [1 x i64] }, ptr %s13, i32 0, i32 0
   %t275 = load i32, ptr %t277
@@ -85853,7 +86714,7 @@ pat.tag.19:
 arm.next.18:
   unreachable
 match.end.15:
-  %t285 = phi { ptr, i64 } [ { ptr @.str.1212, i64 5 }, %pat.tag.17 ], [ { ptr @.str.259, i64 4 }, %pat.tag.19 ]
+  %t285 = phi { ptr, i64 } [ { ptr @.str.1219, i64 5 }, %pat.tag.17 ], [ { ptr @.str.259, i64 4 }, %pat.tag.19 ]
   %t286 = extractvalue { ptr, i64 } %t285, 0
   %t287 = extractvalue { ptr, i64 } %t285, 1
   call void @zevic_sb_add(ptr %t272, ptr %t286, i64 %t287)
@@ -85862,10 +86723,10 @@ match.end.15:
   call void @"zevic_Zevic_Console_Println"({ ptr, i64 } %t288)
   %t289 = load ptr, ptr %s1
   %t290 = load ptr, ptr %s1
-  %t291 = call ptr @"zevic_Zevic1_Types_TypeTable_CType"(ptr %t290, { ptr, i64 } { ptr @.str.1213, i64 3 }, i64 2, i1 true)
+  %t291 = call ptr @"zevic_Zevic1_Types_TypeTable_CType"(ptr %t290, { ptr, i64 } { ptr @.str.1220, i64 3 }, i64 2, i1 true)
   call void @"zevic_Main_stShow"(ptr %t289, ptr %t291)
   %t292 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t292, ptr @.str.1214, i64 13)
+  call void @zevic_sb_add(ptr %t292, ptr @.str.1221, i64 13)
   %t293 = load ptr, ptr %s1
   %t294 = call { i32, [1 x i64] } @"zevic_Zevic1_Types_TypeTable_PrimByName"(ptr %t293, { ptr, i64 } { ptr @.str.28, i64 6 })
   store { i32, [1 x i64] } %t294, ptr %s15
@@ -85889,13 +86750,13 @@ pat.tag.24:
 arm.next.23:
   unreachable
 match.end.20:
-  %t305 = phi { ptr, i64 } [ { ptr @.str.1215, i64 3 }, %pat.tag.22 ], [ { ptr @.str.1216, i64 2 }, %pat.tag.24 ]
+  %t305 = phi { ptr, i64 } [ { ptr @.str.1222, i64 3 }, %pat.tag.22 ], [ { ptr @.str.1223, i64 2 }, %pat.tag.24 ]
   %t306 = extractvalue { ptr, i64 } %t305, 0
   %t307 = extractvalue { ptr, i64 } %t305, 1
   call void @zevic_sb_add(ptr %t292, ptr %t306, i64 %t307)
-  call void @zevic_sb_add(ptr %t292, ptr @.str.1217, i64 14)
+  call void @zevic_sb_add(ptr %t292, ptr @.str.1224, i64 14)
   %t308 = load ptr, ptr %s1
-  %t309 = call { i32, [1 x i64] } @"zevic_Zevic1_Types_TypeTable_PrimByName"(ptr %t308, { ptr, i64 } { ptr @.str.1037, i64 5 })
+  %t309 = call { i32, [1 x i64] } @"zevic_Zevic1_Types_TypeTable_PrimByName"(ptr %t308, { ptr, i64 } { ptr @.str.1054, i64 5 })
   store { i32, [1 x i64] } %t309, ptr %s16
   %t312 = getelementptr inbounds { i32, [1 x i64] }, ptr %s16, i32 0, i32 0
   %t310 = load i32, ptr %t312
@@ -85917,7 +86778,7 @@ pat.tag.29:
 arm.next.28:
   unreachable
 match.end.25:
-  %t320 = phi { ptr, i64 } [ { ptr @.str.1215, i64 3 }, %pat.tag.27 ], [ { ptr @.str.1216, i64 2 }, %pat.tag.29 ]
+  %t320 = phi { ptr, i64 } [ { ptr @.str.1222, i64 3 }, %pat.tag.27 ], [ { ptr @.str.1223, i64 2 }, %pat.tag.29 ]
   %t321 = extractvalue { ptr, i64 } %t320, 0
   %t322 = extractvalue { ptr, i64 } %t320, 1
   call void @zevic_sb_add(ptr %t292, ptr %t321, i64 %t322)
@@ -86028,7 +86889,7 @@ match.end.25:
   %t400 = call ptr @"zevic_Zevic1_Types_TypeTable_Union"(ptr %t368, ptr %t396)
   store ptr %t400, ptr %s20
   %t401 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t401, ptr @.str.1218, i64 6)
+  call void @zevic_sb_add(ptr %t401, ptr @.str.1225, i64 6)
   %t402 = load ptr, ptr %s19
   %t403 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t402, i32 0, i32 5
   %t404 = load i32, ptr %t403
@@ -86042,7 +86903,7 @@ then.30:
 else.31:
   br label %endif.32
 endif.32:
-  %t409 = phi { ptr, i64 } [ { ptr @.str.1215, i64 3 }, %then.30 ], [ { ptr @.str.1216, i64 2 }, %else.31 ]
+  %t409 = phi { ptr, i64 } [ { ptr @.str.1222, i64 3 }, %then.30 ], [ { ptr @.str.1223, i64 2 }, %else.31 ]
   %t410 = extractvalue { ptr, i64 } %t409, 0
   %t411 = extractvalue { ptr, i64 } %t409, 1
   call void @zevic_sb_add(ptr %t401, ptr %t410, i64 %t411)
@@ -86050,7 +86911,7 @@ endif.32:
   %t412 = load { ptr, i64 }, ptr %s21
   call void @"zevic_Zevic_Console_Println"({ ptr, i64 } %t412)
   %t413 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t413, ptr @.str.1219, i64 12)
+  call void @zevic_sb_add(ptr %t413, ptr @.str.1226, i64 12)
   %t414 = load ptr, ptr %s1
   %t417 = getelementptr ptr, ptr null, i32 1
   %t418 = ptrtoint ptr %t417 to i64
@@ -86261,14 +87122,14 @@ match.end.38:
   %t561 = phi { ptr, i64 } [ %t557, %pat.tag.40 ], [ { ptr @.str.83, i64 0 }, %pat.tag.42 ]
   store { ptr, i64 } %t561, ptr %s28
   %t562 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t562, ptr @.str.1049, i64 10)
+  call void @zevic_sb_add(ptr %t562, ptr @.str.1066, i64 10)
   %t563 = load ptr, ptr %s26
   %t564 = getelementptr inbounds { { ptr, i64 }, i32, i1, ptr, { i32, [1 x i64] } }, ptr %t563, i32 0, i32 0
   %t565 = load { ptr, i64 }, ptr %t564
   %t566 = extractvalue { ptr, i64 } %t565, 0
   %t567 = extractvalue { ptr, i64 } %t565, 1
   call void @zevic_sb_add(ptr %t562, ptr %t566, i64 %t567)
-  call void @zevic_sb_add(ptr %t562, ptr @.str.1050, i64 5)
+  call void @zevic_sb_add(ptr %t562, ptr @.str.1067, i64 5)
   %t568 = load ptr, ptr %s26
   %t569 = getelementptr inbounds { { ptr, i64 }, i32, i1, ptr, { i32, [1 x i64] } }, ptr %t568, i32 0, i32 1
   %t570 = load i32, ptr %t569
@@ -86278,7 +87139,7 @@ match.end.38:
   %t573 = extractvalue { ptr, i64 } %t572, 0
   %t574 = extractvalue { ptr, i64 } %t572, 1
   call void @zevic_sb_add(ptr %t562, ptr %t573, i64 %t574)
-  call void @zevic_sb_add(ptr %t562, ptr @.str.1052, i64 9)
+  call void @zevic_sb_add(ptr %t562, ptr @.str.1069, i64 9)
   %t575 = load { ptr, i64 }, ptr %s28
   %t576 = extractvalue { ptr, i64 } %t575, 0
   %t577 = extractvalue { ptr, i64 } %t575, 1
@@ -86303,18 +87164,18 @@ for.end.35:
   store i64 0, ptr %t588
   %t589 = getelementptr inbounds { ptr, i64, i64 }, ptr %t586, i32 0, i32 2
   store i64 0, ptr %t589
-  %t590 = call ptr @"zevic_Zevic1_Types_TypeTable_Named"(ptr %t579, { i32 } %t581, { ptr, i64 } { ptr @.str.83, i64 0 }, { ptr, i64 } { ptr @.str.1220, i64 10 }, ptr %t586)
+  %t590 = call ptr @"zevic_Zevic1_Types_TypeTable_Named"(ptr %t579, { i32 } %t581, { ptr, i64 } { ptr @.str.83, i64 0 }, { ptr, i64 } { ptr @.str.1227, i64 10 }, ptr %t586)
   store ptr %t590, ptr %s32
   %t591 = load ptr, ptr %s32
   %t592 = load ptr, ptr %s1
   %t593 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t592, i32 0, i32 7
   %t594 = load ptr, ptr %t593
-  call void @"zevic_Main_stField"(ptr %t591, { ptr, i64 } { ptr @.str.1221, i64 1 }, ptr %t594)
+  call void @"zevic_Main_stField"(ptr %t591, { ptr, i64 } { ptr @.str.1228, i64 1 }, ptr %t594)
   %t595 = load ptr, ptr %s32
   %t596 = load ptr, ptr %s1
   %t597 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t596, i32 0, i32 14
   %t598 = load ptr, ptr %t597
-  call void @"zevic_Main_stField"(ptr %t595, { ptr, i64 } { ptr @.str.1222, i64 1 }, ptr %t598)
+  call void @"zevic_Main_stField"(ptr %t595, { ptr, i64 } { ptr @.str.1229, i64 1 }, ptr %t598)
   %t599 = load ptr, ptr %s1
   %t600 = load ptr, ptr %s32
   call void @"zevic_Main_stShow"(ptr %t599, ptr %t600)
@@ -86334,7 +87195,7 @@ for.end.35:
   store i64 0, ptr %t611
   %t612 = getelementptr inbounds { ptr, i64, i64 }, ptr %t609, i32 0, i32 2
   store i64 0, ptr %t612
-  %t613 = call ptr @"zevic_Zevic1_Types_TypeTable_Named"(ptr %t602, { i32 } %t604, { ptr, i64 } { ptr @.str.83, i64 0 }, { ptr, i64 } { ptr @.str.1223, i64 10 }, ptr %t609)
+  %t613 = call ptr @"zevic_Zevic1_Types_TypeTable_Named"(ptr %t602, { i32 } %t604, { ptr, i64 } { ptr @.str.83, i64 0 }, { ptr, i64 } { ptr @.str.1230, i64 10 }, ptr %t609)
   call void @"zevic_Main_stShow"(ptr %t601, ptr %t613)
   %t614 = load ptr, ptr %s1
   %t615 = getelementptr inbounds { i32 }, ptr %s34, i32 0, i32 0
@@ -86351,19 +87212,19 @@ for.end.35:
   store i64 0, ptr %t623
   %t624 = getelementptr inbounds { ptr, i64, i64 }, ptr %t621, i32 0, i32 2
   store i64 0, ptr %t624
-  %t625 = call ptr @"zevic_Zevic1_Types_TypeTable_Named"(ptr %t614, { i32 } %t616, { ptr, i64 } { ptr @.str.83, i64 0 }, { ptr, i64 } { ptr @.str.1224, i64 11 }, ptr %t621)
+  %t625 = call ptr @"zevic_Zevic1_Types_TypeTable_Named"(ptr %t614, { i32 } %t616, { ptr, i64 } { ptr @.str.83, i64 0 }, { ptr, i64 } { ptr @.str.1231, i64 11 }, ptr %t621)
   store ptr %t625, ptr %s35
   %t626 = load ptr, ptr %s35
   %t627 = load ptr, ptr %s1
   %t628 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t627, i32 0, i32 15
   %t629 = load ptr, ptr %t628
-  call void @"zevic_Main_stField"(ptr %t626, { ptr, i64 } { ptr @.str.1225, i64 1 }, ptr %t629)
+  call void @"zevic_Main_stField"(ptr %t626, { ptr, i64 } { ptr @.str.1232, i64 1 }, ptr %t629)
   %t630 = load ptr, ptr %s35
   %t631 = load ptr, ptr %s19
-  call void @"zevic_Main_stField"(ptr %t630, { ptr, i64 } { ptr @.str.1226, i64 1 }, ptr %t631)
+  call void @"zevic_Main_stField"(ptr %t630, { ptr, i64 } { ptr @.str.1233, i64 1 }, ptr %t631)
   %t632 = load ptr, ptr %s35
   %t633 = load ptr, ptr %s32
-  call void @"zevic_Main_stField"(ptr %t632, { ptr, i64 } { ptr @.str.1227, i64 1 }, ptr %t633)
+  call void @"zevic_Main_stField"(ptr %t632, { ptr, i64 } { ptr @.str.1234, i64 1 }, ptr %t633)
   %t634 = load ptr, ptr %s1
   %t635 = load ptr, ptr %s35
   call void @"zevic_Main_stShow"(ptr %t634, ptr %t635)
@@ -86382,7 +87243,7 @@ for.end.35:
   store i64 0, ptr %t645
   %t646 = getelementptr inbounds { ptr, i64, i64 }, ptr %t643, i32 0, i32 2
   store i64 0, ptr %t646
-  %t647 = call ptr @"zevic_Zevic1_Types_TypeTable_Named"(ptr %t636, { i32 } %t638, { ptr, i64 } { ptr @.str.83, i64 0 }, { ptr, i64 } { ptr @.str.1228, i64 10 }, ptr %t643)
+  %t647 = call ptr @"zevic_Zevic1_Types_TypeTable_Named"(ptr %t636, { i32 } %t638, { ptr, i64 } { ptr @.str.83, i64 0 }, { ptr, i64 } { ptr @.str.1235, i64 10 }, ptr %t643)
   store ptr %t647, ptr %s37
   %t648 = load ptr, ptr %s1
   %t649 = load ptr, ptr %s37
@@ -86402,7 +87263,7 @@ for.end.35:
   store i64 1, ptr %t660
   %t661 = getelementptr inbounds { ptr, i64, i64 }, ptr %t658, i32 0, i32 2
   store i64 1, ptr %t661
-  call void @"zevic_Main_stVariant"(ptr %t648, ptr %t649, { ptr, i64 } { ptr @.str.1229, i64 6 }, i32 0, ptr %t658)
+  call void @"zevic_Main_stVariant"(ptr %t648, ptr %t649, { ptr, i64 } { ptr @.str.1236, i64 6 }, i32 0, ptr %t658)
   %t662 = load ptr, ptr %s1
   %t663 = load ptr, ptr %s37
   %t666 = getelementptr ptr, ptr null, i32 1
@@ -86426,7 +87287,7 @@ for.end.35:
   store i64 2, ptr %t678
   %t679 = getelementptr inbounds { ptr, i64, i64 }, ptr %t676, i32 0, i32 2
   store i64 2, ptr %t679
-  call void @"zevic_Main_stVariant"(ptr %t662, ptr %t663, { ptr, i64 } { ptr @.str.1230, i64 4 }, i32 1, ptr %t676)
+  call void @"zevic_Main_stVariant"(ptr %t662, ptr %t663, { ptr, i64 } { ptr @.str.1237, i64 4 }, i32 1, ptr %t676)
   %t680 = load ptr, ptr %s1
   %t681 = load ptr, ptr %s37
   %t684 = getelementptr ptr, ptr null, i32 1
@@ -86440,7 +87301,7 @@ for.end.35:
   store i64 0, ptr %t688
   %t689 = getelementptr inbounds { ptr, i64, i64 }, ptr %t686, i32 0, i32 2
   store i64 0, ptr %t689
-  call void @"zevic_Main_stVariant"(ptr %t680, ptr %t681, { ptr, i64 } { ptr @.str.1231, i64 3 }, i32 2, ptr %t686)
+  call void @"zevic_Main_stVariant"(ptr %t680, ptr %t681, { ptr, i64 } { ptr @.str.1238, i64 3 }, i32 2, ptr %t686)
   %t690 = load ptr, ptr %s1
   %t691 = load ptr, ptr %s37
   call void @"zevic_Main_stShow"(ptr %t690, ptr %t691)
@@ -86459,7 +87320,7 @@ for.end.35:
   store i64 0, ptr %t701
   %t702 = getelementptr inbounds { ptr, i64, i64 }, ptr %t699, i32 0, i32 2
   store i64 0, ptr %t702
-  %t703 = call ptr @"zevic_Zevic1_Types_TypeTable_Named"(ptr %t692, { i32 } %t694, { ptr, i64 } { ptr @.str.83, i64 0 }, { ptr, i64 } { ptr @.str.1232, i64 10 }, ptr %t699)
+  %t703 = call ptr @"zevic_Zevic1_Types_TypeTable_Named"(ptr %t692, { i32 } %t694, { ptr, i64 } { ptr @.str.83, i64 0 }, { ptr, i64 } { ptr @.str.1239, i64 10 }, ptr %t699)
   store ptr %t703, ptr %s39
   %t704 = load ptr, ptr %s1
   %t705 = load ptr, ptr %s39
@@ -86474,7 +87335,7 @@ for.end.35:
   store i64 0, ptr %t712
   %t713 = getelementptr inbounds { ptr, i64, i64 }, ptr %t710, i32 0, i32 2
   store i64 0, ptr %t713
-  call void @"zevic_Main_stVariant"(ptr %t704, ptr %t705, { ptr, i64 } { ptr @.str.1233, i64 3 }, i32 0, ptr %t710)
+  call void @"zevic_Main_stVariant"(ptr %t704, ptr %t705, { ptr, i64 } { ptr @.str.1240, i64 3 }, i32 0, ptr %t710)
   %t714 = load ptr, ptr %s1
   %t715 = load ptr, ptr %s39
   %t718 = getelementptr ptr, ptr null, i32 1
@@ -86488,7 +87349,7 @@ for.end.35:
   store i64 0, ptr %t722
   %t723 = getelementptr inbounds { ptr, i64, i64 }, ptr %t720, i32 0, i32 2
   store i64 0, ptr %t723
-  call void @"zevic_Main_stVariant"(ptr %t714, ptr %t715, { ptr, i64 } { ptr @.str.1234, i64 4 }, i32 1, ptr %t720)
+  call void @"zevic_Main_stVariant"(ptr %t714, ptr %t715, { ptr, i64 } { ptr @.str.1241, i64 4 }, i32 1, ptr %t720)
   %t724 = load ptr, ptr %s1
   %t725 = load ptr, ptr %s39
   call void @"zevic_Main_stShow"(ptr %t724, ptr %t725)
@@ -86512,7 +87373,7 @@ for.end.35:
   store i64 1, ptr %t739
   %t740 = getelementptr inbounds { ptr, i64, i64 }, ptr %t737, i32 0, i32 2
   store i64 1, ptr %t740
-  %t741 = call ptr @"zevic_Zevic1_Types_TypeTable_Named"(ptr %t726, { i32 } %t728, { ptr, i64 } { ptr @.str.83, i64 0 }, { ptr, i64 } { ptr @.str.1235, i64 8 }, ptr %t737)
+  %t741 = call ptr @"zevic_Zevic1_Types_TypeTable_Named"(ptr %t726, { i32 } %t728, { ptr, i64 } { ptr @.str.83, i64 0 }, { ptr, i64 } { ptr @.str.1242, i64 8 }, ptr %t737)
   store ptr %t741, ptr %s41
   %t742 = load ptr, ptr %s1
   %t743 = load ptr, ptr %s41
@@ -86563,7 +87424,7 @@ for.end.35:
   store i64 2, ptr %t777
   %t778 = getelementptr inbounds { ptr, i64, i64 }, ptr %t775, i32 0, i32 2
   store i64 2, ptr %t778
-  %t779 = call ptr @"zevic_Zevic1_Types_TypeTable_Named"(ptr %t745, { i32 } %t747, { ptr, i64 } { ptr @.str.83, i64 0 }, { ptr, i64 } { ptr @.str.1236, i64 8 }, ptr %t775)
+  %t779 = call ptr @"zevic_Zevic1_Types_TypeTable_Named"(ptr %t745, { i32 } %t747, { ptr, i64 } { ptr @.str.83, i64 0 }, { ptr, i64 } { ptr @.str.1243, i64 8 }, ptr %t775)
   call void @"zevic_Main_stShow"(ptr %t744, ptr %t779)
   %t780 = load ptr, ptr %s1
   %t781 = load ptr, ptr %s1
@@ -86585,7 +87446,7 @@ for.end.35:
   %t793 = call ptr @"zevic_Zevic1_Types_TypeTable_Fn"(ptr %t781, ptr %t788, ptr %t792)
   call void @"zevic_Main_stShow"(ptr %t780, ptr %t793)
   %t794 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t794, ptr @.str.1237, i64 7)
+  call void @zevic_sb_add(ptr %t794, ptr @.str.1244, i64 7)
   %t795 = load ptr, ptr %s1
   %t796 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t795, i32 0, i32 9
   %t797 = load ptr, ptr %t796
@@ -86619,7 +87480,7 @@ for.end.35:
   %t820 = extractvalue { ptr, i64 } %t819, 0
   %t821 = extractvalue { ptr, i64 } %t819, 1
   call void @zevic_sb_add(ptr %t794, ptr %t820, i64 %t821)
-  call void @zevic_sb_add(ptr %t794, ptr @.str.1238, i64 8)
+  call void @zevic_sb_add(ptr %t794, ptr @.str.1245, i64 8)
   %t822 = load ptr, ptr %s1
   %t823 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t822, i32 0, i32 5
   %t824 = load ptr, ptr %t823
@@ -86642,7 +87503,7 @@ for.end.35:
   %t838 = extractvalue { ptr, i64 } %t837, 0
   %t839 = extractvalue { ptr, i64 } %t837, 1
   call void @zevic_sb_add(ptr %t794, ptr %t838, i64 %t839)
-  call void @zevic_sb_add(ptr %t794, ptr @.str.1239, i64 7)
+  call void @zevic_sb_add(ptr %t794, ptr @.str.1246, i64 7)
   %t840 = load ptr, ptr %s1
   %t841 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t840, i32 0, i32 13
   %t842 = load ptr, ptr %t841
@@ -86665,7 +87526,7 @@ for.end.35:
   %t856 = extractvalue { ptr, i64 } %t855, 0
   %t857 = extractvalue { ptr, i64 } %t855, 1
   call void @zevic_sb_add(ptr %t794, ptr %t856, i64 %t857)
-  call void @zevic_sb_add(ptr %t794, ptr @.str.1240, i64 11)
+  call void @zevic_sb_add(ptr %t794, ptr @.str.1247, i64 11)
   %t858 = load ptr, ptr %s19
   %t859 = call i1 @"zevic_Zevic1_Types_Type_IsValueAgg"(ptr %t858)
   %t860 = call i32 @"zevic_Main_b2i"(i1 %t859)
@@ -86695,7 +87556,7 @@ for.end.35:
   %t879 = extractvalue { ptr, i64 } %t878, 0
   %t880 = extractvalue { ptr, i64 } %t878, 1
   call void @zevic_sb_add(ptr %t794, ptr %t879, i64 %t880)
-  call void @zevic_sb_add(ptr %t794, ptr @.str.1241, i64 6)
+  call void @zevic_sb_add(ptr %t794, ptr @.str.1248, i64 6)
   %t881 = load ptr, ptr %s1
   %t882 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t881, i32 0, i32 5
   %t883 = load ptr, ptr %t882
@@ -86741,13 +87602,13 @@ for.end.35:
   call void @"zevic_Zevic_Console_Println"({ ptr, i64 } %t913)
   ret i32 0
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 216)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 216)
   unreachable
 panic.9:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 224)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 224)
   unreachable
 panic.37:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 244)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 244)
   unreachable
 }
 
@@ -86802,10 +87663,10 @@ and.end.1:
   %t32 = phi i1 [ false, %entry ], [ %t26, %ok.4 ]
   ret i1 %t32
 panic.3:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 276)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 276)
   unreachable
 panic.5:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1180, i32 276)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1187, i32 276)
   unreachable
 }
 
@@ -87027,7 +87888,7 @@ ok.43:
   br label %while.cond.16
 while.end.18:
   %t109 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t109, ptr @.str.1242, i64 6)
+  call void @zevic_sb_add(ptr %t109, ptr @.str.1249, i64 6)
   %t110 = load { ptr, i64 }, ptr %s5
   %t111 = extractvalue { ptr, i64 } %t110, 0
   %t112 = extractvalue { ptr, i64 } %t110, 1
@@ -87036,34 +87897,34 @@ while.end.18:
   %t113 = load { ptr, i64 }, ptr %s12
   ret { ptr, i64 } %t113
 panic.4:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1180, i32 283)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1187, i32 283)
   unreachable
 panic.11:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 284)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 284)
   unreachable
 panic.13:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1180, i32 284)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1187, i32 284)
   unreachable
 panic.15:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 285)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 285)
   unreachable
 panic.20:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1180, i32 290)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1187, i32 290)
   unreachable
 panic.27:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 292)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 292)
   unreachable
 panic.29:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1180, i32 292)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1187, i32 292)
   unreachable
 panic.40:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 294)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 294)
   unreachable
 panic.42:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1180, i32 294)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1187, i32 294)
   unreachable
 panic.44:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 298)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 298)
   unreachable
 }
 
@@ -87140,7 +88001,7 @@ ok.14:
   br label %while.cond.0
 while.end.2:
   %t35 = load { ptr, i64 }, ptr %s1
-  %t36 = call i1 @"zevic_Main_endsWith"({ ptr, i64 } %t35, { ptr, i64 } { ptr @.str.1243, i64 4 })
+  %t36 = call i1 @"zevic_Main_endsWith"({ ptr, i64 } %t35, { ptr, i64 } { ptr @.str.1250, i64 4 })
   br i1 %t36, label %then.16, label %else.17
 then.16:
   %t37 = load { ptr, i64 }, ptr %s1
@@ -87168,30 +88029,30 @@ endif.18:
   %t50 = phi { ptr, i64 } [ %t48, %ok.21 ], [ %t49, %else.17 ]
   ret { ptr, i64 } %t50
 panic.4:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1180, i32 307)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1187, i32 307)
   unreachable
 panic.11:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 308)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 308)
   unreachable
 panic.13:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1180, i32 308)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1187, i32 308)
   unreachable
 panic.15:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 309)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 309)
   unreachable
 panic.20:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 311)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 311)
   unreachable
 panic.22:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1180, i32 311)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1187, i32 311)
   unreachable
 }
 
 define void @"zevic_Main_usage"() {
 entry:
-  call void @"zevic_Zevic_Console_Eprintln"({ ptr, i64 } { ptr @.str.1244, i64 48 })
-  call void @"zevic_Zevic_Console_Eprintln"({ ptr, i64 } { ptr @.str.1245, i64 162 })
-  call void @"zevic_Zevic_Console_Eprintln"({ ptr, i64 } { ptr @.str.1246, i64 67 })
+  call void @"zevic_Zevic_Console_Eprintln"({ ptr, i64 } { ptr @.str.1251, i64 48 })
+  call void @"zevic_Zevic_Console_Eprintln"({ ptr, i64 } { ptr @.str.1252, i64 162 })
+  call void @"zevic_Zevic_Console_Eprintln"({ ptr, i64 } { ptr @.str.1253, i64 67 })
   ret void
 }
 
@@ -87448,7 +88309,7 @@ else.8:
   %t103 = load { ptr, i64 }, ptr %s14
   %t105 = extractvalue { ptr, i64 } %t103, 0
   %t106 = extractvalue { ptr, i64 } %t103, 1
-  %t107 = call i32 @zevic_str_eq(ptr %t105, i64 %t106, ptr @.str.1247, i64 13)
+  %t107 = call i32 @zevic_str_eq(ptr %t105, i64 %t106, ptr @.str.1254, i64 13)
   %t104 = icmp ne i32 %t107, 0
   br i1 %t104, label %and.rhs.12, label %and.end.13
 and.rhs.12:
@@ -87488,7 +88349,7 @@ else.17:
   %t127 = load { ptr, i64 }, ptr %s14
   %t129 = extractvalue { ptr, i64 } %t127, 0
   %t130 = extractvalue { ptr, i64 } %t127, 1
-  %t131 = call i32 @zevic_str_eq(ptr %t129, i64 %t130, ptr @.str.1248, i64 5)
+  %t131 = call i32 @zevic_str_eq(ptr %t129, i64 %t130, ptr @.str.1255, i64 5)
   %t128 = icmp ne i32 %t131, 0
   br i1 %t128, label %then.21, label %else.22
 then.21:
@@ -87498,7 +88359,7 @@ else.22:
   %t132 = load { ptr, i64 }, ptr %s14
   %t134 = extractvalue { ptr, i64 } %t132, 0
   %t135 = extractvalue { ptr, i64 } %t132, 1
-  %t136 = call i32 @zevic_str_eq(ptr %t134, i64 %t135, ptr @.str.1249, i64 5)
+  %t136 = call i32 @zevic_str_eq(ptr %t134, i64 %t135, ptr @.str.1256, i64 5)
   %t133 = icmp ne i32 %t136, 0
   br i1 %t133, label %then.24, label %else.25
 then.24:
@@ -87510,7 +88371,7 @@ else.25:
   %t139 = load { ptr, i64 }, ptr %s14
   %t141 = extractvalue { ptr, i64 } %t139, 0
   %t142 = extractvalue { ptr, i64 } %t139, 1
-  %t143 = call i32 @zevic_str_eq(ptr %t141, i64 %t142, ptr @.str.1250, i64 8)
+  %t143 = call i32 @zevic_str_eq(ptr %t141, i64 %t142, ptr @.str.1257, i64 8)
   %t140 = icmp ne i32 %t143, 0
   br i1 %t140, label %and.rhs.27, label %and.end.28
 and.rhs.27:
@@ -87563,14 +88424,14 @@ arm.next.37:
   br i1 %t172, label %pat.tag.40, label %arm.next.39
 pat.tag.40:
   %t174 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t174, ptr @.str.1251, i64 23)
+  call void @zevic_sb_add(ptr %t174, ptr @.str.1258, i64 23)
   %t175 = load ptr, ptr %s0
   %t176 = load i64, ptr %s13
   %t177 = call { ptr, i64 } @"zevic_Array<String>_Index"(ptr %t175, i64 %t176)
   %t178 = extractvalue { ptr, i64 } %t177, 0
   %t179 = extractvalue { ptr, i64 } %t177, 1
   call void @zevic_sb_add(ptr %t174, ptr %t178, i64 %t179)
-  call void @zevic_sb_add(ptr %t174, ptr @.str.1252, i64 112)
+  call void @zevic_sb_add(ptr %t174, ptr @.str.1259, i64 112)
   call void @zevic_sb_finish(ptr %s19, ptr %t174)
   %t180 = load { ptr, i64 }, ptr %s19
   call void @"zevic_Zevic_Console_Eprintln"({ ptr, i64 } %t180)
@@ -87583,7 +88444,7 @@ else.32:
   %t181 = load { ptr, i64 }, ptr %s14
   %t183 = extractvalue { ptr, i64 } %t181, 0
   %t184 = extractvalue { ptr, i64 } %t181, 1
-  %t185 = call i32 @zevic_str_eq(ptr %t183, i64 %t184, ptr @.str.1253, i64 9)
+  %t185 = call i32 @zevic_str_eq(ptr %t183, i64 %t184, ptr @.str.1260, i64 9)
   %t182 = icmp ne i32 %t185, 0
   br i1 %t182, label %and.rhs.41, label %and.end.42
 and.rhs.41:
@@ -87619,7 +88480,7 @@ else.46:
   %t203 = load { ptr, i64 }, ptr %s14
   %t205 = extractvalue { ptr, i64 } %t203, 0
   %t206 = extractvalue { ptr, i64 } %t203, 1
-  %t207 = call i32 @zevic_str_eq(ptr %t205, i64 %t206, ptr @.str.1254, i64 6)
+  %t207 = call i32 @zevic_str_eq(ptr %t205, i64 %t206, ptr @.str.1261, i64 6)
   %t204 = icmp ne i32 %t207, 0
   br i1 %t204, label %then.50, label %else.51
 then.50:
@@ -87629,7 +88490,7 @@ else.51:
   %t208 = load { ptr, i64 }, ptr %s14
   %t210 = extractvalue { ptr, i64 } %t208, 0
   %t211 = extractvalue { ptr, i64 } %t208, 1
-  %t212 = call i32 @zevic_str_eq(ptr %t210, i64 %t211, ptr @.str.1255, i64 9)
+  %t212 = call i32 @zevic_str_eq(ptr %t210, i64 %t211, ptr @.str.1262, i64 9)
   %t209 = icmp ne i32 %t212, 0
   br i1 %t209, label %then.53, label %else.54
 then.53:
@@ -87639,7 +88500,7 @@ else.54:
   %t213 = load { ptr, i64 }, ptr %s14
   %t215 = extractvalue { ptr, i64 } %t213, 0
   %t216 = extractvalue { ptr, i64 } %t213, 1
-  %t217 = call i32 @zevic_str_eq(ptr %t215, i64 %t216, ptr @.str.1256, i64 9)
+  %t217 = call i32 @zevic_str_eq(ptr %t215, i64 %t216, ptr @.str.1263, i64 9)
   %t214 = icmp ne i32 %t217, 0
   br i1 %t214, label %then.56, label %else.57
 then.56:
@@ -87658,7 +88519,7 @@ or.rhs.59:
   %t225 = load { ptr, i64 }, ptr %s14
   %t227 = extractvalue { ptr, i64 } %t225, 0
   %t228 = extractvalue { ptr, i64 } %t225, 1
-  %t229 = call i32 @zevic_str_eq(ptr %t227, i64 %t228, ptr @.str.1257, i64 3)
+  %t229 = call i32 @zevic_str_eq(ptr %t227, i64 %t228, ptr @.str.1264, i64 3)
   %t226 = icmp ne i32 %t229, 0
   br label %or.end.60
 or.end.60:
@@ -87702,7 +88563,7 @@ else.67:
   %t251 = load { ptr, i64 }, ptr %s14
   %t253 = extractvalue { ptr, i64 } %t251, 0
   %t254 = extractvalue { ptr, i64 } %t251, 1
-  %t255 = call i32 @zevic_str_eq(ptr %t253, i64 %t254, ptr @.str.1258, i64 4)
+  %t255 = call i32 @zevic_str_eq(ptr %t253, i64 %t254, ptr @.str.1265, i64 4)
   %t252 = icmp ne i32 %t255, 0
   br i1 %t252, label %and.rhs.69, label %and.end.70
 and.rhs.69:
@@ -87744,7 +88605,7 @@ else.74:
   %t277 = load { ptr, i64 }, ptr %s14
   %t279 = extractvalue { ptr, i64 } %t277, 0
   %t280 = extractvalue { ptr, i64 } %t277, 1
-  %t281 = call i32 @zevic_str_eq(ptr %t279, i64 %t280, ptr @.str.1259, i64 5)
+  %t281 = call i32 @zevic_str_eq(ptr %t279, i64 %t280, ptr @.str.1266, i64 5)
   %t278 = icmp ne i32 %t281, 0
   br i1 %t278, label %and.rhs.78, label %and.end.79
 and.rhs.78:
@@ -87908,7 +88769,7 @@ ok.113:
   br label %endif.112
 else.111:
   %t379 = load { ptr, i64 }, ptr %s14
-  %t380 = call i1 @"zevic_Main_endsWith"({ ptr, i64 } %t379, { ptr, i64 } { ptr @.str.1243, i64 4 })
+  %t380 = call i1 @"zevic_Main_endsWith"({ ptr, i64 } %t379, { ptr, i64 } { ptr @.str.1250, i64 4 })
   br i1 %t380, label %then.115, label %else.116
 then.115:
   %t381 = load ptr, ptr %s1
@@ -87949,7 +88810,7 @@ or.end.125:
   br i1 %t396, label %or.end.127, label %or.rhs.126
 or.rhs.126:
   %t397 = load { ptr, i64 }, ptr %s14
-  %t398 = call i1 @"zevic_Main_endsWith"({ ptr, i64 } %t397, { ptr, i64 } { ptr @.str.1260, i64 4 })
+  %t398 = call i1 @"zevic_Main_endsWith"({ ptr, i64 } %t397, { ptr, i64 } { ptr @.str.1267, i64 4 })
   br label %or.end.127
 or.end.127:
   %t399 = phi i1 [ true, %or.end.125 ], [ %t398, %or.rhs.126 ]
@@ -87974,7 +88835,7 @@ else.131:
   br i1 %t408, label %then.133, label %else.134
 then.133:
   %t409 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t409, ptr @.str.1261, i64 23)
+  call void @zevic_sb_add(ptr %t409, ptr @.str.1268, i64 23)
   %t410 = load { ptr, i64 }, ptr %s14
   %t411 = extractvalue { ptr, i64 } %t410, 0
   %t412 = extractvalue { ptr, i64 } %t410, 1
@@ -87987,12 +88848,12 @@ then.133:
   ret i32 1
 else.134:
   %t414 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t414, ptr @.str.1262, i64 35)
+  call void @zevic_sb_add(ptr %t414, ptr @.str.1269, i64 35)
   %t415 = load { ptr, i64 }, ptr %s14
   %t416 = extractvalue { ptr, i64 } %t415, 0
   %t417 = extractvalue { ptr, i64 } %t415, 1
   call void @zevic_sb_add(ptr %t414, ptr %t416, i64 %t417)
-  call void @zevic_sb_add(ptr %t414, ptr @.str.1263, i64 24)
+  call void @zevic_sb_add(ptr %t414, ptr @.str.1270, i64 24)
   call void @zevic_sb_finish(ptr %s28, ptr %t414)
   %t418 = load { ptr, i64 }, ptr %s28
   call void @"zevic_Zevic_Console_Eprintln"({ ptr, i64 } %t418)
@@ -88084,7 +88945,7 @@ for.body.142:
 ok.144:
   store i64 %t443, ptr %s31
   %t445 = load { ptr, i64 }, ptr %s32
-  %t446 = call i1 @"zevic_Main_endsWith"({ ptr, i64 } %t445, { ptr, i64 } { ptr @.str.1264, i64 9 })
+  %t446 = call i1 @"zevic_Main_endsWith"({ ptr, i64 } %t445, { ptr, i64 } { ptr @.str.1271, i64 9 })
   %t447 = xor i1 %t446, true
   br i1 %t447, label %then.146, label %endif.148
 then.146:
@@ -88850,7 +89711,7 @@ pat.tag.164:
   %t947 = extractvalue { ptr, i64 } %t946, 0
   %t948 = extractvalue { ptr, i64 } %t946, 1
   call void @zevic_sb_add(ptr %t942, ptr %t947, i64 %t948)
-  call void @zevic_sb_add(ptr %t942, ptr @.str.1265, i64 6)
+  call void @zevic_sb_add(ptr %t942, ptr @.str.1272, i64 6)
   %t949 = load ptr, ptr %s33
   %t950 = getelementptr inbounds { ptr, ptr, i64, i1 }, ptr %t949, i32 0, i32 2
   %t951 = load i64, ptr %t950
@@ -88861,11 +89722,11 @@ then.165:
 else.166:
   br label %endif.167
 endif.167:
-  %t953 = phi { ptr, i64 } [ { ptr @.str.83, i64 0 }, %then.165 ], [ { ptr @.str.1266, i64 1 }, %else.166 ]
+  %t953 = phi { ptr, i64 } [ { ptr @.str.83, i64 0 }, %then.165 ], [ { ptr @.str.1273, i64 1 }, %else.166 ]
   %t954 = extractvalue { ptr, i64 } %t953, 0
   %t955 = extractvalue { ptr, i64 } %t953, 1
   call void @zevic_sb_add(ptr %t942, ptr %t954, i64 %t955)
-  call void @zevic_sb_add(ptr %t942, ptr @.str.1267, i64 6)
+  call void @zevic_sb_add(ptr %t942, ptr @.str.1274, i64 6)
   call void @zevic_sb_finish(ptr %s43, ptr %t942)
   %t956 = load { ptr, i64 }, ptr %s43
   call void @"zevic_Zevic_Console_Eprintln"({ ptr, i64 } %t956)
@@ -88918,7 +89779,7 @@ pat.tag.175:
   %t987 = getelementptr inbounds { i32, [1 x i64] }, ptr %s47, i32 0, i32 1
   %t988 = getelementptr inbounds { ptr }, ptr %t987, i32 0, i32 0
   %t989 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t989, ptr @.str.1268, i64 21)
+  call void @zevic_sb_add(ptr %t989, ptr @.str.1275, i64 21)
   %t990 = load { ptr, i64 }, ptr %s46
   %t991 = extractvalue { ptr, i64 } %t990, 0
   %t992 = extractvalue { ptr, i64 } %t990, 1
@@ -88969,7 +89830,7 @@ pat.tag.185:
   %t1012 = extractvalue { ptr, i64 } %t1011, 0
   %t1013 = extractvalue { ptr, i64 } %t1011, 1
   call void @zevic_sb_add(ptr %t1010, ptr %t1012, i64 %t1013)
-  call void @zevic_sb_add(ptr %t1010, ptr @.str.1269, i64 3)
+  call void @zevic_sb_add(ptr %t1010, ptr @.str.1276, i64 3)
   call void @zevic_sb_finish(ptr %s50, ptr %t1010)
   %t1014 = load { ptr, i64 }, ptr %s50
   br label %match.end.181
@@ -89003,7 +89864,7 @@ pat.tag.190:
   %t1031 = getelementptr inbounds { i32, [1 x i64] }, ptr %s52, i32 0, i32 1
   %t1032 = getelementptr inbounds { ptr }, ptr %t1031, i32 0, i32 0
   %t1033 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t1033, ptr @.str.1268, i64 21)
+  call void @zevic_sb_add(ptr %t1033, ptr @.str.1275, i64 21)
   %t1034 = load { ptr, i64 }, ptr %s51
   %t1035 = extractvalue { ptr, i64 } %t1034, 0
   %t1036 = extractvalue { ptr, i64 } %t1034, 1
@@ -89027,7 +89888,7 @@ endif.180:
   %t1041 = icmp ne i32 %t1044, 0
   br i1 %t1041, label %then.191, label %endif.193
 then.191:
-  %t1045 = call { i32, [2 x i64] } @"zevic_Zevic_Env_Get"({ ptr, i64 } { ptr @.str.1270, i64 13 })
+  %t1045 = call { i32, [2 x i64] } @"zevic_Zevic_Env_Get"({ ptr, i64 } { ptr @.str.1277, i64 13 })
   store { i32, [2 x i64] } %t1045, ptr %s54
   %t1048 = getelementptr inbounds { i32, [2 x i64] }, ptr %s54, i32 0, i32 0
   %t1046 = load i32, ptr %t1048
@@ -89072,7 +89933,7 @@ and.end.200:
   %t1068 = phi i1 [ false, %endif.193 ], [ %t1067, %and.rhs.199 ]
   br i1 %t1068, label %then.201, label %endif.203
 then.201:
-  call void @"zevic_Zevic_Console_Eprintln"({ ptr, i64 } { ptr @.str.1271, i64 85 })
+  call void @"zevic_Zevic_Console_Eprintln"({ ptr, i64 } { ptr @.str.1278, i64 85 })
   ret i32 1
 endif.203:
   %t1069 = call { i32, [2 x i64] } @"zevic_Zevic1_Home_Find"()
@@ -89134,7 +89995,7 @@ then.213:
   %t1100 = extractvalue { ptr, i64 } %t1099, 0
   %t1101 = extractvalue { ptr, i64 } %t1099, 1
   call void @zevic_sb_add(ptr %t1098, ptr %t1100, i64 %t1101)
-  call void @zevic_sb_add(ptr %t1098, ptr @.str.1272, i64 8)
+  call void @zevic_sb_add(ptr %t1098, ptr @.str.1279, i64 8)
   %t1102 = call i1 @"zevic_Zevic1_Driver_IsWindows"()
   br i1 %t1102, label %then.216, label %else.217
 then.216:
@@ -89235,7 +90096,7 @@ match.end.227:
   %t1153 = extractvalue { ptr, i64 } %t1152, 0
   %t1154 = extractvalue { ptr, i64 } %t1152, 1
   call void @zevic_sb_add(ptr %t1151, ptr %t1153, i64 %t1154)
-  call void @zevic_sb_add(ptr %t1151, ptr @.str.1273, i64 9)
+  call void @zevic_sb_add(ptr %t1151, ptr @.str.1280, i64 9)
   call void @zevic_sb_finish(ptr %s70, ptr %t1151)
   %t1155 = load { ptr, i64 }, ptr %s70
   store { ptr, i64 } %t1155, ptr %s71
@@ -89264,7 +90125,7 @@ pat.tag.236:
   %t1171 = getelementptr inbounds { i32, [1 x i64] }, ptr %s72, i32 0, i32 1
   %t1172 = getelementptr inbounds { ptr }, ptr %t1171, i32 0, i32 0
   %t1173 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t1173, ptr @.str.1268, i64 21)
+  call void @zevic_sb_add(ptr %t1173, ptr @.str.1275, i64 21)
   %t1174 = load { ptr, i64 }, ptr %s71
   %t1175 = extractvalue { ptr, i64 } %t1174, 0
   %t1176 = extractvalue { ptr, i64 } %t1174, 1
@@ -89314,7 +90175,7 @@ endif.242:
   br i1 %t1199, label %then.243, label %endif.245
 then.243:
   %t1200 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t1200, ptr @.str.1274, i64 31)
+  call void @zevic_sb_add(ptr %t1200, ptr @.str.1281, i64 31)
   %t1201 = load i32, ptr %s74
   %t1202 = sext i32 %t1201 to i64
   call void @zevic_i64_to_str(ptr %s76, i64 %t1202)
@@ -89322,7 +90183,7 @@ then.243:
   %t1204 = extractvalue { ptr, i64 } %t1203, 0
   %t1205 = extractvalue { ptr, i64 } %t1203, 1
   call void @zevic_sb_add(ptr %t1200, ptr %t1204, i64 %t1205)
-  call void @zevic_sb_add(ptr %t1200, ptr @.str.1275, i64 18)
+  call void @zevic_sb_add(ptr %t1200, ptr @.str.1282, i64 18)
   %t1206 = load { ptr, i64 }, ptr %s69
   %t1207 = extractvalue { ptr, i64 } %t1206, 0
   %t1208 = extractvalue { ptr, i64 } %t1206, 1
@@ -89341,14 +90202,14 @@ then.243:
   br i1 %t1213, label %then.246, label %endif.248
 then.246:
   %t1217 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t1217, ptr @.str.1276, i64 20)
+  call void @zevic_sb_add(ptr %t1217, ptr @.str.1283, i64 20)
   %t1218 = load ptr, ptr %s12
   %t1219 = getelementptr inbounds { { i32, [2 x i64] }, i1, i1, i1, { i32, [2 x i64] }, { i32, [2 x i64] }, ptr, ptr, ptr, ptr, ptr, { ptr, i64 }, { ptr, i64 } }, ptr %t1218, i32 0, i32 11
   %t1220 = load { ptr, i64 }, ptr %t1219
   %t1221 = extractvalue { ptr, i64 } %t1220, 0
   %t1222 = extractvalue { ptr, i64 } %t1220, 1
   call void @zevic_sb_add(ptr %t1217, ptr %t1221, i64 %t1222)
-  call void @zevic_sb_add(ptr %t1217, ptr @.str.1277, i64 152)
+  call void @zevic_sb_add(ptr %t1217, ptr @.str.1284, i64 152)
   call void @zevic_sb_finish(ptr %s78, ptr %t1217)
   %t1223 = load { ptr, i64 }, ptr %s78
   call void @"zevic_Zevic_Console_Eprintln"({ ptr, i64 } %t1223)
@@ -89358,58 +90219,58 @@ endif.248:
 endif.245:
   ret i32 0
 panic.6:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 331)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 331)
   unreachable
 panic.11:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 332)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 332)
   unreachable
 panic.15:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 334)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 334)
   unreachable
 panic.20:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 335)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 335)
   unreachable
 panic.30:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 341)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 341)
   unreachable
 panic.35:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 342)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 342)
   unreachable
 panic.44:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 350)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 350)
   unreachable
 panic.49:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 351)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 351)
   unreachable
 panic.72:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 363)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 363)
   unreachable
 panic.77:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 364)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 364)
   unreachable
 panic.81:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 366)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 366)
   unreachable
 panic.86:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 367)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 367)
   unreachable
 panic.93:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1180, i32 370)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1187, i32 370)
   unreachable
 panic.100:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1180, i32 372)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1187, i32 372)
   unreachable
 panic.107:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1180, i32 374)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1187, i32 374)
   unreachable
 panic.114:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1180, i32 376)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1187, i32 376)
   unreachable
 panic.137:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 389)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 389)
   unreachable
 panic.145:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1180, i32 393)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1187, i32 393)
   unreachable
 }
 
@@ -89459,10 +90320,10 @@ and.end.5:
   %t23 = phi i1 [ false, %and.end.1 ], [ %t22, %ok.6 ]
   ret i1 %t23
 panic.3:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1278, i32 12)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1285, i32 12)
   unreachable
 panic.7:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1278, i32 12)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1285, i32 12)
   unreachable
 }
 
@@ -89916,7 +90777,7 @@ entry:
   %t1 = getelementptr inbounds { i32 }, ptr %s0, i32 0, i32 0
   store i32 6, ptr %t1
   %t2 = load { i32 }, ptr %s0
-  call void @"zevic_Error_Init"(ptr %t0, { i32 } %t2, { ptr, i64 } { ptr @.str.1279, i64 12 })
+  call void @"zevic_Error_Init"(ptr %t0, { i32 } %t2, { ptr, i64 } { ptr @.str.1286, i64 12 })
   ret ptr %t0
 }
 
@@ -90003,10 +90864,10 @@ endif.4:
   %t24 = call ptr @"zevic_Array<Zevic1_Token_Token>_Index"(ptr %t22, i64 %t23)
   ret ptr %t24
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1278, i32 75)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1285, i32 75)
   unreachable
 panic.6:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1278, i32 77)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1285, i32 77)
   unreachable
 }
 
@@ -90073,10 +90934,10 @@ endif.4:
   %t24 = load ptr, ptr %s1
   ret ptr %t24
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1278, i32 86)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1285, i32 86)
   unreachable
 panic.6:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1278, i32 87)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1285, i32 87)
   unreachable
 }
 
@@ -90202,7 +91063,7 @@ arm.next.17:
 arm.next.19:
   unreachable
 match.end.0:
-  %t40 = phi { ptr, i64 } [ %t11, %pat.tag.2 ], [ { ptr @.str.1280, i64 8 }, %pat.or.4 ], [ { ptr @.str.1281, i64 8 }, %pat.tag.9 ], [ { ptr @.str.1282, i64 11 }, %pat.or.11 ], [ { ptr @.str.1283, i64 19 }, %pat.tag.16 ], [ { ptr @.str.1284, i64 19 }, %pat.tag.18 ], [ %t39, %arm.next.17 ]
+  %t40 = phi { ptr, i64 } [ %t11, %pat.tag.2 ], [ { ptr @.str.1287, i64 8 }, %pat.or.4 ], [ { ptr @.str.1288, i64 8 }, %pat.tag.9 ], [ { ptr @.str.1289, i64 11 }, %pat.or.11 ], [ { ptr @.str.1290, i64 19 }, %pat.tag.16 ], [ { ptr @.str.1291, i64 19 }, %pat.tag.18 ], [ %t39, %arm.next.17 ]
   ret { ptr, i64 } %t40
 }
 
@@ -90309,12 +91170,12 @@ then.0:
   %t14 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t13, i32 0, i32 1
   %t15 = load { i32, i32, i32 }, ptr %t14
   %t16 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t16, ptr @.str.1285, i64 9)
+  call void @zevic_sb_add(ptr %t16, ptr @.str.1292, i64 9)
   %t17 = load { ptr, i64 }, ptr %s2
   %t18 = extractvalue { ptr, i64 } %t17, 0
   %t19 = extractvalue { ptr, i64 } %t17, 1
   call void @zevic_sb_add(ptr %t16, ptr %t18, i64 %t19)
-  call void @zevic_sb_add(ptr %t16, ptr @.str.1286, i64 8)
+  call void @zevic_sb_add(ptr %t16, ptr @.str.1293, i64 8)
   %t20 = load ptr, ptr %s0
   %t21 = load ptr, ptr %s0
   %t22 = call ptr @"zevic_Zevic1_Parser_Parser_peek"(ptr %t21)
@@ -90539,7 +91400,7 @@ else.9:
   %t83 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t82, i32 0, i32 1
   %t84 = load { i32, i32, i32 }, ptr %t83
   %t85 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t85, ptr @.str.1287, i64 20)
+  call void @zevic_sb_add(ptr %t85, ptr @.str.1294, i64 20)
   %t86 = load ptr, ptr %s0
   %t87 = load ptr, ptr %s0
   %t88 = call ptr @"zevic_Zevic1_Parser_Parser_peek"(ptr %t87)
@@ -90570,10 +91431,10 @@ endif.2:
   %t101 = load { i32, [1 x i64] }, ptr %s19
   ret { i32, [1 x i64] } %t101
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1278, i32 149)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1285, i32 149)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1278, i32 153)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1285, i32 153)
   unreachable
 }
 
@@ -90912,7 +91773,7 @@ ok.0:
 then.2:
   %t15 = load ptr, ptr %s0
   %t16 = load { i32, i32, i32 }, ptr %s2
-  %t17 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t15, { i32, i32, i32 } %t16, { ptr, i64 } { ptr @.str.1288, i64 25 })
+  %t17 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t15, { i32, i32, i32 } %t16, { ptr, i64 } { ptr @.str.1295, i64 25 })
   %t18 = getelementptr inbounds { i32, [1 x i64] }, ptr %s3, i32 0, i32 0
   store i32 1, ptr %t18
   %t19 = insertvalue { ptr } undef, ptr %t17, 0
@@ -90979,7 +91840,7 @@ try.ok.8:
   %t61 = getelementptr inbounds { i32 }, ptr %s14, i32 0, i32 0
   store i32 80, ptr %t61
   %t62 = load { i32 }, ptr %s14
-  %t63 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t60, { i32 } %t62, { ptr, i64 } { ptr @.str.1289, i64 3 })
+  %t63 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t60, { i32 } %t62, { ptr, i64 } { ptr @.str.1296, i64 3 })
   store { i32, [1 x i64] } %t63, ptr %s15
   %t66 = getelementptr inbounds { i32, [1 x i64] }, ptr %s15, i32 0, i32 0
   %t64 = load i32, ptr %t66
@@ -91059,7 +91920,7 @@ then.18:
   %t112 = getelementptr inbounds { i32 }, ptr %s22, i32 0, i32 0
   store i32 79, ptr %t112
   %t113 = load { i32 }, ptr %s22
-  %t114 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t111, { i32 } %t113, { ptr, i64 } { ptr @.str.1290, i64 3 })
+  %t114 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t111, { i32 } %t113, { ptr, i64 } { ptr @.str.1297, i64 3 })
   store { i32, [1 x i64] } %t114, ptr %s23
   %t117 = getelementptr inbounds { i32, [1 x i64] }, ptr %s23, i32 0, i32 0
   %t115 = load i32, ptr %t117
@@ -91109,7 +91970,7 @@ try.ok.23:
   %t146 = getelementptr inbounds { i32 }, ptr %s28, i32 0, i32 0
   store i32 80, ptr %t146
   %t147 = load { i32 }, ptr %s28
-  %t148 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t145, { i32 } %t147, { ptr, i64 } { ptr @.str.1289, i64 3 })
+  %t148 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t145, { i32 } %t147, { ptr, i64 } { ptr @.str.1296, i64 3 })
   store { i32, [1 x i64] } %t148, ptr %s29
   %t151 = getelementptr inbounds { i32, [1 x i64] }, ptr %s29, i32 0, i32 0
   %t149 = load i32, ptr %t151
@@ -91432,7 +92293,7 @@ else.41:
   %t358 = load ptr, ptr %s0
   %t359 = load { i32, i32, i32 }, ptr %s2
   %t360 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t360, ptr @.str.1291, i64 23)
+  call void @zevic_sb_add(ptr %t360, ptr @.str.1298, i64 23)
   %t361 = load ptr, ptr %s0
   %t362 = load ptr, ptr %s1
   %t363 = call { ptr, i64 } @"zevic_Zevic1_Parser_Parser_describe"(ptr %t361, ptr %t362)
@@ -91476,10 +92337,10 @@ ok.55:
   %t382 = load { i32, [1 x i64] }, ptr %s75
   ret { i32, [1 x i64] } %t382
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1278, i32 200)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1285, i32 200)
   unreachable
 panic.56:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1278, i32 256)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1285, i32 256)
   unreachable
 }
 
@@ -91542,7 +92403,7 @@ loop.body.3:
   %t18 = getelementptr inbounds { i32 }, ptr %s6, i32 0, i32 0
   store i32 2, ptr %t18
   %t19 = load { i32 }, ptr %s6
-  %t20 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t17, { i32 } %t19, { ptr, i64 } { ptr @.str.1292, i64 21 })
+  %t20 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t17, { i32 } %t19, { ptr, i64 } { ptr @.str.1299, i64 21 })
   store { i32, [1 x i64] } %t20, ptr %s7
   %t23 = getelementptr inbounds { i32, [1 x i64] }, ptr %s7, i32 0, i32 0
   %t21 = load i32, ptr %t23
@@ -91902,7 +92763,7 @@ for.end.2:
   %t124 = load { i32, [1 x i64] }, ptr %s15
   ret { i32, [1 x i64] } %t124
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1278, i32 291)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1285, i32 291)
   unreachable
 }
 
@@ -91944,7 +92805,7 @@ entry:
 then.0:
   %t11 = load ptr, ptr %s0
   %t12 = load { i32, i32, i32 }, ptr %s1
-  %t13 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t11, { i32, i32, i32 } %t12, { ptr, i64 } { ptr @.str.1293, i64 23 })
+  %t13 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t11, { i32, i32, i32 } %t12, { ptr, i64 } { ptr @.str.1300, i64 23 })
   %t14 = getelementptr inbounds { i32, [1 x i64] }, ptr %s5, i32 0, i32 0
   store i32 1, ptr %t14
   %t15 = insertvalue { ptr } undef, ptr %t13, 0
@@ -92001,7 +92862,7 @@ then.5:
   %t49 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t48, i32 0, i32 1
   %t50 = load { i32, i32, i32 }, ptr %t49
   %t51 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t51, ptr @.str.1294, i64 11)
+  call void @zevic_sb_add(ptr %t51, ptr @.str.1301, i64 11)
   %t52 = load ptr, ptr %s0
   %t53 = load ptr, ptr %s0
   %t54 = call ptr @"zevic_Zevic1_Parser_Parser_peek"(ptr %t53)
@@ -92009,7 +92870,7 @@ then.5:
   %t56 = extractvalue { ptr, i64 } %t55, 0
   %t57 = extractvalue { ptr, i64 } %t55, 1
   call void @zevic_sb_add(ptr %t51, ptr %t56, i64 %t57)
-  call void @zevic_sb_add(ptr %t51, ptr @.str.1295, i64 12)
+  call void @zevic_sb_add(ptr %t51, ptr @.str.1302, i64 12)
   call void @zevic_sb_finish(ptr %s13, ptr %t51)
   %t58 = load { ptr, i64 }, ptr %s13
   %t59 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t45, { i32, i32, i32 } %t50, { ptr, i64 } %t58)
@@ -92283,19 +93144,19 @@ ok.36:
 while.end.2:
   ret i1 false
 panic.11:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1278, i32 338)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1285, i32 338)
   unreachable
 panic.20:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1278, i32 340)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1285, i32 340)
   unreachable
 panic.25:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1278, i32 342)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1285, i32 342)
   unreachable
 panic.29:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1278, i32 342)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1285, i32 342)
   unreachable
 panic.37:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1278, i32 350)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1285, i32 350)
   unreachable
 }
 
@@ -92360,7 +93221,7 @@ entry:
   %t9 = getelementptr inbounds { i32 }, ptr %s4, i32 0, i32 0
   store i32 79, ptr %t9
   %t10 = load { i32 }, ptr %s4
-  %t11 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t8, { i32 } %t10, { ptr, i64 } { ptr @.str.1290, i64 3 })
+  %t11 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t8, { i32 } %t10, { ptr, i64 } { ptr @.str.1297, i64 3 })
   store { i32, [1 x i64] } %t11, ptr %s5
   %t14 = getelementptr inbounds { i32, [1 x i64] }, ptr %s5, i32 0, i32 0
   %t12 = load i32, ptr %t14
@@ -92402,7 +93263,7 @@ while.body.3:
   %t37 = getelementptr inbounds { i32 }, ptr %s10, i32 0, i32 0
   store i32 2, ptr %t37
   %t38 = load { i32 }, ptr %s10
-  %t39 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t36, { i32 } %t38, { ptr, i64 } { ptr @.str.1296, i64 16 })
+  %t39 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t36, { i32 } %t38, { ptr, i64 } { ptr @.str.1303, i64 16 })
   store { i32, [1 x i64] } %t39, ptr %s11
   %t42 = getelementptr inbounds { i32, [1 x i64] }, ptr %s11, i32 0, i32 0
   %t40 = load i32, ptr %t42
@@ -92453,21 +93314,21 @@ then.7:
   %t72 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t71, i32 0, i32 1
   %t73 = load { i32, i32, i32 }, ptr %t72
   %t74 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t74, ptr @.str.1004, i64 34)
+  call void @zevic_sb_add(ptr %t74, ptr @.str.1021, i64 34)
   %t75 = load ptr, ptr %s13
   %t76 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t75, i32 0, i32 2
   %t77 = load { ptr, i64 }, ptr %t76
   %t78 = extractvalue { ptr, i64 } %t77, 0
   %t79 = extractvalue { ptr, i64 } %t77, 1
   call void @zevic_sb_add(ptr %t74, ptr %t78, i64 %t79)
-  call void @zevic_sb_add(ptr %t74, ptr @.str.1297, i64 21)
+  call void @zevic_sb_add(ptr %t74, ptr @.str.1304, i64 21)
   %t80 = load ptr, ptr %s13
   %t81 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t80, i32 0, i32 2
   %t82 = load { ptr, i64 }, ptr %t81
   %t83 = extractvalue { ptr, i64 } %t82, 0
   %t84 = extractvalue { ptr, i64 } %t82, 1
   call void @zevic_sb_add(ptr %t74, ptr %t83, i64 %t84)
-  call void @zevic_sb_add(ptr %t74, ptr @.str.1298, i64 16)
+  call void @zevic_sb_add(ptr %t74, ptr @.str.1305, i64 16)
   call void @zevic_sb_finish(ptr %s18, ptr %t74)
   %t85 = load { ptr, i64 }, ptr %s18
   %t86 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t68, { i32, i32, i32 } %t73, { ptr, i64 } %t85)
@@ -92533,7 +93394,7 @@ while.end.4:
   %t123 = getelementptr inbounds { i32 }, ptr %s25, i32 0, i32 0
   store i32 80, ptr %t123
   %t124 = load { i32 }, ptr %s25
-  %t125 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t122, { i32 } %t124, { ptr, i64 } { ptr @.str.1289, i64 3 })
+  %t125 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t122, { i32 } %t124, { ptr, i64 } { ptr @.str.1296, i64 3 })
   store { i32, [1 x i64] } %t125, ptr %s26
   %t128 = getelementptr inbounds { i32, [1 x i64] }, ptr %s26, i32 0, i32 0
   %t126 = load i32, ptr %t128
@@ -92558,7 +93419,7 @@ try.ok.15:
   %t140 = getelementptr inbounds { i32 }, ptr %s28, i32 0, i32 0
   store i32 76, ptr %t140
   %t141 = load { i32 }, ptr %s28
-  %t142 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t139, { i32 } %t141, { ptr, i64 } { ptr @.str.1299, i64 4 })
+  %t142 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t139, { i32 } %t141, { ptr, i64 } { ptr @.str.1306, i64 4 })
   store { i32, [1 x i64] } %t142, ptr %s29
   %t145 = getelementptr inbounds { i32, [1 x i64] }, ptr %s29, i32 0, i32 0
   %t143 = load i32, ptr %t145
@@ -92735,7 +93596,7 @@ entry:
   %t9 = getelementptr inbounds { i32 }, ptr %s4, i32 0, i32 0
   store i32 79, ptr %t9
   %t10 = load { i32 }, ptr %s4
-  %t11 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t8, { i32 } %t10, { ptr, i64 } { ptr @.str.1300, i64 54 })
+  %t11 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t8, { i32 } %t10, { ptr, i64 } { ptr @.str.1307, i64 54 })
   store { i32, [1 x i64] } %t11, ptr %s5
   %t14 = getelementptr inbounds { i32, [1 x i64] }, ptr %s5, i32 0, i32 0
   %t12 = load i32, ptr %t14
@@ -92793,7 +93654,7 @@ try.ok.2:
   %t48 = getelementptr inbounds { i32 }, ptr %s11, i32 0, i32 0
   store i32 80, ptr %t48
   %t49 = load { i32 }, ptr %s11
-  %t50 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t47, { i32 } %t49, { ptr, i64 } { ptr @.str.1289, i64 3 })
+  %t50 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t47, { i32 } %t49, { ptr, i64 } { ptr @.str.1296, i64 3 })
   store { i32, [1 x i64] } %t50, ptr %s12
   %t53 = getelementptr inbounds { i32, [1 x i64] }, ptr %s12, i32 0, i32 0
   %t51 = load i32, ptr %t53
@@ -92836,7 +93697,7 @@ then.6:
   %t78 = load ptr, ptr %s17
   %t79 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t78, i32 0, i32 1
   %t80 = load { i32, i32, i32 }, ptr %t79
-  %t81 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t75, { i32, i32, i32 } %t80, { ptr, i64 } { ptr @.str.1301, i64 52 })
+  %t81 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t75, { i32, i32, i32 } %t80, { ptr, i64 } { ptr @.str.1308, i64 52 })
   %t82 = getelementptr inbounds { i32, [1 x i64] }, ptr %s18, i32 0, i32 0
   store i32 1, ptr %t82
   %t83 = insertvalue { ptr } undef, ptr %t81, 0
@@ -93005,7 +93866,7 @@ else.20:
   %t191 = load ptr, ptr %s41
   %t192 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t191, i32 0, i32 1
   %t193 = load { i32, i32, i32 }, ptr %t192
-  %t194 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t188, { i32, i32, i32 } %t193, { ptr, i64 } { ptr @.str.1302, i64 33 })
+  %t194 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t188, { i32, i32, i32 } %t193, { ptr, i64 } { ptr @.str.1309, i64 33 })
   %t195 = getelementptr inbounds { i32, [1 x i64] }, ptr %s42, i32 0, i32 0
   store i32 1, ptr %t195
   %t196 = insertvalue { ptr } undef, ptr %t194, 0
@@ -93123,7 +93984,7 @@ entry:
   %t9 = getelementptr inbounds { i32 }, ptr %s4, i32 0, i32 0
   store i32 79, ptr %t9
   %t10 = load { i32 }, ptr %s4
-  %t11 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t8, { i32 } %t10, { ptr, i64 } { ptr @.str.1303, i64 59 })
+  %t11 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t8, { i32 } %t10, { ptr, i64 } { ptr @.str.1310, i64 59 })
   store { i32, [1 x i64] } %t11, ptr %s5
   %t14 = getelementptr inbounds { i32, [1 x i64] }, ptr %s5, i32 0, i32 0
   %t12 = load i32, ptr %t14
@@ -93181,7 +94042,7 @@ try.ok.2:
   %t48 = getelementptr inbounds { i32 }, ptr %s11, i32 0, i32 0
   store i32 80, ptr %t48
   %t49 = load { i32 }, ptr %s11
-  %t50 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t47, { i32 } %t49, { ptr, i64 } { ptr @.str.1289, i64 3 })
+  %t50 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t47, { i32 } %t49, { ptr, i64 } { ptr @.str.1296, i64 3 })
   store { i32, [1 x i64] } %t50, ptr %s12
   %t53 = getelementptr inbounds { i32, [1 x i64] }, ptr %s12, i32 0, i32 0
   %t51 = load i32, ptr %t53
@@ -93206,7 +94067,7 @@ try.ok.4:
   %t65 = getelementptr inbounds { i32 }, ptr %s14, i32 0, i32 0
   store i32 83, ptr %t65
   %t66 = load { i32 }, ptr %s14
-  %t67 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t64, { i32 } %t66, { ptr, i64 } { ptr @.str.1304, i64 3 })
+  %t67 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t64, { i32 } %t66, { ptr, i64 } { ptr @.str.1311, i64 3 })
   store { i32, [1 x i64] } %t67, ptr %s15
   %t70 = getelementptr inbounds { i32, [1 x i64] }, ptr %s15, i32 0, i32 0
   %t68 = load i32, ptr %t70
@@ -93267,7 +94128,7 @@ then.11:
   %t106 = load ptr, ptr %s23
   %t107 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t106, i32 0, i32 1
   %t108 = load { i32, i32, i32 }, ptr %t107
-  %t109 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t103, { i32, i32, i32 } %t108, { ptr, i64 } { ptr @.str.1305, i64 34 })
+  %t109 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t103, { i32, i32, i32 } %t108, { ptr, i64 } { ptr @.str.1312, i64 34 })
   %t110 = getelementptr inbounds { i32, [1 x i64] }, ptr %s24, i32 0, i32 0
   store i32 1, ptr %t110
   %t111 = insertvalue { ptr } undef, ptr %t109, 0
@@ -93337,7 +94198,7 @@ then.16:
   %t153 = getelementptr inbounds { i32 }, ptr %s33, i32 0, i32 0
   store i32 79, ptr %t153
   %t154 = load { i32 }, ptr %s33
-  %t155 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t152, { i32 } %t154, { ptr, i64 } { ptr @.str.1306, i64 49 })
+  %t155 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t152, { i32 } %t154, { ptr, i64 } { ptr @.str.1313, i64 49 })
   store { i32, [1 x i64] } %t155, ptr %s34
   %t158 = getelementptr inbounds { i32, [1 x i64] }, ptr %s34, i32 0, i32 0
   %t156 = load i32, ptr %t158
@@ -93395,7 +94256,7 @@ try.ok.21:
   %t192 = getelementptr inbounds { i32 }, ptr %s40, i32 0, i32 0
   store i32 80, ptr %t192
   %t193 = load { i32 }, ptr %s40
-  %t194 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t191, { i32 } %t193, { ptr, i64 } { ptr @.str.1289, i64 3 })
+  %t194 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t191, { i32 } %t193, { ptr, i64 } { ptr @.str.1296, i64 3 })
   store { i32, [1 x i64] } %t194, ptr %s41
   %t197 = getelementptr inbounds { i32, [1 x i64] }, ptr %s41, i32 0, i32 0
   %t195 = load i32, ptr %t197
@@ -93422,7 +94283,7 @@ endif.18:
   %t209 = getelementptr inbounds { i32 }, ptr %s43, i32 0, i32 0
   store i32 76, ptr %t209
   %t210 = load { i32 }, ptr %s43
-  %t211 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t208, { i32 } %t210, { ptr, i64 } { ptr @.str.1299, i64 4 })
+  %t211 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t208, { i32 } %t210, { ptr, i64 } { ptr @.str.1306, i64 4 })
   store { i32, [1 x i64] } %t211, ptr %s44
   %t214 = getelementptr inbounds { i32, [1 x i64] }, ptr %s44, i32 0, i32 0
   %t212 = load i32, ptr %t214
@@ -93601,7 +94462,7 @@ then.41:
   %t324 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t323, i32 0, i32 1
   %t325 = load { i32, i32, i32 }, ptr %t324
   %t326 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t326, ptr @.str.1307, i64 52)
+  call void @zevic_sb_add(ptr %t326, ptr @.str.1314, i64 52)
   %t327 = load ptr, ptr %s0
   %t328 = load ptr, ptr %s0
   %t329 = call ptr @"zevic_Zevic1_Parser_Parser_peek"(ptr %t328)
@@ -94188,7 +95049,7 @@ while.end.44:
   %t264 = getelementptr inbounds { i32 }, ptr %s48, i32 0, i32 0
   store i32 80, ptr %t264
   %t265 = load { i32 }, ptr %s48
-  %t266 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t263, { i32 } %t265, { ptr, i64 } { ptr @.str.1289, i64 3 })
+  %t266 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t263, { i32 } %t265, { ptr, i64 } { ptr @.str.1296, i64 3 })
   store { i32, [1 x i64] } %t266, ptr %s49
   %t269 = getelementptr inbounds { i32, [1 x i64] }, ptr %s49, i32 0, i32 0
   %t267 = load i32, ptr %t269
@@ -94222,7 +95083,7 @@ endif.41:
   %t286 = getelementptr inbounds { i32 }, ptr %s52, i32 0, i32 0
   store i32 80, ptr %t286
   %t287 = load { i32 }, ptr %s52
-  %t288 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t285, { i32 } %t287, { ptr, i64 } { ptr @.str.1289, i64 3 })
+  %t288 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t285, { i32 } %t287, { ptr, i64 } { ptr @.str.1296, i64 3 })
   store { i32, [1 x i64] } %t288, ptr %s53
   %t291 = getelementptr inbounds { i32, [1 x i64] }, ptr %s53, i32 0, i32 0
   %t289 = load i32, ptr %t291
@@ -94368,7 +95229,7 @@ while.end.62:
   %t381 = getelementptr inbounds { i32 }, ptr %s71, i32 0, i32 0
   store i32 82, ptr %t381
   %t382 = load { i32 }, ptr %s71
-  %t383 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t380, { i32 } %t382, { ptr, i64 } { ptr @.str.1308, i64 3 })
+  %t383 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t380, { i32 } %t382, { ptr, i64 } { ptr @.str.1315, i64 3 })
   store { i32, [1 x i64] } %t383, ptr %s72
   %t386 = getelementptr inbounds { i32, [1 x i64] }, ptr %s72, i32 0, i32 0
   %t384 = load i32, ptr %t386
@@ -94476,7 +95337,7 @@ try.ok.75:
   %t453 = getelementptr inbounds { i32 }, ptr %s87, i32 0, i32 0
   store i32 74, ptr %t453
   %t454 = load { i32 }, ptr %s87
-  %t455 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t452, { i32 } %t454, { ptr, i64 } { ptr @.str.1309, i64 20 })
+  %t455 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t452, { i32 } %t454, { ptr, i64 } { ptr @.str.1316, i64 20 })
   store { i32, [1 x i64] } %t455, ptr %s88
   %t458 = getelementptr inbounds { i32, [1 x i64] }, ptr %s88, i32 0, i32 0
   %t456 = load i32, ptr %t458
@@ -94551,7 +95412,7 @@ while.end.74:
   %t501 = getelementptr inbounds { i32 }, ptr %s95, i32 0, i32 0
   store i32 84, ptr %t501
   %t502 = load { i32 }, ptr %s95
-  %t503 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t500, { i32 } %t502, { ptr, i64 } { ptr @.str.1310, i64 3 })
+  %t503 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t500, { i32 } %t502, { ptr, i64 } { ptr @.str.1317, i64 3 })
   store { i32, [1 x i64] } %t503, ptr %s96
   %t506 = getelementptr inbounds { i32, [1 x i64] }, ptr %s96, i32 0, i32 0
   %t504 = load i32, ptr %t506
@@ -94690,7 +95551,7 @@ then.99:
   %t590 = load ptr, ptr %s109
   %t591 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t590, i32 0, i32 1
   %t592 = load { i32, i32, i32 }, ptr %t591
-  %t593 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t587, { i32, i32, i32 } %t592, { ptr, i64 } { ptr @.str.1311, i64 62 })
+  %t593 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t587, { i32, i32, i32 } %t592, { ptr, i64 } { ptr @.str.1318, i64 62 })
   %t594 = getelementptr inbounds { i32, [1 x i64] }, ptr %s110, i32 0, i32 0
   store i32 1, ptr %t594
   %t595 = insertvalue { ptr } undef, ptr %t593, 0
@@ -94879,7 +95740,7 @@ arm.next.104:
   %t705 = load ptr, ptr %s0
   %t706 = load { i32, i32, i32 }, ptr %s2
   %t707 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t707, ptr @.str.1312, i64 30)
+  call void @zevic_sb_add(ptr %t707, ptr @.str.1319, i64 30)
   %t708 = load ptr, ptr %s0
   %t709 = load ptr, ptr %s1
   %t710 = call { ptr, i64 } @"zevic_Zevic1_Parser_Parser_describe"(ptr %t708, ptr %t709)
@@ -94986,7 +95847,7 @@ ok.6:
 for.end.5:
   ret i1 true
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1278, i32 615)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1285, i32 615)
   unreachable
 }
 
@@ -95011,7 +95872,7 @@ entry:
   %t1 = getelementptr inbounds { i32 }, ptr %s2, i32 0, i32 0
   store i32 55, ptr %t1
   %t2 = load { i32 }, ptr %s2
-  %t3 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t0, { i32 } %t2, { ptr, i64 } { ptr @.str.1313, i64 3 })
+  %t3 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t0, { i32 } %t2, { ptr, i64 } { ptr @.str.1320, i64 3 })
   store { i32, [1 x i64] } %t3, ptr %s3
   %t6 = getelementptr inbounds { i32, [1 x i64] }, ptr %s3, i32 0, i32 0
   %t4 = load i32, ptr %t6
@@ -95398,7 +96259,7 @@ else.13:
   %t95 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t94, i32 0, i32 1
   %t96 = load { i32, i32, i32 }, ptr %t95
   %t97 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t97, ptr @.str.1314, i64 40)
+  call void @zevic_sb_add(ptr %t97, ptr @.str.1321, i64 40)
   %t98 = load ptr, ptr %s0
   %t99 = load ptr, ptr %s0
   %t100 = call ptr @"zevic_Zevic1_Parser_Parser_peek"(ptr %t99)
@@ -95515,7 +96376,7 @@ while.end.20:
   %t169 = getelementptr inbounds { i32 }, ptr %s40, i32 0, i32 0
   store i32 80, ptr %t169
   %t170 = load { i32 }, ptr %s40
-  %t171 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t168, { i32 } %t170, { ptr, i64 } { ptr @.str.1315, i64 23 })
+  %t171 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t168, { i32 } %t170, { ptr, i64 } { ptr @.str.1322, i64 23 })
   store { i32, [1 x i64] } %t171, ptr %s41
   %t174 = getelementptr inbounds { i32, [1 x i64] }, ptr %s41, i32 0, i32 0
   %t172 = load i32, ptr %t174
@@ -95608,7 +96469,7 @@ try.ok.31:
   %t231 = getelementptr inbounds { i32 }, ptr %s53, i32 0, i32 0
   store i32 82, ptr %t231
   %t232 = load { i32 }, ptr %s53
-  %t233 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t230, { i32 } %t232, { ptr, i64 } { ptr @.str.1308, i64 3 })
+  %t233 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t230, { i32 } %t232, { ptr, i64 } { ptr @.str.1315, i64 3 })
   store { i32, [1 x i64] } %t233, ptr %s54
   %t236 = getelementptr inbounds { i32, [1 x i64] }, ptr %s54, i32 0, i32 0
   %t234 = load i32, ptr %t236
@@ -95788,7 +96649,7 @@ while.body.50:
   %t351 = getelementptr inbounds { i32 }, ptr %s81, i32 0, i32 0
   store i32 2, ptr %t351
   %t352 = load { i32 }, ptr %s81
-  %t353 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t350, { i32 } %t352, { ptr, i64 } { ptr @.str.1316, i64 12 })
+  %t353 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t350, { i32 } %t352, { ptr, i64 } { ptr @.str.1323, i64 12 })
   store { i32, [1 x i64] } %t353, ptr %s82
   %t356 = getelementptr inbounds { i32, [1 x i64] }, ptr %s82, i32 0, i32 0
   %t354 = load i32, ptr %t356
@@ -95827,7 +96688,7 @@ try.ok.52:
   %t378 = getelementptr inbounds { i32 }, ptr %s87, i32 0, i32 0
   store i32 74, ptr %t378
   %t379 = load { i32 }, ptr %s87
-  %t380 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t377, { i32 } %t379, { ptr, i64 } { ptr @.str.1317, i64 24 })
+  %t380 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t377, { i32 } %t379, { ptr, i64 } { ptr @.str.1324, i64 24 })
   store { i32, [1 x i64] } %t380, ptr %s88
   %t383 = getelementptr inbounds { i32, [1 x i64] }, ptr %s88, i32 0, i32 0
   %t381 = load i32, ptr %t383
@@ -95908,7 +96769,7 @@ while.end.51:
   %t429 = getelementptr inbounds { i32 }, ptr %s95, i32 0, i32 0
   store i32 84, ptr %t429
   %t430 = load { i32 }, ptr %s95
-  %t431 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t428, { i32 } %t430, { ptr, i64 } { ptr @.str.1318, i64 36 })
+  %t431 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t428, { i32 } %t430, { ptr, i64 } { ptr @.str.1325, i64 36 })
   store { i32, [1 x i64] } %t431, ptr %s96
   %t434 = getelementptr inbounds { i32, [1 x i64] }, ptr %s96, i32 0, i32 0
   %t432 = load i32, ptr %t434
@@ -96132,7 +96993,7 @@ then.5:
   %t24 = load ptr, ptr %s1
   %t25 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t24, i32 0, i32 1
   %t26 = load { i32, i32, i32 }, ptr %t25
-  %t27 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t23, { i32, i32, i32 } %t26, { ptr, i64 } { ptr @.str.1319, i64 31 })
+  %t27 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t23, { i32, i32, i32 } %t26, { ptr, i64 } { ptr @.str.1326, i64 31 })
   %t28 = getelementptr inbounds { i32, [1 x i64] }, ptr %s5, i32 0, i32 0
   store i32 1, ptr %t28
   %t29 = insertvalue { ptr } undef, ptr %t27, 0
@@ -96293,7 +97154,7 @@ then.23:
   %t133 = load ptr, ptr %s1
   %t134 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t133, i32 0, i32 1
   %t135 = load { i32, i32, i32 }, ptr %t134
-  %t136 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t132, { i32, i32, i32 } %t135, { ptr, i64 } { ptr @.str.1319, i64 31 })
+  %t136 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t132, { i32, i32, i32 } %t135, { ptr, i64 } { ptr @.str.1326, i64 31 })
   %t137 = getelementptr inbounds { i32, [1 x i64] }, ptr %s25, i32 0, i32 0
   store i32 1, ptr %t137
   %t138 = insertvalue { ptr } undef, ptr %t136, 0
@@ -96373,16 +97234,16 @@ endif.20:
   %t188 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_parsePostfix"(ptr %t187)
   ret { i32, [1 x i64] } %t188
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1278, i32 721)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1285, i32 721)
   unreachable
 panic.11:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1278, i32 729)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1285, i32 729)
   unreachable
 panic.22:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1278, i32 734)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1285, i32 734)
   unreachable
 panic.29:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1278, i32 743)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1285, i32 743)
   unreachable
 }
 
@@ -96433,7 +97294,7 @@ and.rhs.2:
   %t20 = load { ptr, i64 }, ptr %t19
   %t22 = extractvalue { ptr, i64 } %t20, 0
   %t23 = extractvalue { ptr, i64 } %t20, 1
-  %t24 = call i32 @zevic_str_eq(ptr %t22, i64 %t23, ptr @.str.1320, i64 2)
+  %t24 = call i32 @zevic_str_eq(ptr %t22, i64 %t23, ptr @.str.1327, i64 2)
   %t21 = icmp ne i32 %t24, 0
   br label %and.end.3
 and.end.3:
@@ -96489,7 +97350,7 @@ and.rhs.12:
   %t57 = load { ptr, i64 }, ptr %t56
   %t59 = extractvalue { ptr, i64 } %t57, 0
   %t60 = extractvalue { ptr, i64 } %t57, 1
-  %t61 = call i32 @zevic_str_eq(ptr %t59, i64 %t60, ptr @.str.1320, i64 2)
+  %t61 = call i32 @zevic_str_eq(ptr %t59, i64 %t60, ptr @.str.1327, i64 2)
   %t58 = icmp ne i32 %t61, 0
   br label %and.end.13
 and.end.13:
@@ -96677,7 +97538,7 @@ then.16:
   %t87 = load ptr, ptr %s18
   %t88 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t87, i32 0, i32 1
   %t89 = load { i32, i32, i32 }, ptr %t88
-  %t90 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t84, { i32, i32, i32 } %t89, { ptr, i64 } { ptr @.str.1321, i64 63 })
+  %t90 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t84, { i32, i32, i32 } %t89, { ptr, i64 } { ptr @.str.1328, i64 63 })
   %t91 = getelementptr inbounds { i32, [1 x i64] }, ptr %s19, i32 0, i32 0
   store i32 1, ptr %t91
   %t92 = insertvalue { ptr } undef, ptr %t90, 0
@@ -96803,7 +97664,7 @@ then.30:
   %t166 = load ptr, ptr %s32
   %t167 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t166, i32 0, i32 1
   %t168 = load { i32, i32, i32 }, ptr %t167
-  %t169 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t163, { i32, i32, i32 } %t168, { ptr, i64 } { ptr @.str.1321, i64 63 })
+  %t169 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t163, { i32, i32, i32 } %t168, { ptr, i64 } { ptr @.str.1328, i64 63 })
   %t170 = getelementptr inbounds { i32, [1 x i64] }, ptr %s33, i32 0, i32 0
   store i32 1, ptr %t170
   %t171 = insertvalue { ptr } undef, ptr %t169, 0
@@ -96816,7 +97677,7 @@ endif.32:
 loop.end.3:
   unreachable
 panic.25:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1278, i32 789)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1285, i32 789)
   unreachable
 }
 
@@ -97016,7 +97877,7 @@ then.11:
   %t110 = load ptr, ptr %s27
   %t111 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t110, i32 0, i32 1
   %t112 = load { i32, i32, i32 }, ptr %t111
-  %t113 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t107, { i32, i32, i32 } %t112, { ptr, i64 } { ptr @.str.1322, i64 24 })
+  %t113 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t107, { i32, i32, i32 } %t112, { ptr, i64 } { ptr @.str.1329, i64 24 })
   %t114 = getelementptr inbounds { i32, [1 x i64] }, ptr %s28, i32 0, i32 0
   store i32 1, ptr %t114
   %t115 = insertvalue { ptr } undef, ptr %t113, 0
@@ -97076,7 +97937,7 @@ then.2:
   %t13 = load ptr, ptr %s1
   %t14 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t13, i32 0, i32 1
   %t15 = load { i32, i32, i32 }, ptr %t14
-  %t16 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t10, { i32, i32, i32 } %t15, { ptr, i64 } { ptr @.str.1319, i64 31 })
+  %t16 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t10, { i32, i32, i32 } %t15, { ptr, i64 } { ptr @.str.1326, i64 31 })
   %t17 = getelementptr inbounds { i32, [1 x i64] }, ptr %s2, i32 0, i32 0
   store i32 1, ptr %t17
   %t18 = insertvalue { ptr } undef, ptr %t16, 0
@@ -97126,10 +97987,10 @@ ok.7:
   %t46 = load { i32, [1 x i64] }, ptr %s6
   ret { i32, [1 x i64] } %t46
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1278, i32 819)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1285, i32 819)
   unreachable
 panic.8:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1278, i32 824)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1285, i32 824)
   unreachable
 }
 
@@ -97238,7 +98099,7 @@ then.7:
   %t56 = load ptr, ptr %s1
   %t57 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t56, i32 0, i32 1
   %t58 = load { i32, i32, i32 }, ptr %t57
-  %t59 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t55, { i32, i32, i32 } %t58, { ptr, i64 } { ptr @.str.1323, i64 45 })
+  %t59 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t55, { i32, i32, i32 } %t58, { ptr, i64 } { ptr @.str.1330, i64 45 })
   %t60 = getelementptr inbounds { i32, [1 x i64] }, ptr %s14, i32 0, i32 0
   store i32 1, ptr %t60
   %t61 = insertvalue { ptr } undef, ptr %t59, 0
@@ -97707,7 +98568,7 @@ while.end.31:
   %t181 = getelementptr inbounds { i32 }, ptr %s37, i32 0, i32 0
   store i32 80, ptr %t181
   %t182 = load { i32 }, ptr %s37
-  %t183 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t180, { i32 } %t182, { ptr, i64 } { ptr @.str.1289, i64 3 })
+  %t183 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t180, { i32 } %t182, { ptr, i64 } { ptr @.str.1296, i64 3 })
   store { i32, [1 x i64] } %t183, ptr %s38
   %t186 = getelementptr inbounds { i32, [1 x i64] }, ptr %s38, i32 0, i32 0
   %t184 = load i32, ptr %t186
@@ -98142,7 +99003,7 @@ while.end.81:
   %t467 = getelementptr inbounds { i32 }, ptr %s93, i32 0, i32 0
   store i32 80, ptr %t467
   %t468 = load { i32 }, ptr %s93
-  %t469 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t466, { i32 } %t468, { ptr, i64 } { ptr @.str.1289, i64 3 })
+  %t469 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t466, { i32 } %t468, { ptr, i64 } { ptr @.str.1296, i64 3 })
   store { i32, [1 x i64] } %t469, ptr %s94
   %t472 = getelementptr inbounds { i32, [1 x i64] }, ptr %s94, i32 0, i32 0
   %t470 = load i32, ptr %t472
@@ -98220,7 +99081,7 @@ else.96:
   %t516 = getelementptr inbounds { i32 }, ptr %s104, i32 0, i32 0
   store i32 2, ptr %t516
   %t517 = load { i32 }, ptr %s104
-  %t518 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t515, { i32 } %t517, { ptr, i64 } { ptr @.str.1316, i64 12 })
+  %t518 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t515, { i32 } %t517, { ptr, i64 } { ptr @.str.1323, i64 12 })
   store { i32, [1 x i64] } %t518, ptr %s105
   %t521 = getelementptr inbounds { i32, [1 x i64] }, ptr %s105, i32 0, i32 0
   %t519 = load i32, ptr %t521
@@ -98259,7 +99120,7 @@ try.ok.98:
   %t543 = getelementptr inbounds { i32 }, ptr %s110, i32 0, i32 0
   store i32 74, ptr %t543
   %t544 = load { i32 }, ptr %s110
-  %t545 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t542, { i32 } %t544, { ptr, i64 } { ptr @.str.1324, i64 37 })
+  %t545 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t542, { i32 } %t544, { ptr, i64 } { ptr @.str.1331, i64 37 })
   store { i32, [1 x i64] } %t545, ptr %s111
   %t548 = getelementptr inbounds { i32, [1 x i64] }, ptr %s111, i32 0, i32 0
   %t546 = load i32, ptr %t548
@@ -98342,7 +99203,7 @@ while.end.94:
   %t594 = getelementptr inbounds { i32 }, ptr %s118, i32 0, i32 0
   store i32 84, ptr %t594
   %t595 = load { i32 }, ptr %s118
-  %t596 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t593, { i32 } %t595, { ptr, i64 } { ptr @.str.1310, i64 3 })
+  %t596 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t593, { i32 } %t595, { ptr, i64 } { ptr @.str.1317, i64 3 })
   store { i32, [1 x i64] } %t596, ptr %s119
   %t599 = getelementptr inbounds { i32, [1 x i64] }, ptr %s119, i32 0, i32 0
   %t597 = load i32, ptr %t599
@@ -98379,7 +99240,7 @@ arm.next.42:
   %t615 = load ptr, ptr %s0
   %t616 = load { i32, i32, i32 }, ptr %s2
   %t617 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t617, ptr @.str.1325, i64 26)
+  call void @zevic_sb_add(ptr %t617, ptr @.str.1332, i64 26)
   %t618 = load ptr, ptr %s0
   %t619 = load ptr, ptr %s1
   %t620 = call { ptr, i64 } @"zevic_Zevic1_Parser_Parser_describe"(ptr %t618, ptr %t619)
@@ -98895,12 +99756,12 @@ then.7:
   %t50 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t49, i32 0, i32 1
   %t51 = load { i32, i32, i32 }, ptr %t50
   %t52 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t52, ptr @.str.1326, i64 7)
+  call void @zevic_sb_add(ptr %t52, ptr @.str.1333, i64 7)
   %t53 = load { ptr, i64 }, ptr %s2
   %t54 = extractvalue { ptr, i64 } %t53, 0
   %t55 = extractvalue { ptr, i64 } %t53, 1
   call void @zevic_sb_add(ptr %t52, ptr %t54, i64 %t55)
-  call void @zevic_sb_add(ptr %t52, ptr @.str.1327, i64 34)
+  call void @zevic_sb_add(ptr %t52, ptr @.str.1334, i64 34)
   call void @zevic_sb_finish(ptr %s11, ptr %t52)
   %t56 = load { ptr, i64 }, ptr %s11
   %t57 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t48, { i32, i32, i32 } %t51, { ptr, i64 } %t56)
@@ -98966,12 +99827,12 @@ then.16:
   %t99 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t98, i32 0, i32 1
   %t100 = load { i32, i32, i32 }, ptr %t99
   %t101 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t101, ptr @.str.1328, i64 45)
+  call void @zevic_sb_add(ptr %t101, ptr @.str.1335, i64 45)
   %t102 = load { ptr, i64 }, ptr %s2
   %t103 = extractvalue { ptr, i64 } %t102, 0
   %t104 = extractvalue { ptr, i64 } %t102, 1
   call void @zevic_sb_add(ptr %t101, ptr %t103, i64 %t104)
-  call void @zevic_sb_add(ptr %t101, ptr @.str.1329, i64 8)
+  call void @zevic_sb_add(ptr %t101, ptr @.str.1336, i64 8)
   call void @zevic_sb_finish(ptr %s16, ptr %t101)
   %t105 = load { ptr, i64 }, ptr %s16
   %t106 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t97, { i32, i32, i32 } %t100, { ptr, i64 } %t105)
@@ -99006,10 +99867,10 @@ endif.18:
   %t126 = load { i32, [3 x i64] }, ptr %s20
   ret { i32, [3 x i64] } %t126
 panic.6:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1278, i32 998)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1285, i32 998)
   unreachable
 panic.15:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1278, i32 1001)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1285, i32 1001)
   unreachable
 }
 
@@ -99220,7 +100081,7 @@ then.9:
   %t55 = load ptr, ptr %s5
   %t56 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t55, i32 0, i32 1
   %t57 = load { i32, i32, i32 }, ptr %t56
-  %t58 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t54, { i32, i32, i32 } %t57, { ptr, i64 } { ptr @.str.1330, i64 74 })
+  %t58 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t54, { i32, i32, i32 } %t57, { ptr, i64 } { ptr @.str.1337, i64 74 })
   %t59 = getelementptr inbounds { i32, [1 x i64] }, ptr %s7, i32 0, i32 0
   store i32 1, ptr %t59
   %t60 = insertvalue { ptr } undef, ptr %t58, 0
@@ -99361,7 +100222,7 @@ then.22:
   %t150 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t149, i32 0, i32 1
   %t151 = load { i32, i32, i32 }, ptr %t150
   %t152 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t152, ptr @.str.1331, i64 32)
+  call void @zevic_sb_add(ptr %t152, ptr @.str.1338, i64 32)
   %t153 = load ptr, ptr %s1
   %t154 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t153, i32 0, i32 0
   %t155 = load { i32 }, ptr %t154
@@ -99381,11 +100242,11 @@ then.25:
 else.26:
   br label %endif.27
 endif.27:
-  %t164 = phi { ptr, i64 } [ { ptr @.str.1106, i64 3 }, %then.25 ], [ { ptr @.str.1105, i64 3 }, %else.26 ]
+  %t164 = phi { ptr, i64 } [ { ptr @.str.1123, i64 3 }, %then.25 ], [ { ptr @.str.1122, i64 3 }, %else.26 ]
   %t165 = extractvalue { ptr, i64 } %t164, 0
   %t166 = extractvalue { ptr, i64 } %t164, 1
   call void @zevic_sb_add(ptr %t152, ptr %t165, i64 %t166)
-  call void @zevic_sb_add(ptr %t152, ptr @.str.1332, i64 20)
+  call void @zevic_sb_add(ptr %t152, ptr @.str.1339, i64 20)
   call void @zevic_sb_finish(ptr %s27, ptr %t152)
   %t167 = load { ptr, i64 }, ptr %s27
   %t168 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t146, { i32, i32, i32 } %t151, { ptr, i64 } %t167)
@@ -99434,7 +100295,7 @@ try.ok.28:
   %t196 = getelementptr inbounds { i32 }, ptr %s33, i32 0, i32 0
   store i32 52, ptr %t196
   %t197 = load { i32 }, ptr %s33
-  %t198 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t195, { i32 } %t197, { ptr, i64 } { ptr @.str.1333, i64 57 })
+  %t198 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t195, { i32 } %t197, { ptr, i64 } { ptr @.str.1340, i64 57 })
   store { i32, [1 x i64] } %t198, ptr %s34
   %t201 = getelementptr inbounds { i32, [1 x i64] }, ptr %s34, i32 0, i32 0
   %t199 = load i32, ptr %t201
@@ -99620,7 +100481,7 @@ pat.tag.44:
   %t317 = getelementptr inbounds { i32 }, ptr %s57, i32 0, i32 0
   store i32 79, ptr %t317
   %t318 = load { i32 }, ptr %s57
-  %t319 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t316, { i32 } %t318, { ptr, i64 } { ptr @.str.1334, i64 57 })
+  %t319 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t316, { i32 } %t318, { ptr, i64 } { ptr @.str.1341, i64 57 })
   store { i32, [1 x i64] } %t319, ptr %s58
   %t322 = getelementptr inbounds { i32, [1 x i64] }, ptr %s58, i32 0, i32 0
   %t320 = load i32, ptr %t322
@@ -99678,7 +100539,7 @@ try.ok.47:
   %t356 = getelementptr inbounds { i32 }, ptr %s64, i32 0, i32 0
   store i32 80, ptr %t356
   %t357 = load { i32 }, ptr %s64
-  %t358 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t355, { i32 } %t357, { ptr, i64 } { ptr @.str.1289, i64 3 })
+  %t358 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t355, { i32 } %t357, { ptr, i64 } { ptr @.str.1296, i64 3 })
   store { i32, [1 x i64] } %t358, ptr %s65
   %t361 = getelementptr inbounds { i32, [1 x i64] }, ptr %s65, i32 0, i32 0
   %t359 = load i32, ptr %t361
@@ -99721,7 +100582,7 @@ then.51:
   %t386 = load ptr, ptr %s70
   %t387 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t386, i32 0, i32 1
   %t388 = load { i32, i32, i32 }, ptr %t387
-  %t389 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t383, { i32, i32, i32 } %t388, { ptr, i64 } { ptr @.str.1335, i64 51 })
+  %t389 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t383, { i32, i32, i32 } %t388, { ptr, i64 } { ptr @.str.1342, i64 51 })
   %t390 = getelementptr inbounds { i32, [1 x i64] }, ptr %s71, i32 0, i32 0
   store i32 1, ptr %t390
   %t391 = insertvalue { ptr } undef, ptr %t389, 0
@@ -99807,7 +100668,7 @@ then.58:
   %t444 = load ptr, ptr %s82
   %t445 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t444, i32 0, i32 1
   %t446 = load { i32, i32, i32 }, ptr %t445
-  %t447 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t441, { i32, i32, i32 } %t446, { ptr, i64 } { ptr @.str.1336, i64 25 })
+  %t447 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t441, { i32, i32, i32 } %t446, { ptr, i64 } { ptr @.str.1343, i64 25 })
   %t448 = getelementptr inbounds { i32, [1 x i64] }, ptr %s83, i32 0, i32 0
   store i32 1, ptr %t448
   %t449 = insertvalue { ptr } undef, ptr %t447, 0
@@ -99875,7 +100736,7 @@ pat.tag.64:
   %t489 = getelementptr inbounds { i32 }, ptr %s91, i32 0, i32 0
   store i32 79, ptr %t489
   %t490 = load { i32 }, ptr %s91
-  %t491 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t488, { i32 } %t490, { ptr, i64 } { ptr @.str.1337, i64 15 })
+  %t491 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t488, { i32 } %t490, { ptr, i64 } { ptr @.str.1344, i64 15 })
   store { i32, [1 x i64] } %t491, ptr %s92
   %t494 = getelementptr inbounds { i32, [1 x i64] }, ptr %s92, i32 0, i32 0
   %t492 = load i32, ptr %t494
@@ -99985,7 +100846,7 @@ endif.71:
   %t561 = getelementptr inbounds { i32 }, ptr %s104, i32 0, i32 0
   store i32 27, ptr %t561
   %t562 = load { i32 }, ptr %s104
-  %t563 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t560, { i32 } %t562, { ptr, i64 } { ptr @.str.1338, i64 4 })
+  %t563 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t560, { i32 } %t562, { ptr, i64 } { ptr @.str.1345, i64 4 })
   store { i32, [1 x i64] } %t563, ptr %s105
   %t566 = getelementptr inbounds { i32, [1 x i64] }, ptr %s105, i32 0, i32 0
   %t564 = load i32, ptr %t566
@@ -100043,7 +100904,7 @@ try.ok.76:
   %t600 = getelementptr inbounds { i32 }, ptr %s111, i32 0, i32 0
   store i32 80, ptr %t600
   %t601 = load { i32 }, ptr %s111
-  %t602 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t599, { i32 } %t601, { ptr, i64 } { ptr @.str.1289, i64 3 })
+  %t602 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t599, { i32 } %t601, { ptr, i64 } { ptr @.str.1296, i64 3 })
   store { i32, [1 x i64] } %t602, ptr %s112
   %t605 = getelementptr inbounds { i32, [1 x i64] }, ptr %s112, i32 0, i32 0
   %t603 = load i32, ptr %t605
@@ -100086,7 +100947,7 @@ then.80:
   %t630 = load ptr, ptr %s117
   %t631 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t630, i32 0, i32 1
   %t632 = load { i32, i32, i32 }, ptr %t631
-  %t633 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t627, { i32, i32, i32 } %t632, { ptr, i64 } { ptr @.str.1335, i64 51 })
+  %t633 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t627, { i32, i32, i32 } %t632, { ptr, i64 } { ptr @.str.1342, i64 51 })
   %t634 = getelementptr inbounds { i32, [1 x i64] }, ptr %s118, i32 0, i32 0
   store i32 1, ptr %t634
   %t635 = insertvalue { ptr } undef, ptr %t633, 0
@@ -100174,7 +101035,7 @@ pat.tag.95:
 pat.or.86:
   %t680 = load ptr, ptr %s0
   %t681 = load { i32, i32, i32 }, ptr %s2
-  %t682 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t680, { i32, i32, i32 } %t681, { ptr, i64 } { ptr @.str.1339, i64 82 })
+  %t682 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t680, { i32, i32, i32 } %t681, { ptr, i64 } { ptr @.str.1346, i64 82 })
   %t683 = getelementptr inbounds { i32, [1 x i64] }, ptr %s124, i32 0, i32 0
   store i32 1, ptr %t683
   %t684 = insertvalue { ptr } undef, ptr %t682, 0
@@ -100192,7 +101053,7 @@ match.end.14:
   %t689 = phi { i32, [1 x i64] } [ %t238, %try.ok.32 ], [ %t306, %endif.38 ], [ %t420, %try.ok.54 ], [ %t478, %try.ok.61 ], [ %t664, %try.ok.83 ], [ %t686, %pat.or.86 ], [ %t688, %arm.next.85 ]
   ret { i32, [1 x i64] } %t689
 panic.6:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1278, i32 1018)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1285, i32 1018)
   unreachable
 }
 
@@ -100317,10 +101178,10 @@ endif.5:
 while.end.2:
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1278, i32 1116)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1285, i32 1116)
   unreachable
 panic.15:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1278, i32 1121)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1285, i32 1121)
   unreachable
 }
 
@@ -100405,7 +101266,7 @@ then.4:
   %t42 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t41, i32 0, i32 1
   %t43 = load { i32, i32, i32 }, ptr %t42
   %t44 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t44, ptr @.str.1340, i64 54)
+  call void @zevic_sb_add(ptr %t44, ptr @.str.1347, i64 54)
   %t45 = load ptr, ptr %s0
   %t46 = load ptr, ptr %s0
   %t47 = call ptr @"zevic_Zevic1_Parser_Parser_peek"(ptr %t46)
@@ -100465,7 +101326,7 @@ entry:
   %t1 = getelementptr inbounds { i32 }, ptr %s1, i32 0, i32 0
   store i32 83, ptr %t1
   %t2 = load { i32 }, ptr %s1
-  %t3 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t0, { i32 } %t2, { ptr, i64 } { ptr @.str.1304, i64 3 })
+  %t3 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t0, { i32 } %t2, { ptr, i64 } { ptr @.str.1311, i64 3 })
   store { i32, [1 x i64] } %t3, ptr %s2
   %t6 = getelementptr inbounds { i32, [1 x i64] }, ptr %s2, i32 0, i32 0
   %t4 = load i32, ptr %t6
@@ -100532,7 +101393,7 @@ then.5:
   %t46 = load ptr, ptr %s4
   %t47 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t46, i32 0, i32 1
   %t48 = load { i32, i32, i32 }, ptr %t47
-  %t49 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t45, { i32, i32, i32 } %t48, { ptr, i64 } { ptr @.str.1341, i64 24 })
+  %t49 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t45, { i32, i32, i32 } %t48, { ptr, i64 } { ptr @.str.1348, i64 24 })
   %t50 = getelementptr inbounds { i32, [1 x i64] }, ptr %s13, i32 0, i32 0
   store i32 1, ptr %t50
   %t51 = insertvalue { ptr } undef, ptr %t49, 0
@@ -100674,7 +101535,7 @@ endif.18:
   %t142 = load { i32, [1 x i64] }, ptr %s23
   ret { i32, [1 x i64] } %t142
 panic.20:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1278, i32 1160)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1285, i32 1160)
   unreachable
 }
 
@@ -100764,7 +101625,7 @@ entry:
   %t1 = getelementptr inbounds { i32 }, ptr %s2, i32 0, i32 0
   store i32 11, ptr %t1
   %t2 = load { i32 }, ptr %s2
-  %t3 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t0, { i32 } %t2, { ptr, i64 } { ptr @.str.1342, i64 4 })
+  %t3 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t0, { i32 } %t2, { ptr, i64 } { ptr @.str.1349, i64 4 })
   store { i32, [1 x i64] } %t3, ptr %s3
   %t6 = getelementptr inbounds { i32, [1 x i64] }, ptr %s3, i32 0, i32 0
   %t4 = load i32, ptr %t6
@@ -100798,7 +101659,7 @@ try.ok.0:
   %t24 = getelementptr inbounds { i32 }, ptr %s8, i32 0, i32 0
   store i32 2, ptr %t24
   %t25 = load { i32 }, ptr %s8
-  %t26 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t23, { i32 } %t25, { ptr, i64 } { ptr @.str.1343, i64 15 })
+  %t26 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t23, { i32 } %t25, { ptr, i64 } { ptr @.str.1350, i64 15 })
   store { i32, [1 x i64] } %t26, ptr %s9
   %t29 = getelementptr inbounds { i32, [1 x i64] }, ptr %s9, i32 0, i32 0
   %t27 = load i32, ptr %t29
@@ -100857,7 +101718,7 @@ try.ok.4:
   %t65 = getelementptr inbounds { i32 }, ptr %s14, i32 0, i32 0
   store i32 79, ptr %t65
   %t66 = load { i32 }, ptr %s14
-  %t67 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t64, { i32 } %t66, { ptr, i64 } { ptr @.str.1344, i64 27 })
+  %t67 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t64, { i32 } %t66, { ptr, i64 } { ptr @.str.1351, i64 27 })
   store { i32, [1 x i64] } %t67, ptr %s15
   %t70 = getelementptr inbounds { i32, [1 x i64] }, ptr %s15, i32 0, i32 0
   %t68 = load i32, ptr %t70
@@ -101032,7 +101893,7 @@ endif.16:
   store { i32, i32, i32 } %t182, ptr %t177
   %t183 = load ptr, ptr %s28
   %t184 = load ptr, ptr %s0
-  %t185 = call { i32, [2 x i64] } @"zevic_Zevic1_Parser_Parser_expectIdent"(ptr %t184, { ptr, i64 } { ptr @.str.1296, i64 16 })
+  %t185 = call { i32, [2 x i64] } @"zevic_Zevic1_Parser_Parser_expectIdent"(ptr %t184, { ptr, i64 } { ptr @.str.1303, i64 16 })
   store { i32, [2 x i64] } %t185, ptr %s41
   %t188 = getelementptr inbounds { i32, [2 x i64] }, ptr %s41, i32 0, i32 0
   %t186 = load i32, ptr %t188
@@ -101058,7 +101919,7 @@ try.ok.24:
   %t200 = getelementptr inbounds { i32 }, ptr %s43, i32 0, i32 0
   store i32 74, ptr %t200
   %t201 = load { i32 }, ptr %s43
-  %t202 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t199, { i32 } %t201, { ptr, i64 } { ptr @.str.1345, i64 59 })
+  %t202 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t199, { i32 } %t201, { ptr, i64 } { ptr @.str.1352, i64 59 })
   store { i32, [1 x i64] } %t202, ptr %s44
   %t205 = getelementptr inbounds { i32, [1 x i64] }, ptr %s44, i32 0, i32 0
   %t203 = load i32, ptr %t205
@@ -101133,7 +101994,7 @@ while.end.10:
   %t248 = getelementptr inbounds { i32 }, ptr %s51, i32 0, i32 0
   store i32 80, ptr %t248
   %t249 = load { i32 }, ptr %s51
-  %t250 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t247, { i32 } %t249, { ptr, i64 } { ptr @.str.1346, i64 24 })
+  %t250 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t247, { i32 } %t249, { ptr, i64 } { ptr @.str.1353, i64 24 })
   store { i32, [1 x i64] } %t250, ptr %s52
   %t253 = getelementptr inbounds { i32, [1 x i64] }, ptr %s52, i32 0, i32 0
   %t251 = load i32, ptr %t253
@@ -101222,7 +102083,7 @@ then.42:
   %t305 = getelementptr inbounds { i32 }, ptr %s62, i32 0, i32 0
   store i32 7, ptr %t305
   %t306 = load { i32 }, ptr %s62
-  %t307 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t304, { i32 } %t306, { ptr, i64 } { ptr @.str.1347, i64 22 })
+  %t307 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t304, { i32 } %t306, { ptr, i64 } { ptr @.str.1354, i64 22 })
   store { i32, [1 x i64] } %t307, ptr %s63
   %t310 = getelementptr inbounds { i32, [1 x i64] }, ptr %s63, i32 0, i32 0
   %t308 = load i32, ptr %t310
@@ -101331,7 +102192,7 @@ then.55:
   %t375 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t374, i32 0, i32 1
   %t376 = load { i32, i32, i32 }, ptr %t375
   %t377 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t377, ptr @.str.1348, i64 39)
+  call void @zevic_sb_add(ptr %t377, ptr @.str.1355, i64 39)
   %t378 = load ptr, ptr %s7
   %t379 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t378, i32 0, i32 3
   %t380 = load { ptr, i64 }, ptr %t379
@@ -101491,7 +102352,7 @@ entry:
   %t1 = getelementptr inbounds { i32 }, ptr %s2, i32 0, i32 0
   store i32 2, ptr %t1
   %t2 = load { i32 }, ptr %s2
-  %t3 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t0, { i32 } %t2, { ptr, i64 } { ptr @.str.1316, i64 12 })
+  %t3 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t0, { i32 } %t2, { ptr, i64 } { ptr @.str.1323, i64 12 })
   store { i32, [1 x i64] } %t3, ptr %s3
   %t6 = getelementptr inbounds { i32, [1 x i64] }, ptr %s3, i32 0, i32 0
   %t4 = load i32, ptr %t6
@@ -101534,7 +102395,7 @@ try.ok.0:
   %t31 = getelementptr inbounds { i32 }, ptr %s8, i32 0, i32 0
   store i32 74, ptr %t31
   %t32 = load { i32 }, ptr %s8
-  %t33 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t30, { i32 } %t32, { ptr, i64 } { ptr @.str.1349, i64 24 })
+  %t33 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t30, { i32 } %t32, { ptr, i64 } { ptr @.str.1356, i64 24 })
   store { i32, [1 x i64] } %t33, ptr %s9
   %t36 = getelementptr inbounds { i32, [1 x i64] }, ptr %s9, i32 0, i32 0
   %t34 = load i32, ptr %t36
@@ -101900,7 +102761,7 @@ endif.20:
   %t114 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t113, i32 0, i32 1
   %t115 = load { i32, i32, i32 }, ptr %t114
   %t116 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t116, ptr @.str.1350, i64 21)
+  call void @zevic_sb_add(ptr %t116, ptr @.str.1357, i64 21)
   %t117 = load i1, ptr %s3
   br i1 %t117, label %then.23, label %else.24
 then.23:
@@ -101908,7 +102769,7 @@ then.23:
 else.24:
   br label %endif.25
 endif.25:
-  %t118 = phi { ptr, i64 } [ { ptr @.str.1111, i64 6 }, %then.23 ], [ { ptr @.str.1106, i64 3 }, %else.24 ]
+  %t118 = phi { ptr, i64 } [ { ptr @.str.1128, i64 6 }, %then.23 ], [ { ptr @.str.1123, i64 3 }, %else.24 ]
   %t119 = extractvalue { ptr, i64 } %t118, 0
   %t120 = extractvalue { ptr, i64 } %t118, 1
   call void @zevic_sb_add(ptr %t116, ptr %t119, i64 %t120)
@@ -101941,7 +102802,7 @@ then.26:
   %t137 = getelementptr inbounds { i32 }, ptr %s34, i32 0, i32 0
   store i32 2, ptr %t137
   %t138 = load { i32 }, ptr %s34
-  %t139 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t136, { i32 } %t138, { ptr, i64 } { ptr @.str.1351, i64 22 })
+  %t139 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t136, { i32 } %t138, { ptr, i64 } { ptr @.str.1358, i64 22 })
   store { i32, [1 x i64] } %t139, ptr %s35
   %t142 = getelementptr inbounds { i32, [1 x i64] }, ptr %s35, i32 0, i32 0
   %t140 = load i32, ptr %t142
@@ -102012,7 +102873,7 @@ try.ok.34:
   %t185 = getelementptr inbounds { i32 }, ptr %s44, i32 0, i32 0
   store i32 80, ptr %t185
   %t186 = load { i32 }, ptr %s44
-  %t187 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t184, { i32 } %t186, { ptr, i64 } { ptr @.str.1289, i64 3 })
+  %t187 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t184, { i32 } %t186, { ptr, i64 } { ptr @.str.1296, i64 3 })
   store { i32, [1 x i64] } %t187, ptr %s45
   %t190 = getelementptr inbounds { i32, [1 x i64] }, ptr %s45, i32 0, i32 0
   %t188 = load i32, ptr %t190
@@ -102122,7 +102983,7 @@ while.end.43:
   %t254 = getelementptr inbounds { i32 }, ptr %s58, i32 0, i32 0
   store i32 84, ptr %t254
   %t255 = load { i32 }, ptr %s58
-  %t256 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t253, { i32 } %t255, { ptr, i64 } { ptr @.str.1310, i64 3 })
+  %t256 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t253, { i32 } %t255, { ptr, i64 } { ptr @.str.1317, i64 3 })
   store { i32, [1 x i64] } %t256, ptr %s59
   %t259 = getelementptr inbounds { i32, [1 x i64] }, ptr %s59, i32 0, i32 0
   %t257 = load i32, ptr %t259
@@ -102180,7 +103041,7 @@ then.51:
   %t290 = load ptr, ptr %s65
   %t291 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t290, i32 0, i32 1
   %t292 = load { i32, i32, i32 }, ptr %t291
-  %t293 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t287, { i32, i32, i32 } %t292, { ptr, i64 } { ptr @.str.1352, i64 37 })
+  %t293 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t287, { i32, i32, i32 } %t292, { ptr, i64 } { ptr @.str.1359, i64 37 })
   %t294 = getelementptr inbounds { i32, [1 x i64] }, ptr %s66, i32 0, i32 0
   store i32 1, ptr %t294
   %t295 = insertvalue { ptr } undef, ptr %t293, 0
@@ -102329,7 +103190,7 @@ then.6:
   %t53 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t52, i32 0, i32 1
   %t54 = load { i32, i32, i32 }, ptr %t53
   %t55 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t55, ptr @.str.1353, i64 51)
+  call void @zevic_sb_add(ptr %t55, ptr @.str.1360, i64 51)
   %t56 = load ptr, ptr %s0
   %t57 = load ptr, ptr %s0
   %t58 = call ptr @"zevic_Zevic1_Parser_Parser_peek"(ptr %t57)
@@ -102406,7 +103267,7 @@ entry:
   %t8 = getelementptr inbounds { i32 }, ptr %s4, i32 0, i32 0
   store i32 2, ptr %t8
   %t9 = load { i32 }, ptr %s4
-  %t10 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t7, { i32 } %t9, { ptr, i64 } { ptr @.str.1354, i64 11 })
+  %t10 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t7, { i32 } %t9, { ptr, i64 } { ptr @.str.1361, i64 11 })
   store { i32, [1 x i64] } %t10, ptr %s5
   %t13 = getelementptr inbounds { i32, [1 x i64] }, ptr %s5, i32 0, i32 0
   %t11 = load i32, ptr %t13
@@ -102485,7 +103346,7 @@ try.ok.4:
   %t62 = getelementptr inbounds { i32 }, ptr %s12, i32 0, i32 0
   store i32 83, ptr %t62
   %t63 = load { i32 }, ptr %s12
-  %t64 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t61, { i32 } %t63, { ptr, i64 } { ptr @.str.1355, i64 28 })
+  %t64 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t61, { i32 } %t63, { ptr, i64 } { ptr @.str.1362, i64 28 })
   store { i32, [1 x i64] } %t64, ptr %s13
   %t67 = getelementptr inbounds { i32, [1 x i64] }, ptr %s13, i32 0, i32 0
   %t65 = load i32, ptr %t67
@@ -102543,7 +103404,7 @@ then.11:
   %t101 = load ptr, ptr %s2
   %t102 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t101, i32 0, i32 1
   %t103 = load { i32, i32, i32 }, ptr %t102
-  %t104 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t100, { i32, i32, i32 } %t103, { ptr, i64 } { ptr @.str.1341, i64 24 })
+  %t104 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t100, { i32, i32, i32 } %t103, { ptr, i64 } { ptr @.str.1348, i64 24 })
   %t105 = getelementptr inbounds { i32, [1 x i64] }, ptr %s21, i32 0, i32 0
   store i32 1, ptr %t105
   %t106 = insertvalue { ptr } undef, ptr %t104, 0
@@ -102701,7 +103562,7 @@ entry:
   %t9 = getelementptr inbounds { i32 }, ptr %s4, i32 0, i32 0
   store i32 7, ptr %t9
   %t10 = load { i32 }, ptr %s4
-  %t11 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t8, { i32 } %t10, { ptr, i64 } { ptr @.str.1356, i64 22 })
+  %t11 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t8, { i32 } %t10, { ptr, i64 } { ptr @.str.1363, i64 22 })
   store { i32, [1 x i64] } %t11, ptr %s5
   %t14 = getelementptr inbounds { i32, [1 x i64] }, ptr %s5, i32 0, i32 0
   %t12 = load i32, ptr %t14
@@ -102768,7 +103629,7 @@ then.5:
   %t54 = load ptr, ptr %s12
   %t55 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t54, i32 0, i32 1
   %t56 = load { i32, i32, i32 }, ptr %t55
-  %t57 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t51, { i32, i32, i32 } %t56, { ptr, i64 } { ptr @.str.1357, i64 31 })
+  %t57 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t51, { i32, i32, i32 } %t56, { ptr, i64 } { ptr @.str.1364, i64 31 })
   %t58 = getelementptr inbounds { i32, [1 x i64] }, ptr %s13, i32 0, i32 0
   store i32 1, ptr %t58
   %t59 = insertvalue { ptr } undef, ptr %t57, 0
@@ -102896,7 +103757,7 @@ else.17:
   %t139 = load ptr, ptr %s30
   %t140 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t139, i32 0, i32 1
   %t141 = load { i32, i32, i32 }, ptr %t140
-  %t142 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t136, { i32, i32, i32 } %t141, { ptr, i64 } { ptr @.str.1358, i64 65 })
+  %t142 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t136, { i32, i32, i32 } %t141, { ptr, i64 } { ptr @.str.1365, i64 65 })
   %t143 = getelementptr inbounds { i32, [1 x i64] }, ptr %s31, i32 0, i32 0
   store i32 1, ptr %t143
   %t144 = insertvalue { ptr } undef, ptr %t142, 0
@@ -103062,7 +103923,7 @@ pat.tag.14:
   %t48 = getelementptr inbounds { i32 }, ptr %s6, i32 0, i32 0
   store i32 7, ptr %t48
   %t49 = load { i32 }, ptr %s6
-  %t50 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t47, { i32 } %t49, { ptr, i64 } { ptr @.str.1356, i64 22 })
+  %t50 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t47, { i32 } %t49, { ptr, i64 } { ptr @.str.1363, i64 22 })
   store { i32, [1 x i64] } %t50, ptr %s7
   %t53 = getelementptr inbounds { i32, [1 x i64] }, ptr %s7, i32 0, i32 0
   %t51 = load i32, ptr %t53
@@ -103162,7 +104023,7 @@ pat.tag.23:
   %t114 = getelementptr inbounds { i32 }, ptr %s17, i32 0, i32 0
   store i32 2, ptr %t114
   %t115 = load { i32 }, ptr %s17
-  %t116 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t113, { i32 } %t115, { ptr, i64 } { ptr @.str.1359, i64 15 })
+  %t116 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t113, { i32 } %t115, { ptr, i64 } { ptr @.str.1366, i64 15 })
   store { i32, [1 x i64] } %t116, ptr %s18
   %t119 = getelementptr inbounds { i32, [1 x i64] }, ptr %s18, i32 0, i32 0
   %t117 = load i32, ptr %t119
@@ -103199,7 +104060,7 @@ try.ok.24:
   %t140 = getelementptr inbounds { i32 }, ptr %s21, i32 0, i32 0
   store i32 74, ptr %t140
   %t141 = load { i32 }, ptr %s21
-  %t142 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t139, { i32 } %t141, { ptr, i64 } { ptr @.str.1360, i64 27 })
+  %t142 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t139, { i32 } %t141, { ptr, i64 } { ptr @.str.1367, i64 27 })
   store { i32, [1 x i64] } %t142, ptr %s22
   %t145 = getelementptr inbounds { i32, [1 x i64] }, ptr %s22, i32 0, i32 0
   %t143 = load i32, ptr %t145
@@ -103257,7 +104118,7 @@ try.ok.28:
   %t179 = getelementptr inbounds { i32 }, ptr %s28, i32 0, i32 0
   store i32 52, ptr %t179
   %t180 = load { i32 }, ptr %s28
-  %t181 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t178, { i32 } %t180, { ptr, i64 } { ptr @.str.1361, i64 17 })
+  %t181 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_expect"(ptr %t178, { i32 } %t180, { ptr, i64 } { ptr @.str.1368, i64 17 })
   store { i32, [1 x i64] } %t181, ptr %s29
   %t184 = getelementptr inbounds { i32, [1 x i64] }, ptr %s29, i32 0, i32 0
   %t182 = load i32, ptr %t184
@@ -103329,7 +104190,7 @@ pat.tag.35:
   %t226 = load ptr, ptr %s1
   %t227 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t226, i32 0, i32 1
   %t228 = load { i32, i32, i32 }, ptr %t227
-  %t229 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t225, { i32, i32, i32 } %t228, { ptr, i64 } { ptr @.str.1362, i64 77 })
+  %t229 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t225, { i32, i32, i32 } %t228, { ptr, i64 } { ptr @.str.1369, i64 77 })
   %t230 = getelementptr inbounds { i32, [1 x i64] }, ptr %s36, i32 0, i32 0
   store i32 1, ptr %t230
   %t231 = insertvalue { ptr } undef, ptr %t229, 0
@@ -103348,7 +104209,7 @@ pat.tag.37:
   %t239 = load { ptr, i64 }, ptr %t238
   %t241 = extractvalue { ptr, i64 } %t239, 0
   %t242 = extractvalue { ptr, i64 } %t239, 1
-  %t243 = call i32 @zevic_str_eq(ptr %t241, i64 %t242, ptr @.str.1363, i64 4)
+  %t243 = call i32 @zevic_str_eq(ptr %t241, i64 %t242, ptr @.str.1370, i64 4)
   %t240 = icmp ne i32 %t243, 0
   br i1 %t240, label %and.rhs.38, label %and.end.39
 and.rhs.38:
@@ -103456,14 +104317,14 @@ endif.42:
   %t312 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t311, i32 0, i32 1
   %t313 = load { i32, i32, i32 }, ptr %t312
   %t314 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t314, ptr @.str.1294, i64 11)
+  call void @zevic_sb_add(ptr %t314, ptr @.str.1301, i64 11)
   %t315 = load ptr, ptr %s0
   %t316 = load ptr, ptr %s1
   %t317 = call { ptr, i64 } @"zevic_Zevic1_Parser_Parser_describe"(ptr %t315, ptr %t316)
   %t318 = extractvalue { ptr, i64 } %t317, 0
   %t319 = extractvalue { ptr, i64 } %t317, 1
   call void @zevic_sb_add(ptr %t314, ptr %t318, i64 %t319)
-  call void @zevic_sb_add(ptr %t314, ptr @.str.1364, i64 100)
+  call void @zevic_sb_add(ptr %t314, ptr @.str.1371, i64 100)
   call void @zevic_sb_finish(ptr %s50, ptr %t314)
   %t320 = load { ptr, i64 }, ptr %s50
   %t321 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t310, { i32, i32, i32 } %t313, { ptr, i64 } %t320)
@@ -103480,14 +104341,14 @@ arm.next.36:
   %t328 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t327, i32 0, i32 1
   %t329 = load { i32, i32, i32 }, ptr %t328
   %t330 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t330, ptr @.str.1294, i64 11)
+  call void @zevic_sb_add(ptr %t330, ptr @.str.1301, i64 11)
   %t331 = load ptr, ptr %s0
   %t332 = load ptr, ptr %s1
   %t333 = call { ptr, i64 } @"zevic_Zevic1_Parser_Parser_describe"(ptr %t331, ptr %t332)
   %t334 = extractvalue { ptr, i64 } %t333, 0
   %t335 = extractvalue { ptr, i64 } %t333, 1
   call void @zevic_sb_add(ptr %t330, ptr %t334, i64 %t335)
-  call void @zevic_sb_add(ptr %t330, ptr @.str.1364, i64 100)
+  call void @zevic_sb_add(ptr %t330, ptr @.str.1371, i64 100)
   call void @zevic_sb_finish(ptr %s52, ptr %t330)
   %t336 = load { ptr, i64 }, ptr %s52
   %t337 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t326, { i32, i32, i32 } %t329, { ptr, i64 } %t336)
@@ -103650,7 +104511,7 @@ then.0:
   %t14 = load ptr, ptr %s5
   %t15 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { ptr, i64 }, i64, double, { ptr, i64 }, ptr, i1, i1 }, ptr %t14, i32 0, i32 1
   %t16 = load { i32, i32, i32 }, ptr %t15
-  %t17 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t11, { i32, i32, i32 } %t16, { ptr, i64 } { ptr @.str.1365, i64 42 })
+  %t17 = call ptr @"zevic_Zevic1_Parser_Parser_perr"(ptr %t11, { i32, i32, i32 } %t16, { ptr, i64 } { ptr @.str.1372, i64 42 })
   %t18 = getelementptr inbounds { i32, [1 x i64] }, ptr %s6, i32 0, i32 0
   store i32 1, ptr %t18
   %t19 = insertvalue { ptr } undef, ptr %t17, 0
@@ -103691,7 +104552,7 @@ endif.2:
   store ptr %t40, ptr %s9
   %t44 = load ptr, ptr %s0
   %t45 = load ptr, ptr %s9
-  %t46 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_parseDotted"(ptr %t44, ptr %t45, { ptr, i64 } { ptr @.str.1366, i64 13 })
+  %t46 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_parseDotted"(ptr %t44, ptr %t45, { ptr, i64 } { ptr @.str.1373, i64 13 })
   store { i32, [1 x i64] } %t46, ptr %s10
   %t49 = getelementptr inbounds { i32, [1 x i64] }, ptr %s10, i32 0, i32 0
   %t47 = load i32, ptr %t49
@@ -103750,7 +104611,7 @@ while.body.6:
   %t83 = load ptr, ptr %s17
   %t84 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t83, i32 0, i32 23
   %t85 = load ptr, ptr %t84
-  %t86 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_parseDotted"(ptr %t82, ptr %t85, { ptr, i64 } { ptr @.str.1366, i64 13 })
+  %t86 = call { i32, [1 x i64] } @"zevic_Zevic1_Parser_Parser_parseDotted"(ptr %t82, ptr %t85, { ptr, i64 } { ptr @.str.1373, i64 13 })
   store { i32, [1 x i64] } %t86, ptr %s18
   %t89 = getelementptr inbounds { i32, [1 x i64] }, ptr %s18, i32 0, i32 0
   %t87 = load i32, ptr %t89
@@ -103777,7 +104638,7 @@ try.ok.8:
 then.10:
   %t101 = load ptr, ptr %s17
   %t102 = load ptr, ptr %s0
-  %t103 = call { i32, [2 x i64] } @"zevic_Zevic1_Parser_Parser_expectIdent"(ptr %t102, { ptr, i64 } { ptr @.str.1367, i64 13 })
+  %t103 = call { i32, [2 x i64] } @"zevic_Zevic1_Parser_Parser_expectIdent"(ptr %t102, { ptr, i64 } { ptr @.str.1374, i64 13 })
   store { i32, [2 x i64] } %t103, ptr %s21
   %t106 = getelementptr inbounds { i32, [2 x i64] }, ptr %s21, i32 0, i32 0
   %t104 = load i32, ptr %t106
@@ -104054,10 +104915,10 @@ endif.5:
 while.end.2:
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1278, i32 1464)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1285, i32 1464)
   unreachable
 panic.15:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1278, i32 1467)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1285, i32 1467)
   unreachable
 }
 
@@ -104555,7 +105416,7 @@ endif.2:
   store ptr %t10, ptr %s7
   %t124 = load ptr, ptr %s7
   %t125 = getelementptr inbounds { ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, i64, i64, { i32, [1 x i64] }, { ptr, i64 }, { ptr, i64 }, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, i1, { ptr, i64 }, { i32, [1 x i64] }, i1, ptr }, ptr %t124, i32 0, i32 12
-  store { ptr, i64 } { ptr @.str.1012, i64 5 }, ptr %t125
+  store { ptr, i64 } { ptr @.str.1029, i64 5 }, ptr %t125
   %t126 = load ptr, ptr %s2
   %t127 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t126, i32 0, i32 17
   %t128 = load { i32, [1 x i64] }, ptr %t127
@@ -104571,7 +105432,7 @@ endif.2:
   %t135 = load i1, ptr %t134
   br i1 %t135, label %then.3, label %endif.5
 then.3:
-  store { ptr, i64 } { ptr @.str.1368, i64 9 }, ptr %s8
+  store { ptr, i64 } { ptr @.str.1375, i64 9 }, ptr %s8
   %t136 = load ptr, ptr %s7
   %t137 = getelementptr inbounds { ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, i64, i64, { i32, [1 x i64] }, { ptr, i64 }, { ptr, i64 }, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, i1, { ptr, i64 }, { i32, [1 x i64] }, i1, ptr }, ptr %t136, i32 0, i32 17
   store i1 true, ptr %t137
@@ -104625,7 +105486,7 @@ then.8:
   store { ptr, i64 } %t173, ptr %t170
   %t174 = load ptr, ptr %s7
   %t175 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t175, ptr @.str.1369, i64 21)
+  call void @zevic_sb_add(ptr %t175, ptr @.str.1376, i64 21)
   %t176 = load ptr, ptr %s7
   %t177 = getelementptr inbounds { ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, i64, i64, { i32, [1 x i64] }, { ptr, i64 }, { ptr, i64 }, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, i1, { ptr, i64 }, { i32, [1 x i64] }, i1, ptr }, ptr %t176, i32 0, i32 18
   %t178 = load { ptr, i64 }, ptr %t177
@@ -104639,7 +105500,7 @@ then.8:
 else.9:
   %t182 = load ptr, ptr %s7
   %t183 = getelementptr inbounds { ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, i64, i64, { i32, [1 x i64] }, { ptr, i64 }, { ptr, i64 }, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, i1, { ptr, i64 }, { i32, [1 x i64] }, i1, ptr }, ptr %t182, i32 0, i32 18
-  store { ptr, i64 } { ptr @.str.1370, i64 5 }, ptr %t183
+  store { ptr, i64 } { ptr @.str.1377, i64 5 }, ptr %t183
   br label %endif.10
 endif.10:
   br label %endif.5
@@ -104751,7 +105612,7 @@ then.20:
   %t256 = call ptr @zevic_alloc(i64 24)
   %t257 = load ptr, ptr %s16
   %t258 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t258, ptr @.str.1015, i64 2)
+  call void @zevic_sb_add(ptr %t258, ptr @.str.1032, i64 2)
   %t259 = load i64, ptr %s14
   call void @zevic_i64_to_str(ptr %s21, i64 %t259)
   %t260 = load { ptr, i64 }, ptr %s21
@@ -104811,7 +105672,7 @@ pat.tag.29:
   %t295 = extractvalue { ptr, i64 } %t294, 0
   %t296 = extractvalue { ptr, i64 } %t294, 1
   call void @zevic_sb_add(ptr %t291, ptr %t295, i64 %t296)
-  call void @zevic_sb_add(ptr %t291, ptr @.str.1372, i64 13)
+  call void @zevic_sb_add(ptr %t291, ptr @.str.1379, i64 13)
   call void @zevic_sb_finish(ptr %s24, ptr %t291)
   %t297 = load { ptr, i64 }, ptr %s24
   call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t287, { i32, i32, i32 } %t290, { ptr, i64 } %t297)
@@ -104911,7 +105772,7 @@ endif.41:
   %t364 = load ptr, ptr %s1
   %t365 = getelementptr inbounds { ptr, { i32, [1 x i64] }, ptr, { ptr, i64 }, ptr, ptr, i1, i1, i1, i1 }, ptr %t364, i32 0, i32 5
   %t366 = load ptr, ptr %t365
-  %t367 = call ptr @"zevic_Zevic1_Expr_Coerce"(ptr %t361, { i32, i32, i32 } %t362, ptr %t363, ptr %t366, { ptr, i64 } { ptr @.str.1373, i64 64 })
+  %t367 = call ptr @"zevic_Zevic1_Expr_Coerce"(ptr %t361, { i32, i32, i32 } %t362, ptr %t363, ptr %t366, { ptr, i64 } { ptr @.str.1380, i64 64 })
   store ptr %t367, ptr %s27
   %t368 = load ptr, ptr %s0
   %t369 = load ptr, ptr %s27
@@ -105056,7 +105917,7 @@ endif.54:
   %t456 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t455, i32 0, i32 13
   %t457 = load ptr, ptr %t456
   %t458 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t458, ptr @.str.997, i64 7)
+  call void @zevic_sb_add(ptr %t458, ptr @.str.1014, i64 7)
   %t459 = load { ptr, i64 }, ptr %s30
   %t460 = extractvalue { ptr, i64 } %t459, 0
   %t461 = extractvalue { ptr, i64 } %t459, 1
@@ -105073,7 +105934,7 @@ endif.54:
   %t468 = extractvalue { ptr, i64 } %t467, 0
   %t469 = extractvalue { ptr, i64 } %t467, 1
   call void @zevic_sb_add(ptr %t458, ptr %t468, i64 %t469)
-  call void @zevic_sb_add(ptr %t458, ptr @.str.1018, i64 11)
+  call void @zevic_sb_add(ptr %t458, ptr @.str.1035, i64 11)
   %t470 = load ptr, ptr %s7
   %t471 = getelementptr inbounds { ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, i64, i64, { i32, [1 x i64] }, { ptr, i64 }, { ptr, i64 }, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, i1, { ptr, i64 }, { i32, [1 x i64] }, i1, ptr }, ptr %t470, i32 0, i32 5
   %t472 = load ptr, ptr %t471
@@ -105095,16 +105956,16 @@ endif.54:
   %t486 = extractvalue { ptr, i64 } %t485, 0
   %t487 = extractvalue { ptr, i64 } %t485, 1
   call void @zevic_sb_add(ptr %t458, ptr %t486, i64 %t487)
-  call void @zevic_sb_add(ptr %t458, ptr @.str.1019, i64 3)
+  call void @zevic_sb_add(ptr %t458, ptr @.str.1036, i64 3)
   call void @zevic_sb_finish(ptr %s34, ptr %t458)
   %t488 = load { ptr, i64 }, ptr %s34
   call void @"zevic_Zevic1_Gen_Sb_Put"(ptr %t457, { ptr, i64 } %t488)
   ret void
 panic.24:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1371, i32 53)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1378, i32 53)
   unreachable
 panic.59:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1371, i32 83)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1378, i32 83)
   unreachable
 }
 
@@ -105124,7 +105985,7 @@ entry:
   %t0 = load ptr, ptr %s0
   %t1 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t0, i32 0, i32 0
   %t2 = load ptr, ptr %t1
-  %t3 = call { i32, [1 x i64] } @"zevic_Zevic1_Resolve_Program_FindModule"(ptr %t2, { ptr, i64 } { ptr @.str.1086, i64 4 })
+  %t3 = call { i32, [1 x i64] } @"zevic_Zevic1_Resolve_Program_FindModule"(ptr %t2, { ptr, i64 } { ptr @.str.1103, i64 4 })
   store { i32, [1 x i64] } %t3, ptr %s1
   %t6 = getelementptr inbounds { i32, [1 x i64] }, ptr %s1, i32 0, i32 0
   %t4 = load i32, ptr %t6
@@ -105140,7 +106001,7 @@ pat.tag.2:
   %t12 = load ptr, ptr %s2
   %t13 = getelementptr inbounds { i64, { ptr, i64 }, ptr, ptr, ptr, ptr, i1, i32 }, ptr %t12, i32 0, i32 3
   %t14 = load ptr, ptr %t13
-  %t15 = call { i32, [1 x i64] } @"zevic_Map<String, Zevic1_Resolve_Decl>_Get"(ptr %t14, { ptr, i64 } { ptr @.str.1086, i64 4 })
+  %t15 = call { i32, [1 x i64] } @"zevic_Map<String, Zevic1_Resolve_Decl>_Get"(ptr %t14, { ptr, i64 } { ptr @.str.1103, i64 4 })
   store { i32, [1 x i64] } %t15, ptr %s3
   %t18 = getelementptr inbounds { i32, [1 x i64] }, ptr %s3, i32 0, i32 0
   %t16 = load i32, ptr %t18
@@ -105205,7 +106066,7 @@ match.end.0:
   %t49 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t48, i32 0, i32 1
   %t50 = load ptr, ptr %t49
   %t51 = call { i32, i32, i32 } @"zevic_Zevic1_Program_noPos"()
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t50, { i32, i32, i32 } %t51, { ptr, i64 } { ptr @.str.1374, i64 71 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t50, { i32, i32, i32 } %t51, { ptr, i64 } { ptr @.str.1381, i64 71 })
   %t52 = getelementptr inbounds { i32, [1 x i64] }, ptr %s9, i32 0, i32 0
   store i32 1, ptr %t52
   %t53 = load { i32, [1 x i64] }, ptr %s9
@@ -105363,7 +106224,7 @@ then.8:
   %t35 = load ptr, ptr %s8
   %t36 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t35, i32 0, i32 1
   %t37 = load { i32, i32, i32 }, ptr %t36
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t34, { i32, i32, i32 } %t37, { ptr, i64 } { ptr @.str.1375, i64 34 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t34, { i32, i32, i32 } %t37, { ptr, i64 } { ptr @.str.1382, i64 34 })
   br label %endif.10
 else.9:
   %t38 = load ptr, ptr %s8
@@ -105379,7 +106240,7 @@ then.11:
   %t46 = load ptr, ptr %s8
   %t47 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t46, i32 0, i32 1
   %t48 = load { i32, i32, i32 }, ptr %t47
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t45, { i32, i32, i32 } %t48, { ptr, i64 } { ptr @.str.1376, i64 55 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t45, { i32, i32, i32 } %t48, { ptr, i64 } { ptr @.str.1383, i64 55 })
   br label %endif.13
 else.12:
   %t49 = load ptr, ptr %s0
@@ -105410,7 +106271,7 @@ then.14:
   %t66 = load ptr, ptr %s0
   %t67 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t66, i32 0, i32 0
   %t68 = load ptr, ptr %t67
-  %t69 = call { i32, [1 x i64] } @"zevic_Zevic1_Resolve_Program_FindModule"(ptr %t68, { ptr, i64 } { ptr @.str.1377, i64 9 })
+  %t69 = call { i32, [1 x i64] } @"zevic_Zevic1_Resolve_Program_FindModule"(ptr %t68, { ptr, i64 } { ptr @.str.1384, i64 9 })
   store { i32, [1 x i64] } %t69, ptr %s13
   %t72 = getelementptr inbounds { i32, [1 x i64] }, ptr %s13, i32 0, i32 0
   %t70 = load i32, ptr %t72
@@ -105426,7 +106287,7 @@ pat.tag.19:
   %t78 = load ptr, ptr %s14
   %t79 = getelementptr inbounds { i64, { ptr, i64 }, ptr, ptr, ptr, ptr, i1, i32 }, ptr %t78, i32 0, i32 3
   %t80 = load ptr, ptr %t79
-  %t81 = call { i32, [1 x i64] } @"zevic_Map<String, Zevic1_Resolve_Decl>_Get"(ptr %t80, { ptr, i64 } { ptr @.str.1378, i64 7 })
+  %t81 = call { i32, [1 x i64] } @"zevic_Map<String, Zevic1_Resolve_Decl>_Get"(ptr %t80, { ptr, i64 } { ptr @.str.1385, i64 7 })
   br label %match.end.17
 arm.next.18:
   %t84 = getelementptr inbounds { i32, [1 x i64] }, ptr %s13, i32 0, i32 0
@@ -105501,7 +106362,7 @@ then.25:
   %t131 = load ptr, ptr %s8
   %t132 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t131, i32 0, i32 1
   %t133 = load { i32, i32, i32 }, ptr %t132
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t130, { i32, i32, i32 } %t133, { ptr, i64 } { ptr @.str.1379, i64 53 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t130, { i32, i32, i32 } %t133, { ptr, i64 } { ptr @.str.1386, i64 53 })
   br label %endif.27
 endif.27:
   br label %match.end.22
@@ -105517,7 +106378,7 @@ pat.tag.29:
   %t140 = load ptr, ptr %s8
   %t141 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t140, i32 0, i32 1
   %t142 = load { i32, i32, i32 }, ptr %t141
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t139, { i32, i32, i32 } %t142, { ptr, i64 } { ptr @.str.1380, i64 59 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t139, { i32, i32, i32 } %t142, { ptr, i64 } { ptr @.str.1387, i64 59 })
   br label %match.end.22
 arm.next.28:
   unreachable
@@ -105556,7 +106417,7 @@ then.32:
   %t166 = load ptr, ptr %s8
   %t167 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t166, i32 0, i32 1
   %t168 = load { i32, i32, i32 }, ptr %t167
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t165, { i32, i32, i32 } %t168, { ptr, i64 } { ptr @.str.1381, i64 74 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t165, { i32, i32, i32 } %t168, { ptr, i64 } { ptr @.str.1388, i64 74 })
   br label %endif.34
 endif.34:
   br label %endif.13
@@ -105993,7 +106854,7 @@ then.97:
   %t432 = load { i32, [2 x i64] }, ptr %s66
   ret { i32, [2 x i64] } %t432
 endif.99:
-  store { ptr, i64 } { ptr @.str.1382, i64 49 }, ptr %s67
+  store { ptr, i64 } { ptr @.str.1389, i64 49 }, ptr %s67
   %t433 = call ptr @zevic_sb_new()
   %t434 = load { ptr, i64 }, ptr %s67
   %t435 = extractvalue { ptr, i64 } %t434, 0
@@ -106014,7 +106875,7 @@ endif.99:
   %t447 = extractvalue { ptr, i64 } %t446, 0
   %t448 = extractvalue { ptr, i64 } %t446, 1
   call void @zevic_sb_add(ptr %t433, ptr %t447, i64 %t448)
-  call void @zevic_sb_add(ptr %t433, ptr @.str.1383, i64 36)
+  call void @zevic_sb_add(ptr %t433, ptr @.str.1390, i64 36)
   %t449 = load ptr, ptr %s0
   %t450 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t449, i32 0, i32 13
   %t451 = load ptr, ptr %t450
@@ -106035,7 +106896,7 @@ then.100:
   %t461 = extractvalue { ptr, i64 } %t460, 0
   %t462 = extractvalue { ptr, i64 } %t460, 1
   call void @zevic_sb_add(ptr %t459, ptr %t461, i64 %t462)
-  call void @zevic_sb_add(ptr %t459, ptr @.str.1384, i64 76)
+  call void @zevic_sb_add(ptr %t459, ptr @.str.1391, i64 76)
   call void @zevic_sb_finish(ptr %s69, ptr %t459)
   %t463 = load { ptr, i64 }, ptr %s69
   store { ptr, i64 } %t463, ptr %s67
@@ -106044,7 +106905,7 @@ then.100:
   %t466 = extractvalue { ptr, i64 } %t465, 0
   %t467 = extractvalue { ptr, i64 } %t465, 1
   call void @zevic_sb_add(ptr %t464, ptr %t466, i64 %t467)
-  call void @zevic_sb_add(ptr %t464, ptr @.str.1385, i64 87)
+  call void @zevic_sb_add(ptr %t464, ptr @.str.1392, i64 87)
   call void @zevic_sb_finish(ptr %s70, ptr %t464)
   %t468 = load { ptr, i64 }, ptr %s70
   store { ptr, i64 } %t468, ptr %s67
@@ -106066,7 +106927,7 @@ while.body.104:
   %t478 = extractvalue { ptr, i64 } %t477, 0
   %t479 = extractvalue { ptr, i64 } %t477, 1
   call void @zevic_sb_add(ptr %t476, ptr %t478, i64 %t479)
-  call void @zevic_sb_add(ptr %t476, ptr @.str.1386, i64 32)
+  call void @zevic_sb_add(ptr %t476, ptr @.str.1393, i64 32)
   %t480 = load ptr, ptr %s56
   %t481 = load i64, ptr %s71
   %t482 = call { ptr, i64 } @"zevic_Array<String>_Index"(ptr %t480, i64 %t481)
@@ -106086,14 +106947,14 @@ while.body.104:
   %t493 = extractvalue { ptr, i64 } %t492, 0
   %t494 = extractvalue { ptr, i64 } %t492, 1
   call void @zevic_sb_add(ptr %t476, ptr %t493, i64 %t494)
-  call void @zevic_sb_add(ptr %t476, ptr @.str.1387, i64 8)
+  call void @zevic_sb_add(ptr %t476, ptr @.str.1394, i64 8)
   %t495 = load ptr, ptr %s72
   %t496 = getelementptr inbounds { ptr, { i32, [1 x i64] }, ptr, { ptr, i64 }, ptr, ptr, i1, i1, i1, i1 }, ptr %t495, i32 0, i32 3
   %t497 = load { ptr, i64 }, ptr %t496
   %t498 = extractvalue { ptr, i64 } %t497, 0
   %t499 = extractvalue { ptr, i64 } %t497, 1
   call void @zevic_sb_add(ptr %t476, ptr %t498, i64 %t499)
-  call void @zevic_sb_add(ptr %t476, ptr @.str.1388, i64 3)
+  call void @zevic_sb_add(ptr %t476, ptr @.str.1395, i64 3)
   call void @zevic_sb_finish(ptr %s74, ptr %t476)
   %t500 = load { ptr, i64 }, ptr %s74
   store { ptr, i64 } %t500, ptr %s67
@@ -106111,7 +106972,7 @@ while.end.105:
   %t507 = extractvalue { ptr, i64 } %t506, 0
   %t508 = extractvalue { ptr, i64 } %t506, 1
   call void @zevic_sb_add(ptr %t505, ptr %t507, i64 %t508)
-  call void @zevic_sb_add(ptr %t505, ptr @.str.1389, i64 52)
+  call void @zevic_sb_add(ptr %t505, ptr @.str.1396, i64 52)
   call void @zevic_sb_finish(ptr %s75, ptr %t505)
   %t509 = load { ptr, i64 }, ptr %s75
   %t510 = getelementptr inbounds { i32, [2 x i64] }, ptr %s76, i32 0, i32 0
@@ -106141,7 +107002,7 @@ endif.110:
   %t524 = extractvalue { ptr, i64 } %t523, 0
   %t525 = extractvalue { ptr, i64 } %t523, 1
   call void @zevic_sb_add(ptr %t522, ptr %t524, i64 %t525)
-  call void @zevic_sb_add(ptr %t522, ptr @.str.1385, i64 87)
+  call void @zevic_sb_add(ptr %t522, ptr @.str.1392, i64 87)
   call void @zevic_sb_finish(ptr %s78, ptr %t522)
   %t526 = load { ptr, i64 }, ptr %s78
   store { ptr, i64 } %t526, ptr %s67
@@ -106195,7 +107056,7 @@ pat.tag.118:
   %t557 = extractvalue { ptr, i64 } %t556, 0
   %t558 = extractvalue { ptr, i64 } %t556, 1
   call void @zevic_sb_add(ptr %t555, ptr %t557, i64 %t558)
-  call void @zevic_sb_add(ptr %t555, ptr @.str.1390, i64 15)
+  call void @zevic_sb_add(ptr %t555, ptr @.str.1397, i64 15)
   %t559 = load { ptr, i64 }, ptr %s83
   %t560 = extractvalue { ptr, i64 } %t559, 0
   %t561 = extractvalue { ptr, i64 } %t559, 1
@@ -106207,7 +107068,7 @@ pat.tag.118:
   %t565 = extractvalue { ptr, i64 } %t564, 0
   %t566 = extractvalue { ptr, i64 } %t564, 1
   call void @zevic_sb_add(ptr %t555, ptr %t565, i64 %t566)
-  call void @zevic_sb_add(ptr %t555, ptr @.str.1391, i64 18)
+  call void @zevic_sb_add(ptr %t555, ptr @.str.1398, i64 18)
   %t567 = load ptr, ptr %s81
   %t568 = getelementptr inbounds { ptr, { i32, [1 x i64] }, ptr, { ptr, i64 }, ptr, ptr, i1, i1, i1, i1 }, ptr %t567, i32 0, i32 3
   %t569 = load { ptr, i64 }, ptr %t568
@@ -106219,7 +107080,7 @@ pat.tag.118:
   %t573 = extractvalue { ptr, i64 } %t572, 0
   %t574 = extractvalue { ptr, i64 } %t572, 1
   call void @zevic_sb_add(ptr %t555, ptr %t573, i64 %t574)
-  call void @zevic_sb_add(ptr %t555, ptr @.str.1392, i64 8)
+  call void @zevic_sb_add(ptr %t555, ptr @.str.1399, i64 8)
   call void @zevic_sb_finish(ptr %s84, ptr %t555)
   %t575 = load { ptr, i64 }, ptr %s84
   store { ptr, i64 } %t575, ptr %s67
@@ -106235,14 +107096,14 @@ pat.tag.120:
   %t581 = extractvalue { ptr, i64 } %t580, 0
   %t582 = extractvalue { ptr, i64 } %t580, 1
   call void @zevic_sb_add(ptr %t579, ptr %t581, i64 %t582)
-  call void @zevic_sb_add(ptr %t579, ptr @.str.1393, i64 14)
+  call void @zevic_sb_add(ptr %t579, ptr @.str.1400, i64 14)
   %t583 = load ptr, ptr %s81
   %t584 = getelementptr inbounds { ptr, { i32, [1 x i64] }, ptr, { ptr, i64 }, ptr, ptr, i1, i1, i1, i1 }, ptr %t583, i32 0, i32 3
   %t585 = load { ptr, i64 }, ptr %t584
   %t586 = extractvalue { ptr, i64 } %t585, 0
   %t587 = extractvalue { ptr, i64 } %t585, 1
   call void @zevic_sb_add(ptr %t579, ptr %t586, i64 %t587)
-  call void @zevic_sb_add(ptr %t579, ptr @.str.1394, i64 4)
+  call void @zevic_sb_add(ptr %t579, ptr @.str.1401, i64 4)
   call void @zevic_sb_finish(ptr %s85, ptr %t579)
   %t588 = load { ptr, i64 }, ptr %s85
   store { ptr, i64 } %t588, ptr %s67
@@ -106255,7 +107116,7 @@ match.end.116:
   %t591 = extractvalue { ptr, i64 } %t590, 0
   %t592 = extractvalue { ptr, i64 } %t590, 1
   call void @zevic_sb_add(ptr %t589, ptr %t591, i64 %t592)
-  call void @zevic_sb_add(ptr %t589, ptr @.str.1395, i64 14)
+  call void @zevic_sb_add(ptr %t589, ptr @.str.1402, i64 14)
   call void @zevic_sb_finish(ptr %s86, ptr %t589)
   %t593 = load { ptr, i64 }, ptr %s86
   %t594 = getelementptr inbounds { i32, [2 x i64] }, ptr %s87, i32 0, i32 0
@@ -106266,25 +107127,25 @@ match.end.116:
   %t597 = load { i32, [2 x i64] }, ptr %s87
   ret { i32, [2 x i64] } %t597
 panic.41:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1371, i32 146)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1378, i32 146)
   unreachable
 panic.49:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1371, i32 150)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1378, i32 150)
   unreachable
 panic.70:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1371, i32 158)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1378, i32 158)
   unreachable
 panic.83:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1371, i32 169)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1378, i32 169)
   unreachable
 panic.91:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1371, i32 173)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1378, i32 173)
   unreachable
 panic.96:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1371, i32 183)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1378, i32 183)
   unreachable
 panic.107:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1371, i32 197)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1378, i32 197)
   unreachable
 }
 
@@ -106352,7 +107213,7 @@ then.3:
   %t31 = extractvalue { ptr, i64 } %t29, 1
   call void @zevic_sb_add(ptr %t28, ptr %t30, i64 %t31)
   %t32 = load { ptr, i64 }, ptr %s5
-  %t33 = call i1 @"zevic_Zevic_Text_EndsWith"({ ptr, i64 } %t32, { ptr, i64 } { ptr @.str.1396, i64 1 })
+  %t33 = call i1 @"zevic_Zevic_Text_EndsWith"({ ptr, i64 } %t32, { ptr, i64 } { ptr @.str.1403, i64 1 })
   br i1 %t33, label %then.6, label %else.7
 then.6:
   br label %endif.8
@@ -106363,7 +107224,7 @@ endif.8:
   %t35 = extractvalue { ptr, i64 } %t34, 0
   %t36 = extractvalue { ptr, i64 } %t34, 1
   call void @zevic_sb_add(ptr %t28, ptr %t35, i64 %t36)
-  call void @zevic_sb_add(ptr %t28, ptr @.str.1396, i64 1)
+  call void @zevic_sb_add(ptr %t28, ptr @.str.1403, i64 1)
   call void @zevic_sb_finish(ptr %s6, ptr %t28)
   %t37 = load { ptr, i64 }, ptr %s6
   ret { ptr, i64 } %t37
@@ -106384,7 +107245,7 @@ endif.5:
   br i1 %t46, label %then.9, label %endif.11
 then.9:
   %t49 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t49, ptr @.str.1397, i64 7)
+  call void @zevic_sb_add(ptr %t49, ptr @.str.1404, i64 7)
   %t50 = load ptr, ptr %s0
   %t51 = call { ptr, i64 } @"zevic_Zevic1_Program_shortName"(ptr %t50)
   %t52 = extractvalue { ptr, i64 } %t51, 0
@@ -106398,71 +107259,71 @@ endif.11:
   %t58 = ptrtoint ptr %t57 to i64
   %t55 = mul i64 21, %t58
   %t56 = call ptr @zevic_alloc(i64 %t55)
-  %t59 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.1204, i64 5 }, 0
-  %t60 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t59, { ptr, i64 } { ptr @.str.1398, i64 4 }, 1
+  %t59 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.1211, i64 5 }, 0
+  %t60 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t59, { ptr, i64 } { ptr @.str.1405, i64 4 }, 1
   %t61 = getelementptr inbounds { { ptr, i64 }, { ptr, i64 } }, ptr %t56, i64 0
   store { { ptr, i64 }, { ptr, i64 } } %t60, ptr %t61
-  %t62 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.1399, i64 6 }, 0
-  %t63 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t62, { ptr, i64 } { ptr @.str.1400, i64 11 }, 1
+  %t62 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.1406, i64 6 }, 0
+  %t63 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t62, { ptr, i64 } { ptr @.str.1407, i64 11 }, 1
   %t64 = getelementptr inbounds { { ptr, i64 }, { ptr, i64 } }, ptr %t56, i64 1
   store { { ptr, i64 }, { ptr, i64 } } %t63, ptr %t64
-  %t65 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.1401, i64 6 }, 0
-  %t66 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t65, { ptr, i64 } { ptr @.str.1402, i64 13 }, 1
+  %t65 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.1408, i64 6 }, 0
+  %t66 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t65, { ptr, i64 } { ptr @.str.1409, i64 13 }, 1
   %t67 = getelementptr inbounds { { ptr, i64 }, { ptr, i64 } }, ptr %t56, i64 2
   store { { ptr, i64 }, { ptr, i64 } } %t66, ptr %t67
-  %t68 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.1403, i64 6 }, 0
-  %t69 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t68, { ptr, i64 } { ptr @.str.1404, i64 5 }, 1
+  %t68 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.1410, i64 6 }, 0
+  %t69 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t68, { ptr, i64 } { ptr @.str.1411, i64 5 }, 1
   %t70 = getelementptr inbounds { { ptr, i64 }, { ptr, i64 } }, ptr %t56, i64 3
   store { { ptr, i64 }, { ptr, i64 } } %t69, ptr %t70
-  %t71 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.1405, i64 7 }, 0
-  %t72 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t71, { ptr, i64 } { ptr @.str.1406, i64 14 }, 1
+  %t71 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.1412, i64 7 }, 0
+  %t72 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t71, { ptr, i64 } { ptr @.str.1413, i64 14 }, 1
   %t73 = getelementptr inbounds { { ptr, i64 }, { ptr, i64 } }, ptr %t56, i64 4
   store { { ptr, i64 }, { ptr, i64 } } %t72, ptr %t73
   %t74 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.664, i64 4 }, 0
-  %t75 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t74, { ptr, i64 } { ptr @.str.1407, i64 3 }, 1
+  %t75 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t74, { ptr, i64 } { ptr @.str.1414, i64 3 }, 1
   %t76 = getelementptr inbounds { { ptr, i64 }, { ptr, i64 } }, ptr %t56, i64 5
   store { { ptr, i64 }, { ptr, i64 } } %t75, ptr %t76
   %t77 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.665, i64 5 }, 0
-  %t78 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t77, { ptr, i64 } { ptr @.str.1408, i64 12 }, 1
+  %t78 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t77, { ptr, i64 } { ptr @.str.1415, i64 12 }, 1
   %t79 = getelementptr inbounds { { ptr, i64 }, { ptr, i64 } }, ptr %t56, i64 6
   store { { ptr, i64 }, { ptr, i64 } } %t78, ptr %t79
-  %t80 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.1205, i64 5 }, 0
-  %t81 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t80, { ptr, i64 } { ptr @.str.1409, i64 4 }, 1
+  %t80 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.1212, i64 5 }, 0
+  %t81 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t80, { ptr, i64 } { ptr @.str.1416, i64 4 }, 1
   %t82 = getelementptr inbounds { { ptr, i64 }, { ptr, i64 } }, ptr %t56, i64 7
   store { { ptr, i64 }, { ptr, i64 } } %t81, ptr %t82
-  %t83 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.1206, i64 6 }, 0
-  %t84 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t83, { ptr, i64 } { ptr @.str.1410, i64 13 }, 1
+  %t83 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.1213, i64 6 }, 0
+  %t84 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t83, { ptr, i64 } { ptr @.str.1417, i64 13 }, 1
   %t85 = getelementptr inbounds { { ptr, i64 }, { ptr, i64 } }, ptr %t56, i64 8
   store { { ptr, i64 }, { ptr, i64 } } %t84, ptr %t85
-  %t86 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.1411, i64 9 }, 0
-  %t87 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t86, { ptr, i64 } { ptr @.str.1412, i64 9 }, 1
+  %t86 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.1418, i64 9 }, 0
+  %t87 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t86, { ptr, i64 } { ptr @.str.1419, i64 9 }, 1
   %t88 = getelementptr inbounds { { ptr, i64 }, { ptr, i64 } }, ptr %t56, i64 9
   store { { ptr, i64 }, { ptr, i64 } } %t87, ptr %t88
-  %t89 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.1413, i64 10 }, 0
-  %t90 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t89, { ptr, i64 } { ptr @.str.1414, i64 18 }, 1
+  %t89 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.1420, i64 10 }, 0
+  %t90 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t89, { ptr, i64 } { ptr @.str.1421, i64 18 }, 1
   %t91 = getelementptr inbounds { { ptr, i64 }, { ptr, i64 } }, ptr %t56, i64 10
   store { { ptr, i64 }, { ptr, i64 } } %t90, ptr %t91
-  %t92 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.1207, i64 6 }, 0
-  %t93 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t92, { ptr, i64 } { ptr @.str.1415, i64 6 }, 1
+  %t92 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.1214, i64 6 }, 0
+  %t93 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t92, { ptr, i64 } { ptr @.str.1422, i64 6 }, 1
   %t94 = getelementptr inbounds { { ptr, i64 }, { ptr, i64 } }, ptr %t56, i64 11
   store { { ptr, i64 }, { ptr, i64 } } %t93, ptr %t94
-  %t95 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.1416, i64 7 }, 0
-  %t96 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t95, { ptr, i64 } { ptr @.str.1417, i64 8 }, 1
+  %t95 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.1423, i64 7 }, 0
+  %t96 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t95, { ptr, i64 } { ptr @.str.1424, i64 8 }, 1
   %t97 = getelementptr inbounds { { ptr, i64 }, { ptr, i64 } }, ptr %t56, i64 12
   store { { ptr, i64 }, { ptr, i64 } } %t96, ptr %t97
-  %t98 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.1418, i64 8 }, 0
-  %t99 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t98, { ptr, i64 } { ptr @.str.1419, i64 9 }, 1
+  %t98 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.1425, i64 8 }, 0
+  %t99 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t98, { ptr, i64 } { ptr @.str.1426, i64 9 }, 1
   %t100 = getelementptr inbounds { { ptr, i64 }, { ptr, i64 } }, ptr %t56, i64 13
   store { { ptr, i64 }, { ptr, i64 } } %t99, ptr %t100
-  %t101 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.1420, i64 7 }, 0
-  %t102 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t101, { ptr, i64 } { ptr @.str.1417, i64 8 }, 1
+  %t101 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.1427, i64 7 }, 0
+  %t102 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t101, { ptr, i64 } { ptr @.str.1424, i64 8 }, 1
   %t103 = getelementptr inbounds { { ptr, i64 }, { ptr, i64 } }, ptr %t56, i64 14
   store { { ptr, i64 }, { ptr, i64 } } %t102, ptr %t103
-  %t104 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.1421, i64 8 }, 0
-  %t105 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t104, { ptr, i64 } { ptr @.str.1422, i64 9 }, 1
+  %t104 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.1428, i64 8 }, 0
+  %t105 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t104, { ptr, i64 } { ptr @.str.1429, i64 9 }, 1
   %t106 = getelementptr inbounds { { ptr, i64 }, { ptr, i64 } }, ptr %t56, i64 15
   store { { ptr, i64 }, { ptr, i64 } } %t105, ptr %t106
-  %t107 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.1208, i64 6 }, 0
+  %t107 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.1215, i64 6 }, 0
   %t108 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t107, { ptr, i64 } { ptr @.str.296, i64 5 }, 1
   %t109 = getelementptr inbounds { { ptr, i64 }, { ptr, i64 } }, ptr %t56, i64 16
   store { { ptr, i64 }, { ptr, i64 } } %t108, ptr %t109
@@ -106471,11 +107332,11 @@ endif.11:
   %t112 = getelementptr inbounds { { ptr, i64 }, { ptr, i64 } }, ptr %t56, i64 17
   store { { ptr, i64 }, { ptr, i64 } } %t111, ptr %t112
   %t113 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.298, i64 5 }, 0
-  %t114 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t113, { ptr, i64 } { ptr @.str.1423, i64 5 }, 1
+  %t114 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t113, { ptr, i64 } { ptr @.str.1430, i64 5 }, 1
   %t115 = getelementptr inbounds { { ptr, i64 }, { ptr, i64 } }, ptr %t56, i64 18
   store { { ptr, i64 }, { ptr, i64 } } %t114, ptr %t115
   %t116 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.679, i64 7 }, 0
-  %t117 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t116, { ptr, i64 } { ptr @.str.1424, i64 12 }, 1
+  %t117 = insertvalue { { ptr, i64 }, { ptr, i64 } } %t116, { ptr, i64 } { ptr @.str.1431, i64 12 }, 1
   %t118 = getelementptr inbounds { { ptr, i64 }, { ptr, i64 } }, ptr %t56, i64 19
   store { { ptr, i64 }, { ptr, i64 } } %t117, ptr %t118
   %t119 = insertvalue { { ptr, i64 }, { ptr, i64 } } undef, { ptr, i64 } { ptr @.str.345, i64 5 }, 0
@@ -106534,9 +107395,9 @@ then.17:
 endif.19:
   br label %for.cond.12
 for.end.14:
-  ret { ptr, i64 } { ptr @.str.1407, i64 3 }
+  ret { ptr, i64 } { ptr @.str.1414, i64 3 }
 panic.16:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1371, i32 240)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1378, i32 240)
   unreachable
 }
 
@@ -106660,13 +107521,13 @@ ok.11:
 for.end.10:
   %t62 = load ptr, ptr %s3
   %t63 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t63, ptr @.str.1397, i64 7)
+  call void @zevic_sb_add(ptr %t63, ptr @.str.1404, i64 7)
   %t64 = load ptr, ptr %s1
   %t65 = call { ptr, i64 } @"zevic_Zevic1_Program_shortName"(ptr %t64)
   %t66 = extractvalue { ptr, i64 } %t65, 0
   %t67 = extractvalue { ptr, i64 } %t65, 1
   call void @zevic_sb_add(ptr %t63, ptr %t66, i64 %t67)
-  call void @zevic_sb_add(ptr %t63, ptr @.str.1425, i64 3)
+  call void @zevic_sb_add(ptr %t63, ptr @.str.1432, i64 3)
   call void @zevic_sb_finish(ptr %s13, ptr %t63)
   %t68 = load { ptr, i64 }, ptr %s13
   call void @"zevic_Array<String>_Push"(ptr %t62, { ptr, i64 } %t68)
@@ -106696,7 +107557,7 @@ ok.16:
   store i64 %t81, ptr %s15
   %t83 = load ptr, ptr %s3
   %t84 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t84, ptr @.str.1053, i64 4)
+  call void @zevic_sb_add(ptr %t84, ptr @.str.1070, i64 4)
   %t85 = load ptr, ptr %s16
   %t86 = getelementptr inbounds { { ptr, i64 }, ptr }, ptr %t85, i32 0, i32 1
   %t87 = load ptr, ptr %t86
@@ -106712,20 +107573,20 @@ ok.16:
   %t95 = extractvalue { ptr, i64 } %t94, 0
   %t96 = extractvalue { ptr, i64 } %t94, 1
   call void @zevic_sb_add(ptr %t84, ptr %t95, i64 %t96)
-  call void @zevic_sb_add(ptr %t84, ptr @.str.1426, i64 2)
+  call void @zevic_sb_add(ptr %t84, ptr @.str.1433, i64 2)
   call void @zevic_sb_finish(ptr %s17, ptr %t84)
   %t97 = load { ptr, i64 }, ptr %s17
   call void @"zevic_Array<String>_Push"(ptr %t83, { ptr, i64 } %t97)
   br label %for.cond.13
 for.end.15:
   %t98 = load ptr, ptr %s3
-  call void @"zevic_Array<String>_Push"(ptr %t98, { ptr, i64 } { ptr @.str.1427, i64 4 })
+  call void @"zevic_Array<String>_Push"(ptr %t98, { ptr, i64 } { ptr @.str.1434, i64 4 })
   ret void
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1371, i32 259)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1378, i32 259)
   unreachable
 panic.17:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1371, i32 263)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1378, i32 263)
   unreachable
 }
 
@@ -106765,29 +107626,29 @@ entry:
   store ptr %t4, ptr %s2
   %t8 = load ptr, ptr %s2
   %t9 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t9, ptr @.str.1428, i64 78)
+  call void @zevic_sb_add(ptr %t9, ptr @.str.1435, i64 78)
   %t10 = load { ptr, i64 }, ptr %s1
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t9, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t9, ptr @.str.1429, i64 9)
+  call void @zevic_sb_add(ptr %t9, ptr @.str.1436, i64 9)
   %t13 = load { ptr, i64 }, ptr %s1
   %t14 = extractvalue { ptr, i64 } %t13, 0
   %t15 = extractvalue { ptr, i64 } %t13, 1
   call void @zevic_sb_add(ptr %t9, ptr %t14, i64 %t15)
-  call void @zevic_sb_add(ptr %t9, ptr @.str.1430, i64 2)
+  call void @zevic_sb_add(ptr %t9, ptr @.str.1437, i64 2)
   call void @zevic_sb_finish(ptr %s3, ptr %t9)
   %t16 = load { ptr, i64 }, ptr %s3
   call void @"zevic_Array<String>_Push"(ptr %t8, { ptr, i64 } %t16)
   %t17 = load ptr, ptr %s2
-  call void @"zevic_Array<String>_Push"(ptr %t17, { ptr, i64 } { ptr @.str.1431, i64 81 })
+  call void @"zevic_Array<String>_Push"(ptr %t17, { ptr, i64 } { ptr @.str.1438, i64 81 })
   %t18 = load ptr, ptr %s0
   %t19 = getelementptr inbounds { ptr, ptr, ptr, ptr, i1, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, i64, ptr, i1, i1, i64, ptr, ptr, { i32, i32, i32 }, ptr, i64 }, ptr %t18, i32 0, i32 18
   %t20 = load i1, ptr %t19
   br i1 %t20, label %then.0, label %endif.2
 then.0:
   %t21 = load ptr, ptr %s2
-  call void @"zevic_Array<String>_Push"(ptr %t21, { ptr, i64 } { ptr @.str.1432, i64 104 })
+  call void @"zevic_Array<String>_Push"(ptr %t21, { ptr, i64 } { ptr @.str.1439, i64 104 })
   br label %endif.2
 endif.2:
   %t22 = call ptr @zevic_alloc(i64 48)
@@ -107039,25 +107900,25 @@ ok.27:
   br label %while.cond.21
 while.end.23:
   %t181 = load ptr, ptr %s2
-  call void @"zevic_Array<String>_Push"(ptr %t181, { ptr, i64 } { ptr @.str.1433, i64 3 })
+  call void @"zevic_Array<String>_Push"(ptr %t181, { ptr, i64 } { ptr @.str.1440, i64 3 })
   br label %for.cond.13
 for.end.15:
   %t182 = load ptr, ptr %s2
-  call void @"zevic_Array<String>_Push"(ptr %t182, { ptr, i64 } { ptr @.str.1434, i64 37 })
+  call void @"zevic_Array<String>_Push"(ptr %t182, { ptr, i64 } { ptr @.str.1441, i64 37 })
   %t183 = load ptr, ptr %s2
   %t184 = call { ptr, i64 } @"zevic_Array<String>_Join"(ptr %t183, { ptr, i64 } { ptr @.str.83, i64 0 })
   ret { ptr, i64 } %t184
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1371, i32 277)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1378, i32 277)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1371, i32 278)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1378, i32 278)
   unreachable
 panic.17:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1371, i32 283)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1378, i32 283)
   unreachable
 panic.28:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1371, i32 291)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1378, i32 291)
   unreachable
 }
 
@@ -107088,7 +107949,7 @@ entry:
   %t0 = load ptr, ptr %s0
   %t1 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t0, i32 0, i32 4
   %t2 = load { ptr, i64 }, ptr %t1
-  %t3 = call { i32, [1 x i64] } @"zevic_Zevic_Text_IndexOf"({ ptr, i64 } %t2, { ptr, i64 } { ptr @.str.1435, i64 2 })
+  %t3 = call { i32, [1 x i64] } @"zevic_Zevic_Text_IndexOf"({ ptr, i64 } %t2, { ptr, i64 } { ptr @.str.1442, i64 2 })
   store { i32, [1 x i64] } %t3, ptr %s1
   %t6 = getelementptr inbounds { i32, [1 x i64] }, ptr %s1, i32 0, i32 0
   %t4 = load i32, ptr %t6
@@ -107140,10 +108001,10 @@ match.end.0:
   %t35 = phi { ptr, i64 } [ %t28, %ok.5 ], [ %t34, %pat.tag.8 ]
   ret { ptr, i64 } %t35
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1371, i32 307)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1378, i32 307)
   unreachable
 panic.6:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1371, i32 307)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1378, i32 307)
   unreachable
 }
 
@@ -107178,7 +108039,7 @@ entry:
   %t4 = extractvalue { ptr, i64 } %t3, 0
   %t5 = extractvalue { ptr, i64 } %t3, 1
   call void @zevic_sb_add(ptr %t0, ptr %t4, i64 %t5)
-  call void @zevic_sb_add(ptr %t0, ptr @.str.1435, i64 2)
+  call void @zevic_sb_add(ptr %t0, ptr @.str.1442, i64 2)
   %t6 = load ptr, ptr %s0
   %t7 = getelementptr inbounds { ptr, { ptr, i64 }, { ptr, i64 }, i1, i1, { ptr, i64 }, { ptr, i64 }, i1, { i32, [1 x i64] }, { i32, [1 x i64] } }, ptr %t6, i32 0, i32 1
   %t8 = load { ptr, i64 }, ptr %t7
@@ -107216,7 +108077,7 @@ arm.next.1:
   %t12 = icmp eq i32 %t11, 1
   br i1 %t12, label %pat.tag.4, label %arm.next.3
 pat.tag.4:
-  call void @zevic_panic(ptr @.str.1436, i64 26, ptr @.str.1437, i32 41)
+  call void @zevic_panic(ptr @.str.1443, i64 26, ptr @.str.1444, i32 41)
   unreachable
 arm.next.3:
   unreachable
@@ -107468,25 +108329,25 @@ entry:
   %t0 = mul i64 27, %t3
   %t1 = call ptr @zevic_alloc(i64 %t0)
   %t4 = getelementptr inbounds { ptr, i64 }, ptr %t1, i64 0
-  store { ptr, i64 } { ptr @.str.1147, i64 2 }, ptr %t4
+  store { ptr, i64 } { ptr @.str.951, i64 2 }, ptr %t4
   %t5 = getelementptr inbounds { ptr, i64 }, ptr %t1, i64 1
-  store { ptr, i64 } { ptr @.str.1148, i64 3 }, ptr %t5
+  store { ptr, i64 } { ptr @.str.952, i64 3 }, ptr %t5
   %t6 = getelementptr inbounds { ptr, i64 }, ptr %t1, i64 2
-  store { ptr, i64 } { ptr @.str.1149, i64 3 }, ptr %t6
+  store { ptr, i64 } { ptr @.str.953, i64 3 }, ptr %t6
   %t7 = getelementptr inbounds { ptr, i64 }, ptr %t1, i64 3
-  store { ptr, i64 } { ptr @.str.1150, i64 3 }, ptr %t7
+  store { ptr, i64 } { ptr @.str.954, i64 3 }, ptr %t7
   %t8 = getelementptr inbounds { ptr, i64 }, ptr %t1, i64 4
-  store { ptr, i64 } { ptr @.str.1151, i64 2 }, ptr %t8
+  store { ptr, i64 } { ptr @.str.955, i64 2 }, ptr %t8
   %t9 = getelementptr inbounds { ptr, i64 }, ptr %t1, i64 5
-  store { ptr, i64 } { ptr @.str.1152, i64 3 }, ptr %t9
+  store { ptr, i64 } { ptr @.str.956, i64 3 }, ptr %t9
   %t10 = getelementptr inbounds { ptr, i64 }, ptr %t1, i64 6
-  store { ptr, i64 } { ptr @.str.1153, i64 3 }, ptr %t10
+  store { ptr, i64 } { ptr @.str.957, i64 3 }, ptr %t10
   %t11 = getelementptr inbounds { ptr, i64 }, ptr %t1, i64 7
-  store { ptr, i64 } { ptr @.str.1154, i64 3 }, ptr %t11
+  store { ptr, i64 } { ptr @.str.958, i64 3 }, ptr %t11
   %t12 = getelementptr inbounds { ptr, i64 }, ptr %t1, i64 8
-  store { ptr, i64 } { ptr @.str.1155, i64 3 }, ptr %t12
+  store { ptr, i64 } { ptr @.str.959, i64 3 }, ptr %t12
   %t13 = getelementptr inbounds { ptr, i64 }, ptr %t1, i64 9
-  store { ptr, i64 } { ptr @.str.1156, i64 3 }, ptr %t13
+  store { ptr, i64 } { ptr @.str.960, i64 3 }, ptr %t13
   %t14 = getelementptr inbounds { ptr, i64 }, ptr %t1, i64 10
   store { ptr, i64 } { ptr @.str.25, i64 4 }, ptr %t14
   %t15 = getelementptr inbounds { ptr, i64 }, ptr %t1, i64 11
@@ -107506,9 +108367,9 @@ entry:
   %t22 = getelementptr inbounds { ptr, i64 }, ptr %t1, i64 18
   store { ptr, i64 } { ptr @.str.788, i64 5 }, ptr %t22
   %t23 = getelementptr inbounds { ptr, i64 }, ptr %t1, i64 19
-  store { ptr, i64 } { ptr @.str.1438, i64 9 }, ptr %t23
+  store { ptr, i64 } { ptr @.str.1445, i64 9 }, ptr %t23
   %t24 = getelementptr inbounds { ptr, i64 }, ptr %t1, i64 20
-  store { ptr, i64 } { ptr @.str.1439, i64 13 }, ptr %t24
+  store { ptr, i64 } { ptr @.str.1446, i64 13 }, ptr %t24
   %t25 = getelementptr inbounds { ptr, i64 }, ptr %t1, i64 21
   store { ptr, i64 } { ptr @.str.562, i64 4 }, ptr %t25
   %t26 = getelementptr inbounds { ptr, i64 }, ptr %t1, i64 22
@@ -107520,7 +108381,7 @@ entry:
   %t29 = getelementptr inbounds { ptr, i64 }, ptr %t1, i64 25
   store { ptr, i64 } { ptr @.str.743, i64 5 }, ptr %t29
   %t30 = getelementptr inbounds { ptr, i64 }, ptr %t1, i64 26
-  store { ptr, i64 } { ptr @.str.1440, i64 4 }, ptr %t30
+  store { ptr, i64 } { ptr @.str.1447, i64 4 }, ptr %t30
   %t31 = call ptr @zevic_alloc(i64 24)
   %t32 = getelementptr inbounds { ptr, i64, i64 }, ptr %t31, i32 0, i32 0
   store ptr %t1, ptr %t32
@@ -107567,7 +108428,7 @@ endif.7:
 for.end.2:
   ret i1 false
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1437, i32 105)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1444, i32 105)
   unreachable
 }
 
@@ -107608,7 +108469,7 @@ and.end.6:
   %t16 = phi i1 [ false, %ok.3 ], [ %t15, %and.rhs.5 ]
   ret i1 %t16
 panic.4:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1437, i32 113)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1444, i32 113)
   unreachable
 }
 
@@ -107783,7 +108644,7 @@ then.0:
   store ptr %t11, ptr %s15
   %t83 = load ptr, ptr %s15
   %t84 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t84, ptr @.str.1441, i64 5)
+  call void @zevic_sb_add(ptr %t84, ptr @.str.1448, i64 5)
   %t85 = load ptr, ptr %s1
   %t86 = getelementptr inbounds { i64, { ptr, i64 }, ptr, ptr, ptr, ptr, i1, i32 }, ptr %t85, i32 0, i32 4
   %t87 = load ptr, ptr %t86
@@ -107984,7 +108845,7 @@ pat.tag.10:
   %t220 = extractvalue { ptr, i64 } %t219, 0
   %t221 = extractvalue { ptr, i64 } %t219, 1
   call void @zevic_sb_add(ptr %t216, ptr %t220, i64 %t221)
-  call void @zevic_sb_add(ptr %t216, ptr @.str.1442, i64 31)
+  call void @zevic_sb_add(ptr %t216, ptr @.str.1449, i64 31)
   %t222 = load ptr, ptr %s1
   %t223 = getelementptr inbounds { i64, { ptr, i64 }, ptr, ptr, ptr, ptr, i1, i32 }, ptr %t222, i32 0, i32 1
   %t224 = load { ptr, i64 }, ptr %t223
@@ -107996,7 +108857,7 @@ pat.tag.10:
   call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t212, { i32, i32, i32 } %t215, { ptr, i64 } %t227)
   %t228 = load ptr, ptr %s0
   %t229 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t229, ptr @.str.1443, i64 27)
+  call void @zevic_sb_add(ptr %t229, ptr @.str.1450, i64 27)
   %t230 = load ptr, ptr %s0
   %t231 = load ptr, ptr %s28
   %t232 = getelementptr inbounds { ptr, { ptr, i64 }, { ptr, i64 }, i1, i1, { ptr, i64 }, { ptr, i64 }, i1, { i32, [1 x i64] }, { i32, [1 x i64] } }, ptr %t231, i32 0, i32 0
@@ -108226,14 +109087,14 @@ and.rhs.8:
   %t94 = load { ptr, i64 }, ptr %t93
   %t96 = extractvalue { ptr, i64 } %t94, 0
   %t97 = extractvalue { ptr, i64 } %t94, 1
-  %t98 = call i32 @zevic_str_eq(ptr %t96, i64 %t97, ptr @.str.1094, i64 5)
+  %t98 = call i32 @zevic_str_eq(ptr %t96, i64 %t97, ptr @.str.1111, i64 5)
   %t95 = icmp ne i32 %t98, 0
   br i1 %t95, label %or.end.11, label %or.rhs.10
 or.rhs.10:
   %t99 = load ptr, ptr %s9
   %t100 = getelementptr inbounds { i32, { i32, i32, i32 }, { ptr, i64 }, i1, { i32, i32, i32 }, ptr, ptr, i1, i1 }, ptr %t99, i32 0, i32 2
   %t101 = load { ptr, i64 }, ptr %t100
-  %t102 = call i1 @"zevic_Zevic_Text_StartsWith"({ ptr, i64 } %t101, { ptr, i64 } { ptr @.str.1195, i64 6 })
+  %t102 = call i1 @"zevic_Zevic_Text_StartsWith"({ ptr, i64 } %t101, { ptr, i64 } { ptr @.str.1202, i64 6 })
   br label %or.end.11
 or.end.11:
   %t103 = phi i1 [ true, %and.rhs.8 ], [ %t102, %or.rhs.10 ]
@@ -108246,7 +109107,7 @@ then.12:
   %t106 = load ptr, ptr %s9
   %t107 = getelementptr inbounds { i32, { i32, i32, i32 }, { ptr, i64 }, i1, { i32, i32, i32 }, ptr, ptr, i1, i1 }, ptr %t106, i32 0, i32 4
   %t108 = load { i32, i32, i32 }, ptr %t107
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t105, { i32, i32, i32 } %t108, { ptr, i64 } { ptr @.str.1444, i64 72 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t105, { i32, i32, i32 } %t108, { ptr, i64 } { ptr @.str.1451, i64 72 })
   br label %endif.14
 endif.14:
   %t109 = load ptr, ptr %s0
@@ -108385,7 +109246,7 @@ then.32:
   %t195 = extractvalue { ptr, i64 } %t194, 0
   %t196 = extractvalue { ptr, i64 } %t194, 1
   call void @zevic_sb_add(ptr %t191, ptr %t195, i64 %t196)
-  call void @zevic_sb_add(ptr %t191, ptr @.str.1445, i64 48)
+  call void @zevic_sb_add(ptr %t191, ptr @.str.1452, i64 48)
   call void @zevic_sb_finish(ptr %s25, ptr %t191)
   %t197 = load { ptr, i64 }, ptr %s25
   call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t187, { i32, i32, i32 } %t190, { ptr, i64 } %t197)
@@ -108410,10 +109271,10 @@ for.end.17:
   %t208 = load { i32, [1 x i64] }, ptr %s27
   ret { i32, [1 x i64] } %t208
 panic.19:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1437, i32 173)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1444, i32 173)
   unreachable
 panic.27:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1437, i32 175)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1444, i32 175)
   unreachable
 }
 
@@ -108500,16 +109361,16 @@ while.end.2:
   %t37 = load { i32, [2 x i64] }, ptr %s5
   ret { i32, [2 x i64] } %t37
 panic.4:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1437, i32 194)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1444, i32 194)
   unreachable
 panic.9:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1437, i32 194)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1444, i32 194)
   unreachable
 panic.11:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1437, i32 194)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1444, i32 194)
   unreachable
 panic.13:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1437, i32 195)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1444, i32 195)
   unreachable
 }
 
@@ -108544,7 +109405,7 @@ entry:
   %t1 = call { ptr, i64 } @"zevic_Zevic1_Resolve_toSlashPath"({ ptr, i64 } %t0)
   store { ptr, i64 } %t1, ptr %s3
   %t2 = load { ptr, i64 }, ptr %s2
-  %t3 = call i1 @"zevic_Zevic_Text_StartsWith"({ ptr, i64 } %t2, { ptr, i64 } { ptr @.str.1195, i64 6 })
+  %t3 = call i1 @"zevic_Zevic_Text_StartsWith"({ ptr, i64 } %t2, { ptr, i64 } { ptr @.str.1202, i64 6 })
   br i1 %t3, label %then.0, label %endif.2
 then.0:
   %t4 = call ptr @zevic_sb_new()
@@ -108570,7 +109431,7 @@ ok.3:
   %t19 = extractvalue { ptr, i64 } %t18, 0
   %t20 = extractvalue { ptr, i64 } %t18, 1
   call void @zevic_sb_add(ptr %t4, ptr %t19, i64 %t20)
-  call void @zevic_sb_add(ptr %t4, ptr @.str.1243, i64 4)
+  call void @zevic_sb_add(ptr %t4, ptr @.str.1250, i64 4)
   call void @zevic_sb_finish(ptr %s5, ptr %t4)
   %t21 = load { ptr, i64 }, ptr %s5
   store { ptr, i64 } %t21, ptr %s6
@@ -108621,7 +109482,7 @@ ok.11:
   %t47 = extractvalue { ptr, i64 } %t46, 0
   %t48 = extractvalue { ptr, i64 } %t46, 1
   call void @zevic_sb_add(ptr %t42, ptr %t47, i64 %t48)
-  call void @zevic_sb_add(ptr %t42, ptr @.str.1243, i64 4)
+  call void @zevic_sb_add(ptr %t42, ptr @.str.1250, i64 4)
   call void @zevic_sb_finish(ptr %s11, ptr %t42)
   %t49 = load { ptr, i64 }, ptr %s11
   store { ptr, i64 } %t49, ptr %s12
@@ -108641,12 +109502,12 @@ endif.15:
   %t58 = extractvalue { ptr, i64 } %t57, 0
   %t59 = extractvalue { ptr, i64 } %t57, 1
   call void @zevic_sb_add(ptr %t56, ptr %t58, i64 %t59)
-  call void @zevic_sb_add(ptr %t56, ptr @.str.1446, i64 5)
+  call void @zevic_sb_add(ptr %t56, ptr @.str.1453, i64 5)
   %t60 = load { ptr, i64 }, ptr %s3
   %t61 = extractvalue { ptr, i64 } %t60, 0
   %t62 = extractvalue { ptr, i64 } %t60, 1
   call void @zevic_sb_add(ptr %t56, ptr %t61, i64 %t62)
-  call void @zevic_sb_add(ptr %t56, ptr @.str.1243, i64 4)
+  call void @zevic_sb_add(ptr %t56, ptr @.str.1250, i64 4)
   call void @zevic_sb_finish(ptr %s14, ptr %t56)
   %t63 = load { ptr, i64 }, ptr %s14
   store { ptr, i64 } %t63, ptr %s15
@@ -108686,7 +109547,7 @@ pat.tag.21:
   %t86 = extractvalue { ptr, i64 } %t85, 0
   %t87 = extractvalue { ptr, i64 } %t85, 1
   call void @zevic_sb_add(ptr %t80, ptr %t86, i64 %t87)
-  call void @zevic_sb_add(ptr %t80, ptr @.str.1243, i64 4)
+  call void @zevic_sb_add(ptr %t80, ptr @.str.1250, i64 4)
   call void @zevic_sb_finish(ptr %s19, ptr %t80)
   %t88 = load { ptr, i64 }, ptr %s19
   store { ptr, i64 } %t88, ptr %s20
@@ -108716,10 +109577,10 @@ match.end.19:
 for.end.10:
   ret void
 panic.4:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1437, i32 203)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1444, i32 203)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1437, i32 209)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1444, i32 209)
   unreachable
 }
 
@@ -108823,7 +109684,7 @@ ok.8:
   br i1 %t39, label %and.rhs.10, label %and.end.11
 and.rhs.10:
   %t40 = load { ptr, i64 }, ptr %s9
-  %t41 = call i1 @"zevic_Zevic_Text_StartsWith"({ ptr, i64 } %t40, { ptr, i64 } { ptr @.str.1029, i64 16 })
+  %t41 = call i1 @"zevic_Zevic_Text_StartsWith"({ ptr, i64 } %t40, { ptr, i64 } { ptr @.str.1046, i64 16 })
   br label %and.end.11
 and.end.11:
   %t42 = phi i1 [ false, %ok.8 ], [ %t41, %and.rhs.10 ]
@@ -108833,7 +109694,7 @@ then.12:
   %t44 = load ptr, ptr %s8
   %t45 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t44, i32 0, i32 1
   %t46 = load { i32, i32, i32 }, ptr %t45
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t43, { i32, i32, i32 } %t46, { ptr, i64 } { ptr @.str.1447, i64 51 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t43, { i32, i32, i32 } %t46, { ptr, i64 } { ptr @.str.1454, i64 51 })
   br label %for.cond.5
 endif.14:
   %t47 = load ptr, ptr %s0
@@ -108877,7 +109738,7 @@ pat.tag.22:
   %t71 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t70, i32 0, i32 1
   %t72 = load { i32, i32, i32 }, ptr %t71
   %t73 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t73, ptr @.str.1448, i64 20)
+  call void @zevic_sb_add(ptr %t73, ptr @.str.1455, i64 20)
   %t74 = load { ptr, i64 }, ptr %s9
   %t75 = extractvalue { ptr, i64 } %t74, 0
   %t76 = extractvalue { ptr, i64 } %t74, 1
@@ -108887,12 +109748,12 @@ pat.tag.22:
   %t77 = load { ptr, i64 }, ptr %s13
   call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t69, { i32, i32, i32 } %t72, { ptr, i64 } %t77)
   %t78 = load { ptr, i64 }, ptr %s9
-  %t79 = call i1 @"zevic_Zevic_Text_StartsWith"({ ptr, i64 } %t78, { ptr, i64 } { ptr @.str.1195, i64 6 })
+  %t79 = call i1 @"zevic_Zevic_Text_StartsWith"({ ptr, i64 } %t78, { ptr, i64 } { ptr @.str.1202, i64 6 })
   br i1 %t79, label %then.23, label %endif.25
 then.23:
   %t80 = load ptr, ptr %s1
   %t81 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t81, ptr @.str.1449, i64 37)
+  call void @zevic_sb_add(ptr %t81, ptr @.str.1456, i64 37)
   %t82 = load ptr, ptr %s0
   %t83 = getelementptr inbounds { ptr, ptr, ptr, { ptr, i64 }, ptr }, ptr %t82, i32 0, i32 3
   %t84 = load { ptr, i64 }, ptr %t83
@@ -108921,7 +109782,7 @@ ok.26:
   %t100 = extractvalue { ptr, i64 } %t99, 0
   %t101 = extractvalue { ptr, i64 } %t99, 1
   call void @zevic_sb_add(ptr %t81, ptr %t100, i64 %t101)
-  call void @zevic_sb_add(ptr %t81, ptr @.str.1243, i64 4)
+  call void @zevic_sb_add(ptr %t81, ptr @.str.1250, i64 4)
   call void @zevic_sb_finish(ptr %s17, ptr %t81)
   %t102 = load { ptr, i64 }, ptr %s17
   call void @"zevic_Zevic1_Diag_Diag_Note"(ptr %t80, { ptr, i64 } %t102)
@@ -108946,7 +109807,7 @@ then.28:
   %t112 = load ptr, ptr %s8
   %t113 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t112, i32 0, i32 1
   %t114 = load { i32, i32, i32 }, ptr %t113
-  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t111, { i32, i32, i32 } %t114, { ptr, i64 } { ptr @.str.1450, i64 29 })
+  call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t111, { i32, i32, i32 } %t114, { ptr, i64 } { ptr @.str.1457, i64 29 })
   br label %for.cond.5
 endif.30:
   %t115 = load ptr, ptr %s8
@@ -108981,7 +109842,7 @@ then.34:
   %t134 = extractvalue { ptr, i64 } %t133, 0
   %t135 = extractvalue { ptr, i64 } %t133, 1
   call void @zevic_sb_add(ptr %t132, ptr %t134, i64 %t135)
-  call void @zevic_sb_add(ptr %t132, ptr @.str.1451, i64 61)
+  call void @zevic_sb_add(ptr %t132, ptr @.str.1458, i64 61)
   call void @zevic_sb_finish(ptr %s20, ptr %t132)
   %t136 = load { ptr, i64 }, ptr %s20
   call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t128, { i32, i32, i32 } %t131, { ptr, i64 } %t136)
@@ -109008,7 +109869,7 @@ and.end.38:
   br i1 %t149, label %and.rhs.39, label %and.end.40
 and.rhs.39:
   %t150 = load { ptr, i64 }, ptr %s9
-  %t151 = call i1 @"zevic_Zevic_Text_StartsWith"({ ptr, i64 } %t150, { ptr, i64 } { ptr @.str.1195, i64 6 })
+  %t151 = call i1 @"zevic_Zevic_Text_StartsWith"({ ptr, i64 } %t150, { ptr, i64 } { ptr @.str.1202, i64 6 })
   br label %and.end.40
 and.end.40:
   %t152 = phi i1 [ false, %and.end.38 ], [ %t151, %and.rhs.39 ]
@@ -109039,12 +109900,12 @@ then.46:
   %t169 = getelementptr inbounds { { i32 }, { i32, i32, i32 }, { i32, i32, i32 }, { ptr, i64 }, i1, { ptr, i64 }, { i32 }, i64, double, { ptr, i64 }, i1, i1, i1, i1, i1, i1, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, { i32, [1 x i64] }, ptr, ptr, ptr, ptr, { i32, [1 x i64] } }, ptr %t168, i32 0, i32 1
   %t170 = load { i32, i32, i32 }, ptr %t169
   %t171 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t171, ptr @.str.1452, i64 16)
+  call void @zevic_sb_add(ptr %t171, ptr @.str.1459, i64 16)
   %t172 = load { ptr, i64 }, ptr %s22
   %t173 = extractvalue { ptr, i64 } %t172, 0
   %t174 = extractvalue { ptr, i64 } %t172, 1
   call void @zevic_sb_add(ptr %t171, ptr %t173, i64 %t174)
-  call void @zevic_sb_add(ptr %t171, ptr @.str.1453, i64 56)
+  call void @zevic_sb_add(ptr %t171, ptr @.str.1460, i64 56)
   call void @zevic_sb_finish(ptr %s23, ptr %t171)
   %t175 = load { ptr, i64 }, ptr %s23
   call void @"zevic_Zevic1_Diag_Diag_Error"(ptr %t167, { i32, i32, i32 } %t170, { ptr, i64 } %t175)
@@ -109114,16 +109975,16 @@ endif.59:
 for.end.7:
   ret void
 panic.9:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1437, i32 240)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1444, i32 240)
   unreachable
 panic.27:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1437, i32 254)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1444, i32 254)
   unreachable
 panic.45:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1437, i32 271)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1444, i32 271)
   unreachable
 panic.53:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1437, i32 279)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1444, i32 279)
   unreachable
 }
 
@@ -109198,7 +110059,7 @@ for.end.8:
   %t32 = call { i32, [1 x i64] } @"zevic_Array<Zevic1_Resolve_Module>_Pop"(ptr %t31)
   ret i1 false
 panic.10:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1437, i32 292)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1444, i32 292)
   unreachable
 }
 
@@ -109239,7 +110100,7 @@ entry:
   store ptr %p0, ptr %s0
   store ptr %p1, ptr %s1
   %t0 = load ptr, ptr %s0
-  %t1 = call { i32, [1 x i64] } @"zevic_Zevic1_Resolve_Program_FindModule"(ptr %t0, { ptr, i64 } { ptr @.str.1086, i64 4 })
+  %t1 = call { i32, [1 x i64] } @"zevic_Zevic1_Resolve_Program_FindModule"(ptr %t0, { ptr, i64 } { ptr @.str.1103, i64 4 })
   store { i32, [1 x i64] } %t1, ptr %s2
   %t4 = getelementptr inbounds { i32, [1 x i64] }, ptr %s2, i32 0, i32 0
   %t2 = load i32, ptr %t4
@@ -109255,7 +110116,7 @@ pat.tag.2:
   %t10 = load ptr, ptr %s3
   %t11 = getelementptr inbounds { i64, { ptr, i64 }, ptr, ptr, ptr, ptr, i1, i32 }, ptr %t10, i32 0, i32 3
   %t12 = load ptr, ptr %t11
-  %t13 = call { i32, [1 x i64] } @"zevic_Map<String, Zevic1_Resolve_Decl>_Get"(ptr %t12, { ptr, i64 } { ptr @.str.1086, i64 4 })
+  %t13 = call { i32, [1 x i64] } @"zevic_Map<String, Zevic1_Resolve_Decl>_Get"(ptr %t12, { ptr, i64 } { ptr @.str.1103, i64 4 })
   store { i32, [1 x i64] } %t13, ptr %s4
   %t16 = getelementptr inbounds { i32, [1 x i64] }, ptr %s4, i32 0, i32 0
   %t14 = load i32, ptr %t16
@@ -109298,7 +110159,7 @@ and.end.7:
   br i1 %t42, label %and.rhs.8, label %and.end.9
 and.rhs.8:
   %t43 = load ptr, ptr %s0
-  %t44 = call { i32, [1 x i64] } @"zevic_Zevic1_Resolve_Program_FindModule"(ptr %t43, { ptr, i64 } { ptr @.str.1377, i64 9 })
+  %t44 = call { i32, [1 x i64] } @"zevic_Zevic1_Resolve_Program_FindModule"(ptr %t43, { ptr, i64 } { ptr @.str.1384, i64 9 })
   store { i32, [1 x i64] } %t44, ptr %s9
   %t45 = call i1 @"zevic_Option<Zevic1_Resolve_Module>_IsNone"(ptr %s9)
   br label %and.end.9
@@ -109308,7 +110169,7 @@ and.end.9:
 then.10:
   %t47 = load ptr, ptr %s0
   %t48 = load ptr, ptr %s1
-  call void @"zevic_Zevic1_Resolve_tryLoadModule"(ptr %t47, ptr %t48, { ptr, i64 } { ptr @.str.1377, i64 9 })
+  call void @"zevic_Zevic1_Resolve_tryLoadModule"(ptr %t47, ptr %t48, { ptr, i64 } { ptr @.str.1384, i64 9 })
   br label %endif.12
 endif.12:
   br label %match.end.3
@@ -109517,7 +110378,7 @@ then.56:
 else.57:
   br label %endif.58
 endif.58:
-  %t156 = phi { ptr, i64 } [ { ptr @.str.1194, i64 4 }, %then.56 ], [ { ptr @.str.83, i64 0 }, %else.57 ]
+  %t156 = phi { ptr, i64 } [ { ptr @.str.1201, i64 4 }, %then.56 ], [ { ptr @.str.83, i64 0 }, %else.57 ]
   %t157 = extractvalue { ptr, i64 } %t156, 0
   %t158 = extractvalue { ptr, i64 } %t156, 1
   call void @zevic_sb_add(ptr %t151, ptr %t157, i64 %t158)
@@ -109571,7 +110432,7 @@ endif.61:
   %t188 = load ptr, ptr %s1
   %t189 = load { i32, i32, i32 }, ptr %s30
   %t190 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t190, ptr @.str.1454, i64 17)
+  call void @zevic_sb_add(ptr %t190, ptr @.str.1461, i64 17)
   %t191 = load { ptr, i64 }, ptr %s21
   %t192 = extractvalue { ptr, i64 } %t191, 0
   %t193 = extractvalue { ptr, i64 } %t191, 1
@@ -109585,19 +110446,19 @@ endif.42:
 for.end.37:
   ret void
 panic.21:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1437, i32 317)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1444, i32 317)
   unreachable
 panic.34:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1437, i32 327)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1444, i32 327)
   unreachable
 panic.39:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1437, i32 329)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1444, i32 329)
   unreachable
 panic.44:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1437, i32 332)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1444, i32 332)
   unreachable
 panic.49:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1437, i32 335)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1444, i32 335)
   unreachable
 }
 
@@ -109822,49 +110683,49 @@ while.end.7:
   %t118 = call i64 @"zevic_Array<I64>_Index"(ptr %t116, i64 %t117)
   ret i64 %t118
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1455, i32 13)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1462, i32 13)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1455, i32 20)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1462, i32 20)
   unreachable
 panic.14:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1455, i32 20)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1462, i32 20)
   unreachable
 panic.16:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1455, i32 20)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1462, i32 20)
   unreachable
 panic.18:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1455, i32 20)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1462, i32 20)
   unreachable
 panic.23:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1455, i32 21)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1462, i32 21)
   unreachable
 panic.25:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1455, i32 21)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1462, i32 21)
   unreachable
 panic.27:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1455, i32 22)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1462, i32 22)
   unreachable
 panic.32:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1455, i32 23)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1462, i32 23)
   unreachable
 panic.34:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1455, i32 25)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1462, i32 25)
   unreachable
 panic.36:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1455, i32 25)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1462, i32 25)
   unreachable
 panic.41:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1455, i32 26)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1462, i32 26)
   unreachable
 panic.43:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1455, i32 26)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1462, i32 26)
   unreachable
 panic.45:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1455, i32 29)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1462, i32 29)
   unreachable
 panic.47:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1455, i32 32)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1462, i32 32)
   unreachable
 }
 
@@ -110021,40 +110882,40 @@ while.end.16:
 ok.35:
   ret i64 %t85
 panic.9:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1455, i32 42)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1462, i32 42)
   unreachable
 panic.11:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1455, i32 42)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1462, i32 42)
   unreachable
 panic.13:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1455, i32 43)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1462, i32 43)
   unreachable
 panic.18:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1455, i32 46)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1462, i32 46)
   unreachable
 panic.22:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1455, i32 46)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1462, i32 46)
   unreachable
 panic.24:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1455, i32 46)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1462, i32 46)
   unreachable
 panic.26:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1455, i32 46)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1462, i32 46)
   unreachable
 panic.28:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1455, i32 46)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1462, i32 46)
   unreachable
 panic.30:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1455, i32 46)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1462, i32 46)
   unreachable
 panic.32:
-  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1455, i32 46)
+  call void @zevic_panic(ptr @.str.88, i64 25, ptr @.str.1462, i32 46)
   unreachable
 panic.34:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1455, i32 47)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1462, i32 47)
   unreachable
 panic.36:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1455, i32 49)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1462, i32 49)
   unreachable
 }
 
@@ -110216,16 +111077,16 @@ for.end.19:
   %t70 = load { i32, [2 x i64] }, ptr %s6
   ret { i32, [2 x i64] } %t70
 panic.4:
-  call void @zevic_panic(ptr @.str.94, i64 16, ptr @.str.1455, i32 60)
+  call void @zevic_panic(ptr @.str.94, i64 16, ptr @.str.1462, i32 60)
   unreachable
 panic.6:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1455, i32 60)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1462, i32 60)
   unreachable
 panic.16:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1455, i32 68)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1462, i32 68)
   unreachable
 panic.21:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1455, i32 70)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1462, i32 70)
   unreachable
 }
 
@@ -110828,7 +111689,7 @@ pat.tag.170:
 arm.next.169:
   unreachable
 match.end.0:
-  %t255 = phi { ptr, i64 } [ { ptr @.str.1456, i64 11 }, %pat.tag.2 ], [ { ptr @.str.1457, i64 7 }, %pat.tag.4 ], [ { ptr @.str.1458, i64 10 }, %pat.tag.6 ], [ { ptr @.str.1459, i64 7 }, %pat.tag.8 ], [ { ptr @.str.1460, i64 6 }, %pat.tag.10 ], [ { ptr @.str.1461, i64 9 }, %pat.tag.12 ], [ { ptr @.str.1462, i64 4 }, %pat.tag.14 ], [ { ptr @.str.1463, i64 6 }, %pat.tag.16 ], [ { ptr @.str.1101, i64 6 }, %pat.tag.18 ], [ { ptr @.str.1102, i64 6 }, %pat.tag.20 ], [ { ptr @.str.1103, i64 2 }, %pat.tag.22 ], [ { ptr @.str.1104, i64 2 }, %pat.tag.24 ], [ { ptr @.str.1105, i64 3 }, %pat.tag.26 ], [ { ptr @.str.1106, i64 3 }, %pat.tag.28 ], [ { ptr @.str.1107, i64 5 }, %pat.tag.30 ], [ { ptr @.str.1108, i64 6 }, %pat.tag.32 ], [ { ptr @.str.1109, i64 4 }, %pat.tag.34 ], [ { ptr @.str.1110, i64 9 }, %pat.tag.36 ], [ { ptr @.str.1111, i64 6 }, %pat.tag.38 ], [ { ptr @.str.607, i64 4 }, %pat.tag.40 ], [ { ptr @.str.1112, i64 6 }, %pat.tag.42 ], [ { ptr @.str.1113, i64 6 }, %pat.tag.44 ], [ { ptr @.str.1114, i64 2 }, %pat.tag.46 ], [ { ptr @.str.113, i64 4 }, %pat.tag.48 ], [ { ptr @.str.1115, i64 5 }, %pat.tag.50 ], [ { ptr @.str.1116, i64 4 }, %pat.tag.52 ], [ { ptr @.str.1117, i64 3 }, %pat.tag.54 ], [ { ptr @.str.1118, i64 2 }, %pat.tag.56 ], [ { ptr @.str.1119, i64 5 }, %pat.tag.58 ], [ { ptr @.str.1120, i64 6 }, %pat.tag.60 ], [ { ptr @.str.494, i64 5 }, %pat.tag.62 ], [ { ptr @.str.495, i64 8 }, %pat.tag.64 ], [ { ptr @.str.1121, i64 5 }, %pat.tag.66 ], [ { ptr @.str.1122, i64 5 }, %pat.tag.68 ], [ { ptr @.str.1123, i64 5 }, %pat.tag.70 ], [ { ptr @.str.424, i64 4 }, %pat.tag.72 ], [ { ptr @.str.425, i64 5 }, %pat.tag.74 ], [ { ptr @.str.539, i64 4 }, %pat.tag.76 ], [ { ptr @.str.1464, i64 1 }, %pat.tag.78 ], [ { ptr @.str.177, i64 1 }, %pat.tag.80 ], [ { ptr @.str.1396, i64 1 }, %pat.tag.82 ], [ { ptr @.str.178, i64 1 }, %pat.tag.84 ], [ { ptr @.str.954, i64 1 }, %pat.tag.86 ], [ { ptr @.str.1465, i64 1 }, %pat.tag.88 ], [ { ptr @.str.938, i64 1 }, %pat.tag.90 ], [ { ptr @.str.1466, i64 1 }, %pat.tag.92 ], [ { ptr @.str.1467, i64 1 }, %pat.tag.94 ], [ { ptr @.str.1468, i64 1 }, %pat.tag.96 ], [ { ptr @.str.1469, i64 2 }, %pat.tag.98 ], [ { ptr @.str.1470, i64 2 }, %pat.tag.100 ], [ { ptr @.str.1471, i64 2 }, %pat.tag.102 ], [ { ptr @.str.1472, i64 2 }, %pat.tag.104 ], [ { ptr @.str.1473, i64 1 }, %pat.tag.106 ], [ { ptr @.str.1474, i64 2 }, %pat.tag.108 ], [ { ptr @.str.1475, i64 2 }, %pat.tag.110 ], [ { ptr @.str.334, i64 1 }, %pat.tag.112 ], [ { ptr @.str.335, i64 1 }, %pat.tag.114 ], [ { ptr @.str.1476, i64 2 }, %pat.tag.116 ], [ { ptr @.str.1477, i64 2 }, %pat.tag.118 ], [ { ptr @.str.1478, i64 2 }, %pat.tag.120 ], [ { ptr @.str.1479, i64 2 }, %pat.tag.122 ], [ { ptr @.str.1480, i64 2 }, %pat.tag.124 ], [ { ptr @.str.1481, i64 2 }, %pat.tag.126 ], [ { ptr @.str.1482, i64 2 }, %pat.tag.128 ], [ { ptr @.str.1483, i64 2 }, %pat.tag.130 ], [ { ptr @.str.1484, i64 2 }, %pat.tag.132 ], [ { ptr @.str.1485, i64 2 }, %pat.tag.134 ], [ { ptr @.str.1486, i64 3 }, %pat.tag.136 ], [ { ptr @.str.1487, i64 3 }, %pat.tag.138 ], [ { ptr @.str.96, i64 1 }, %pat.tag.140 ], [ { ptr @.str.1488, i64 2 }, %pat.tag.142 ], [ { ptr @.str.1489, i64 3 }, %pat.tag.144 ], [ { ptr @.str.634, i64 3 }, %pat.tag.146 ], [ { ptr @.str.301, i64 1 }, %pat.tag.148 ], [ { ptr @.str.159, i64 1 }, %pat.tag.150 ], [ { ptr @.str.1490, i64 2 }, %pat.tag.152 ], [ { ptr @.str.1491, i64 2 }, %pat.tag.154 ], [ { ptr @.str.130, i64 1 }, %pat.tag.156 ], [ { ptr @.str.300, i64 1 }, %pat.tag.158 ], [ { ptr @.str.371, i64 1 }, %pat.tag.160 ], [ { ptr @.str.290, i64 1 }, %pat.tag.162 ], [ { ptr @.str.1185, i64 1 }, %pat.tag.164 ], [ { ptr @.str.1186, i64 1 }, %pat.tag.166 ], [ { ptr @.str.1492, i64 1 }, %pat.tag.168 ], [ { ptr @.str.1493, i64 1 }, %pat.tag.170 ]
+  %t255 = phi { ptr, i64 } [ { ptr @.str.1463, i64 11 }, %pat.tag.2 ], [ { ptr @.str.1464, i64 7 }, %pat.tag.4 ], [ { ptr @.str.1465, i64 10 }, %pat.tag.6 ], [ { ptr @.str.1466, i64 7 }, %pat.tag.8 ], [ { ptr @.str.1467, i64 6 }, %pat.tag.10 ], [ { ptr @.str.1468, i64 9 }, %pat.tag.12 ], [ { ptr @.str.1469, i64 4 }, %pat.tag.14 ], [ { ptr @.str.1470, i64 6 }, %pat.tag.16 ], [ { ptr @.str.1118, i64 6 }, %pat.tag.18 ], [ { ptr @.str.1119, i64 6 }, %pat.tag.20 ], [ { ptr @.str.1120, i64 2 }, %pat.tag.22 ], [ { ptr @.str.1121, i64 2 }, %pat.tag.24 ], [ { ptr @.str.1122, i64 3 }, %pat.tag.26 ], [ { ptr @.str.1123, i64 3 }, %pat.tag.28 ], [ { ptr @.str.1124, i64 5 }, %pat.tag.30 ], [ { ptr @.str.1125, i64 6 }, %pat.tag.32 ], [ { ptr @.str.1126, i64 4 }, %pat.tag.34 ], [ { ptr @.str.1127, i64 9 }, %pat.tag.36 ], [ { ptr @.str.1128, i64 6 }, %pat.tag.38 ], [ { ptr @.str.607, i64 4 }, %pat.tag.40 ], [ { ptr @.str.1129, i64 6 }, %pat.tag.42 ], [ { ptr @.str.1130, i64 6 }, %pat.tag.44 ], [ { ptr @.str.1131, i64 2 }, %pat.tag.46 ], [ { ptr @.str.113, i64 4 }, %pat.tag.48 ], [ { ptr @.str.1132, i64 5 }, %pat.tag.50 ], [ { ptr @.str.1133, i64 4 }, %pat.tag.52 ], [ { ptr @.str.1134, i64 3 }, %pat.tag.54 ], [ { ptr @.str.1135, i64 2 }, %pat.tag.56 ], [ { ptr @.str.1136, i64 5 }, %pat.tag.58 ], [ { ptr @.str.1137, i64 6 }, %pat.tag.60 ], [ { ptr @.str.494, i64 5 }, %pat.tag.62 ], [ { ptr @.str.495, i64 8 }, %pat.tag.64 ], [ { ptr @.str.1138, i64 5 }, %pat.tag.66 ], [ { ptr @.str.1139, i64 5 }, %pat.tag.68 ], [ { ptr @.str.1140, i64 5 }, %pat.tag.70 ], [ { ptr @.str.424, i64 4 }, %pat.tag.72 ], [ { ptr @.str.425, i64 5 }, %pat.tag.74 ], [ { ptr @.str.539, i64 4 }, %pat.tag.76 ], [ { ptr @.str.1471, i64 1 }, %pat.tag.78 ], [ { ptr @.str.177, i64 1 }, %pat.tag.80 ], [ { ptr @.str.1403, i64 1 }, %pat.tag.82 ], [ { ptr @.str.178, i64 1 }, %pat.tag.84 ], [ { ptr @.str.964, i64 1 }, %pat.tag.86 ], [ { ptr @.str.1472, i64 1 }, %pat.tag.88 ], [ { ptr @.str.938, i64 1 }, %pat.tag.90 ], [ { ptr @.str.1473, i64 1 }, %pat.tag.92 ], [ { ptr @.str.1474, i64 1 }, %pat.tag.94 ], [ { ptr @.str.1475, i64 1 }, %pat.tag.96 ], [ { ptr @.str.1476, i64 2 }, %pat.tag.98 ], [ { ptr @.str.1477, i64 2 }, %pat.tag.100 ], [ { ptr @.str.1478, i64 2 }, %pat.tag.102 ], [ { ptr @.str.1479, i64 2 }, %pat.tag.104 ], [ { ptr @.str.1480, i64 1 }, %pat.tag.106 ], [ { ptr @.str.1481, i64 2 }, %pat.tag.108 ], [ { ptr @.str.1482, i64 2 }, %pat.tag.110 ], [ { ptr @.str.334, i64 1 }, %pat.tag.112 ], [ { ptr @.str.335, i64 1 }, %pat.tag.114 ], [ { ptr @.str.1483, i64 2 }, %pat.tag.116 ], [ { ptr @.str.1484, i64 2 }, %pat.tag.118 ], [ { ptr @.str.1485, i64 2 }, %pat.tag.120 ], [ { ptr @.str.1486, i64 2 }, %pat.tag.122 ], [ { ptr @.str.1487, i64 2 }, %pat.tag.124 ], [ { ptr @.str.1488, i64 2 }, %pat.tag.126 ], [ { ptr @.str.1489, i64 2 }, %pat.tag.128 ], [ { ptr @.str.1490, i64 2 }, %pat.tag.130 ], [ { ptr @.str.1491, i64 2 }, %pat.tag.132 ], [ { ptr @.str.1492, i64 2 }, %pat.tag.134 ], [ { ptr @.str.1493, i64 3 }, %pat.tag.136 ], [ { ptr @.str.1494, i64 3 }, %pat.tag.138 ], [ { ptr @.str.96, i64 1 }, %pat.tag.140 ], [ { ptr @.str.1495, i64 2 }, %pat.tag.142 ], [ { ptr @.str.1496, i64 3 }, %pat.tag.144 ], [ { ptr @.str.634, i64 3 }, %pat.tag.146 ], [ { ptr @.str.301, i64 1 }, %pat.tag.148 ], [ { ptr @.str.159, i64 1 }, %pat.tag.150 ], [ { ptr @.str.1497, i64 2 }, %pat.tag.152 ], [ { ptr @.str.1498, i64 2 }, %pat.tag.154 ], [ { ptr @.str.130, i64 1 }, %pat.tag.156 ], [ { ptr @.str.300, i64 1 }, %pat.tag.158 ], [ { ptr @.str.371, i64 1 }, %pat.tag.160 ], [ { ptr @.str.290, i64 1 }, %pat.tag.162 ], [ { ptr @.str.1192, i64 1 }, %pat.tag.164 ], [ { ptr @.str.1193, i64 1 }, %pat.tag.166 ], [ { ptr @.str.1499, i64 1 }, %pat.tag.168 ], [ { ptr @.str.983, i64 1 }, %pat.tag.170 ]
   ret { ptr, i64 } %t255
 }
 
@@ -111544,19 +112405,19 @@ ok.6:
 ok.8:
   ret i64 %t16
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1494, i32 124)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1500, i32 124)
   unreachable
 panic.3:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1494, i32 124)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1500, i32 124)
   unreachable
 panic.5:
-  call void @zevic_panic(ptr @.str.94, i64 16, ptr @.str.1494, i32 124)
+  call void @zevic_panic(ptr @.str.94, i64 16, ptr @.str.1500, i32 124)
   unreachable
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1494, i32 124)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1500, i32 124)
   unreachable
 panic.9:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1494, i32 124)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1500, i32 124)
   unreachable
 }
 
@@ -111626,7 +112487,7 @@ entry:
   %t8 = getelementptr inbounds { i32 }, ptr %s2, i32 0, i32 0
   store i32 0, ptr %t8
   %t9 = load { i32 }, ptr %s2
-  %t10 = call ptr @"zevic_Zevic1_Types_TypeTable_prim"(ptr %t7, { i32 } %t9, { ptr, i64 } { ptr @.str.1147, i64 2 })
+  %t10 = call ptr @"zevic_Zevic1_Types_TypeTable_prim"(ptr %t7, { i32 } %t9, { ptr, i64 } { ptr @.str.951, i64 2 })
   store ptr %t10, ptr %t6
   %t11 = load ptr, ptr %s0
   %t12 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t11, i32 0, i32 6
@@ -111634,7 +112495,7 @@ entry:
   %t14 = getelementptr inbounds { i32 }, ptr %s3, i32 0, i32 0
   store i32 1, ptr %t14
   %t15 = load { i32 }, ptr %s3
-  %t16 = call ptr @"zevic_Zevic1_Types_TypeTable_prim"(ptr %t13, { i32 } %t15, { ptr, i64 } { ptr @.str.1148, i64 3 })
+  %t16 = call ptr @"zevic_Zevic1_Types_TypeTable_prim"(ptr %t13, { i32 } %t15, { ptr, i64 } { ptr @.str.952, i64 3 })
   store ptr %t16, ptr %t12
   %t17 = load ptr, ptr %s0
   %t18 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t17, i32 0, i32 7
@@ -111642,7 +112503,7 @@ entry:
   %t20 = getelementptr inbounds { i32 }, ptr %s4, i32 0, i32 0
   store i32 2, ptr %t20
   %t21 = load { i32 }, ptr %s4
-  %t22 = call ptr @"zevic_Zevic1_Types_TypeTable_prim"(ptr %t19, { i32 } %t21, { ptr, i64 } { ptr @.str.1149, i64 3 })
+  %t22 = call ptr @"zevic_Zevic1_Types_TypeTable_prim"(ptr %t19, { i32 } %t21, { ptr, i64 } { ptr @.str.953, i64 3 })
   store ptr %t22, ptr %t18
   %t23 = load ptr, ptr %s0
   %t24 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t23, i32 0, i32 8
@@ -111650,7 +112511,7 @@ entry:
   %t26 = getelementptr inbounds { i32 }, ptr %s5, i32 0, i32 0
   store i32 3, ptr %t26
   %t27 = load { i32 }, ptr %s5
-  %t28 = call ptr @"zevic_Zevic1_Types_TypeTable_prim"(ptr %t25, { i32 } %t27, { ptr, i64 } { ptr @.str.1150, i64 3 })
+  %t28 = call ptr @"zevic_Zevic1_Types_TypeTable_prim"(ptr %t25, { i32 } %t27, { ptr, i64 } { ptr @.str.954, i64 3 })
   store ptr %t28, ptr %t24
   %t29 = load ptr, ptr %s0
   %t30 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t29, i32 0, i32 9
@@ -111658,7 +112519,7 @@ entry:
   %t32 = getelementptr inbounds { i32 }, ptr %s6, i32 0, i32 0
   store i32 4, ptr %t32
   %t33 = load { i32 }, ptr %s6
-  %t34 = call ptr @"zevic_Zevic1_Types_TypeTable_prim"(ptr %t31, { i32 } %t33, { ptr, i64 } { ptr @.str.1151, i64 2 })
+  %t34 = call ptr @"zevic_Zevic1_Types_TypeTable_prim"(ptr %t31, { i32 } %t33, { ptr, i64 } { ptr @.str.955, i64 2 })
   store ptr %t34, ptr %t30
   %t35 = load ptr, ptr %s0
   %t36 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t35, i32 0, i32 10
@@ -111666,7 +112527,7 @@ entry:
   %t38 = getelementptr inbounds { i32 }, ptr %s7, i32 0, i32 0
   store i32 5, ptr %t38
   %t39 = load { i32 }, ptr %s7
-  %t40 = call ptr @"zevic_Zevic1_Types_TypeTable_prim"(ptr %t37, { i32 } %t39, { ptr, i64 } { ptr @.str.1152, i64 3 })
+  %t40 = call ptr @"zevic_Zevic1_Types_TypeTable_prim"(ptr %t37, { i32 } %t39, { ptr, i64 } { ptr @.str.956, i64 3 })
   store ptr %t40, ptr %t36
   %t41 = load ptr, ptr %s0
   %t42 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t41, i32 0, i32 11
@@ -111674,7 +112535,7 @@ entry:
   %t44 = getelementptr inbounds { i32 }, ptr %s8, i32 0, i32 0
   store i32 6, ptr %t44
   %t45 = load { i32 }, ptr %s8
-  %t46 = call ptr @"zevic_Zevic1_Types_TypeTable_prim"(ptr %t43, { i32 } %t45, { ptr, i64 } { ptr @.str.1153, i64 3 })
+  %t46 = call ptr @"zevic_Zevic1_Types_TypeTable_prim"(ptr %t43, { i32 } %t45, { ptr, i64 } { ptr @.str.957, i64 3 })
   store ptr %t46, ptr %t42
   %t47 = load ptr, ptr %s0
   %t48 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t47, i32 0, i32 12
@@ -111682,7 +112543,7 @@ entry:
   %t50 = getelementptr inbounds { i32 }, ptr %s9, i32 0, i32 0
   store i32 7, ptr %t50
   %t51 = load { i32 }, ptr %s9
-  %t52 = call ptr @"zevic_Zevic1_Types_TypeTable_prim"(ptr %t49, { i32 } %t51, { ptr, i64 } { ptr @.str.1154, i64 3 })
+  %t52 = call ptr @"zevic_Zevic1_Types_TypeTable_prim"(ptr %t49, { i32 } %t51, { ptr, i64 } { ptr @.str.958, i64 3 })
   store ptr %t52, ptr %t48
   %t53 = load ptr, ptr %s0
   %t54 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t53, i32 0, i32 13
@@ -111690,7 +112551,7 @@ entry:
   %t56 = getelementptr inbounds { i32 }, ptr %s10, i32 0, i32 0
   store i32 8, ptr %t56
   %t57 = load { i32 }, ptr %s10
-  %t58 = call ptr @"zevic_Zevic1_Types_TypeTable_prim"(ptr %t55, { i32 } %t57, { ptr, i64 } { ptr @.str.1155, i64 3 })
+  %t58 = call ptr @"zevic_Zevic1_Types_TypeTable_prim"(ptr %t55, { i32 } %t57, { ptr, i64 } { ptr @.str.959, i64 3 })
   store ptr %t58, ptr %t54
   %t59 = load ptr, ptr %s0
   %t60 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t59, i32 0, i32 14
@@ -111698,7 +112559,7 @@ entry:
   %t62 = getelementptr inbounds { i32 }, ptr %s11, i32 0, i32 0
   store i32 9, ptr %t62
   %t63 = load { i32 }, ptr %s11
-  %t64 = call ptr @"zevic_Zevic1_Types_TypeTable_prim"(ptr %t61, { i32 } %t63, { ptr, i64 } { ptr @.str.1156, i64 3 })
+  %t64 = call ptr @"zevic_Zevic1_Types_TypeTable_prim"(ptr %t61, { i32 } %t63, { ptr, i64 } { ptr @.str.960, i64 3 })
   store ptr %t64, ptr %t60
   %t65 = load ptr, ptr %s0
   %t66 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t65, i32 0, i32 15
@@ -111738,33 +112599,33 @@ entry:
   %t92 = getelementptr inbounds { i32 }, ptr %s16, i32 0, i32 0
   store i32 14, ptr %t92
   %t93 = load { i32 }, ptr %s16
-  %t94 = call ptr @"zevic_Zevic1_Types_TypeTable_prim"(ptr %t91, { i32 } %t93, { ptr, i64 } { ptr @.str.1037, i64 5 })
+  %t94 = call ptr @"zevic_Zevic1_Types_TypeTable_prim"(ptr %t91, { i32 } %t93, { ptr, i64 } { ptr @.str.1054, i64 5 })
   store ptr %t94, ptr %t90
   %t97 = getelementptr { { ptr, i64 }, i64, i32 }, ptr null, i32 1
   %t98 = ptrtoint ptr %t97 to i64
   %t95 = mul i64 21, %t98
   %t96 = call ptr @zevic_alloc(i64 %t95)
-  %t99 = insertvalue { { ptr, i64 }, i64, i32 } undef, { ptr, i64 } { ptr @.str.1204, i64 5 }, 0
+  %t99 = insertvalue { { ptr, i64 }, i64, i32 } undef, { ptr, i64 } { ptr @.str.1211, i64 5 }, 0
   %t100 = insertvalue { { ptr, i64 }, i64, i32 } %t99, i64 1, 1
   %t101 = insertvalue { { ptr, i64 }, i64, i32 } %t100, i32 1, 2
   %t102 = getelementptr inbounds { { ptr, i64 }, i64, i32 }, ptr %t96, i64 0
   store { { ptr, i64 }, i64, i32 } %t101, ptr %t102
-  %t103 = insertvalue { { ptr, i64 }, i64, i32 } undef, { ptr, i64 } { ptr @.str.1399, i64 6 }, 0
+  %t103 = insertvalue { { ptr, i64 }, i64, i32 } undef, { ptr, i64 } { ptr @.str.1406, i64 6 }, 0
   %t104 = insertvalue { { ptr, i64 }, i64, i32 } %t103, i64 1, 1
   %t105 = insertvalue { { ptr, i64 }, i64, i32 } %t104, i32 1, 2
   %t106 = getelementptr inbounds { { ptr, i64 }, i64, i32 }, ptr %t96, i64 1
   store { { ptr, i64 }, i64, i32 } %t105, ptr %t106
-  %t107 = insertvalue { { ptr, i64 }, i64, i32 } undef, { ptr, i64 } { ptr @.str.1401, i64 6 }, 0
+  %t107 = insertvalue { { ptr, i64 }, i64, i32 } undef, { ptr, i64 } { ptr @.str.1408, i64 6 }, 0
   %t108 = insertvalue { { ptr, i64 }, i64, i32 } %t107, i64 1, 1
   %t109 = insertvalue { { ptr, i64 }, i64, i32 } %t108, i32 0, 2
   %t110 = getelementptr inbounds { { ptr, i64 }, i64, i32 }, ptr %t96, i64 2
   store { { ptr, i64 }, i64, i32 } %t109, ptr %t110
-  %t111 = insertvalue { { ptr, i64 }, i64, i32 } undef, { ptr, i64 } { ptr @.str.1403, i64 6 }, 0
+  %t111 = insertvalue { { ptr, i64 }, i64, i32 } undef, { ptr, i64 } { ptr @.str.1410, i64 6 }, 0
   %t112 = insertvalue { { ptr, i64 }, i64, i32 } %t111, i64 2, 1
   %t113 = insertvalue { { ptr, i64 }, i64, i32 } %t112, i32 1, 2
   %t114 = getelementptr inbounds { { ptr, i64 }, i64, i32 }, ptr %t96, i64 3
   store { { ptr, i64 }, i64, i32 } %t113, ptr %t114
-  %t115 = insertvalue { { ptr, i64 }, i64, i32 } undef, { ptr, i64 } { ptr @.str.1405, i64 7 }, 0
+  %t115 = insertvalue { { ptr, i64 }, i64, i32 } undef, { ptr, i64 } { ptr @.str.1412, i64 7 }, 0
   %t116 = insertvalue { { ptr, i64 }, i64, i32 } %t115, i64 2, 1
   %t117 = insertvalue { { ptr, i64 }, i64, i32 } %t116, i32 0, 2
   %t118 = getelementptr inbounds { { ptr, i64 }, i64, i32 }, ptr %t96, i64 4
@@ -111779,52 +112640,52 @@ entry:
   %t125 = insertvalue { { ptr, i64 }, i64, i32 } %t124, i32 0, 2
   %t126 = getelementptr inbounds { { ptr, i64 }, i64, i32 }, ptr %t96, i64 6
   store { { ptr, i64 }, i64, i32 } %t125, ptr %t126
-  %t127 = insertvalue { { ptr, i64 }, i64, i32 } undef, { ptr, i64 } { ptr @.str.1205, i64 5 }, 0
+  %t127 = insertvalue { { ptr, i64 }, i64, i32 } undef, { ptr, i64 } { ptr @.str.1212, i64 5 }, 0
   %t128 = insertvalue { { ptr, i64 }, i64, i32 } %t127, i64 0, 1
   %t129 = insertvalue { { ptr, i64 }, i64, i32 } %t128, i32 1, 2
   %t130 = getelementptr inbounds { { ptr, i64 }, i64, i32 }, ptr %t96, i64 7
   store { { ptr, i64 }, i64, i32 } %t129, ptr %t130
-  %t131 = insertvalue { { ptr, i64 }, i64, i32 } undef, { ptr, i64 } { ptr @.str.1206, i64 6 }, 0
+  %t131 = insertvalue { { ptr, i64 }, i64, i32 } undef, { ptr, i64 } { ptr @.str.1213, i64 6 }, 0
   %t132 = insertvalue { { ptr, i64 }, i64, i32 } %t131, i64 0, 1
   %t133 = insertvalue { { ptr, i64 }, i64, i32 } %t132, i32 0, 2
   %t134 = getelementptr inbounds { { ptr, i64 }, i64, i32 }, ptr %t96, i64 8
   store { { ptr, i64 }, i64, i32 } %t133, ptr %t134
-  %t135 = insertvalue { { ptr, i64 }, i64, i32 } undef, { ptr, i64 } { ptr @.str.1411, i64 9 }, 0
+  %t135 = insertvalue { { ptr, i64 }, i64, i32 } undef, { ptr, i64 } { ptr @.str.1418, i64 9 }, 0
   %t136 = insertvalue { { ptr, i64 }, i64, i32 } %t135, i64 8, 1
   %t137 = insertvalue { { ptr, i64 }, i64, i32 } %t136, i32 1, 2
   %t138 = getelementptr inbounds { { ptr, i64 }, i64, i32 }, ptr %t96, i64 9
   store { { ptr, i64 }, i64, i32 } %t137, ptr %t138
-  %t139 = insertvalue { { ptr, i64 }, i64, i32 } undef, { ptr, i64 } { ptr @.str.1413, i64 10 }, 0
+  %t139 = insertvalue { { ptr, i64 }, i64, i32 } undef, { ptr, i64 } { ptr @.str.1420, i64 10 }, 0
   %t140 = insertvalue { { ptr, i64 }, i64, i32 } %t139, i64 8, 1
   %t141 = insertvalue { { ptr, i64 }, i64, i32 } %t140, i32 0, 2
   %t142 = getelementptr inbounds { { ptr, i64 }, i64, i32 }, ptr %t96, i64 10
   store { { ptr, i64 }, i64, i32 } %t141, ptr %t142
-  %t143 = insertvalue { { ptr, i64 }, i64, i32 } undef, { ptr, i64 } { ptr @.str.1207, i64 6 }, 0
+  %t143 = insertvalue { { ptr, i64 }, i64, i32 } undef, { ptr, i64 } { ptr @.str.1214, i64 6 }, 0
   %t144 = insertvalue { { ptr, i64 }, i64, i32 } %t143, i64 8, 1
   %t145 = insertvalue { { ptr, i64 }, i64, i32 } %t144, i32 0, 2
   %t146 = getelementptr inbounds { { ptr, i64 }, i64, i32 }, ptr %t96, i64 11
   store { { ptr, i64 }, i64, i32 } %t145, ptr %t146
-  %t147 = insertvalue { { ptr, i64 }, i64, i32 } undef, { ptr, i64 } { ptr @.str.1416, i64 7 }, 0
+  %t147 = insertvalue { { ptr, i64 }, i64, i32 } undef, { ptr, i64 } { ptr @.str.1423, i64 7 }, 0
   %t148 = insertvalue { { ptr, i64 }, i64, i32 } %t147, i64 8, 1
   %t149 = insertvalue { { ptr, i64 }, i64, i32 } %t148, i32 1, 2
   %t150 = getelementptr inbounds { { ptr, i64 }, i64, i32 }, ptr %t96, i64 12
   store { { ptr, i64 }, i64, i32 } %t149, ptr %t150
-  %t151 = insertvalue { { ptr, i64 }, i64, i32 } undef, { ptr, i64 } { ptr @.str.1418, i64 8 }, 0
+  %t151 = insertvalue { { ptr, i64 }, i64, i32 } undef, { ptr, i64 } { ptr @.str.1425, i64 8 }, 0
   %t152 = insertvalue { { ptr, i64 }, i64, i32 } %t151, i64 8, 1
   %t153 = insertvalue { { ptr, i64 }, i64, i32 } %t152, i32 1, 2
   %t154 = getelementptr inbounds { { ptr, i64 }, i64, i32 }, ptr %t96, i64 13
   store { { ptr, i64 }, i64, i32 } %t153, ptr %t154
-  %t155 = insertvalue { { ptr, i64 }, i64, i32 } undef, { ptr, i64 } { ptr @.str.1420, i64 7 }, 0
+  %t155 = insertvalue { { ptr, i64 }, i64, i32 } undef, { ptr, i64 } { ptr @.str.1427, i64 7 }, 0
   %t156 = insertvalue { { ptr, i64 }, i64, i32 } %t155, i64 8, 1
   %t157 = insertvalue { { ptr, i64 }, i64, i32 } %t156, i32 1, 2
   %t158 = getelementptr inbounds { { ptr, i64 }, i64, i32 }, ptr %t96, i64 14
   store { { ptr, i64 }, i64, i32 } %t157, ptr %t158
-  %t159 = insertvalue { { ptr, i64 }, i64, i32 } undef, { ptr, i64 } { ptr @.str.1421, i64 8 }, 0
+  %t159 = insertvalue { { ptr, i64 }, i64, i32 } undef, { ptr, i64 } { ptr @.str.1428, i64 8 }, 0
   %t160 = insertvalue { { ptr, i64 }, i64, i32 } %t159, i64 8, 1
   %t161 = insertvalue { { ptr, i64 }, i64, i32 } %t160, i32 0, 2
   %t162 = getelementptr inbounds { { ptr, i64 }, i64, i32 }, ptr %t96, i64 15
   store { { ptr, i64 }, i64, i32 } %t161, ptr %t162
-  %t163 = insertvalue { { ptr, i64 }, i64, i32 } undef, { ptr, i64 } { ptr @.str.1208, i64 6 }, 0
+  %t163 = insertvalue { { ptr, i64 }, i64, i32 } undef, { ptr, i64 } { ptr @.str.1215, i64 6 }, 0
   %t164 = insertvalue { { ptr, i64 }, i64, i32 } %t163, i64 4, 1
   %t165 = insertvalue { { ptr, i64 }, i64, i32 } %t164, i32 2, 2
   %t166 = getelementptr inbounds { { ptr, i64 }, i64, i32 }, ptr %t96, i64 16
@@ -111899,7 +112760,7 @@ ok.3:
 for.end.2:
   ret void
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1494, i32 190)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1500, i32 190)
   unreachable
 }
 
@@ -111969,7 +112830,7 @@ match.end.0:
   %t38 = phi ptr [ %t15, %pat.tag.2 ], [ %t37, %ok.5 ]
   ret ptr %t38
 panic.6:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1494, i32 202)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1500, i32 202)
   unreachable
 }
 
@@ -112076,7 +112937,7 @@ entry:
   %t0 = load { ptr, i64 }, ptr %s1
   %t2 = extractvalue { ptr, i64 } %t0, 0
   %t3 = extractvalue { ptr, i64 } %t0, 1
-  %t4 = call i32 @zevic_str_eq(ptr %t2, i64 %t3, ptr @.str.1147, i64 2)
+  %t4 = call i32 @zevic_str_eq(ptr %t2, i64 %t3, ptr @.str.951, i64 2)
   %t1 = icmp ne i32 %t4, 0
   br i1 %t1, label %pat.ok.4, label %pat.alt.3
 pat.ok.4:
@@ -112085,7 +112946,7 @@ pat.alt.3:
   %t5 = load { ptr, i64 }, ptr %s1
   %t7 = extractvalue { ptr, i64 } %t5, 0
   %t8 = extractvalue { ptr, i64 } %t5, 1
-  %t9 = call i32 @zevic_str_eq(ptr %t7, i64 %t8, ptr @.str.1148, i64 3)
+  %t9 = call i32 @zevic_str_eq(ptr %t7, i64 %t8, ptr @.str.952, i64 3)
   %t6 = icmp ne i32 %t9, 0
   br i1 %t6, label %pat.ok.6, label %pat.alt.5
 pat.ok.6:
@@ -112094,7 +112955,7 @@ pat.alt.5:
   %t10 = load { ptr, i64 }, ptr %s1
   %t12 = extractvalue { ptr, i64 } %t10, 0
   %t13 = extractvalue { ptr, i64 } %t10, 1
-  %t14 = call i32 @zevic_str_eq(ptr %t12, i64 %t13, ptr @.str.1149, i64 3)
+  %t14 = call i32 @zevic_str_eq(ptr %t12, i64 %t13, ptr @.str.953, i64 3)
   %t11 = icmp ne i32 %t14, 0
   br i1 %t11, label %pat.ok.8, label %pat.alt.7
 pat.ok.8:
@@ -112103,7 +112964,7 @@ pat.alt.7:
   %t15 = load { ptr, i64 }, ptr %s1
   %t17 = extractvalue { ptr, i64 } %t15, 0
   %t18 = extractvalue { ptr, i64 } %t15, 1
-  %t19 = call i32 @zevic_str_eq(ptr %t17, i64 %t18, ptr @.str.1150, i64 3)
+  %t19 = call i32 @zevic_str_eq(ptr %t17, i64 %t18, ptr @.str.954, i64 3)
   %t16 = icmp ne i32 %t19, 0
   br i1 %t16, label %pat.ok.10, label %pat.alt.9
 pat.ok.10:
@@ -112112,7 +112973,7 @@ pat.alt.9:
   %t20 = load { ptr, i64 }, ptr %s1
   %t22 = extractvalue { ptr, i64 } %t20, 0
   %t23 = extractvalue { ptr, i64 } %t20, 1
-  %t24 = call i32 @zevic_str_eq(ptr %t22, i64 %t23, ptr @.str.1151, i64 2)
+  %t24 = call i32 @zevic_str_eq(ptr %t22, i64 %t23, ptr @.str.955, i64 2)
   %t21 = icmp ne i32 %t24, 0
   br i1 %t21, label %pat.ok.12, label %pat.alt.11
 pat.ok.12:
@@ -112121,7 +112982,7 @@ pat.alt.11:
   %t25 = load { ptr, i64 }, ptr %s1
   %t27 = extractvalue { ptr, i64 } %t25, 0
   %t28 = extractvalue { ptr, i64 } %t25, 1
-  %t29 = call i32 @zevic_str_eq(ptr %t27, i64 %t28, ptr @.str.1152, i64 3)
+  %t29 = call i32 @zevic_str_eq(ptr %t27, i64 %t28, ptr @.str.956, i64 3)
   %t26 = icmp ne i32 %t29, 0
   br i1 %t26, label %pat.ok.14, label %pat.alt.13
 pat.ok.14:
@@ -112130,7 +112991,7 @@ pat.alt.13:
   %t30 = load { ptr, i64 }, ptr %s1
   %t32 = extractvalue { ptr, i64 } %t30, 0
   %t33 = extractvalue { ptr, i64 } %t30, 1
-  %t34 = call i32 @zevic_str_eq(ptr %t32, i64 %t33, ptr @.str.1153, i64 3)
+  %t34 = call i32 @zevic_str_eq(ptr %t32, i64 %t33, ptr @.str.957, i64 3)
   %t31 = icmp ne i32 %t34, 0
   br i1 %t31, label %pat.ok.16, label %pat.alt.15
 pat.ok.16:
@@ -112139,7 +113000,7 @@ pat.alt.15:
   %t35 = load { ptr, i64 }, ptr %s1
   %t37 = extractvalue { ptr, i64 } %t35, 0
   %t38 = extractvalue { ptr, i64 } %t35, 1
-  %t39 = call i32 @zevic_str_eq(ptr %t37, i64 %t38, ptr @.str.1154, i64 3)
+  %t39 = call i32 @zevic_str_eq(ptr %t37, i64 %t38, ptr @.str.958, i64 3)
   %t36 = icmp ne i32 %t39, 0
   br i1 %t36, label %pat.ok.18, label %pat.alt.17
 pat.ok.18:
@@ -112148,7 +113009,7 @@ pat.alt.17:
   %t40 = load { ptr, i64 }, ptr %s1
   %t42 = extractvalue { ptr, i64 } %t40, 0
   %t43 = extractvalue { ptr, i64 } %t40, 1
-  %t44 = call i32 @zevic_str_eq(ptr %t42, i64 %t43, ptr @.str.1155, i64 3)
+  %t44 = call i32 @zevic_str_eq(ptr %t42, i64 %t43, ptr @.str.959, i64 3)
   %t41 = icmp ne i32 %t44, 0
   br i1 %t41, label %pat.ok.20, label %pat.alt.19
 pat.ok.20:
@@ -112157,7 +113018,7 @@ pat.alt.19:
   %t45 = load { ptr, i64 }, ptr %s1
   %t47 = extractvalue { ptr, i64 } %t45, 0
   %t48 = extractvalue { ptr, i64 } %t45, 1
-  %t49 = call i32 @zevic_str_eq(ptr %t47, i64 %t48, ptr @.str.1156, i64 3)
+  %t49 = call i32 @zevic_str_eq(ptr %t47, i64 %t48, ptr @.str.960, i64 3)
   %t46 = icmp ne i32 %t49, 0
   br i1 %t46, label %pat.ok.22, label %pat.alt.21
 pat.ok.22:
@@ -112499,7 +113360,7 @@ pat.ok.30:
   store i64 1, ptr %t156
   %t157 = load ptr, ptr %s11
   %t158 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t157, i32 0, i32 12
-  store { ptr, i64 } { ptr @.str.1495, i64 2 }, ptr %t158
+  store { ptr, i64 } { ptr @.str.1501, i64 2 }, ptr %t158
   br label %match.end.16
 arm.next.29:
   %t159 = load i32, ptr %t111
@@ -112550,10 +113411,10 @@ for.end.2:
   %t184 = load { i32, [1 x i64] }, ptr %s15
   ret { i32, [1 x i64] } %t184
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1494, i32 222)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1500, i32 222)
   unreachable
 panic.23:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1494, i32 238)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1500, i32 238)
   unreachable
 }
 
@@ -112712,7 +113573,7 @@ for.end.2:
   %t86 = call ptr @"zevic_Zevic1_Types_TypeTable_intern"(ptr %t84, ptr %t85)
   ret ptr %t86
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1494, i32 269)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1500, i32 269)
   unreachable
 }
 
@@ -112854,13 +113715,13 @@ for.end.2:
   store i32 16, ptr %t73
   %t74 = load { i32 }, ptr %s8
   %t75 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t75, ptr @.str.1496, i64 3)
+  call void @zevic_sb_add(ptr %t75, ptr @.str.1502, i64 3)
   %t76 = load ptr, ptr %s3
   %t77 = call { ptr, i64 } @"zevic_Array<String>_Join"(ptr %t76, { ptr, i64 } { ptr @.str.308, i64 2 })
   %t78 = extractvalue { ptr, i64 } %t77, 0
   %t79 = extractvalue { ptr, i64 } %t77, 1
   call void @zevic_sb_add(ptr %t75, ptr %t78, i64 %t79)
-  call void @zevic_sb_add(ptr %t75, ptr @.str.1058, i64 5)
+  call void @zevic_sb_add(ptr %t75, ptr @.str.1075, i64 5)
   %t80 = load ptr, ptr %s2
   %t81 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t80, i32 0, i32 1
   %t82 = load { ptr, i64 }, ptr %t81
@@ -112890,7 +113751,7 @@ for.end.2:
   %t98 = call ptr @"zevic_Zevic1_Types_TypeTable_intern"(ptr %t96, ptr %t97)
   ret ptr %t98
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1494, i32 279)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1500, i32 279)
   unreachable
 }
 
@@ -112984,7 +113845,7 @@ entry:
   store i32 20, ptr %t49
   %t50 = load { i32 }, ptr %s3
   %t51 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t51, ptr @.str.1396, i64 1)
+  call void @zevic_sb_add(ptr %t51, ptr @.str.1403, i64 1)
   %t52 = load ptr, ptr %s1
   %t53 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t52, i32 0, i32 1
   %t54 = load { ptr, i64 }, ptr %t53
@@ -113096,7 +113957,7 @@ entry:
   store i32 24, ptr %t50
   %t51 = load { i32 }, ptr %s3
   %t52 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t52, ptr @.str.1497, i64 1)
+  call void @zevic_sb_add(ptr %t52, ptr @.str.1503, i64 1)
   %t53 = load { ptr, i64 }, ptr %s1
   %t54 = extractvalue { ptr, i64 } %t53, 0
   %t55 = extractvalue { ptr, i64 } %t53, 1
@@ -113250,7 +114111,7 @@ ok.3:
   %t77 = call ptr @"zevic_Zevic1_Types_TypeTable_intern"(ptr %t75, ptr %t76)
   ret ptr %t77
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1494, i32 304)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1500, i32 304)
   unreachable
 }
 
@@ -113432,7 +114293,7 @@ endif.2:
   %t96 = call ptr @"zevic_Zevic1_Types_TypeTable_intern"(ptr %t94, ptr %t95)
   ret ptr %t96
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1494, i32 313)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1500, i32 313)
   unreachable
 }
 
@@ -113747,7 +114608,7 @@ endif.35:
   br label %for.cond.28
 for.end.30:
   %t140 = load ptr, ptr %s16
-  %t141 = call { ptr, i64 } @"zevic_Array<String>_Join"(ptr %t140, { ptr, i64 } { ptr @.str.1498, i64 3 })
+  %t141 = call { ptr, i64 } @"zevic_Array<String>_Join"(ptr %t140, { ptr, i64 } { ptr @.str.1504, i64 3 })
   store { ptr, i64 } %t141, ptr %s24
   %t142 = load ptr, ptr %s0
   %t143 = getelementptr inbounds { ptr, i32, { i32, [1 x i64] }, i64, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr, ptr }, ptr %t142, i32 0, i32 0
@@ -113970,25 +114831,25 @@ for.end.43:
   %t280 = call ptr @"zevic_Zevic1_Types_TypeTable_intern"(ptr %t278, ptr %t279)
   ret ptr %t280
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1494, i32 328)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1500, i32 328)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1494, i32 330)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1500, i32 330)
   unreachable
 panic.19:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1494, i32 341)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1500, i32 341)
   unreachable
 panic.24:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1494, i32 344)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1500, i32 344)
   unreachable
 panic.32:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1494, i32 350)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1500, i32 350)
   unreachable
 panic.45:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1494, i32 363)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1500, i32 363)
   unreachable
 panic.47:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1494, i32 370)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1500, i32 370)
   unreachable
 }
 
@@ -114099,10 +114960,10 @@ for.end.2:
   %t57 = insertvalue { i64, i64 } %t56, i64 %t55, 1
   ret { i64, i64 } %t57
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1494, i32 381)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1500, i32 381)
   unreachable
 panic.11:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1494, i32 388)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1500, i32 388)
   unreachable
 }
 
@@ -114172,7 +115033,7 @@ pat.or.5:
   store i64 1, ptr %t16
   %t17 = load ptr, ptr %s1
   %t18 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t17, i32 0, i32 12
-  store { ptr, i64 } { ptr @.str.1495, i64 2 }, ptr %t18
+  store { ptr, i64 } { ptr @.str.1501, i64 2 }, ptr %t18
   br label %match.end.3
 arm.next.4:
   %t21 = getelementptr inbounds { i32 }, ptr %t6, i32 0, i32 0
@@ -114197,7 +115058,7 @@ pat.or.10:
   store i64 2, ptr %t28
   %t29 = load ptr, ptr %s1
   %t30 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t29, i32 0, i32 12
-  store { ptr, i64 } { ptr @.str.1499, i64 3 }, ptr %t30
+  store { ptr, i64 } { ptr @.str.1505, i64 3 }, ptr %t30
   br label %match.end.3
 arm.next.9:
   %t33 = getelementptr inbounds { i32 }, ptr %t6, i32 0, i32 0
@@ -114222,7 +115083,7 @@ pat.or.15:
   store i64 4, ptr %t40
   %t41 = load ptr, ptr %s1
   %t42 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t41, i32 0, i32 12
-  store { ptr, i64 } { ptr @.str.1500, i64 3 }, ptr %t42
+  store { ptr, i64 } { ptr @.str.1506, i64 3 }, ptr %t42
   br label %match.end.3
 arm.next.14:
   %t45 = getelementptr inbounds { i32 }, ptr %t6, i32 0, i32 0
@@ -114247,7 +115108,7 @@ pat.or.20:
   store i64 8, ptr %t52
   %t53 = load ptr, ptr %s1
   %t54 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t53, i32 0, i32 12
-  store { ptr, i64 } { ptr @.str.1501, i64 3 }, ptr %t54
+  store { ptr, i64 } { ptr @.str.1507, i64 3 }, ptr %t54
   br label %match.end.3
 arm.next.19:
   %t57 = getelementptr inbounds { i32 }, ptr %t6, i32 0, i32 0
@@ -114295,7 +115156,7 @@ pat.tag.29:
   store i64 1, ptr %t79
   %t80 = load ptr, ptr %s1
   %t81 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t80, i32 0, i32 12
-  store { ptr, i64 } { ptr @.str.1502, i64 2 }, ptr %t81
+  store { ptr, i64 } { ptr @.str.1508, i64 2 }, ptr %t81
   br label %match.end.3
 arm.next.28:
   %t84 = getelementptr inbounds { i32 }, ptr %t6, i32 0, i32 0
@@ -114311,7 +115172,7 @@ pat.tag.31:
   store i64 4, ptr %t88
   %t89 = load ptr, ptr %s1
   %t90 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t89, i32 0, i32 12
-  store { ptr, i64 } { ptr @.str.1500, i64 3 }, ptr %t90
+  store { ptr, i64 } { ptr @.str.1506, i64 3 }, ptr %t90
   br label %match.end.3
 arm.next.30:
   %t93 = getelementptr inbounds { i32 }, ptr %t6, i32 0, i32 0
@@ -114327,7 +115188,7 @@ pat.tag.33:
   store i64 8, ptr %t97
   %t98 = load ptr, ptr %s1
   %t99 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t98, i32 0, i32 12
-  store { ptr, i64 } { ptr @.str.1503, i64 12 }, ptr %t99
+  store { ptr, i64 } { ptr @.str.1509, i64 12 }, ptr %t99
   br label %match.end.3
 arm.next.32:
   %t102 = getelementptr inbounds { i32 }, ptr %t6, i32 0, i32 0
@@ -114352,7 +115213,7 @@ pat.or.35:
   store i64 1, ptr %t109
   %t110 = load ptr, ptr %s1
   %t111 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t110, i32 0, i32 12
-  store { ptr, i64 } { ptr @.str.1504, i64 2 }, ptr %t111
+  store { ptr, i64 } { ptr @.str.1510, i64 2 }, ptr %t111
   br label %match.end.3
 arm.next.34:
   %t114 = getelementptr inbounds { i32 }, ptr %t6, i32 0, i32 0
@@ -114409,7 +115270,7 @@ pat.or.47:
   store i64 8, ptr %t136
   %t137 = load ptr, ptr %s1
   %t138 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t137, i32 0, i32 12
-  store { ptr, i64 } { ptr @.str.1505, i64 12 }, ptr %t138
+  store { ptr, i64 } { ptr @.str.1511, i64 12 }, ptr %t138
   br label %match.end.3
 arm.next.46:
   %t141 = getelementptr inbounds { i32 }, ptr %t6, i32 0, i32 0
@@ -114481,7 +115342,7 @@ then.60:
   %t181 = load { i32, [1 x i64] }, ptr %s6
   store { i32, [1 x i64] } %t181, ptr %t176
   %t182 = load ptr, ptr %s2
-  call void @"zevic_Array<String>_Push"(ptr %t182, { ptr, i64 } { ptr @.str.1504, i64 2 })
+  call void @"zevic_Array<String>_Push"(ptr %t182, { ptr, i64 } { ptr @.str.1510, i64 2 })
   br label %for.cond.53
 endif.62:
   %t183 = load ptr, ptr %s0
@@ -114497,7 +115358,7 @@ for.end.55:
   %t189 = load ptr, ptr %s1
   %t190 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t189, i32 0, i32 12
   %t191 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t191, ptr @.str.1506, i64 2)
+  call void @zevic_sb_add(ptr %t191, ptr @.str.1512, i64 2)
   %t192 = load ptr, ptr %s2
   %t193 = call { ptr, i64 } @"zevic_Array<String>_Join"(ptr %t192, { ptr, i64 } { ptr @.str.308, i64 2 })
   %t194 = extractvalue { ptr, i64 } %t193, 0
@@ -114514,7 +115375,7 @@ then.63:
 else.64:
   br label %endif.65
 endif.65:
-  %t201 = phi { ptr, i64 } [ { ptr @.str.1093, i64 2 }, %then.63 ], [ { ptr @.str.1493, i64 1 }, %else.64 ]
+  %t201 = phi { ptr, i64 } [ { ptr @.str.1110, i64 2 }, %then.63 ], [ { ptr @.str.983, i64 1 }, %else.64 ]
   %t202 = extractvalue { ptr, i64 } %t201, 0
   %t203 = extractvalue { ptr, i64 } %t201, 1
   call void @zevic_sb_add(ptr %t191, ptr %t202, i64 %t203)
@@ -114650,7 +115511,7 @@ for.end.70:
   %t289 = load ptr, ptr %s1
   %t290 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t289, i32 0, i32 12
   %t291 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t291, ptr @.str.1506, i64 2)
+  call void @zevic_sb_add(ptr %t291, ptr @.str.1512, i64 2)
   %t292 = load ptr, ptr %s11
   %t293 = call { ptr, i64 } @"zevic_Array<String>_Join"(ptr %t292, { ptr, i64 } { ptr @.str.308, i64 2 })
   %t294 = extractvalue { ptr, i64 } %t293, 0
@@ -114667,7 +115528,7 @@ then.78:
 else.79:
   br label %endif.80
 endif.80:
-  %t301 = phi { ptr, i64 } [ { ptr @.str.1093, i64 2 }, %then.78 ], [ { ptr @.str.1493, i64 1 }, %else.79 ]
+  %t301 = phi { ptr, i64 } [ { ptr @.str.1110, i64 2 }, %then.78 ], [ { ptr @.str.983, i64 1 }, %else.79 ]
   %t302 = extractvalue { ptr, i64 } %t301, 0
   %t303 = extractvalue { ptr, i64 } %t301, 1
   call void @zevic_sb_add(ptr %t291, ptr %t302, i64 %t303)
@@ -114830,7 +115691,7 @@ ok.108:
 then.110:
   %t394 = load ptr, ptr %s1
   %t395 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t394, i32 0, i32 12
-  store { ptr, i64 } { ptr @.str.1507, i64 7 }, ptr %t395
+  store { ptr, i64 } { ptr @.str.1513, i64 7 }, ptr %t395
   %t396 = load ptr, ptr %s1
   %t397 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t396, i32 0, i32 10
   store i64 4, ptr %t397
@@ -114842,7 +115703,7 @@ else.111:
   %t400 = load ptr, ptr %s1
   %t401 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t400, i32 0, i32 12
   %t402 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t402, ptr @.str.1508, i64 8)
+  call void @zevic_sb_add(ptr %t402, ptr @.str.1514, i64 8)
   %t403 = load ptr, ptr %s1
   %t404 = getelementptr inbounds { { i32 }, { ptr, i64 }, ptr, { i32, [1 x i64] }, { ptr, i64 }, i32, i1, ptr, ptr, i1, i64, i64, { ptr, i64 }, i32, ptr, i1 }, ptr %t403, i32 0, i32 13
   %t405 = load i32, ptr %t404
@@ -114852,7 +115713,7 @@ else.111:
   %t408 = extractvalue { ptr, i64 } %t407, 0
   %t409 = extractvalue { ptr, i64 } %t407, 1
   call void @zevic_sb_add(ptr %t402, ptr %t408, i64 %t409)
-  call void @zevic_sb_add(ptr %t402, ptr @.str.1509, i64 9)
+  call void @zevic_sb_add(ptr %t402, ptr @.str.1515, i64 9)
   call void @zevic_sb_finish(ptr %s27, ptr %t402)
   %t410 = load { ptr, i64 }, ptr %s27
   store { ptr, i64 } %t410, ptr %t401
@@ -114895,28 +115756,28 @@ arm.next.117:
 match.end.3:
   ret void
 panic.57:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1494, i32 416)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1500, i32 416)
   unreachable
 panic.72:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1494, i32 433)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1500, i32 433)
   unreachable
 panic.90:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1494, i32 449)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1500, i32 449)
   unreachable
 panic.105:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1494, i32 464)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1500, i32 464)
   unreachable
 panic.107:
-  call void @zevic_panic(ptr @.str.94, i64 16, ptr @.str.1494, i32 464)
+  call void @zevic_panic(ptr @.str.94, i64 16, ptr @.str.1500, i32 464)
   unreachable
 panic.109:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1494, i32 464)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1500, i32 464)
   unreachable
 panic.114:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1494, i32 471)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1500, i32 471)
   unreachable
 panic.116:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1494, i32 471)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1500, i32 471)
   unreachable
 }
 
@@ -114999,14 +115860,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s2, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s2
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -115020,7 +115881,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s4
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 612)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 612)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -115099,21 +115960,21 @@ or.end.3:
   br i1 %t11, label %then.4, label %endif.6
 then.4:
   %t12 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t12, ptr @.str.1513, i64 6)
+  call void @zevic_sb_add(ptr %t12, ptr @.str.1519, i64 6)
   %t13 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s3, i64 %t13)
   %t14 = load { ptr, i64 }, ptr %s3
   %t15 = extractvalue { ptr, i64 } %t14, 0
   %t16 = extractvalue { ptr, i64 } %t14, 1
   call void @zevic_sb_add(ptr %t12, ptr %t15, i64 %t16)
-  call void @zevic_sb_add(ptr %t12, ptr @.str.1488, i64 2)
+  call void @zevic_sb_add(ptr %t12, ptr @.str.1495, i64 2)
   %t17 = load i64, ptr %s2
   call void @zevic_i64_to_str(ptr %s4, i64 %t17)
   %t18 = load { ptr, i64 }, ptr %s4
   %t19 = extractvalue { ptr, i64 } %t18, 0
   %t20 = extractvalue { ptr, i64 } %t18, 1
   call void @zevic_sb_add(ptr %t12, ptr %t19, i64 %t20)
-  call void @zevic_sb_add(ptr %t12, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t12, ptr @.str.1517, i64 25)
   %t21 = load ptr, ptr %s0
   %t22 = getelementptr inbounds { ptr, i64, i64 }, ptr %t21, i32 0, i32 1
   %t23 = load i64, ptr %t22
@@ -115127,7 +115988,7 @@ then.4:
   %t27 = load { ptr, i64 }, ptr %s6
   %t28 = extractvalue { ptr, i64 } %t27, 0
   %t29 = extractvalue { ptr, i64 } %t27, 1
-  call void @zevic_panic(ptr %t28, i64 %t29, ptr @.str.1512, i32 810)
+  call void @zevic_panic(ptr %t28, i64 %t29, ptr @.str.1518, i32 810)
   unreachable
 endif.6:
   %t30 = call ptr @zevic_alloc(i64 24)
@@ -115156,7 +116017,7 @@ ok.7:
   %t46 = load ptr, ptr %s7
   ret ptr %t46
 panic.8:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 813)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 813)
   unreachable
 }
 
@@ -115196,10 +116057,10 @@ ok.2:
   store i64 %t19, ptr %t16
   ret void
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 659)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 659)
   unreachable
 panic.3:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 661)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 661)
   unreachable
 }
 
@@ -115270,7 +116131,7 @@ for.end.2:
   %t28 = load { ptr, i64 }, ptr %s2
   ret { ptr, i64 } %t28
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1514, i32 63)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1520, i32 63)
   unreachable
 }
 
@@ -115330,14 +116191,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s2, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s2
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -115351,7 +116212,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s4
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 612)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 612)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -115408,14 +116269,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s2, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s2
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -115429,7 +116290,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s4
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 612)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 612)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -115498,7 +116359,7 @@ while.end.2:
   %t29 = load ptr, ptr %s1
   ret ptr %t29
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1095)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1095)
   unreachable
 }
 
@@ -115538,10 +116399,10 @@ ok.2:
   store i64 %t19, ptr %t16
   ret void
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 659)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 659)
   unreachable
 panic.3:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 661)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 661)
   unreachable
 }
 
@@ -115671,7 +116532,7 @@ then.5:
   store i32 5, ptr %t22
   %t23 = load { i32 }, ptr %s7
   %t24 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t24, ptr @.str.1516, i64 14)
+  call void @zevic_sb_add(ptr %t24, ptr @.str.1522, i64 14)
   %t25 = load { ptr, i64 }, ptr %s0
   %t26 = extractvalue { ptr, i64 } %t25, 0
   %t27 = extractvalue { ptr, i64 } %t25, 1
@@ -115703,7 +116564,7 @@ endif.7:
   %t40 = load { i32, [5 x i64] }, ptr %s12
   ret { i32, [5 x i64] } %t40
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1515, i32 38)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1521, i32 38)
   unreachable
 }
 
@@ -115798,7 +116659,7 @@ entry:
   br i1 %t4, label %then.0, label %endif.2
 then.0:
   %t5 = load { ptr, i64 }, ptr %s0
-  %t6 = call ptr @"zevic_Zevic_Fs_failure"({ ptr, i64 } { ptr @.str.1517, i64 20 }, { ptr, i64 } %t5)
+  %t6 = call ptr @"zevic_Zevic_Fs_failure"({ ptr, i64 } { ptr @.str.1523, i64 20 }, { ptr, i64 } %t5)
   %t7 = getelementptr inbounds { i32, [1 x i64] }, ptr %s1, i32 0, i32 0
   store i32 1, ptr %t7
   %t8 = insertvalue { ptr } undef, ptr %t6, 0
@@ -115898,7 +116759,7 @@ then.5:
   store i32 5, ptr %t21
   %t22 = load { i32 }, ptr %s5
   %t23 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t23, ptr @.str.1516, i64 14)
+  call void @zevic_sb_add(ptr %t23, ptr @.str.1522, i64 14)
   %t24 = load { ptr, i64 }, ptr %s0
   %t25 = extractvalue { ptr, i64 } %t24, 0
   %t26 = extractvalue { ptr, i64 } %t24, 1
@@ -115924,7 +116785,7 @@ endif.7:
   %t36 = load { i32, [1 x i64] }, ptr %s8
   ret { i32, [1 x i64] } %t36
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1515, i32 53)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1521, i32 53)
   unreachable
 }
 
@@ -115990,7 +116851,7 @@ while.end.2:
   %t30 = load { ptr, i64 }, ptr %s2
   ret { ptr, i64 } %t30
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 744)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 744)
   unreachable
 }
 
@@ -116013,7 +116874,7 @@ entry:
   br i1 %t5, label %then.0, label %endif.2
 then.0:
   %t6 = load { ptr, i64 }, ptr %s0
-  %t7 = call ptr @"zevic_Zevic_Fs_failure"({ ptr, i64 } { ptr @.str.1518, i64 4 }, { ptr, i64 } %t6)
+  %t7 = call ptr @"zevic_Zevic_Fs_failure"({ ptr, i64 } { ptr @.str.1524, i64 4 }, { ptr, i64 } %t6)
   %t8 = getelementptr inbounds { i32, [2 x i64] }, ptr %s3, i32 0, i32 0
   store i32 1, ptr %t8
   %t9 = insertvalue { ptr } undef, ptr %t7, 0
@@ -116058,10 +116919,10 @@ ok.2:
   %t5 = sdiv i64 %t0, 1000000
   ret i64 %t5
 panic.1:
-  call void @zevic_panic(ptr @.str.94, i64 16, ptr @.str.1519, i32 47)
+  call void @zevic_panic(ptr @.str.94, i64 16, ptr @.str.1525, i32 47)
   unreachable
 panic.3:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1519, i32 47)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1525, i32 47)
   unreachable
 }
 
@@ -116079,7 +116940,7 @@ entry:
   br i1 %t4, label %then.0, label %endif.2
 then.0:
   %t5 = load { ptr, i64 }, ptr %s0
-  %t6 = call ptr @"zevic_Zevic_Fs_failure"({ ptr, i64 } { ptr @.str.1520, i64 6 }, { ptr, i64 } %t5)
+  %t6 = call ptr @"zevic_Zevic_Fs_failure"({ ptr, i64 } { ptr @.str.1526, i64 6 }, { ptr, i64 } %t5)
   %t7 = getelementptr inbounds { i32, [1 x i64] }, ptr %s1, i32 0, i32 0
   store i32 1, ptr %t7
   %t8 = insertvalue { ptr } undef, ptr %t6, 0
@@ -116116,7 +116977,7 @@ entry:
   br i1 %t7, label %then.0, label %endif.2
 then.0:
   %t8 = load { ptr, i64 }, ptr %s0
-  %t9 = call ptr @"zevic_Zevic_Fs_failure"({ ptr, i64 } { ptr @.str.1521, i64 6 }, { ptr, i64 } %t8)
+  %t9 = call ptr @"zevic_Zevic_Fs_failure"({ ptr, i64 } { ptr @.str.1527, i64 6 }, { ptr, i64 } %t8)
   %t10 = getelementptr inbounds { i32, [1 x i64] }, ptr %s2, i32 0, i32 0
   store i32 1, ptr %t10
   %t11 = insertvalue { ptr } undef, ptr %t9, 0
@@ -116168,14 +117029,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s2, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s2
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -116189,7 +117050,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s4
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 612)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 612)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -116249,7 +117110,7 @@ arm.next.1:
   %t10 = icmp eq i32 %t9, 1
   br i1 %t10, label %pat.tag.4, label %arm.next.3
 pat.tag.4:
-  call void @zevic_panic(ptr @.str.1522, i64 29, ptr @.str.1512, i32 455)
+  call void @zevic_panic(ptr @.str.1528, i64 29, ptr @.str.1518, i32 455)
   unreachable
 arm.next.3:
   unreachable
@@ -116372,22 +117233,22 @@ ok.16:
   store i64 %t68, ptr %t65
   ret void
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1050)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1050)
   unreachable
 panic.6:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1051)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1051)
   unreachable
 panic.8:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1051)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1051)
   unreachable
 panic.13:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1052)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1052)
   unreachable
 panic.15:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1052)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1052)
   unreachable
 panic.17:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1059)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1059)
   unreachable
 }
 
@@ -116440,10 +117301,10 @@ ok.2:
   store i64 %t19, ptr %t16
   ret void
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 659)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 659)
   unreachable
 panic.3:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 661)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 661)
   unreachable
 }
 
@@ -116483,10 +117344,10 @@ ok.2:
   store i64 %t19, ptr %t16
   ret void
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 659)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 659)
   unreachable
 panic.3:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 661)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 661)
   unreachable
 }
 
@@ -116524,14 +117385,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s2, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s2
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -116545,7 +117406,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s4
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 612)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 612)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -116619,10 +117480,10 @@ ok.2:
   store i64 %t19, ptr %t16
   ret void
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 659)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 659)
   unreachable
 panic.3:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 661)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 661)
   unreachable
 }
 
@@ -116660,14 +117521,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s2, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s2
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -116681,7 +117542,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s4
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 612)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 612)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -116741,7 +117602,7 @@ arm.next.1:
   %t10 = icmp eq i32 %t9, 1
   br i1 %t10, label %pat.tag.4, label %arm.next.3
 pat.tag.4:
-  call void @zevic_panic(ptr @.str.1522, i64 29, ptr @.str.1512, i32 455)
+  call void @zevic_panic(ptr @.str.1528, i64 29, ptr @.str.1518, i32 455)
   unreachable
 arm.next.3:
   unreachable
@@ -116855,10 +117716,10 @@ ok.2:
   store i64 %t19, ptr %t16
   ret void
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 659)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 659)
   unreachable
 panic.3:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 661)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 661)
   unreachable
 }
 
@@ -116889,7 +117750,7 @@ ok.0:
   %t7 = call { i32, [1 x i64] } @"zevic_Array<Zevic1_Ctx_Loop>_Get"(ptr %t0, i64 %t5)
   ret { i32, [1 x i64] } %t7
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 634)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 634)
   unreachable
 }
 
@@ -116927,14 +117788,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s2, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s2
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -116948,7 +117809,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s4
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 612)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 612)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -117008,7 +117869,7 @@ arm.next.1:
   %t10 = icmp eq i32 %t9, 1
   br i1 %t10, label %pat.tag.4, label %arm.next.3
 pat.tag.4:
-  call void @zevic_panic(ptr @.str.1522, i64 29, ptr @.str.1512, i32 455)
+  call void @zevic_panic(ptr @.str.1528, i64 29, ptr @.str.1518, i32 455)
   unreachable
 arm.next.3:
   unreachable
@@ -117053,10 +117914,10 @@ ok.2:
   store i64 %t19, ptr %t16
   ret void
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 659)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 659)
   unreachable
 panic.3:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 661)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 661)
   unreachable
 }
 
@@ -117102,7 +117963,7 @@ ok.3:
   %t23 = load { i32, [1 x i64] }, ptr %s2
   ret { i32, [1 x i64] } %t23
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 668)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 668)
   unreachable
 }
 
@@ -117166,14 +118027,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s2, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s2
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -117187,7 +118048,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s4
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 612)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 612)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -117233,14 +118094,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s2, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s2
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -117254,7 +118115,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s4
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 612)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 612)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -117344,14 +118205,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s3, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s3
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -117365,7 +118226,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s5
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 619)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 619)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -117587,22 +118448,22 @@ ok.16:
   store i64 %t68, ptr %t65
   ret void
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1050)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1050)
   unreachable
 panic.6:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1051)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1051)
   unreachable
 panic.8:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1051)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1051)
   unreachable
 panic.13:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1052)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1052)
   unreachable
 panic.15:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1052)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1052)
   unreachable
 panic.17:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1059)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1059)
   unreachable
 }
 
@@ -117642,10 +118503,10 @@ ok.2:
   store i64 %t19, ptr %t16
   ret void
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 659)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 659)
   unreachable
 panic.3:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 661)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 661)
   unreachable
 }
 
@@ -117675,14 +118536,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s3, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s3
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -117696,7 +118557,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s5
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 619)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 619)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -117733,14 +118594,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s2, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s2
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -117754,7 +118615,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s4
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 612)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 612)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -117819,7 +118680,7 @@ ok.0:
   %t16 = icmp ne i32 %t15, 0
   ret i1 %t16
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1514, i32 39)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1520, i32 39)
   unreachable
 }
 
@@ -117883,14 +118744,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s2, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s2
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -117904,7 +118765,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s4
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 612)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 612)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -117952,10 +118813,10 @@ ok.2:
   store i64 %t19, ptr %t16
   ret void
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 659)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 659)
   unreachable
 panic.3:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 661)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 661)
   unreachable
 }
 
@@ -117993,14 +118854,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s2, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s2
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -118014,7 +118875,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s4
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 612)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 612)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -118088,10 +118949,10 @@ ok.2:
   store i64 %t19, ptr %t16
   ret void
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 659)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 659)
   unreachable
 panic.3:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 661)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 661)
   unreachable
 }
 
@@ -118129,14 +118990,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s2, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s2
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -118150,7 +119011,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s4
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 612)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 612)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -118219,7 +119080,7 @@ while.end.2:
   %t29 = load ptr, ptr %s1
   ret ptr %t29
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1095)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1095)
   unreachable
 }
 
@@ -118257,14 +119118,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s2, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s2
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -118278,7 +119139,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s4
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 612)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 612)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -118347,7 +119208,7 @@ while.end.2:
   %t29 = load ptr, ptr %s1
   ret ptr %t29
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1107)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1107)
   unreachable
 }
 
@@ -118385,14 +119246,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s2, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s2
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -118406,7 +119267,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s4
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 612)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 612)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -118532,22 +119393,22 @@ ok.16:
   store i64 %t68, ptr %t65
   ret void
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1050)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1050)
   unreachable
 panic.6:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1051)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1051)
   unreachable
 panic.8:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1051)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1051)
   unreachable
 panic.13:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1052)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1052)
   unreachable
 panic.15:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1052)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1052)
   unreachable
 panic.17:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1059)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1059)
   unreachable
 }
 
@@ -118630,10 +119491,10 @@ ok.2:
   store i64 %t19, ptr %t16
   ret void
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 659)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 659)
   unreachable
 panic.3:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 661)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 661)
   unreachable
 }
 
@@ -118673,10 +119534,10 @@ ok.2:
   store i64 %t19, ptr %t16
   ret void
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 659)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 659)
   unreachable
 panic.3:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 661)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 661)
   unreachable
 }
 
@@ -118714,14 +119575,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s2, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s2
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -118735,7 +119596,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s4
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 612)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 612)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -118783,10 +119644,10 @@ ok.2:
   store i64 %t19, ptr %t16
   ret void
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 659)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 659)
   unreachable
 panic.3:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 661)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 661)
   unreachable
 }
 
@@ -118896,13 +119757,13 @@ loop.end.4:
   %t58 = load { ptr, i64 }, ptr %s3
   ret { ptr, i64 } %t58
 panic.9:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1514, i32 99)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1520, i32 99)
   unreachable
 panic.11:
-  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1514, i32 102)
+  call void @zevic_panic(ptr @.str.93, i64 56, ptr @.str.1520, i32 102)
   unreachable
 panic.13:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1514, i32 103)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1520, i32 103)
   unreachable
 }
 
@@ -118985,10 +119846,10 @@ ok.2:
   store i64 %t19, ptr %t16
   ret void
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 659)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 659)
   unreachable
 panic.3:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 661)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 661)
   unreachable
 }
 
@@ -119106,22 +119967,22 @@ ok.16:
   store i64 %t68, ptr %t65
   ret void
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1050)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1050)
   unreachable
 panic.6:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1051)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1051)
   unreachable
 panic.8:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1051)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1051)
   unreachable
 panic.13:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1052)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1052)
   unreachable
 panic.15:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1052)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1052)
   unreachable
 panic.17:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1059)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1059)
   unreachable
 }
 
@@ -119184,7 +120045,7 @@ then.4:
   %t15 = extractvalue { ptr, i64 } %t14, 0
   %t16 = extractvalue { ptr, i64 } %t14, 1
   call void @zevic_sb_add(ptr %t11, ptr %t15, i64 %t16)
-  call void @zevic_sb_add(ptr %t11, ptr @.str.1523, i64 30)
+  call void @zevic_sb_add(ptr %t11, ptr @.str.1529, i64 30)
   call void @zevic_sb_finish(ptr %s3, ptr %t11)
   %t17 = load { ptr, i64 }, ptr %s3
   call void @"zevic_Error_Init"(ptr %t8, { i32 } %t10, { ptr, i64 } %t17)
@@ -119242,10 +120103,10 @@ ok.2:
   store i64 %t19, ptr %t16
   ret void
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 659)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 659)
   unreachable
 panic.3:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 661)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 661)
   unreachable
 }
 
@@ -119283,14 +120144,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s2, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s2
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -119304,7 +120165,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s4
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 612)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 612)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -119361,14 +120222,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s2, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s2
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -119382,7 +120243,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s4
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 612)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 612)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -119430,10 +120291,10 @@ ok.2:
   store i64 %t19, ptr %t16
   ret void
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 659)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 659)
   unreachable
 panic.3:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 661)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 661)
   unreachable
 }
 
@@ -119479,7 +120340,7 @@ ok.3:
   %t23 = load { i32, [1 x i64] }, ptr %s2
   ret { i32, [1 x i64] } %t23
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 668)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 668)
   unreachable
 }
 
@@ -119497,7 +120358,7 @@ entry:
   br i1 %t4, label %then.0, label %endif.2
 then.0:
   %t5 = load { ptr, i64 }, ptr %s0
-  %t6 = call ptr @"zevic_Zevic_Convert_badNumber"({ ptr, i64 } %t5, { ptr, i64 } { ptr @.str.1524, i64 34 })
+  %t6 = call ptr @"zevic_Zevic_Convert_badNumber"({ ptr, i64 } %t5, { ptr, i64 } { ptr @.str.1530, i64 34 })
   %t7 = getelementptr inbounds { i32, [1 x i64] }, ptr %s1, i32 0, i32 0
   store i32 1, ptr %t7
   %t8 = insertvalue { ptr } undef, ptr %t6, 0
@@ -119592,10 +120453,10 @@ ok.2:
   store i64 %t19, ptr %t16
   ret void
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 659)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 659)
   unreachable
 panic.3:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 661)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 661)
   unreachable
 }
 
@@ -119633,14 +120494,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s2, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s2
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -119654,7 +120515,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s4
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 612)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 612)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -119698,7 +120559,7 @@ entry:
   br i1 %t7, label %then.0, label %endif.2
 then.0:
   %t8 = load { ptr, i64 }, ptr %s0
-  %t9 = call ptr @"zevic_Zevic_Fs_failure"({ ptr, i64 } { ptr @.str.1525, i64 5 }, { ptr, i64 } %t8)
+  %t9 = call ptr @"zevic_Zevic_Fs_failure"({ ptr, i64 } { ptr @.str.1531, i64 5 }, { ptr, i64 } %t8)
   %t10 = getelementptr inbounds { i32, [1 x i64] }, ptr %s2, i32 0, i32 0
   store i32 1, ptr %t10
   %t11 = insertvalue { ptr } undef, ptr %t9, 0
@@ -119784,7 +120645,7 @@ ok.3:
   %t23 = load { i32, [1 x i64] }, ptr %s2
   ret { i32, [1 x i64] } %t23
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 668)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 668)
   unreachable
 }
 
@@ -119833,14 +120694,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s2, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s2
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -119854,7 +120715,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s4
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 612)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 612)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -119900,14 +120761,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s2, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s2
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -119921,7 +120782,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s4
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 612)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 612)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -120047,22 +120908,22 @@ ok.16:
   store i64 %t68, ptr %t65
   ret void
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1050)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1050)
   unreachable
 panic.6:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1051)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1051)
   unreachable
 panic.8:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1051)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1051)
   unreachable
 panic.13:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1052)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1052)
   unreachable
 panic.15:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1052)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1052)
   unreachable
 panic.17:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1059)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1059)
   unreachable
 }
 
@@ -120102,10 +120963,10 @@ ok.2:
   store i64 %t19, ptr %t16
   ret void
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 659)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 659)
   unreachable
 panic.3:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 661)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 661)
   unreachable
 }
 
@@ -120145,10 +121006,10 @@ ok.2:
   store i64 %t19, ptr %t16
   ret void
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 659)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 659)
   unreachable
 panic.3:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 661)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 661)
   unreachable
 }
 
@@ -120188,10 +121049,10 @@ ok.2:
   store i64 %t19, ptr %t16
   ret void
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 659)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 659)
   unreachable
 panic.3:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 661)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 661)
   unreachable
 }
 
@@ -120276,7 +121137,7 @@ ok.3:
   %t23 = load { i32, [1 x i64] }, ptr %s2
   ret { i32, [1 x i64] } %t23
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 668)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 668)
   unreachable
 }
 
@@ -120316,10 +121177,10 @@ ok.2:
   store i64 %t19, ptr %t16
   ret void
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 659)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 659)
   unreachable
 panic.3:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 661)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 661)
   unreachable
 }
 
@@ -120347,14 +121208,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s2, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s2
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -120368,7 +121229,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s4
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 612)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 612)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -120414,14 +121275,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s2, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s2
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -120435,7 +121296,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s4
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 612)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 612)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -120483,10 +121344,10 @@ ok.2:
   store i64 %t19, ptr %t16
   ret void
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 659)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 659)
   unreachable
 panic.3:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 661)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 661)
   unreachable
 }
 
@@ -120647,22 +121508,22 @@ ok.16:
   store i64 %t68, ptr %t65
   ret void
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1050)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1050)
   unreachable
 panic.6:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1051)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1051)
   unreachable
 panic.8:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1051)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1051)
   unreachable
 panic.13:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1052)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1052)
   unreachable
 panic.15:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1052)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1052)
   unreachable
 panic.17:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1059)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1059)
   unreachable
 }
 
@@ -120700,14 +121561,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s2, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s2
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -120721,7 +121582,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s4
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 612)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 612)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -121019,43 +121880,43 @@ then.55:
 endif.57:
   ret void
 panic.10:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 768)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 768)
   unreachable
 panic.15:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 770)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 770)
   unreachable
 panic.17:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 770)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 770)
   unreachable
 panic.30:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 778)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 778)
   unreachable
 panic.32:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 781)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 781)
   unreachable
 panic.34:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 783)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 783)
   unreachable
 panic.39:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 787)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 787)
   unreachable
 panic.41:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 788)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 788)
   unreachable
 panic.46:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 792)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 792)
   unreachable
 panic.48:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 793)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 793)
   unreachable
 panic.50:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 795)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 795)
   unreachable
 panic.52:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 795)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 795)
   unreachable
 panic.54:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 801)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 801)
   unreachable
 }
 
@@ -121109,10 +121970,10 @@ ok.2:
   store i64 %t29, ptr %t25
   ret void
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 653)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 653)
   unreachable
 panic.3:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 655)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 655)
   unreachable
 }
 
@@ -121198,10 +122059,10 @@ while.end.10:
   store i64 %t45, ptr %t44
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 641)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 641)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 643)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 643)
   unreachable
 }
 
@@ -121287,10 +122148,10 @@ while.end.10:
   store i64 %t45, ptr %t44
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 641)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 641)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 643)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 643)
   unreachable
 }
 
@@ -121360,17 +122221,17 @@ endif.2:
   %t13 = call ptr @zevic_alloc(i64 40)
   %t14 = load { i32 }, ptr %s6
   %t15 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t15, ptr @.str.1526, i64 7)
+  call void @zevic_sb_add(ptr %t15, ptr @.str.1532, i64 7)
   %t16 = load { ptr, i64 }, ptr %s0
   %t17 = extractvalue { ptr, i64 } %t16, 0
   %t18 = extractvalue { ptr, i64 } %t16, 1
   call void @zevic_sb_add(ptr %t15, ptr %t17, i64 %t18)
-  call void @zevic_sb_add(ptr %t15, ptr @.str.1527, i64 2)
+  call void @zevic_sb_add(ptr %t15, ptr @.str.1533, i64 2)
   %t19 = load { ptr, i64 }, ptr %s1
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
   call void @zevic_sb_add(ptr %t15, ptr %t20, i64 %t21)
-  call void @zevic_sb_add(ptr %t15, ptr @.str.1528, i64 3)
+  call void @zevic_sb_add(ptr %t15, ptr @.str.1534, i64 3)
   call void @zevic_fs_errmsg(ptr %s7)
   %t22 = load { ptr, i64 }, ptr %s7
   %t23 = extractvalue { ptr, i64 } %t22, 0
@@ -121473,10 +122334,10 @@ ok.16:
 loop.end.6:
   unreachable
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 959)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 959)
   unreachable
 panic.17:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 972)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 972)
   unreachable
 }
 
@@ -121673,16 +122534,16 @@ ok.21:
 while.end.20:
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 998)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 998)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1002)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1002)
   unreachable
 panic.17:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1008)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1008)
   unreachable
 panic.22:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1017)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1017)
   unreachable
 }
 
@@ -121745,10 +122606,10 @@ while.end.4:
   call void @"zevic_Array<I64>_SetIndex"(ptr %t28, i64 %t29, i64 %t30)
   ret void
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 978)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 978)
   unreachable
 panic.6:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 981)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 981)
   unreachable
 }
 
@@ -121834,10 +122695,10 @@ while.end.10:
   store i64 %t45, ptr %t44
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 641)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 641)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 643)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 643)
   unreachable
 }
 
@@ -121923,10 +122784,10 @@ while.end.10:
   store i64 %t45, ptr %t44
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 641)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 641)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 643)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 643)
   unreachable
 }
 
@@ -122012,10 +122873,10 @@ while.end.10:
   store i64 %t45, ptr %t44
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 641)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 641)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 643)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 643)
   unreachable
 }
 
@@ -122110,10 +122971,10 @@ ok.16:
 loop.end.6:
   unreachable
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 959)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 959)
   unreachable
 panic.17:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 972)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 972)
   unreachable
 }
 
@@ -122199,10 +123060,10 @@ while.end.10:
   store i64 %t45, ptr %t44
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 641)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 641)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 643)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 643)
   unreachable
 }
 
@@ -122333,10 +123194,10 @@ while.end.10:
   store i64 %t45, ptr %t44
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 641)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 641)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 643)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 643)
   unreachable
 }
 
@@ -122431,10 +123292,10 @@ ok.16:
 loop.end.6:
   unreachable
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 959)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 959)
   unreachable
 panic.17:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 972)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 972)
   unreachable
 }
 
@@ -122464,14 +123325,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s3, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s3
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -122485,7 +123346,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s5
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 619)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 619)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -122681,16 +123542,16 @@ ok.21:
 while.end.20:
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 998)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 998)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1002)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1002)
   unreachable
 panic.17:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1008)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1008)
   unreachable
 panic.22:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1017)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1017)
   unreachable
 }
 
@@ -122753,10 +123614,10 @@ while.end.4:
   call void @"zevic_Array<I64>_SetIndex"(ptr %t28, i64 %t29, i64 %t30)
   ret void
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 978)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 978)
   unreachable
 panic.6:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 981)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 981)
   unreachable
 }
 
@@ -122842,10 +123703,10 @@ while.end.10:
   store i64 %t45, ptr %t44
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 641)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 641)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 643)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 643)
   unreachable
 }
 
@@ -122931,10 +123792,10 @@ while.end.10:
   store i64 %t45, ptr %t44
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 641)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 641)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 643)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 643)
   unreachable
 }
 
@@ -123020,10 +123881,10 @@ while.end.10:
   store i64 %t45, ptr %t44
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 641)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 641)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 643)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 643)
   unreachable
 }
 
@@ -123053,14 +123914,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s3, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s3
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -123074,7 +123935,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s5
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 619)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 619)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -123270,16 +124131,16 @@ ok.21:
 while.end.20:
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 998)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 998)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1002)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1002)
   unreachable
 panic.17:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1008)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1008)
   unreachable
 panic.22:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1017)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1017)
   unreachable
 }
 
@@ -123342,10 +124203,10 @@ while.end.4:
   call void @"zevic_Array<I64>_SetIndex"(ptr %t28, i64 %t29, i64 %t30)
   ret void
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 978)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 978)
   unreachable
 panic.6:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 981)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 981)
   unreachable
 }
 
@@ -123440,10 +124301,10 @@ ok.16:
 loop.end.6:
   unreachable
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 959)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 959)
   unreachable
 panic.17:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 972)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 972)
   unreachable
 }
 
@@ -123529,10 +124390,10 @@ while.end.10:
   store i64 %t45, ptr %t44
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 641)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 641)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 643)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 643)
   unreachable
 }
 
@@ -123618,10 +124479,10 @@ while.end.10:
   store i64 %t45, ptr %t44
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 641)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 641)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 643)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 643)
   unreachable
 }
 
@@ -123707,10 +124568,10 @@ while.end.10:
   store i64 %t45, ptr %t44
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 641)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 641)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 643)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 643)
   unreachable
 }
 
@@ -123805,10 +124666,10 @@ ok.16:
 loop.end.6:
   unreachable
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 959)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 959)
   unreachable
 panic.17:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 972)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 972)
   unreachable
 }
 
@@ -123894,10 +124755,10 @@ while.end.10:
   store i64 %t45, ptr %t44
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 641)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 641)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 643)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 643)
   unreachable
 }
 
@@ -123927,14 +124788,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s3, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s3
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -123948,7 +124809,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s5
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 619)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 619)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -124144,16 +125005,16 @@ ok.21:
 while.end.20:
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 998)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 998)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1002)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1002)
   unreachable
 panic.17:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1008)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1008)
   unreachable
 panic.22:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1017)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1017)
   unreachable
 }
 
@@ -124216,10 +125077,10 @@ while.end.4:
   call void @"zevic_Array<I64>_SetIndex"(ptr %t28, i64 %t29, i64 %t30)
   ret void
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 978)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 978)
   unreachable
 panic.6:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 981)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 981)
   unreachable
 }
 
@@ -124305,10 +125166,10 @@ while.end.10:
   store i64 %t45, ptr %t44
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 641)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 641)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 643)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 643)
   unreachable
 }
 
@@ -124394,10 +125255,10 @@ while.end.10:
   store i64 %t45, ptr %t44
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 641)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 641)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 643)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 643)
   unreachable
 }
 
@@ -124414,12 +125275,12 @@ entry:
   store i32 2, ptr %t1
   %t2 = load { i32 }, ptr %s2
   %t3 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t3, ptr @.str.1529, i64 13)
+  call void @zevic_sb_add(ptr %t3, ptr @.str.1535, i64 13)
   %t4 = load { ptr, i64 }, ptr %s0
   %t5 = extractvalue { ptr, i64 } %t4, 0
   %t6 = extractvalue { ptr, i64 } %t4, 1
   call void @zevic_sb_add(ptr %t3, ptr %t5, i64 %t6)
-  call void @zevic_sb_add(ptr %t3, ptr @.str.1530, i64 15)
+  call void @zevic_sb_add(ptr %t3, ptr @.str.1536, i64 15)
   %t7 = load { ptr, i64 }, ptr %s1
   %t8 = extractvalue { ptr, i64 } %t7, 0
   %t9 = extractvalue { ptr, i64 } %t7, 1
@@ -124512,10 +125373,10 @@ while.end.10:
   store i64 %t45, ptr %t44
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 641)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 641)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 643)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 643)
   unreachable
 }
 
@@ -124545,14 +125406,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s3, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s3
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -124566,7 +125427,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s5
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 619)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 619)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -124762,16 +125623,16 @@ ok.21:
 while.end.20:
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 998)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 998)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1002)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1002)
   unreachable
 panic.17:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1008)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1008)
   unreachable
 panic.22:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1017)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1017)
   unreachable
 }
 
@@ -124834,10 +125695,10 @@ while.end.4:
   call void @"zevic_Array<I64>_SetIndex"(ptr %t28, i64 %t29, i64 %t30)
   ret void
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 978)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 978)
   unreachable
 panic.6:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 981)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 981)
   unreachable
 }
 
@@ -124923,10 +125784,10 @@ while.end.10:
   store i64 %t45, ptr %t44
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 641)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 641)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 643)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 643)
   unreachable
 }
 
@@ -125012,10 +125873,10 @@ while.end.10:
   store i64 %t45, ptr %t44
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 641)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 641)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 643)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 643)
   unreachable
 }
 
@@ -125101,10 +125962,10 @@ while.end.10:
   store i64 %t45, ptr %t44
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 641)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 641)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 643)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 643)
   unreachable
 }
 
@@ -125190,10 +126051,10 @@ while.end.10:
   store i64 %t45, ptr %t44
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 641)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 641)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 643)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 643)
   unreachable
 }
 
@@ -125279,10 +126140,10 @@ while.end.10:
   store i64 %t45, ptr %t44
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 641)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 641)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 643)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 643)
   unreachable
 }
 
@@ -125377,10 +126238,10 @@ ok.16:
 loop.end.6:
   unreachable
 panic.4:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 959)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 959)
   unreachable
 panic.17:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 972)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 972)
   unreachable
 }
 
@@ -125410,14 +126271,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s3, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s3
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -125431,7 +126292,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s5
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 619)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 619)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
@@ -125627,16 +126488,16 @@ ok.21:
 while.end.20:
   ret void
 panic.7:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 998)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 998)
   unreachable
 panic.12:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1002)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1002)
   unreachable
 panic.17:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1008)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1008)
   unreachable
 panic.22:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 1017)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 1017)
   unreachable
 }
 
@@ -125699,10 +126560,10 @@ while.end.4:
   call void @"zevic_Array<I64>_SetIndex"(ptr %t28, i64 %t29, i64 %t30)
   ret void
 panic.1:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 978)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 978)
   unreachable
 panic.6:
-  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1512, i32 981)
+  call void @zevic_panic(ptr @.str.14, i64 16, ptr @.str.1518, i32 981)
   unreachable
 }
 
@@ -125732,14 +126593,14 @@ or.end.1:
   br i1 %t7, label %then.2, label %endif.4
 then.2:
   %t8 = call ptr @zevic_sb_new()
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1510, i64 6)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1516, i64 6)
   %t9 = load i64, ptr %s1
   call void @zevic_i64_to_str(ptr %s3, i64 %t9)
   %t10 = load { ptr, i64 }, ptr %s3
   %t11 = extractvalue { ptr, i64 } %t10, 0
   %t12 = extractvalue { ptr, i64 } %t10, 1
   call void @zevic_sb_add(ptr %t8, ptr %t11, i64 %t12)
-  call void @zevic_sb_add(ptr %t8, ptr @.str.1511, i64 25)
+  call void @zevic_sb_add(ptr %t8, ptr @.str.1517, i64 25)
   %t13 = load ptr, ptr %s0
   %t14 = getelementptr inbounds { ptr, i64, i64 }, ptr %t13, i32 0, i32 1
   %t15 = load i64, ptr %t14
@@ -125753,7 +126614,7 @@ then.2:
   %t19 = load { ptr, i64 }, ptr %s5
   %t20 = extractvalue { ptr, i64 } %t19, 0
   %t21 = extractvalue { ptr, i64 } %t19, 1
-  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1512, i32 619)
+  call void @zevic_panic(ptr %t20, i64 %t21, ptr @.str.1518, i32 619)
   unreachable
 endif.4:
   %t22 = load ptr, ptr %s0
