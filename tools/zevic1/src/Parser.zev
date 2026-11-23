@@ -586,6 +586,15 @@ class Parser {
                 this.UsesAsync = true
                 Ok(n)
             },
+            T.Tk.Unsafe => {
+                this.next()
+                if (this.kind() != T.Tk.LBrace) {
+                    return Err(this.perr(this.peek().Pos, "expected `{` after `unsafe` (an `unsafe` block: `unsafe { ... }`)"))
+                }
+                mut b: Ast.Node = this.parseBlock()?
+                b.SetName("unsafe")
+                Ok(b)
+            },
             T.Tk.Break | T.Tk.Continue => {
                 let kw: T.Token = this.peek()
                 this.next()

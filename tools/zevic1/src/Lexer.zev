@@ -53,6 +53,7 @@ fn keyword(s: String) -> Option<Token.Tk> {
         "continue" => Some(Token.Tk.Continue),
         "defer" => Some(Token.Tk.Defer),
         "async" => Some(Token.Tk.Async),
+        "unsafe" => Some(Token.Tk.Unsafe),
         "await" => Some(Token.Tk.Await),
         "true" => Some(Token.Tk.True),
         "false" => Some(Token.Tk.False),
@@ -63,7 +64,7 @@ fn keyword(s: String) -> Option<Token.Tk> {
 
 // Words reserved for the future (the specification lists them).
 fn isFuture(s: String) -> Bool {
-    s == "macro" || s == "unsafe" || s == "type" || s == "where" || s == "const" || s == "yield" || s == "impl" || s == "null"
+    s == "macro" || s == "type" || s == "where" || s == "const" || s == "yield" || s == "impl" || s == "null"
 }
 
 let Suffixes: Array<String> = ["I8", "I16", "I32", "I64", "U8", "U16", "U32", "U64", "F32", "F64"]
