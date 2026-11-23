@@ -16,8 +16,8 @@ extern "zevic" {
 
 // A thread started by `Spawn`.
 class Thread {
-    handle: *CVoid
-    joined: Bool
+    mut handle: *CVoid
+    mut joined: Bool
 
     fn Init(h: *CVoid) {
         this.handle = h

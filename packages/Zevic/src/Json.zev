@@ -99,8 +99,8 @@ enum Value {
 // ---- parsing ----
 
 class Parser {
-    src: String
-    pos: I64 = 0
+    mut src: String
+    mut pos: I64 = 0
 
     fn Init(src: String) { this.src = src }
 

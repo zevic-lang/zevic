@@ -82,9 +82,9 @@ fn offsetText(offset: I32, colon: Bool) -> String {
 }
 
 struct DateTime : Comparable {
-    secs: I64
-    nano: I32
-    offset: I32
+    mut secs: I64
+    mut nano: I32
+    mut offset: I32
 
     // The moment `secs` seconds and `nano` nanoseconds (0 to 999999999) after 1970-01-01 00:00:00 UTC, shown in the
     // zone `offset` seconds east of UTC. Prefer `DateTime.Make`, `FromUnixSeconds` and the other constructors.
@@ -365,8 +365,8 @@ fn NowLocal() -> DateTime { NowUtc().ToLocal() }
 
 // A reader over the bytes of a text: `pos` is the next byte.
 class Reader {
-    s: String
-    pos: I64 = 0
+    mut s: String
+    mut pos: I64 = 0
 
     fn Init(s: String) { this.s = s }
 

@@ -3,13 +3,13 @@ module Main
 import Zevic.Console
 
 class Countdown : Iterable<I32> {
-    from: I32
+    mut from: I32
     fn Init(from: I32) { this.from = from }
     fn Iter() -> Iterator<I32> { CountdownIter.New(this.from) }
 }
 
 class CountdownIter : Iterator<I32> {
-    n: I32
+    mut n: I32
     fn Init(n: I32) { this.n = n }
     mut fn Next() -> Option<I32> {
         if (this.n <= 0) { return None }

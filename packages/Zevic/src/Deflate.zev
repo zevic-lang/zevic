@@ -23,8 +23,8 @@ let DefaultLimit: I64 = 1073741824
 
 // The result of reading a deflate stream: the data, and how many input bytes the stream took up.
 struct Inflated {
-    Data: Array<U8>
-    Used: I64
+    mut Data: Array<U8>
+    mut Used: I64
 
     fn Init(data: Array<U8>, used: I64) {
         this.Data = data

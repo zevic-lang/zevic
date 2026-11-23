@@ -33,7 +33,7 @@ unsafe fn FillAndTotal(n: I64) -> I64 {
 }
 
 struct Cursor {
-    P: *I64
+    mut P: *I64
 
     fn Init(p: *I64) {
         this.P = p

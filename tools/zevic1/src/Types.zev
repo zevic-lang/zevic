@@ -33,10 +33,10 @@ enum TKind {
 }
 
 class Field {
-    Name: String
-    T: Type
+    mut Name: String
+    mut T: Type
     // declared with `let`: only `Init` can assign it
-    Let: Bool = false
+    mut Let: Bool = false
 
     fn Init(name: String, t: Type) {
         this.Name = name
@@ -45,12 +45,12 @@ class Field {
 }
 
 class Variant {
-    Name: String
-    Tag: I32
-    Named: Bool = false
-    Fields: Array<Field> = []
+    mut Name: String
+    mut Tag: I32
+    mut Named: Bool = false
+    mut Fields: Array<Field> = []
     // the tuple type of the field types, None when there is no data
-    Payload: Option<Type> = None
+    mut Payload: Option<Type> = None
 
     fn Init(name: String, tag: I32) {
         this.Name = name
@@ -59,27 +59,27 @@ class Variant {
 }
 
 class Type {
-    Kind: TKind
+    mut Kind: TKind
     // display name, also the intern key
-    Name: String
-    Args: Array<Type> = []
-    Ret: Option<Type> = None
+    mut Name: String
+    mut Args: Array<Type> = []
+    mut Ret: Option<Type> = None
     // the declaration of a struct / class / enum (its qualified name; the declaration itself comes with the checker)
-    DeclName: String = ""
-    Id: I32 = 0
-    MembersDone: Bool = false
-    Fields: Array<Field> = []
-    Variants: Array<Variant> = []
-    LaidOut: Bool = false
-    Size: I64 = 0
-    Align: I64 = 0
+    mut DeclName: String = ""
+    mut Id: I32 = 0
+    mut MembersDone: Bool = false
+    mut Fields: Array<Field> = []
+    mut Variants: Array<Variant> = []
+    mut LaidOut: Bool = false
+    mut Size: I64 = 0
+    mut Align: I64 = 0
     // the LLVM type; empty while it is being computed
-    Ll: String = ""
+    mut Ll: String = ""
     // enum, union: size of the payload in 8-byte words. C types: 1 for a signed integer.
-    PayloadWords: I32 = 0
+    mut PayloadWords: I32 = 0
     // the interfaces this type implements (for an interface: the ones it extends)
-    Supers: Array<Type> = []
-    SupersDone: Bool = false
+    mut Supers: Array<Type> = []
+    mut SupersDone: Bool = false
 
     fn Init(kind: TKind, name: String) {
         this.Kind = kind
@@ -126,11 +126,11 @@ fn KindNo(k: TKind) -> I32 {
 fn roundUp(n: I64, a: I64) -> I64 { (n + a - 1) / a * a }
 
 class CTypeRow {
-    Name: String
+    mut Name: String
     // 0: depends on the platform (long)
-    Bytes: I64
+    mut Bytes: I64
     // 0 unsigned int, 1 signed int, 2 float, 3 bool, 4 string, 5 void
-    Kind: I32
+    mut Kind: I32
 
     fn Init(name: String, bytes: I64, kind: I32) {
         this.Name = name
@@ -140,29 +140,29 @@ class CTypeRow {
 }
 
 class TypeTable {
-    types: Map<String, Type> = Map.New()
-    nextId: I32 = 0
+    mut types: Map<String, Type> = Map.New()
+    mut nextId: I32 = 0
     // set when a layout needs a type that contains itself by value (infinite size)
-    Cycle: Option<Type> = None
+    mut Cycle: Option<Type> = None
     // widths of the C compiler of the platform the program is built on
-    longBytes: I64
-    cRows: Array<CTypeRow> = []
+    mut longBytes: I64
+    mut cRows: Array<CTypeRow> = []
 
-    I8: Type
-    I16: Type
-    I32: Type
-    I64: Type
-    U8: Type
-    U16: Type
-    U32: Type
-    U64: Type
-    F32: Type
-    F64: Type
-    Bool: Type
-    Char: Type
-    Str: Type
-    Unit: Type
-    Never: Type
+    mut I8: Type
+    mut I16: Type
+    mut I32: Type
+    mut I64: Type
+    mut U8: Type
+    mut U16: Type
+    mut U32: Type
+    mut U64: Type
+    mut F32: Type
+    mut F64: Type
+    mut Bool: Type
+    mut Char: Type
+    mut Str: Type
+    mut Unit: Type
+    mut Never: Type
 
     fn Init(longBytes: I64) {
         this.longBytes = longBytes

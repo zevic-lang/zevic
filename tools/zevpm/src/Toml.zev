@@ -8,12 +8,12 @@ import Zevpm.Os as Os
 
 // A dependency. The fields that do not apply are empty.
 class Dep {
-    Name: String
-    Git: String = ""
-    Tag: String = ""
-    Branch: String = ""
-    Rev: String = ""
-    Path: String = ""
+    mut Name: String
+    mut Git: String = ""
+    mut Tag: String = ""
+    mut Branch: String = ""
+    mut Rev: String = ""
+    mut Path: String = ""
 
     fn Init(name: String) {
         this.Name = name
@@ -21,18 +21,18 @@ class Dep {
 }
 
 class Manifest {
-    Dir: String
-    File: String
-    Name: String = ""
-    Version: String = ""
-    Kind: String = ""
-    ZevicReq: String = ""
-    Deps: Array<Dep> = []
-    Libs: Array<String> = []
+    mut Dir: String
+    mut File: String
+    mut Name: String = ""
+    mut Version: String = ""
+    mut Kind: String = ""
+    mut ZevicReq: String = ""
+    mut Deps: Array<Dep> = []
+    mut Libs: Array<String> = []
     // [native]: `lib_dirs` and `include_dirs` are relative to the package directory unless they are absolute
-    LibDirs: Array<String> = []
-    IncDirs: Array<String> = []
-    Defines: Array<String> = []
+    mut LibDirs: Array<String> = []
+    mut IncDirs: Array<String> = []
+    mut Defines: Array<String> = []
 
     fn Init(dir: String) {
         this.Dir = dir
@@ -53,10 +53,10 @@ class Manifest {
 
 // A position in one line.
 class Cur {
-    File: String
-    Line: I64
-    S: String
-    P: I64 = 0
+    mut File: String
+    mut Line: I64
+    mut S: String
+    mut P: I64 = 0
 
     fn Init(file: String, line: I64, s: String) {
         this.File = file
@@ -123,10 +123,10 @@ fn parseKey(mut c: Cur) -> Result<String, Error> {
 
 // A value: a string, a list of strings (Kind 1) or a table of strings (Kind 2).
 class Value {
-    Kind: I32
-    S: String = ""
-    Items: Array<String> = []
-    Keys: Array<String> = []
+    mut Kind: I32
+    mut S: String = ""
+    mut Items: Array<String> = []
+    mut Keys: Array<String> = []
 
     fn Init(kind: I32) {
         this.Kind = kind

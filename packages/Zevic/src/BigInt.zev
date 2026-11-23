@@ -178,8 +178,8 @@ fn magFromU64(u: U64) -> Array<U32> {
 // ---- BigInt ----
 
 struct BigInt : Comparable {
-    neg: Bool
-    mag: Array<U32>
+    mut neg: Bool
+    mut mag: Array<U32>
 
     // Makes a value from a sign and a magnitude. Zero is never negative.
     fn Init(neg: Bool, mag: Array<U32>) {

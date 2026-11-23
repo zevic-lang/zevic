@@ -15,7 +15,7 @@ extern "zevic" {
 let golden: U64 = 0x9E3779B97F4A7C15_U64
 
 class Rng {
-    state: U64
+    mut state: U64
 
     fn Init(seed: I64) { this.state = seed.ToU64Wrap() }
 

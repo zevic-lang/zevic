@@ -12,12 +12,12 @@ import Zevic1.Suggest as Suggest
 import Zevic1.Token as Token
 
 class Diag {
-    names: Array<String> = []
-    texts: Array<String> = []
+    mut names: Array<String> = []
+    mut texts: Array<String> = []
     // How many errors were reported.
-    Errors: I64 = 0
+    mut Errors: I64 = 0
     // When set, errors are counted but not printed.
-    Quiet: Bool = false
+    mut Quiet: Bool = false
 
     // Remembers a file and returns its number.
     mut fn AddSource(name: String, text: String) -> I32 {

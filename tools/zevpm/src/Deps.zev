@@ -12,9 +12,9 @@ import Zevpm.Toml as Toml
 
 // A dependency that was found: its own manifest, where its files are, and what was chosen (for finding conflicts).
 class Pkg {
-    M: Toml.Manifest
-    Dir: String
-    Id: String
+    mut M: Toml.Manifest
+    mut Dir: String
+    mut Id: String
 
     fn Init(m: Toml.Manifest, dir: String, id: String) {
         this.M = m
@@ -26,16 +26,16 @@ class Pkg {
 // ---- zevic.lock ----
 
 class LockEntry {
-    Name: String = ""
-    Git: String = ""
-    Ref: String = ""
-    Rev: String = ""
+    mut Name: String = ""
+    mut Git: String = ""
+    mut Ref: String = ""
+    mut Rev: String = ""
 }
 
 class Lock {
-    File: String
-    Entries: Array<LockEntry> = []
-    Dirty: Bool = false
+    mut File: String
+    mut Entries: Array<LockEntry> = []
+    mut Dirty: Bool = false
 
     fn Init(dir: String) {
         this.File = Os.Join(dir, "zevic.lock")
@@ -311,10 +311,10 @@ fn fetchGit(d: Toml.Dep, known: String) -> Result<(String, String), Error> {
 // ---- resolving ----
 
 class Walk {
-    Pkgs: Array<Pkg> = []
-    Seen: Map<String, Pkg> = Map.New()
-    Update: Option<String>
-    Lock: Lock
+    mut Pkgs: Array<Pkg> = []
+    mut Seen: Map<String, Pkg> = Map.New()
+    mut Update: Option<String>
+    mut Lock: Lock
 
     fn Init(update: Option<String>, lock: Lock) {
         this.Update = update

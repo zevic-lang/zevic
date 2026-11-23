@@ -3,13 +3,13 @@ module Main
 import Zevic.Console
 
 class Cell {
-    N: I64 = 0
-    Name: String = "cell"
+    mut N: I64 = 0
+    mut Name: String = "cell"
 }
 
 struct Pt {
-    X: I64
-    Y: I64
+    mut X: I64
+    mut Y: I64
 
     fn Init(x: I64, y: I64) {
         this.X = x
@@ -18,8 +18,8 @@ struct Pt {
 }
 
 struct Seg {
-    From: Pt
-    To: Pt
+    mut From: Pt
+    mut To: Pt
     fn Init(a: Pt, b: Pt) {
         this.From = a
         this.To = b
@@ -27,8 +27,8 @@ struct Seg {
 }
 
 class Board {
-    cells: Array<Cell> = [Cell.New(), Cell.New(), Cell.New()]
-    pts: Array<Pt> = [Pt.New(0, 0), Pt.New(1, 1)]
+    mut cells: Array<Cell> = [Cell.New(), Cell.New(), Cell.New()]
+    mut pts: Array<Pt> = [Pt.New(0, 0), Pt.New(1, 1)]
 
     mut fn Hit(i: I64) {
         this.cells[i].N += 1

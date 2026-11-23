@@ -13,19 +13,19 @@ import Zevic1.Token as Token
 import Zevic1.Types as Types
 
 class Decl {
-    Node: Ast.Node
-    Name: String
-    Abi: String = ""
-    HasAbi: Bool = false
-    IsPub: Bool = false
+    mut Node: Ast.Node
+    mut Name: String
+    mut Abi: String = ""
+    mut HasAbi: Bool = false
+    mut IsPub: Bool = false
     // for the hidden function of a `test "name" { }` block: the name
-    TestName: String = ""
+    mut TestName: String = ""
     // the module and the file the declaration is in
-    ModName: String = ""
-    ModIsStd: Bool = false
-    File: Option<FileInfo> = None
+    mut ModName: String = ""
+    mut ModIsStd: Bool = false
+    mut File: Option<FileInfo> = None
     // a default method taken from this interface type (with its type arguments)
-    Iface: Option<Types.Type> = None
+    mut Iface: Option<Types.Type> = None
 
     fn Init(node: Ast.Node, name: String) {
         this.Node = node
@@ -44,16 +44,16 @@ class Decl {
 }
 
 class Module {
-    Id: I64 = 0
-    Name: String
-    Files: Array<FileInfo> = []
-    Decls: Map<String, Decl> = Map.New()
+    mut Id: I64 = 0
+    mut Name: String
+    mut Files: Array<FileInfo> = []
+    mut Decls: Map<String, Decl> = Map.New()
     // one hidden function per `test` block, in source order
-    Tests: Array<Decl> = []
-    Deps: Array<Module> = []
-    IsStd: Bool = false
+    mut Tests: Array<Decl> = []
+    mut Deps: Array<Module> = []
+    mut IsStd: Bool = false
     // cycle detection
-    Visit: I32 = 0
+    mut Visit: I32 = 0
 
     fn Init(name: String, isStd: Bool) {
         this.Name = name
@@ -63,10 +63,10 @@ class Module {
 
 // A parsed file together with what the resolver learns about it.
 class FileInfo {
-    Sf: Ast.SourceFile
-    Mod: Option<Module> = None
+    mut Sf: Ast.SourceFile
+    mut Mod: Option<Module> = None
     // the name used in the source -> the module
-    ImportMap: Map<String, Module> = Map.New()
+    mut ImportMap: Map<String, Module> = Map.New()
 
     fn Init(sf: Ast.SourceFile) {
         this.Sf = sf
@@ -74,12 +74,12 @@ class FileInfo {
 }
 
 class Program {
-    Modules: Array<Module> = []
-    ModByName: Map<String, Module> = Map.New()
-    Files: Array<FileInfo> = []
+    mut Modules: Array<Module> = []
+    mut ModByName: Map<String, Module> = Map.New()
+    mut Files: Array<FileInfo> = []
     // the directory holding the standard library, e.g. .../packages/Zevic/src
-    StdDir: String
-    SearchDirs: Array<String> = []
+    mut StdDir: String
+    mut SearchDirs: Array<String> = []
 
     fn Init(stdDir: String) {
         this.StdDir = stdDir

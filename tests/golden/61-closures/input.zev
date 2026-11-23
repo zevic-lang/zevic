@@ -19,7 +19,7 @@ fn MakeCounter() -> fn() -> I32 {
 }
 
 class Greeter {
-    name: String
+    mut name: String
     fn Init(name: String) { this.name = name }
     fn Hello() -> fn() -> String {
         () => "hello, ${this.name}"

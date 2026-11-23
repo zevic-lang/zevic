@@ -4,8 +4,8 @@ import Zevic.Console
 
 // Ordered by major, then minor. Equals compares the major part only.
 struct Version : Comparable {
-    major: I64
-    minor: I64
+    mut major: I64
+    mut minor: I64
 
     fn Init(major: I64, minor: I64) {
         this.major = major

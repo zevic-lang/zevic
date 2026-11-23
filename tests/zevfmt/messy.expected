@@ -4,8 +4,8 @@ import Zevic.Console
 import Zevic.Env
 import Zevic.Text
 
-struct P { X: I32
-    Y: I32
+struct P { mut X: I32
+    mut Y: I32
     fn Init(x: I32, y: I32) { this.X = x; this.Y = y }
     fn Len() -> I32 { this.X + this.Y }
 }

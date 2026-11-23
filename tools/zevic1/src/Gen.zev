@@ -13,9 +13,9 @@ import Zevic1.Types as Types
 
 // A mapping from type parameter names to types, plus `Self`.
 class Env {
-    Names: Array<String> = []
-    Types: Array<Types.Type> = []
-    SelfT: Option<Types.Type> = None
+    mut Names: Array<String> = []
+    mut Types: Array<Types.Type> = []
+    mut SelfT: Option<Types.Type> = None
 
     mut fn Add(name: String, t: Types.Type) {
         this.Names.Push(name)
@@ -36,7 +36,7 @@ class Env {
 
 // Pieces of text that are joined at the end (cheaper than growing one string).
 class Sb {
-    Parts: Array<String> = []
+    mut Parts: Array<String> = []
 
     mut fn Put(s: String) {
         this.Parts.Push(s)
@@ -46,42 +46,42 @@ class Sb {
 }
 
 class Gen {
-    Pg: Resolve.Program
-    Diag: Diag.Diag
-    Tt: Types.TypeTable
+    mut Pg: Resolve.Program
+    mut Diag: Diag.Diag
+    mut Tt: Types.TypeTable
     // The type of an expression that already produced an error: it matches everything.
-    Err: Types.Type
+    mut Err: Types.Type
     // set while resolving the interfaces a type implements or extends, and constraints
-    AllowSelfyIface: Bool = false
+    mut AllowSelfyIface: Bool = false
     // every declaration of the program by its key
-    DeclByKey: Map<String, Resolve.Decl> = Map.New()
+    mut DeclByKey: Map<String, Resolve.Decl> = Map.New()
     // declarations made for methods and for the default methods of interfaces (once each)
-    MethodDecls: Map<String, Resolve.Decl> = Map.New()
-    Defaults: Map<String, Resolve.Decl> = Map.New()
+    mut MethodDecls: Map<String, Resolve.Decl> = Map.New()
+    mut Defaults: Map<String, Resolve.Decl> = Map.New()
     // the function instances (one LLVM function each) by their symbol, and the ones still to be generated
-    Insts: Map<String, Inst> = Map.New()
-    Worklist: Array<Inst> = []
+    mut Insts: Map<String, Inst> = Map.New()
+    mut Worklist: Array<Inst> = []
     // the `export "C"` functions
-    Exports: Array<Inst> = []
+    mut Exports: Array<Inst> = []
     // string constants, `declare` lines and function definitions of the module
-    Globals: Sb = Sb.New()
-    Decls: Sb = Sb.New()
-    Funcs: Sb = Sb.New()
-    Declared: Map<String, Bool> = Map.New()
-    NStr: I64 = 0
-    StrConst: Map<String, String> = Map.New()
-    TestMode: Bool = false
-    LibMode: Bool = false
-    NLambda: I64 = 0
+    mut Globals: Sb = Sb.New()
+    mut Decls: Sb = Sb.New()
+    mut Funcs: Sb = Sb.New()
+    mut Declared: Map<String, Bool> = Map.New()
+    mut NStr: I64 = 0
+    mut StrConst: Map<String, String> = Map.New()
+    mut TestMode: Bool = false
+    mut LibMode: Bool = false
+    mut NLambda: I64 = 0
     // wrapper functions already written (thunks and C callbacks), by name
-    Thunks: Map<String, String> = Map.New()
+    mut Thunks: Map<String, String> = Map.New()
     // "<function symbol>:%tN" -> symbol of a lambda that captures nothing (so it can go to C as a callback)
-    Noenv: Map<String, String> = Map.New()
+    mut Noenv: Map<String, String> = Map.New()
     // the call being generated, for errors found while emitting it
-    CallPos: Token.Pos = Token.Pos.New(0, 0, 0)
+    mut CallPos: Token.Pos = Token.Pos.New(0, 0, 0)
     // method tables of interface values by "type|interface", and how many there are
-    Vtables: Map<String, String> = Map.New()
-    NVt: I64 = 0
+    mut Vtables: Map<String, String> = Map.New()
+    mut NVt: I64 = 0
 
     fn Init(pg: Resolve.Program, diag: Diag.Diag, longBytes: I64) {
         this.Pg = pg
@@ -551,9 +551,9 @@ fn MakeEnv(g: Gen, d: Resolve.Decl, self: Option<Types.Type>, fnTargs: Option<Ar
 
 class IMethod {
     // the method as declared in the interface
-    Fn: Ast.Node
+    mut Fn: Ast.Node
     // the interface type (with type arguments) that declares it
-    Owner: Types.Type
+    mut Owner: Types.Type
 
     fn Init(fnNode: Ast.Node, owner: Types.Type) {
         this.Fn = fnNode
@@ -941,20 +941,20 @@ fn CheckBounds(mut g: Gen, f: Resolve.FileInfo, owner: Ast.Node, targs: Array<Ty
 
 // A function (or method) with its type arguments fixed: one LLVM function.
 class Inst {
-    D: Resolve.Decl
+    mut D: Resolve.Decl
     // owning type for methods
-    SelfT: Option<Types.Type> = None
-    Env: Env = Env.New()
+    mut SelfT: Option<Types.Type> = None
+    mut Env: Env = Env.New()
     // the LLVM symbol without the @
-    Name: String = ""
-    Ptypes: Array<Types.Type> = []
-    Ret: Types.Type
-    Emitted: Bool = false
-    IsExtern: Bool = false
+    mut Name: String = ""
+    mut Ptypes: Array<Types.Type> = []
+    mut Ret: Types.Type
+    mut Emitted: Bool = false
+    mut IsExtern: Bool = false
     // `export "C"`: the symbol is the plain name and the signature is C's
-    IsExport: Bool = false
+    mut IsExport: Bool = false
     // a method: the first parameter is `ptr %this`
-    HasThis: Bool = false
+    mut HasThis: Bool = false
 
     fn Init(d: Resolve.Decl, ret: Types.Type) {
         this.D = d

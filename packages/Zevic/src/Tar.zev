@@ -36,13 +36,13 @@ enum Kind {
 
 // One entry of an archive.
 struct Entry {
-    Name: String
-    Size: I64
-    Mode: I64
-    MTime: I64
-    Kind: Kind
-    LinkName: String
-    Offset: I64
+    mut Name: String
+    mut Size: I64
+    mut Mode: I64
+    mut MTime: I64
+    mut Kind: Kind
+    mut LinkName: String
+    mut Offset: I64
 
     fn Init(name: String, size: I64, mode: I64, mtime: I64, kind: Kind, link: String, offset: I64) {
         this.Name = name
@@ -127,8 +127,8 @@ fn paxRecords(data: Array<U8>) -> Map<String, String> {
 
 // An opened archive (kept in memory).
 class Archive {
-    data: Array<U8>
-    entries: Array<Entry>
+    mut data: Array<U8>
+    mut entries: Array<Entry>
 
     fn Init(data: Array<U8>, entries: Array<Entry>) {
         this.data = data
@@ -279,9 +279,9 @@ fn putOctal(mut h: Array<U8>, at: I64, width: I64, v: I64) {
 
 // Builds a tar in memory.
 class TarWriter {
-    out: Array<U8> = []
-    seen: Set<String> = Set<String>.New()
-    count: I64 = 0
+    mut out: Array<U8> = []
+    mut seen: Set<String> = Set<String>.New()
+    mut count: I64 = 0
 
     fn Init() {}
 

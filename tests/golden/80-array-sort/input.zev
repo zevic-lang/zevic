@@ -3,8 +3,8 @@ module Main
 import Zevic.Console
 
 struct Item {
-    Name: String
-    N: I32
+    mut Name: String
+    mut N: I32
 
     fn Init(name: String, n: I32) {
         this.Name = name

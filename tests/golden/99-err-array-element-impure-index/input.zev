@@ -1,7 +1,7 @@
 module Main
 
 struct Pt {
-    X: I64
+    mut X: I64
     fn Init(x: I64) { this.X = x }
 }
 

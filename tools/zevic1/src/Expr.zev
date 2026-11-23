@@ -748,8 +748,8 @@ fn popScope(mut F: Ctx.FnCtx) {
 // ---- `is` and smart casts ----
 
 class Narrow {
-    Name: String
-    T: Types.Type
+    mut Name: String
+    mut T: Types.Type
 
     fn Init(name: String, t: Types.Type) {
         this.Name = name
@@ -6077,10 +6077,10 @@ fn isFloatConv(c: U8) -> Bool {
 }
 
 class FmtPiece {
-    Text: String = ""
-    IsSpec: Bool = false
-    Conv: U8 = 0
-    Want: String = ""
+    mut Text: String = ""
+    mut IsSpec: Bool = false
+    mut Conv: U8 = 0
+    mut Want: String = ""
 }
 
 // `%{I32}`: the type named in the format, as the conversion it stands for ('b' is Bool, shown as true/false)

@@ -130,9 +130,9 @@ fn cpString(cp: U32) -> String {
 
 // The result of reading an escape sequence.
 class Esc {
-    Err: String = ""
-    Cp: U32 = 0_U32
-    I: I64 = 0
+    mut Err: String = ""
+    mut Cp: U32 = 0_U32
+    mut I: I64 = 0
 }
 
 // Reads the escape whose backslash was just consumed; s[i] is the letter. `maxX` is the largest `\xNN` that is allowed.
@@ -253,8 +253,8 @@ fn skipNestedString(s: String, n: I64, start: I64) -> I64 {
 
 // A growing piece of text that remembers its length.
 class Buf {
-    parts: Array<String> = []
-    Len: I64 = 0
+    mut parts: Array<String> = []
+    mut Len: I64 = 0
 
     mut fn Put(s: String) {
         this.parts.Push(s)
@@ -272,16 +272,16 @@ class Buf {
 // ---- the lexer ----
 
 class Lexer {
-    file: I32
-    s: String
-    n: I64
-    i: I64 = 0
-    line: I32 = 1
-    col: I32 = 1
-    toks: Array<Token.Token> = []
-    stack: Array<I32> = [] // open brackets: ( [ {
-    angle: I64 = 0 // open `<` of type arguments, such as Array<I32>
-    diag: Diag.Diag
+    mut file: I32
+    mut s: String
+    mut n: I64
+    mut i: I64 = 0
+    mut line: I32 = 1
+    mut col: I32 = 1
+    mut toks: Array<Token.Token> = []
+    mut stack: Array<I32> = [] // open brackets: ( [ {
+    mut angle: I64 = 0 // open `<` of type arguments, such as Array<I32>
+    mut diag: Diag.Diag
 
     fn Init(diag: Diag.Diag, file: I32, text: String, line: I32, col: I32) {
         this.diag = diag

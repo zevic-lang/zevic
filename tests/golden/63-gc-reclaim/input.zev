@@ -3,8 +3,8 @@ module Main
 import Zevic.Console
 
 class Node {
-    next: Option<Node> = None
-    payload: String = ""
+    mut next: Option<Node> = None
+    mut payload: String = ""
 }
 
 fn Main() {

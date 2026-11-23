@@ -3,7 +3,7 @@ module Main
 import Zevic.Console
 
 class Counter {
-    n: I32 = 0
+    mut n: I32 = 0
     mut fn Bump() { this.n += 1 }
 }
 

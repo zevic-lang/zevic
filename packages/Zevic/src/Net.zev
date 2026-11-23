@@ -54,9 +54,9 @@ fn Resolve(host: String) -> Result<Array<String>, Error> {
 
 // A TCP connection. Reading and writing wait for the other side. Close it when you are done.
 class TcpStream {
-    fd: I64
-    pending: String = ""
-    closed: Bool = false
+    mut fd: I64
+    mut pending: String = ""
+    mut closed: Bool = false
 
     fn Init(fd: I64) { this.fd = fd }
 
@@ -151,8 +151,8 @@ class TcpStream {
 
 // A socket that waits for TCP connections.
 class TcpListener {
-    fd: I64
-    closed: Bool = false
+    mut fd: I64
+    mut closed: Bool = false
 
     fn Init(fd: I64) { this.fd = fd }
 
@@ -202,9 +202,9 @@ fn Connect(host: String, port: I64) -> Result<TcpStream, Error> {
 
 // A datagram that arrived: what it holds and who sent it.
 class Packet {
-    data: String
-    host: String
-    port: I64
+    mut data: String
+    mut host: String
+    mut port: I64
 
     fn Init(data: String, host: String, port: I64) {
         this.data = data
@@ -224,8 +224,8 @@ class Packet {
 
 // A UDP socket: it sends and receives single datagrams. (Messages may be lost, doubled or reordered.)
 class UdpSocket {
-    fd: I64
-    closed: Bool = false
+    mut fd: I64
+    mut closed: Bool = false
 
     fn Init(fd: I64) { this.fd = fd }
 
