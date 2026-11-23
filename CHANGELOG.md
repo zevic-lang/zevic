@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Fields of a `class` or `struct` are declared with `let` or `mut`, like variables: `let name: String`, `mut count: I64 = 0`, `static let Limit: I64 = 10`. A `let` field can be set only in `Init`. The old form `name: Type` still works for now (it means `mut`) and will be removed; the fields of an `extern struct` are unchanged
 - `unsafe fn` (top-level functions and methods): the body is `unsafe`, and it can be called only from `unsafe` code. It cannot be used as a value, and an interface method cannot be `unsafe`
 - `unsafe { ... }` blocks and manual memory (proposal 0011): `Zevic.Unsafe` has `Alloc<T>(n)`, `Free(p)` and `Cast<U>(p)`, and a pointer `*T` has `Read(i)`, `Write(i, v)`, `Offset(n)` and `IsNull()`. They work only inside `unsafe`; `T` cannot hold a reference the GC manages (`String`, classes, `Array`, functions…). `unsafe` is no longer only a reserved word
 - `Printf`, `Eprintf` and `Text.Format` accept `%{Type}` (`%{I32}`, `%.2{F64}`, `%{String}`, `%{Bool}`…) besides `%d`, `%s` and the rest; both can be mixed in one format. The argument must be exactly that type, checked at compile time
