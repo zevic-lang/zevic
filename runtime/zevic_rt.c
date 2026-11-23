@@ -169,6 +169,15 @@ void zevic_init(int argc, char **argv) {
 
 /* ---- memory ---- */
 
+// Manual memory (`Unsafe.Alloc`). The IR passes 64-bit sizes whatever the width of size_t is
+// (32-bit targets, wasm32), so calloc is not called from it directly.
+void *zevic_calloc(int64_t n, int64_t size) {
+    if (n < 0 || size < 0) {
+        return NULL;
+    }
+    return calloc((size_t)n, (size_t)size);
+}
+
 void *zevic_alloc(int64_t size) {
     if (size <= 0) size = 1;
     void *p = GC_MALLOC((size_t)size); /* cleared, scanned for pointers */
