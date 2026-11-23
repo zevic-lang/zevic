@@ -1,0 +1,23 @@
+module Zevic.Unsafe
+
+// Manual memory. Everything here can only be used inside an `unsafe { ... }` block.
+//
+//   Alloc<T>(n: I64) -> *T      // room for n values of T, zero-filled. A null pointer if there is no memory
+//   Free(p: *T)                 // gives the memory back; only for what `Alloc` returned
+//   Cast<U>(p: *T) -> *U        // the same address, seen as another type
+//
+// A pointer `*T` has these methods (also only inside `unsafe`, except `IsNull`):
+//
+//   p.Read(i: I64) -> T         // the i-th value; there is no range check
+//   p.Write(i: I64, v: T)
+//   p.Offset(n: I64) -> *T      // the pointer n values further
+//   p.IsNull() -> Bool
+//
+// T has to be something the garbage collector has nothing to do with: a number, `Bool`, `Char`, a
+// pointer, or a struct, tuple or enum made of those. A `String`, a class, an `Array` or a function
+// cannot be kept in manual memory.
+extern "intrinsic" {
+    fn Alloc<T>(n: I64) -> *T
+    fn Free<T>(p: *T)
+    fn Cast<U>(p: *CVoid) -> *U
+}

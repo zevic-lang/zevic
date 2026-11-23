@@ -1261,6 +1261,10 @@ fn blockLeaves(b: Option<Ast.Node>) -> Bool {
 
 fn genBlock(mut F: Ctx.FnCtx, blk: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val {
     mut g: Gen.Gen = F.G
+    let isUnsafe: Bool = blk.Name == "unsafe"
+    if (isUnsafe) {
+        F.Unsafe += 1
+    }
     F.PushScope()
     mut extra: I64 = 0
     for (st in blk.List) {
@@ -1292,6 +1296,9 @@ fn genBlock(mut F: Ctx.FnCtx, blk: Ast.Node, expect: Option<Types.Type>) -> Ctx.
         i += 1
     }
     popScope(F)
+    if (isUnsafe) {
+        F.Unsafe -= 1
+    }
     if (F.Term && v.T.Id != g.Tt.Never.Id) {
         return F.NeverVal(Some(match (expect) { Some(e) => e, None => v.T }))
     }
@@ -3633,6 +3640,9 @@ fn genMethodCall(mut F: Ctx.FnCtx, call: Ast.Node, recvNode: Ast.Node, name: Str
         return genUserMethod(F, call, p, recvNode, name, expect)
     }
     let recv: Ctx.Val = loadPlace(F, p)
+    if (recv.T.Kind == Types.TKind.Ptr && recv.T.Args.Len() > 0) {
+        return genPtrMethod(F, call, recv, name)
+    }
     if (recv.T.Kind == Types.TKind.Buf) {
         return genBufMethod(F, call, recv, name)
     }
@@ -3750,6 +3760,9 @@ fn genCall(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Val
                             }
                             if (d.Name == "Format") {
                                 return genPrintf(F, n, 2)
+                            }
+                            if (d.ModName == "Zevic.Unsafe") {
+                                return genUnsafeIntrinsic(F, n, d, last)
                             }
                             if (d.Name == "ObjPtr" || d.Name == "PtrObj") {
                                 return genObjPtr(F, n, d, last)
@@ -3923,6 +3936,192 @@ fn genBufMethod(mut F: Ctx.FnCtx, call: Ast.Node, recv: Ctx.Val, name: String) -
     }
     g.Diag.Error(call.Pos, "`Buf` has no method `${name}` that takes ${nargs} argument(s)")
     F.ErrVal()
+}
+
+// ---- unsafe: manual memory (Zevic.Unsafe and the methods of `*T`) ----
+
+// Can a value of this type live in memory the garbage collector does not scan?
+fn holdsGcRef(g: Gen.Gen, t: Types.Type, depth: I64) -> Bool {
+    if (depth > 8) {
+        return true
+    }
+    match (t.Kind) {
+        Types.TKind.Str | Types.TKind.Class | Types.TKind.Fn | Types.TKind.Iface | Types.TKind.Buf | Types.TKind.Union | Types.TKind.Param => return true,
+        Types.TKind.Tuple => {
+            for (a in t.Args) {
+                if (holdsGcRef(g, a, depth + 1)) {
+                    return true
+                }
+            }
+        },
+        Types.TKind.Struct => {
+            Gen.EnsureMembers(g, t)
+            for (f in t.Fields) {
+                if (holdsGcRef(g, f.T, depth + 1)) {
+                    return true
+                }
+            }
+        },
+        Types.TKind.Enum => {
+            Gen.EnsureMembers(g, t)
+            for (v in t.Variants) {
+                for (f in v.Fields) {
+                    if (holdsGcRef(g, f.T, depth + 1)) {
+                        return true
+                    }
+                }
+            }
+        },
+        _ => {},
+    }
+    false
+}
+
+fn requireUnsafe(mut F: Ctx.FnCtx, pos: Token.Pos, what: String) -> Bool {
+    if (F.Unsafe > 0) {
+        return true
+    }
+    F.G.Diag.Error(pos, "${what} can only be used inside an `unsafe { ... }` block")
+    false
+}
+
+// The element type of manual memory: sized, and without references the collector manages.
+fn checkRawElem(mut F: Ctx.FnCtx, pos: Token.Pos, et: Types.Type) -> Bool {
+    mut g: Gen.Gen = F.G
+    if (g.IsErr(et)) {
+        return false
+    }
+    if (et.Id == g.Tt.Unit.Id || et.Id == g.Tt.Never.Id || et.Name == "CVoid") {
+        g.Diag.Error(pos, "`${et.Name}` has no size; use `Unsafe.Cast<T>(p)` to get a pointer to a sized type first")
+        return false
+    }
+    if (holdsGcRef(g, et, 0)) {
+        g.Diag.Error(pos, "`${et.Name}` holds a reference managed by the garbage collector, so it cannot be kept in manual memory (only numbers, `Bool`, `Char`, pointers, and structs, tuples and enums made of them)")
+        return false
+    }
+    true
+}
+
+// Unsafe.Alloc<T>(n), Unsafe.Free(p), Unsafe.Cast<U>(p)
+fn genUnsafeIntrinsic(mut F: Ctx.FnCtx, call: Ast.Node, d: Resolve.Decl, last: Ast.Node) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let what: String = "`Unsafe.${d.Name}`"
+    if (!requireUnsafe(F, call.Pos, what)) {
+        genArgsForErrors(F, call)
+        return F.ErrVal()
+    }
+    if (d.Name == "Alloc") {
+        if (call.List.Len() != 1 || last.List2.Len() != 1) {
+            g.Diag.Error(call.Pos, "`Unsafe.Alloc` needs its type and the number of values: `Unsafe.Alloc<T>(n)`")
+            return F.ErrVal()
+        }
+        let t: Types.Type = Gen.ResolveType(g, F.File, F.Env, last.List2[0])
+        if (!checkRawElem(F, call.Pos, t)) {
+            return F.ErrVal()
+        }
+        let n: Ctx.Val = genI64Arg(F, call.List[0], "the count of `Unsafe.Alloc`")
+        if (n.T.Id == g.Tt.Never.Id) {
+            return F.NeverVal(None)
+        }
+        if (g.IsErr(n.T)) {
+            return F.ErrVal()
+        }
+        Gen.Declare(g, "calloc", "declare ptr @calloc(i64, i64)")
+        let p: String = F.Tmp()
+        F.Emit("${p} = call ptr @calloc(i64 ${n.V}, i64 ${elemSize(F, t)})")
+        return Ctx.Val.New(g.Tt.Ptr(t), p)
+    }
+    if (d.Name == "Free") {
+        if (call.List.Len() != 1) {
+            g.Diag.Error(call.Pos, "`Unsafe.Free` takes one pointer")
+            return F.ErrVal()
+        }
+        let p: Ctx.Val = genExpr(F, call.List[0], None)
+        if (p.T.Id == g.Tt.Never.Id) {
+            return F.NeverVal(None)
+        }
+        if (g.IsErr(p.T)) {
+            return F.ErrVal()
+        }
+        if (p.T.Kind != Types.TKind.Ptr) {
+            g.Diag.Error(call.List[0].Pos, "`Unsafe.Free` needs a pointer, found `${p.T.Name}`")
+            return F.ErrVal()
+        }
+        Gen.Declare(g, "free", "declare void @free(ptr)")
+        F.Emit("call void @free(ptr ${p.V})")
+        return F.UnitVal()
+    }
+    if (d.Name == "Cast") {
+        if (call.List.Len() != 1 || last.List2.Len() != 1) {
+            g.Diag.Error(call.Pos, "`Unsafe.Cast` needs the new pointee type: `Unsafe.Cast<T>(p)`")
+            return F.ErrVal()
+        }
+        let t: Types.Type = Gen.ResolveType(g, F.File, F.Env, last.List2[0])
+        if (g.IsErr(t)) {
+            return F.ErrVal()
+        }
+        let p: Ctx.Val = genExpr(F, call.List[0], None)
+        if (p.T.Id == g.Tt.Never.Id) {
+            return F.NeverVal(None)
+        }
+        if (g.IsErr(p.T)) {
+            return F.ErrVal()
+        }
+        if (p.T.Kind != Types.TKind.Ptr) {
+            g.Diag.Error(call.List[0].Pos, "`Unsafe.Cast` needs a pointer, found `${p.T.Name}`")
+            return F.ErrVal()
+        }
+        return Ctx.Val.New(g.Tt.Ptr(t), p.V)
+    }
+    g.Diag.Error(call.Pos, "unknown function `Unsafe.${d.Name}`")
+    F.ErrVal()
+}
+
+// p.Read(i), p.Write(i, v), p.Offset(n), p.IsNull()
+fn genPtrMethod(mut F: Ctx.FnCtx, call: Ast.Node, recv: Ctx.Val, name: String) -> Ctx.Val {
+    mut g: Gen.Gen = F.G
+    let et: Types.Type = recv.T.Args[0]
+    let nargs: I64 = call.List.Len()
+    if (name == "IsNull" && nargs == 0) {
+        let r: String = F.Tmp()
+        F.Emit("${r} = icmp eq ptr ${recv.V}, null")
+        return Ctx.Val.New(g.Tt.Bool, r)
+    }
+    let known: Bool = (name == "Read" && nargs == 1) || (name == "Write" && nargs == 2) || (name == "Offset" && nargs == 1)
+    if (!known) {
+        g.Diag.Error(call.Pos, "a pointer has no method `${name}` that takes ${nargs} argument(s) (it has `Read(i)`, `Write(i, v)`, `Offset(n)` and `IsNull()`)")
+        genArgsForErrors(F, call)
+        return F.ErrVal()
+    }
+    if (!requireUnsafe(F, call.Pos, "`${name}` on a pointer") || !checkRawElem(F, call.Pos, et)) {
+        genArgsForErrors(F, call)
+        return F.ErrVal()
+    }
+    let i: Ctx.Val = genI64Arg(F, call.List[0], "the index of `${name}`")
+    if (i.T.Id == g.Tt.Never.Id) {
+        return F.NeverVal(None)
+    }
+    if (g.IsErr(i.T)) {
+        return F.ErrVal()
+    }
+    if (name == "Offset") {
+        return Ctx.Val.New(recv.T, elemPtr(F, et, recv.V, i.V))
+    }
+    if (name == "Read") {
+        let r: String = F.Tmp()
+        F.Emit("${r} = load ${F.LlOf(et)}, ptr ${elemPtr(F, et, recv.V, i.V)}")
+        return Ctx.Val.New(et, r)
+    }
+    mut v: Ctx.Val = genExpr(F, call.List[1], Some(et))
+    v = coerce(F, call.List[1].Pos, v, et, "the value of `Write`")
+    if (v.T.Id == g.Tt.Never.Id) {
+        return F.NeverVal(None)
+    }
+    if (g.IsErr(v.T)) {
+        return F.ErrVal()
+    }
+    F.StoreTo(et, v, elemPtr(F, et, recv.V, i.V))
+    F.UnitVal()
 }
 
 // Point.New(x, y) for an `extern struct`: every field, in order.

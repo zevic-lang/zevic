@@ -82,6 +82,8 @@ class FnCtx {
     Allocas: Gen.Sb = Gen.Sb.New()
     Cold: Gen.Sb = Gen.Sb.New()
     NTmp: I64 = 0
+    // how many `unsafe { }` blocks the code being generated is inside
+    Unsafe: I64 = 0
     NLbl: I64 = 0
     NSlot: I64 = 0
     // `xs[i].F = v` on a struct element: the element expression whose copy must be stored back, and the local that holds that copy

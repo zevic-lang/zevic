@@ -1,0 +1,20 @@
+module Main
+
+import Zevic.Unsafe
+
+class Box {
+    V: I32 = 0
+}
+
+fn Main() {
+    // outside unsafe
+    let p: *I32 = Unsafe.Alloc<I32>(1)
+    // values the collector manages
+    unsafe {
+        let s: *String = Unsafe.Alloc<String>(1)
+        let b: *Box = Unsafe.Alloc<Box>(1)
+        let t: *I32 = Unsafe.Alloc<I32>(1)
+        t.Write(0, "text")
+    }
+    p.Read(0)
+}
