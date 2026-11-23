@@ -1,0 +1,5 @@
+sum: 150
+zero: 0 0 null: false
+point: 3,4 last: 5
+first byte: 1
+f: 3.0 b: true

@@ -1,0 +1,5 @@
+`Unsafe.Alloc` can only be used inside an `unsafe { ... }` block
+`String` holds a reference managed by the garbage collector
+`Main.Box` holds a reference managed by the garbage collector
+type mismatch in the value of `Write`
+`Read` on a pointer can only be used inside an `unsafe { ... }` block

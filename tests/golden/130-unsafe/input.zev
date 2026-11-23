@@ -1,0 +1,74 @@
+module Main
+
+import Zevic.Console
+import Zevic.Unsafe
+
+struct Point {
+    X: I32
+    Y: I32
+
+    fn Init(x: I32, y: I32) {
+        this.X = x
+        this.Y = y
+    }
+}
+
+fn Sum(p: *I64, n: I64) -> I64 {
+    unsafe {
+        mut total: I64 = 0
+        mut i: I64 = 0
+        while (i < n) {
+            total += p.Read(i)
+            i += 1
+        }
+        total
+    }
+}
+
+fn Main() {
+    // allocate, write, read, free
+    let total: I64 = unsafe {
+        let p: *I64 = Unsafe.Alloc<I64>(5)
+        mut i: I64 = 0
+        while (i < 5) {
+            p.Write(i, (i + 1) * 10)
+            i += 1
+        }
+        let s: I64 = Sum(p, 5)
+        Unsafe.Free(p)
+        s
+    }
+    Console.Println("sum: ${total}")
+
+    // memory comes zero-filled
+    unsafe {
+        let z: *U8 = Unsafe.Alloc<U8>(4)
+        Console.Println("zero: ${z.Read(0)} ${z.Read(3)} null: ${z.IsNull()}")
+        Unsafe.Free(z)
+    }
+
+    // structs, Offset and Cast
+    unsafe {
+        let ps: *Point = Unsafe.Alloc<Point>(3)
+        ps.Write(0, Point.New(1, 2))
+        ps.Offset(1).Write(0, Point.New(3, 4))
+        ps.Write(2, Point.New(5, 6))
+        let q: Point = ps.Read(1)
+        Console.Println("point: ${q.X},${q.Y} last: ${ps.Offset(2).Read(0).X}")
+        let raw: *U8 = Unsafe.Cast<U8>(ps)
+        Console.Println("first byte: ${raw.Read(0)}")
+        Unsafe.Free(ps)
+    }
+
+    // F64 and Bool
+    unsafe {
+        let f: *F64 = Unsafe.Alloc<F64>(2)
+        f.Write(0, 1.5)
+        f.Write(1, f.Read(0) * 2.0)
+        let b: *Bool = Unsafe.Alloc<Bool>(1)
+        b.Write(0, true)
+        Console.Println("f: ${f.Read(1)} b: ${b.Read(0)}")
+        Unsafe.Free(f)
+        Unsafe.Free(b)
+    }
+}

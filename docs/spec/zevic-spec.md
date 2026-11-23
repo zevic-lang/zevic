@@ -17,7 +17,7 @@ Zevic is a small, easy-to-write native language that can use C code as it is. Th
 
 ### Non-goals
 
-- Low-level control for writing an OS or a kernel (`unsafe`, manual memory and a `NoGC` mode have been moved to future considerations)
+- A full low-level mode for writing an OS or a kernel (`unsafe` blocks with manual memory exist, see "Manual memory"; a `NoGC` mode has been moved to future considerations)
 - Inheritance (only `interface`s and composition are used)
 - Macros (variadic arguments are covered by `params`; if needed, to be considered after self-hosting)
 - Function overloading, default arguments and named arguments
@@ -116,7 +116,7 @@ They have a meaning only in their position, and can be used as identifiers elsew
 
 ### Words reserved for the future
 
-They cannot be used now: `macro`, `unsafe`, `type`, `where`, `const`, `yield`, `impl` and `null`.
+They cannot be used now: `macro`, `type`, `where`, `const`, `yield`, `impl` and `null`.
 
 ### Reserved names
 
@@ -1080,7 +1080,39 @@ defer f.Close()
 ### Settings
 
 - Tuning of the GC (the upper limit of the heap, the frequency of collection) is done with environment variables (`ZEVIC_GC_...`). It cannot be touched from source code.
-- A `NoGC` mode and `unsafe` are not in the specification for now (see "Open questions and future considerations").
+- `unsafe` blocks give manual memory next to the GC (next section). A `NoGC` mode is not in the specification for now (see "Open questions and future considerations").
+
+### Manual memory (`unsafe`)
+
+`unsafe { ... }` is a block (it has a value, like any block). Only inside it can memory be managed by hand. `unsafe` is a keyword; a lambda written inside an `unsafe` block is **not** unsafe itself.
+
+```
+import Zevic.Unsafe
+
+unsafe {
+    let p: *I64 = Unsafe.Alloc<I64>(4)   // room for 4 values, zero-filled
+    p.Write(0, 10)
+    p.Offset(1).Write(0, 20)
+    let a: I64 = p.Read(0)
+    Unsafe.Free(p)
+}
+```
+
+| Name | Meaning |
+| --- | --- |
+| `Unsafe.Alloc<T>(n: I64) -> *T` | memory for `n` values of `T`, filled with zeros; a null pointer when there is no memory |
+| `Unsafe.Free(p: *T)` | gives it back; only for what `Alloc` returned (`Free` of a null pointer does nothing) |
+| `Unsafe.Cast<U>(p) -> *U` | the same address as another type |
+| `p.Read(i) -> T`, `p.Write(i, v)` | the `i`-th value (counted in values, not bytes) |
+| `p.Offset(n) -> *T` | the pointer `n` values further |
+| `p.IsNull() -> Bool` | the only operation of these that is allowed outside `unsafe` |
+
+- The pointer is the same `*T` as in the C interop. `Read`, `Write` and `Offset` work on a pointer that came from C too.
+- **No range check, no check of use after `Free`, no check of a second `Free`.** These are the programmer's.
+- `T` must be something the GC has nothing to do with: a number, `Bool`, `Char`, a pointer, or a struct, tuple or enum made only of those. A `String`, a class, an `Array`, a function and so on are a compile error (the GC does not scan this memory, so such a reference would be lost). The same check applies to `Read` and `Write`.
+- `T` cannot be `Unit` or `CVoid` (no size); use `Unsafe.Cast` to get a pointer to a sized type.
+- Calling `extern "C"` functions does not need `unsafe` (as before).
+- Using any of these outside `unsafe` is a compile error.
 
 ### The boundary with C
 
@@ -1913,7 +1945,7 @@ To grow the language over a long time, it is run as a GitHub organization. The n
 
 ### Future considerations (not included now)
 
-- A `NoGC` mode and `unsafe` (low-level control for OS development)
+- A `NoGC` mode (and, with it, a way to write a kernel; `unsafe` blocks exist, see "Manual memory")
 - `union`s and bit fields in `extern struct`
 - Macros as a language feature (function arguments are of fixed length, and variable length is only `params` and `Printf`)
 - Inheritance (the policy is not to add it; see whether composition and `interface` are enough while using the language)
