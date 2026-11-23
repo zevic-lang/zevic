@@ -739,7 +739,7 @@ p.Birthday()
   - **`let`** fields can be set only inside `Init` (through `this`) and cannot be changed after that, not even by a `mut` variable. A `let` field also cannot be changed in place (`items.Push(x)` on a `let` field is an error), the same as a `let` variable.
   - A `static` field is a constant: `static let Name: Type = value` (`static mut` is an error).
   - Only `class` and `struct` have fields written like this. The fields of an `extern struct` stay `Name: Type`.
-  - The old form without `let` or `mut` (`name: Type`) is still accepted for now and means `mut`. It will be removed.
+  - The old form without `let` or `mut` (`name: Type`) is an error (before 2026-11-24 it was the only way to write a field). Write `mut name: Type`, which means the same.
 - Methods are `fn`. **`this` cannot be omitted** (`this.name`).
 - **`mut fn`** can change the fields of `this`. It can be called only from a `mut` variable. Inside an ordinary `fn`, the content of `this` cannot be changed (deep immutability).
 - **`static fn`** and **`static` fields** are called with the type name, as in `Person.Anonymous()`. A `static` field is a constant and cannot be assigned (mutable global state cannot be held).
@@ -748,8 +748,8 @@ p.Birthday()
 
 ```
 class Labeled {
-    Inner: Circle
-    Label: String
+    mut Inner: Circle
+    mut Label: String
 
     fn Init(inner: Circle, label: String) {
         this.Inner = inner
@@ -817,7 +817,7 @@ interface Shape {
 }
 
 class Circle : Shape {
-    r: F64
+    mut r: F64
     fn Init(r: F64) { this.r = r }
     fn Area() -> F64 { 3.14 * this.r * this.r }
 }
@@ -865,7 +865,7 @@ interface Iterable<T> {
 
 ```
 class Stack<T> {
-    items: Array<T> = []
+    mut items: Array<T> = []
     mut fn Push(x: T) { this.items.Push(x) }
     mut fn Pop() -> Option<T> { this.items.Pop() }
 }
@@ -995,9 +995,9 @@ fn ReadPort(path: String) -> Result<U16, Error> {
 
 ```
 class Error {
-    Kind: ErrorKind
-    Message: String
-    Cause: Option<Error>
+    mut Kind: ErrorKind
+    mut Message: String
+    mut Cause: Option<Error>
 }
 
 enum ErrorKind { NotFound, Invalid, Permission, Io, Parse, Timeout, Other }
@@ -1993,7 +1993,7 @@ tparams     = '<' tparam { ',' tparam } '>' ; tparam = Ident [ ':' type { '+' ty
 
 classDecl   = 'class' Ident [ tparams ] [ ':' typelist ] '{' { field | fnDecl } '}'
 structDecl  = 'struct' Ident [ tparams ] [ ':' typelist ] '{' { field | fnDecl } '}'
-field       = ( 'let' | 'mut' | 'static' 'let' ) Ident ':' type [ '=' expr ]   (the old form [ 'static' ] Ident ':' type [ '=' expr ] is still accepted)
+field       = ( 'let' | 'mut' | 'static' 'let' ) Ident ':' type [ '=' expr ]
 enumDecl    = 'enum' Ident [ tparams ] [ ':' typelist ] '{' variant { ',' variant } [ ',' ] { fnDecl } '}'
 variant     = Ident [ '(' typelist ')' | '{' field { ',' field } '}' ]
 variantLit  = path '{' Ident ':' expr { ',' Ident ':' expr } [ ',' ] '}'      (the value of a named variant; path ends in an upper-case name, as in Shape.Named)
@@ -2049,8 +2049,8 @@ enum Command {
 }
 
 struct Entry {
-    Word: String
-    Count: I64
+    mut Word: String
+    mut Count: I64
 
     fn Init(word: String, count: I64) {
         this.Word = word
@@ -2059,7 +2059,7 @@ struct Entry {
 }
 
 class Counter {
-    counts: Map<String, I64> = Map.New()
+    mut counts: Map<String, I64> = Map.New()
 
     mut fn Add(word: String) {
         let n: I64 = this.counts.Get(word).UnwrapOr(0)
