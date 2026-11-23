@@ -54,6 +54,7 @@ class Parser {
     diag: Diag.Diag
     // A speculative parse: errors are not printed.
     quiet: Bool = false
+    inExtern: Bool = false
     // A recursion guard.
     depth: I64 = 0
     // Parsing the pattern of a `match` arm: `n: Type` is allowed there.
@@ -1261,16 +1262,47 @@ class Parser {
         mut isStatic: Bool = false
         mut isMut: Bool = false
         mut isUnsafe: Bool = false
+        mut isLet: Bool = false
         if (this.kind() == T.Tk.Unsafe) {
             this.next()
             isUnsafe = true
         }
-        if (this.kind() == T.Tk.Static) {
+        if (this.kind() == T.Tk.Let) {
+            this.next()
+            isLet = true
+        } else if (this.kind() == T.Tk.Static) {
             this.next()
             isStatic = true
+            if (this.kind() == T.Tk.Let) {
+                this.next()
+                isLet = true
+            } else if (this.kind() == T.Tk.Mut && this.peekAt(1).Kind == T.Tk.Ident) {
+                this.next()
+                isMut = true
+            }
         } else if (this.kind() == T.Tk.Mut) {
             this.next()
             isMut = true
+        }
+        if (isLet || (isMut && this.kind() == T.Tk.Ident)) {
+            // a field: `let name: Type = value` or `mut name: Type = value`
+            let kwPos: T.Pos = this.peek().Pos
+            if (isUnsafe) {
+                return Err(this.perr(kwPos, "`unsafe` goes before `fn`, not before a field"))
+            }
+            if (dk != Ast.NK.DClass && dk != Ast.NK.DStruct) {
+                return Err(this.perr(kwPos, "only a class or a struct has fields"))
+            }
+            if (this.inExtern) {
+                return Err(this.perr(kwPos, "the fields of an `extern struct` are written `Name: Type` (no `let` or `mut`)"))
+            }
+            if (isStatic && isMut) {
+                return Err(this.perr(kwPos, "a `static` field is a constant: write `static let Name: Type = value`"))
+            }
+            mut fld: Ast.Node = this.parseField(isStatic)?
+            fld.Flag2 = isLet
+            decl.List.Push(fld)
+            return Ok(())
         }
         if (!isUnsafe && this.kind() == T.Tk.Unsafe) {
             this.next()
@@ -1374,6 +1406,7 @@ class Parser {
     mut fn parseExtern() -> Result<Ast.Node, Error> {
         let kw: T.Token = this.next()
         mut n: Ast.Node = newNode(Ast.NK.DExtern, kw.Pos)
+        this.inExtern = true
         let abi: T.Token = this.expect(T.Tk.Str, "the ABI string (`\"C\"`)")?
         n.SetName(if (abi.Parts.IsEmpty()) { "" } else { abi.Parts[0].Text })
         if (this.kind() != T.Tk.LBrace) {
@@ -1389,11 +1422,13 @@ class Parser {
                 let s: Ast.Node = this.parseTypeDecl(Ast.NK.DStruct)?
                 n.List.Push(s)
             } else {
+                this.inExtern = false
                 return Err(this.perr(this.peek().Pos, "an `extern` block can contain only `fn` and `struct` declarations"))
             }
             this.skipNl()
         }
         this.next()
+        this.inExtern = false
         Ok(n)
     }
 
