@@ -1,0 +1,78 @@
+module Main
+
+import Zevic.Console
+
+class Counter {
+    let name: String
+    mut count: I64 = 0
+    mut steps: Array<I64> = []
+    static let Start: I64 = 100
+
+    fn Init(name: String) {
+        this.name = name
+    }
+
+    mut fn Add(n: I64) {
+        this.count += n
+        this.steps.Push(n)
+    }
+
+    fn Describe() -> String {
+        "${this.name}: ${this.count} after ${this.steps.Len()} steps"
+    }
+}
+
+struct Point {
+    let x: I32
+    mut y: I32 = 0
+
+    fn Init(x: I32) {
+        this.x = x
+    }
+
+    mut fn Up() {
+        this.y += 1
+    }
+}
+
+// the old way still works, and means the same as `mut`
+class Old {
+    n: I64 = 5
+
+    mut fn Inc() {
+        this.n += 1
+    }
+}
+
+class Pair<T> {
+    let first: T
+    mut second: T
+
+    fn Init(a: T, b: T) {
+        this.first = a
+        this.second = b
+    }
+}
+
+fn Main() {
+    mut c: Counter = Counter.New("hits")
+    c.Add(2)
+    c.Add(3)
+    c.count += 10
+    Console.Println(c.Describe())
+    Console.Println("start: ${Counter.Start}")
+
+    mut p: Point = Point.New(7)
+    p.Up()
+    p.y += 1
+    Console.Println("point: ${p.x},${p.y}")
+
+    mut o: Old = Old.New()
+    o.Inc()
+    o.n += 1
+    Console.Println("old: ${o.n}")
+
+    mut pr: Pair<String> = Pair.New("a", "b")
+    pr.second = "c"
+    Console.Println("pair: ${pr.first}${pr.second}")
+}

@@ -1,0 +1,2 @@
+cannot assign to field `size`: it is declared with `let`, so only `Init` can set it
+cannot call `mut fn Push` on the field `items`: it is declared with `let`

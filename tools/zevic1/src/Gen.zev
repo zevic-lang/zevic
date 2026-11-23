@@ -275,7 +275,9 @@ fn EnsureMembers(mut g: Gen, mut t: Types.Type) {
             if (m.Kind != Ast.NK.Field || m.Flag) {
                 continue
             }
-            t.Fields.Push(Types.Field.New(m.Name, ResolveType(g, f, env, UnwrapNode(m.A))))
+            mut fld: Types.Field = Types.Field.New(m.Name, ResolveType(g, f, env, UnwrapNode(m.A)))
+            fld.Let = m.Flag2
+            t.Fields.Push(fld)
         }
     } else if (n.Kind == Ast.NK.DEnum) {
         mut tag: I32 = 0

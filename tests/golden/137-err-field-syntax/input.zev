@@ -1,0 +1,24 @@
+module Main
+
+class A {
+    static mut Limit: I64 = 1
+    unsafe let x: I64 = 0
+}
+
+enum E {
+    let v: I64
+    First
+}
+
+interface I {
+    mut m: I64
+}
+
+extern "C" {
+    struct Raw {
+        let a: I32
+    }
+}
+
+fn Main() {
+}

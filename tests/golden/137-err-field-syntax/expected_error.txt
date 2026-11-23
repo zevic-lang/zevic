@@ -1,0 +1,4 @@
+a `static` field is a constant: write `static let Name: Type = value`
+`unsafe` goes before `fn`, not before a field
+only a class or a struct has fields
+the fields of an `extern struct` are written `Name: Type`

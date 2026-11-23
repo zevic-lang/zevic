@@ -1,0 +1,23 @@
+module Main
+
+class Box {
+    let size: I64
+    let items: Array<I64> = []
+    mut label: String = ""
+
+    fn Init(size: I64) {
+        this.size = size
+    }
+
+    mut fn Grow() {
+        this.size += 1
+        this.items.Push(1)
+        this.label = "ok"
+    }
+}
+
+fn Main() {
+    mut b: Box = Box.New(1)
+    b.size = 5
+    b.label = "fine"
+}

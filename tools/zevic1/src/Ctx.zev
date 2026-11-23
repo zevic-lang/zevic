@@ -65,6 +65,8 @@ class Place {
     Ptr: String
     T: Types.Type
     Mut: Bool
+    // the place is a `let` field outside `Init`
+    LetField: Bool = false
 
     fn Init(ptr: String, t: Types.Type, isMut: Bool) {
         this.Ptr = ptr
