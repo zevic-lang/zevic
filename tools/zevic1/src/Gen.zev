@@ -832,7 +832,7 @@ fn CheckConformance(mut g: Gen, t: Types.Type) {
                 None => continue,
             }
             let (mp, mret): (Array<Types.Type>, Types.Type) = FnSig(g, od.FileInfo(), IfaceEnv(g, m.Owner, t), m.Fn)
-            mut ok: Bool = ip.Len() == mp.Len() && iret.Id == mret.Id && memberFn.IsMutFn == m.Fn.IsMutFn && memberFn.IsStatic == m.Fn.IsStatic
+            mut ok: Bool = ip.Len() == mp.Len() && iret.Id == mret.Id && memberFn.IsMutFn == m.Fn.IsMutFn && memberFn.IsStatic == m.Fn.IsStatic && !memberFn.IsUnsafe
             mut k: I64 = 0
             while (ok && k < ip.Len()) {
                 if (ip[k].Id != mp[k].Id && !g.IsErr(ip[k]) && !g.IsErr(mp[k])) {

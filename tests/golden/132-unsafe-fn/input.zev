@@ -1,0 +1,56 @@
+module Main
+
+import Zevic.Console
+
+import Zevic.Unsafe
+
+// an unsafe fn is unsafe inside, and can only be called from unsafe code
+unsafe fn Fill(p: *I64, n: I64, v: I64) {
+    mut i: I64 = 0
+    while (i < n) {
+        p.Write(i, v + i)
+        i += 1
+    }
+}
+
+unsafe fn Total(p: *I64, n: I64) -> I64 {
+    mut s: I64 = 0
+    mut i: I64 = 0
+    while (i < n) {
+        s += p.Read(i)
+        i += 1
+    }
+    s
+}
+
+// an unsafe fn can call another one without a block
+unsafe fn FillAndTotal(n: I64) -> I64 {
+    let p: *I64 = Unsafe.Alloc<I64>(n)
+    Fill(p, n, 100)
+    let t: I64 = Total(p, n)
+    Unsafe.Free(p)
+    t
+}
+
+struct Cursor {
+    P: *I64
+
+    fn Init(p: *I64) {
+        this.P = p
+    }
+
+    unsafe fn At(i: I64) -> I64 { this.P.Read(i) }
+
+    static unsafe fn Make(n: I64) -> Cursor { Cursor.New(Unsafe.Alloc<I64>(n)) }
+}
+
+fn Main() {
+    let t: I64 = unsafe { FillAndTotal(4) }
+    Console.Println("total: ${t}")
+    unsafe {
+        let c: Cursor = Cursor.Make(3)
+        Fill(c.P, 3, 7)
+        Console.Println("at: ${c.At(0)} ${c.At(2)}")
+        Unsafe.Free(c.P)
+    }
+}
