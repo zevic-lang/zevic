@@ -1,0 +1,14 @@
+module Main
+
+class Person {
+    name: String
+    Age: I32 = 0
+    static Limit: I64 = 10
+}
+
+struct Point {
+    x: I32
+}
+
+fn Main() {
+}

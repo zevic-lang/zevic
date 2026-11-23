@@ -1,0 +1,4 @@
+a field is declared with `let` or `mut`: write `mut name: Type`
+write `mut Age: Type`
+a `static` field is written `static let Limit: Type = value`
+write `mut x: Type`
