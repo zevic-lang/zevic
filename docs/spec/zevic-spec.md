@@ -1114,6 +1114,21 @@ unsafe {
 - Calling `extern "C"` functions does not need `unsafe` (as before).
 - Using any of these outside `unsafe` is a compile error.
 
+#### `unsafe fn`
+
+A function can be declared `unsafe`: its whole body counts as `unsafe`, and it can only be called from an `unsafe { ... }` block or from another `unsafe fn`.
+
+```
+unsafe fn Total(p: *I64, n: I64) -> I64 { ... }
+
+let t: I64 = unsafe { Total(p, 3) }
+```
+
+- It works on top-level functions and on methods (`unsafe fn`, `static unsafe fn`, `mut unsafe fn`; the keywords can come in any order before `fn`).
+- Calling it anywhere else is a compile error, also inside a lambda written in an `unsafe` block (a lambda is not unsafe).
+- An `unsafe fn` cannot be used as a value (`let f = Danger`), because the call would then be unchecked.
+- A method of an `interface` cannot be `unsafe`, and a method that is `unsafe` does not satisfy an interface method: a value of the interface could be called outside `unsafe`.
+
 ### The boundary with C
 
 The rules for passing GC-managed memory to C are collected in "The boundary with the GC" in the chapter "C and C++ interop". The main points are:

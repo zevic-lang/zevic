@@ -35,7 +35,7 @@ unsafe {
 - **A `NoGC` build mode.** Much bigger (the whole standard library allocates with the GC) and it is not "manual memory" for a program that wants both. Left for later.
 - **Arenas only (`Arena.New()`, `arena.Free()`).** Safer, and can be built on this proposal as a library. It does not cover shared buffers or C.
 - **Let manual memory hold GC references, with the GC scanning it** (or with pinning by the user). Convenient, but it needs registration of regions, costs time in every collection, and a mistake corrupts the GC's own state, which is very hard to trace. The type check above keeps the GC safe at no cost.
-- **`unsafe fn`.** Not needed for this step; a function that needs it can use a block inside.
+- **`unsafe fn`.** Left out of the first step; added afterwards (see the specification). A function whose caller must prove care is `unsafe fn`; one that only uses `unsafe` inside is an ordinary function.
 - **Pointer-to-integer conversions.** Left out until a use appears.
 
 ## Impact
