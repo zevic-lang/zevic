@@ -1,0 +1,11 @@
+module Main
+
+import Zevic.Env
+import Zevic.Json
+import Zevic.Regex
+
+fn Main() {
+    let a: Regex.Parser = Regex.Parser.New("a")
+    let b: Json.Parser = Json.Parser.New("1")
+    let c: String = Env.OS()
+}
