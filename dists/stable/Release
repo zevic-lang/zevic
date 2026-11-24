@@ -5,14 +5,14 @@ Codename: stable
 Architectures: amd64 arm64
 Components: main
 Description: Zevic programming language packages
-Date: Sat, 21 Nov 2026 10:29:04 UTC
+Date: Tue, 24 Nov 2026 07:58:59 UTC
 MD5Sum:
- 0ecaf239a5b891dc13edac7fa1cfd400              649 main/binary-amd64/Packages
- c1b8c6c30c22a0a082d5026ada4bd548              450 main/binary-amd64/Packages.gz
- 194539b4c765c1e222fe4901a578a9a8              649 main/binary-arm64/Packages
- 0d04019159f0cc5f6dc52646a4d22a06              453 main/binary-arm64/Packages.gz
+ 99ab74d1d915e97610f417227a971857              649 main/binary-amd64/Packages
+ 5fb5771d7c863460b80fc589aab52428              450 main/binary-amd64/Packages.gz
+ c2afa1497e026e0994e92919fb780bfd              649 main/binary-arm64/Packages
+ 4656c9399f76ff33a5e59a03878aa447              448 main/binary-arm64/Packages.gz
 SHA256:
- d3d70801bd497ec9e31036d374bc3999105a661a9ea4cb27c603ac368928895e              649 main/binary-amd64/Packages
- dc8bdceec00637c0913081662f32bc333e490a2a4dea4fa9fa661c16b0abb2b8              450 main/binary-amd64/Packages.gz
- 851f660176ef01534f5bda2d5d63fbf778a32650d95d222b401f45a2d207e4e8              649 main/binary-arm64/Packages
- 0ac8b84b7458fc25652d013f23babcfbd94f0adb7da57c9df378c9cf9a93cb08              453 main/binary-arm64/Packages.gz
+ d19600d278536f1202360665631ec61c67fb7f04e229cf6480e848b79752cb52              649 main/binary-amd64/Packages
+ e4572330c2e2a0b2feb95c0a7ba237d65801e67083a5b15e7e7b3a1630fdd6a2              450 main/binary-amd64/Packages.gz
+ 3aa7aaa43848e804bd8922df1e4183b9eb619807cb500081d8492d7455332c34              649 main/binary-arm64/Packages
+ dea4f097052222ded42f3095750dd8c412e7d4ee08deb7de7011fa784172175d              448 main/binary-arm64/Packages.gz
