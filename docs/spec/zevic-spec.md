@@ -116,7 +116,9 @@ They have a meaning only in their position, and can be used as identifiers elsew
 
 ### Words reserved for the future
 
-They cannot be used now: `macro`, `type`, `where`, `const`, `yield`, `impl` and `null`.
+They cannot be used now: `macro`, `type`, `where`, `const`, `yield`, `impl`, `union`, `volatile`, `pub`, `try` and `null`.
+
+They are kept for what may come: `union` (C unions), `volatile` (reads and writes that must not be optimized away, with `unsafe`), `pub` (finer control of visibility), `try` (a form next to `?`). More words can be added before 1.0 and not after. To use one as a name today, enclose it in backquotes.
 
 ### Reserved names
 

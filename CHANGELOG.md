@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **Breaking:** `union`, `volatile`, `pub` and `try` are reserved for the future, like `macro`, `type`, `where`, `const`, `yield` and `impl`: they cannot be used as names (backquotes still work)
 - `Unsafe.Alloc` goes through the runtime (`zevic_calloc`) instead of calling `calloc` with 64-bit sizes, so it also works where `size_t` is 32 bits (wasm32, 32-bit targets)
 - Fields of a `class` or `struct` are declared with `let` or `mut`, like variables: `let name: String`, `mut count: I64 = 0`, `static let Limit: I64 = 10`. A `let` field can be set only in `Init`. **Breaking:** the old form `name: Type` is now an error; write `mut name: Type` (the same meaning). The fields of an `extern struct` are unchanged
 - `unsafe fn` (top-level functions and methods): the body is `unsafe`, and it can be called only from `unsafe` code. It cannot be used as a value, and an interface method cannot be `unsafe`
