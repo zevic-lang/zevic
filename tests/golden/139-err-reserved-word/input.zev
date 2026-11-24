@@ -1,0 +1,9 @@
+module Main
+
+fn Main() {
+    let union: I32 = 1
+    let volatile: I32 = 2
+    let pub: I32 = 3
+    let try: I32 = 4
+    let `try`: I32 = 5
+}
