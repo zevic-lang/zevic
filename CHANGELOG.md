@@ -1,6 +1,7 @@
 # Changelog
 
-## Unreleased
+## 0.5.0
+- **Moving code from 0.4.x** (this release has breaking changes, before 1.0): write fields as `mut name: Type` (or `let name: Type` when only `Init` sets them; `name: Type` is an error now); rename variables or functions called `union`, `volatile`, `pub` or `try` (or enclose them in backquotes); use `Env.Os()` and `DateTime.Nanosecond()`
 - **Breaking:** `union`, `volatile`, `pub` and `try` are reserved for the future, like `macro`, `type`, `where`, `const`, `yield` and `impl`: they cannot be used as names (backquotes still work)
 - **Breaking:** `Env.OS()` is `Env.Os()` (acronyms are written like `Json`, `Utf8`, `Http`), and `DateTime.Nano()` is `DateTime.Nanosecond()` (like `Millisecond()`)
 - The types the standard library uses inside `Regex`, `Toml`, `Json` and `DateTime` (`Regex.Node`, `Regex.CharClass`, `Regex.Parser`, `Regex.Compiler`, `Regex.Thread`, `Toml.Parser`, `Json.Parser`, `DateTime.Reader`) are private now. They were public only by the capital letter of their names, and nothing was meant to use them

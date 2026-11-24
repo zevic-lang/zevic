@@ -1,5 +1,5 @@
 [package]
 name = "WordLib"
-version = "0.4.8"
+version = "0.5.0"
 kind = "lib"
 zevic = ">=0.4"
