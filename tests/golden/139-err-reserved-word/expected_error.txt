@@ -1,0 +1,4 @@
+`union` is reserved for the future
+`volatile` is reserved for the future
+`pub` is reserved for the future
+`try` is reserved for the future

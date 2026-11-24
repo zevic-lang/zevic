@@ -159,7 +159,7 @@ fn dumpModules(files: Array<String>) -> I32 {
                 if (d.Kind == Ast.NK.DExtern) {
                     for (e in d.List) {
                         let x: Option<Resolve.Decl> = m.Decls.Get(e.Name)
-                        let pub: String = match (x) {
+                        let vis: String = match (x) {
                             Some(y) => if (y.IsPub) { "pub" } else { "priv" },
                             None => "priv",
                         }
@@ -167,15 +167,15 @@ fn dumpModules(files: Array<String>) -> I32 {
                             Some(y) => if (y.HasAbi) { y.Abi } else { "-" },
                             None => "-",
                         }
-                        Console.Println("    decl ${e.Name} ${pub} abi=${abi}")
+                        Console.Println("    decl ${e.Name} ${vis} abi=${abi}")
                     }
                     continue
                 }
-                let pub: String = match (m.Decls.Get(d.Name)) {
+                let vis: String = match (m.Decls.Get(d.Name)) {
                     Some(y) => if (y.IsPub) { "pub" } else { "priv" },
                     None => "priv",
                 }
-                Console.Println("    decl ${d.Name} ${pub}")
+                Console.Println("    decl ${d.Name} ${vis}")
             }
         }
         for (t in m.Tests) {
