@@ -105,7 +105,7 @@ enum Value {
 
 let inf: F64 = Math.Pow(10.0, 1000.0)
 
-class Parser {
+class tomlParser {
     mut s: String
     mut pos: I64 = 0
     mut line: I64 = 1
@@ -611,7 +611,7 @@ class Parser {
 
 // Reads a TOML document. The result is a `Value.Table`.
 fn Parse(text: String) -> Result<Value, Error> {
-    mut p: Parser = Parser.New(text)
+    mut p: tomlParser = tomlParser.New(text)
     // a byte order mark at the start is allowed
     if (Text.StartsWith(text, "\u{FEFF}")) { p.pos = 3 }
     let root: Map<String, Value> = Map.New()

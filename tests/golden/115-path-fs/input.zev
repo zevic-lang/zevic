@@ -10,7 +10,7 @@ import Zevic.Text
 fn N(s: String) -> String { Text.Replace(s, Path.Separator(), "/") }
 
 fn Main() {
-    Console.Println("os ${Env.OS().Len() > 0} ${Env.IsWindows() == (Env.OS() == "windows")}")
+    Console.Println("os ${Env.Os().Len() > 0} ${Env.IsWindows() == (Env.Os() == "windows")}")
     Console.Println("${N(Path.Join("a", "b"))} ${N(Path.Join("a/", "b"))} ${N(Path.Join("a", "/b"))} ${N(Path.Join("", "b"))} ${N(Path.JoinAll(["x", "y", "z.txt"]))}")
     Console.Println("${N(Path.Clean("a//b/./c/../d/"))} ${N(Path.Clean("/../a"))} ${N(Path.Clean("../../a/.."))} ${N(Path.Clean(""))} ${N(Path.Clean("/"))}")
     Console.Println("${Path.FileName("/a/b.txt")} [${Path.FileName("/")}] ${Path.FileName("a/b/")} ${N(Path.Parent("/a/b"))} ${N(Path.Parent("/a"))} ${N(Path.Parent("a"))} ${N(Path.Parent("/"))} ${N(Path.Parent("a/b/"))}")

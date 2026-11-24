@@ -40,11 +40,11 @@ let kTextEnd: I32 = 13
 // How many copies a counted repeat like {n,m} may make.
 let maxRepeat: I64 = 1000
 
-class Node {
+class reNode {
     mut kind: I32
     mut ch: U32 = 0
     mut cls: I64 = 0
-    mut kids: Array<Node> = []
+    mut kids: Array<reNode> = []
     mut min: I64 = 0
     mut max: I64 = 0
     mut greedy: Bool = true
@@ -54,7 +54,7 @@ class Node {
 }
 
 // A set of characters: pairs `lo, hi` in `ranges`, taken as they are or, with `negated`, as everything else.
-class CharClass {
+class reClass {
     mut ranges: Array<U32> = []
     mut negated: Bool = false
 
@@ -106,12 +106,12 @@ fn complement(rs: Array<U32>) -> Array<U32> {
     out
 }
 
-class Parser {
+class reParser {
     mut src: Array<U32>
     mut pos: I64 = 0
     mut groups: I64 = 0
     mut names: Map<String, I64> = Map.New()
-    mut classes: Array<CharClass> = []
+    mut classes: Array<reClass> = []
     mut ignoreCase: Bool = false
     mut multiline: Bool = false
     mut dotAll: Bool = false
@@ -139,31 +139,31 @@ class Parser {
         true
     }
 
-    mut fn Alt() -> Result<Node, Error> {
-        mut branches: Array<Node> = [this.Concat()?]
+    mut fn Alt() -> Result<reNode, Error> {
+        mut branches: Array<reNode> = [this.Concat()?]
         while (this.Peek() == 124_U32 && !this.AtEnd()) {
             this.pos += 1
             branches.Push(this.Concat()?)
         }
         if (branches.Len() == 1) { return Ok(branches[0]) }
-        mut n: Node = Node.New(kAlt)
+        mut n: reNode = reNode.New(kAlt)
         n.kids = branches
         Ok(n)
     }
 
-    mut fn Concat() -> Result<Node, Error> {
-        mut items: Array<Node> = []
+    mut fn Concat() -> Result<reNode, Error> {
+        mut items: Array<reNode> = []
         while (!this.AtEnd() && this.Peek() != 124_U32 && this.Peek() != 41_U32) {
             items.Push(this.Repeat()?)
         }
-        if (items.Len() == 0) { return Ok(Node.New(kEmpty)) }
+        if (items.Len() == 0) { return Ok(reNode.New(kEmpty)) }
         if (items.Len() == 1) { return Ok(items[0]) }
-        mut n: Node = Node.New(kConcat)
+        mut n: reNode = reNode.New(kConcat)
         n.kids = items
         Ok(n)
     }
 
-    fn isAssertion(n: Node) -> Bool { n.kind == kEmpty || (n.kind >= kBegin && n.kind != kGroup) }
+    fn isAssertion(n: reNode) -> Bool { n.kind == kEmpty || (n.kind >= kBegin && n.kind != kGroup) }
 
     // A whole number at the current position; None if there is no digit.
     mut fn Number() -> Option<I64> {
@@ -212,8 +212,8 @@ class Parser {
         None
     }
 
-    mut fn Repeat() -> Result<Node, Error> {
-        mut atom: Node = this.Atom()?
+    mut fn Repeat() -> Result<reNode, Error> {
+        mut atom: reNode = this.Atom()?
         loop {
             if (this.AtEnd()) { break }
             let c: U32 = this.Peek()
@@ -241,7 +241,7 @@ class Parser {
                 break
             }
             if (this.isAssertion(atom)) { return Err(this.Fail("there is nothing to repeat")) }
-            mut r: Node = Node.New(kRepeat)
+            mut r: reNode = reNode.New(kRepeat)
             r.kids = [atom]
             r.min = lo
             r.max = hi
@@ -254,15 +254,15 @@ class Parser {
         Ok(atom)
     }
 
-    fn charNode(c: U32) -> Node {
-        mut n: Node = Node.New(kChar)
+    fn charNode(c: U32) -> reNode {
+        mut n: reNode = reNode.New(kChar)
         n.ch = c
         n
     }
 
     // A class made of one shorthand (\d, \W ...).
-    mut fn shorthandNode(letter: U8) -> Node {
-        mut cc: CharClass = CharClass.New()
+    mut fn shorthandNode(letter: U8) -> reNode {
+        mut cc: reClass = reClass.New()
         let lower: U8 = letter | 32
         let rs: Array<U32> = shorthand(lower)
         if (letter == lower) {
@@ -271,7 +271,7 @@ class Parser {
             cc.ranges = complement(rs)
         }
         this.classes.Push(cc)
-        mut n: Node = Node.New(kClass)
+        mut n: reNode = reNode.New(kClass)
         n.cls = this.classes.Len() - 1
         n
     }
@@ -324,9 +324,9 @@ class Parser {
         Ok(None)
     }
 
-    mut fn Class() -> Result<Node, Error> {
+    mut fn Class() -> Result<reNode, Error> {
         this.pos += 1
-        mut cc: CharClass = CharClass.New()
+        mut cc: reClass = reClass.New()
         if (this.Peek() == 94_U32) {
             cc.negated = true
             this.pos += 1
@@ -388,7 +388,7 @@ class Parser {
             }
         }
         this.classes.Push(cc)
-        mut n: Node = Node.New(kClass)
+        mut n: reNode = reNode.New(kClass)
         n.cls = this.classes.Len() - 1
         Ok(n)
     }
@@ -409,12 +409,12 @@ class Parser {
         Ok(name)
     }
 
-    mut fn Atom() -> Result<Node, Error> {
+    mut fn Atom() -> Result<reNode, Error> {
         let c: U32 = this.Peek()
         this.pos += 1
-        if (c == 46_U32) { return Ok(Node.New(kAny)) }
-        if (c == 94_U32) { return Ok(Node.New(kBegin)) }
-        if (c == 36_U32) { return Ok(Node.New(kEnd)) }
+        if (c == 46_U32) { return Ok(reNode.New(kAny)) }
+        if (c == 94_U32) { return Ok(reNode.New(kBegin)) }
+        if (c == 36_U32) { return Ok(reNode.New(kEnd)) }
         if (c == 91_U32) {
             this.pos -= 1
             return this.Class()
@@ -446,7 +446,7 @@ class Parser {
                         else if (f == 41_U32) { break }
                         else { return Err(this.Fail("unknown flag \"${f.ToCharUnchecked()}\"")) }
                     }
-                    return Ok(Node.New(kEmpty))
+                    return Ok(reNode.New(kEmpty))
                 }
             }
             mut index: I64 = 0
@@ -458,11 +458,11 @@ class Parser {
                     this.names.Set(name, index)
                 }
             }
-            let inner: Node = this.Alt()?
+            let inner: reNode = this.Alt()?
             if (this.Peek() != 41_U32 || this.AtEnd()) { return Err(this.Fail("a ( group is not closed")) }
             this.pos += 1
             if (!capture) { return Ok(inner) }
-            mut g: Node = Node.New(kGroup)
+            mut g: reNode = reNode.New(kGroup)
             g.kids = [inner]
             g.group = index
             return Ok(g)
@@ -483,10 +483,10 @@ class Parser {
             if (e < 128_U32 && (el == 100_U32 || el == 119_U32 || el == 115_U32)) {
                 return Ok(this.shorthandNode(e.ToU8Wrap()))
             }
-            if (e == 98_U32) { return Ok(Node.New(kWordB)) }
-            if (e == 66_U32) { return Ok(Node.New(kNotWordB)) }
-            if (e == 65_U32) { return Ok(Node.New(kTextBegin)) }
-            if (e == 122_U32) { return Ok(Node.New(kTextEnd)) }
+            if (e == 98_U32) { return Ok(reNode.New(kWordB)) }
+            if (e == 66_U32) { return Ok(reNode.New(kNotWordB)) }
+            if (e == 65_U32) { return Ok(reNode.New(kTextBegin)) }
+            if (e == 122_U32) { return Ok(reNode.New(kTextEnd)) }
             match (this.CharEscape(e)?) {
                 Some(v) => return Ok(this.charNode(v)),
                 None => return Err(this.Fail("unknown escape \\${e.ToCharUnchecked()}")),
@@ -511,7 +511,7 @@ let opTextEnd: I32 = 11
 let opMatch: I32 = 12
 
 // The program: instruction number `i` is `ops[i]` with the operands `xs[i]` and `ys[i]`.
-class Compiler {
+class reCompiler {
     mut ops: Array<I32> = []
     mut xs: Array<I64> = []
     mut ys: Array<I64> = []
@@ -538,7 +538,7 @@ class Compiler {
         }
     }
 
-    mut fn Gen(n: Node) {
+    mut fn Gen(n: reNode) {
         let k: I32 = n.kind
         if (k == kEmpty) { return }
         if (k == kChar) { this.Emit(opChar, n.ch.ToI64(), 0) }
@@ -576,7 +576,7 @@ class Compiler {
             }
             for (j in jumps) { this.xs[j] = this.Here() }
         } else if (k == kRepeat) {
-            let body: Node = n.kids[0]
+            let body: reNode = n.kids[0]
             mut i: I64 = 0
             while (i < n.min) {
                 this.Gen(body)
@@ -605,7 +605,7 @@ class Compiler {
     }
 }
 
-class Thread {
+class reThread {
     mut pc: I64
     mut caps: Array<I64>
 
@@ -667,14 +667,14 @@ class Regex {
     mut ops: Array<I32>
     mut xs: Array<I64>
     mut ys: Array<I64>
-    mut classes: Array<CharClass>
+    mut classes: Array<reClass>
     mut names: Map<String, I64>
     mut groups: I64
     mut ignoreCase: Bool
     mut multiline: Bool
     mut dotAll: Bool
 
-    fn Init(pattern: String, c: Compiler, p: Parser) {
+    fn Init(pattern: String, c: reCompiler, p: reParser) {
         this.pattern = pattern
         this.ops = c.ops
         this.xs = c.xs
@@ -700,7 +700,7 @@ class Regex {
     }
 
     fn classHas(idx: I64, c: U32) -> Bool {
-        let cc: CharClass = this.classes[idx]
+        let cc: reClass = this.classes[idx]
         mut hit: Bool = cc.has(c)
         if (!hit && this.ignoreCase) {
             let lower: U32 = fold(c)
@@ -716,7 +716,7 @@ class Regex {
 
     // Add the thread for instruction `pc` at text position `pos` to `list`, following the instructions that do not
     // read a character (jumps, saves, assertions). `marks` keeps one thread per instruction for each position.
-    fn add(pc: I64, pos: I64, caps: Array<I64>, mut list: Array<Thread>, mut marks: Array<I64>, step: I64, input: Array<U32>) {
+    fn add(pc: I64, pos: I64, caps: Array<I64>, mut list: Array<reThread>, mut marks: Array<I64>, step: I64, input: Array<U32>) {
         if (marks[pc] == step) { return }
         marks[pc] = step
         let op: I32 = this.ops[pc]
@@ -746,7 +746,7 @@ class Regex {
         } else if (op == opNotWordB) {
             if (this.wordAt(input, pos - 1) == this.wordAt(input, pos)) { this.add(pc + 1, pos, caps, list, marks, step, input) }
         } else {
-            list.Push(Thread.New(pc, caps))
+            list.Push(reThread.New(pc, caps))
         }
     }
 
@@ -754,7 +754,7 @@ class Regex {
     fn exec(input: Array<U32>, start: I64) -> Option<Array<I64>> {
         let n: I64 = input.Len()
         mut marks: Array<I64> = Array<I64>.Repeat(-1, this.ops.Len())
-        mut clist: Array<Thread> = []
+        mut clist: Array<reThread> = []
         mut found: Option<Array<I64>> = None
         let fresh: Array<I64> = Array<I64>.Repeat(-1, (this.groups + 1) * 2)
         mut p: I64 = start
@@ -768,7 +768,7 @@ class Regex {
                 p += 1
                 continue
             }
-            mut nlist: Array<Thread> = []
+            mut nlist: Array<reThread> = []
             for (t in clist) {
                 let op: I32 = this.ops[t.pc]
                 if (op == opMatch) {
@@ -946,12 +946,12 @@ class Regex {
 // Makes a `Regex` from a pattern; an error says what is wrong with the pattern and where.
 fn Compile(pattern: String) -> Result<Regex, Error> {
     let cs: Array<Char> = Text.ToChars(pattern)
-    mut p: Parser = Parser.New(cs.Map((c: Char) => c.ToU32()))
-    let root: Node = p.Alt()?
+    mut p: reParser = reParser.New(cs.Map((c: Char) => c.ToU32()))
+    let root: reNode = p.Alt()?
     if (!p.AtEnd()) {
         return Err(p.Fail("a ) has no ( before it"))
     }
-    mut c: Compiler = Compiler.New()
+    mut c: reCompiler = reCompiler.New()
     c.Emit(opSave, 0, 0)
     c.Gen(root)
     c.Emit(opSave, 1, 0)

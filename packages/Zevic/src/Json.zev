@@ -98,7 +98,7 @@ enum Value {
 
 // ---- parsing ----
 
-class Parser {
+class jsonParser {
     mut src: String
     mut pos: I64 = 0
 
@@ -395,7 +395,7 @@ class Parser {
 
 // Reads a JSON text. The whole text must be one value (blanks around it are fine). Errors say where.
 fn Parse(text: String) -> Result<Value, Error> {
-    mut p: Parser = Parser.New(text)
+    mut p: jsonParser = jsonParser.New(text)
     let v: Value = p.value(0)?
     p.skipSpace()
     if (p.peek() >= 0) {
