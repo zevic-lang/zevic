@@ -7,7 +7,7 @@ import Zevic.Text
 // works on the text of the path. On Windows both `\` and `/` separate the parts and a path can start with a
 // drive (`C:\`); elsewhere only `/` does. Results use the separator of the system (`Separator()`).
 
-fn isWin() -> Bool { Env.OS() == "windows" }
+fn isWin() -> Bool { Env.Os() == "windows" }
 
 fn isSep(b: U8) -> Bool { b == b'/' || (b == b'\\' && isWin()) }
 
