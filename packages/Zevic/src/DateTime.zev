@@ -123,7 +123,7 @@ struct DateTime : Comparable {
     fn Second() -> I32 { floorMod(this.localSecs(), 60).ToI32Wrap() }
 
     // The part of the second, in nanoseconds (0 to 999999999).
-    fn Nano() -> I32 { this.nano }
+    fn Nanosecond() -> I32 { this.nano }
 
     fn Millisecond() -> I32 { this.nano / 1000000 }
 
@@ -364,7 +364,7 @@ fn NowLocal() -> DateTime { NowUtc().ToLocal() }
 // ---- reading text ----
 
 // A reader over the bytes of a text: `pos` is the next byte.
-class Reader {
+class dateReader {
     mut s: String
     mut pos: I64 = 0
 
@@ -437,7 +437,7 @@ fn nanosFromFraction(value: I64, digits: I64) -> I32 {
 }
 
 // A zone written as Z, +HH:MM, +HHMM or +HH. None if it is not there or not valid.
-fn readZone(mut r: Reader) -> Result<Option<I32>, Error> {
+fn readZone(mut r: dateReader) -> Result<Option<I32>, Error> {
     if (r.Eat(b'Z') || r.Eat(b'z')) { return Ok(Some(0)) }
     let sign: I32 = if (r.Eat(b'+')) { 1 } else if (r.Eat(b'-')) { -1 } else { 0 }
     if (sign == 0) { return Ok(None) }
@@ -460,7 +460,7 @@ fn readZone(mut r: Reader) -> Result<Option<I32>, Error> {
 // Reads ISO 8601 / RFC 3339 text: `2026-11-08`, `2026-11-08T18:03`, `2026-11-08T18:03:00`, with a fraction
 // (`.25`, up to 9 digits) and a zone (`Z`, `+09:00`, `-0500`). A space may stand for the `T`. Text without a zone is UTC.
 fn Parse(text: String) -> Result<DateTime, Error> {
-    mut r: Reader = Reader.New(text)
+    mut r: dateReader = dateReader.New(text)
     let bad: Error = invalid("not a date and time in ISO 8601 form: \"${text}\"")
     let year: I64 = match (r.Digits(4)) {
         Some(v) => v,
@@ -518,7 +518,7 @@ fn Parse(text: String) -> Result<DateTime, Error> {
 // (2 digits, or 1), %L (milliseconds), %f (microseconds), %N (nanoseconds) and %z (Z, +09:00 or +0900), and
 // %% . Every other character must be the same in the text. Missing parts are 1970-01-01 00:00:00 UTC.
 fn ParseFormat(text: String, pattern: String) -> Result<DateTime, Error> {
-    mut r: Reader = Reader.New(text)
+    mut r: dateReader = dateReader.New(text)
     let bad: Error = invalid("\"${text}\" does not match the pattern \"${pattern}\"")
     mut year: I64 = 1970
     mut month: I64 = 1
