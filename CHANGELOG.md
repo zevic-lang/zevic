@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.5.1 (next)
+## Unreleased
 - `zevpm new` writes `zevic = ">=X.Y"` for the version of Zevic that made the package, not the fixed `">=0.1"` (the package itself still starts at `version = "0.1.0"`)
 
 ## 0.5.0
