@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.5.1 (next)
+- `zevpm new` writes `zevic = ">=X.Y"` for the version of Zevic that made the package, not the fixed `">=0.1"` (the package itself still starts at `version = "0.1.0"`)
+
 ## 0.5.0
 - **Moving code from 0.4.x** (this release has breaking changes, before 1.0): write fields as `mut name: Type` (or `let name: Type` when only `Init` sets them; `name: Type` is an error now); rename variables or functions called `union`, `volatile`, `pub` or `try` (or enclose them in backquotes); use `Env.Os()` and `DateTime.Nanosecond()`
 - **Breaking:** `union`, `volatile`, `pub` and `try` are reserved for the future, like `macro`, `type`, `where`, `const`, `yield` and `impl`: they cannot be used as names (backquotes still work)
