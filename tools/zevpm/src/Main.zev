@@ -111,7 +111,7 @@ fn checkZevicVersion(zevic: String, m: Toml.Manifest) -> Result<Unit, Error> {
             return Ok(())
         }
         if (h < w) {
-            return Err(fatal("${m.Name} needs zevic ${m.ZevicReq}, but this is zevic ${h}.${have[1]}.${if (have.Len() > 2) { have[2] } else { 0 }}"))
+            return Err(fatal("${m.Name} needs zevic ${m.ZevicReq}, but this is zevic ${have[0]}.${have[1]}.${if (have.Len() > 2) { have[2] } else { 0 }}"))
         }
         i += 1
     }
