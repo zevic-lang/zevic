@@ -1736,7 +1736,7 @@ myapp/
 name = "MyApp"
 version = "0.1.0"
 kind = "bin"            # "bin" or "lib"
-zevic = ">=0.1"
+zevic = ">=0.5"
 
 [deps]
 JsonPlus = { git = "https://github.com/someone/jsonplus", tag = "v1.2.0" }

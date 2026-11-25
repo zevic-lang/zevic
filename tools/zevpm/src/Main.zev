@@ -256,7 +256,10 @@ fn pascalName(dirName: String) -> Result<String, Error> {
 
 fn writeNew(dir: String, name: String, lib: Bool, mustBeNew: Bool) -> Result<Unit, Error> {
     Os.Mkdirs(Os.Join(dir, "src"))?
-    let toml: String = "[package]\nname = \"${name}\"\nversion = \"0.1.0\"\nkind = \"${if (lib) { "lib" } else { "bin" }}\"\nzevic = \">=0.1\"\n"
+    // a new package asks for the Zevic that made it (the version of zevpm is the one of Zevic)
+    let vs: Array<I64> = numbers(Version.Current)
+    let need: String = if (vs.Len() >= 2) { "${vs[0]}.${vs[1]}" } else { "0.1" }
+    let toml: String = "[package]\nname = \"${name}\"\nversion = \"0.1.0\"\nkind = \"${if (lib) { "lib" } else { "bin" }}\"\nzevic = \">=${need}\"\n"
     mut mainFile: String = Os.Join(dir, "src/Main.zev")
     mut mainText: String = "module Main\n\nimport Zevic.Console\n\nfn Main() {\n    Console.Println(\"Hello from ${name}!\")\n}\n"
     if (lib) {

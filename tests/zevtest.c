@@ -1228,7 +1228,7 @@ static void sc_manifest_errors(const char *tmp) {
         {fmt("%s\n[deps]\nUtil = { git = \"x\", path = \"y\" }\n", good), "both `git` and `path`"},
         {fmt("%s\n[deps]\nUtil = { git = \"x\", tag = \"a\", branch = \"b\" }\n", good), "only one of"},
         {fmt("%s\n[oops]\n", good), "unknown section"},
-        {replace_all(good, "zevic = \">=0.1\"", "zevic = \">=99.0\""), "needs zevic"},
+        {replace_all(good, "zevic = \">=", "zevic = \">=99."), "needs zevic"},
     };
     for (size_t i = 0; i < sizeof cases / sizeof *cases; i++) {
         wr(toml, cases[i].text);
@@ -1312,6 +1312,9 @@ static void sc_install(const char *tmp) {
     expect(n.code == 0, "zevpm new:\n%s%s", n.out, n.err);
     char *proj = join(work, "proj");
     expect(is_file(join(proj, "zevic.toml")), "zevic.toml was created");
+    /* the new package asks for the Zevic that made it, not for an old one */
+    char *made = rd(join(proj, "zevic.toml"));
+    expect(made && strstr(made, "zevic = \">=") && !strstr(made, "zevic = \">=0.1\""), "zevic.toml asks for the current zevic:\n%s", made ? made : "(unreadable)");
     Run r = sh(proj, false, "zevpm", "run", NULL);
     expect(r.code == 0 && contains(r.out, "Hello from Proj!"), "zevpm run:\n%s%s", r.out, r.err);
     Run t = sh(proj, false, "zevpm", "test", NULL);
