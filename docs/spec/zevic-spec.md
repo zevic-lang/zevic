@@ -586,24 +586,14 @@ Console.Println(Json.Pretty(v))         // indented
 - The error of `Parse` is `ErrorKind.Parse` and includes the line and column. It follows RFC 8259 strictly (a trailing comma or comments are errors). Nesting is limited to 512 levels.
 - Objects keep the order of their keys. Numbers are `F64` (integers up to 2^53 are exact). See `docs/proposals/0006-json.md` for details.
 
-### HTTP (Zevic.Http)
+### HTTP
 
-```
-import Zevic.Http
+The standard library has no HTTP since 0.6.0 (it was `Zevic.Http` in 0.5.x). TCP and UDP are in `Zevic.Net`, and HTTP is in two packages, so that the standard library stays small:
 
-let r: Http.Response = Http.Get("http://127.0.0.1:8080/hello")?     // there are also Post(url, body) and Send(request)
-Console.Println("${r.Status} ${r.Body}")                              // a 404 or 500 is seen in Status, not as an Err
+- the client (HTTP and HTTPS, redirects, compressed answers, proxies, timeouts) is the package [`zevic-lang/curl`](https://github.com/zevic-lang/curl), on top of libcurl;
+- the server is the package [`zevic-lang/httpd`](https://github.com/zevic-lang/httpd), on top of `Zevic.Net`.
 
-let server: Http.Server = Http.Listen("127.0.0.1", 0)?                // port 0: pick a free port
-let task: Async.Task<Result<Unit, Error>> = async {
-    server.Serve((req: Http.Request) => Http.Response.Text(200, "hello ${req.Path()}"))
-}
-server.Close()                                                        // ends Serve
-```
-
-- Only `http://`. `https://` is an `Err` (TLS is not supported; the package [`zevic-lang/curl`](https://github.com/zevic-lang/curl) is the HTTPS client). Redirects are not followed. Each connection is closed after one request.
-- The body is handled with `Content-Length`, `chunked`, or until the connection closes. The limit is 16 MiB and the timeout is 30 seconds.
-- `Serve` creates one `async` task per connection. See `docs/proposals/0003-http.md` for details.
+See `docs/proposals/0003-http.md` for what `Zevic.Http` was and why it moved.
 
 ## Functions and lambdas
 
@@ -1535,7 +1525,7 @@ After the first batch works, the second and third batches are implemented in tha
 
 | Module | Role |
 | --- | --- |
-| `Zevic.Net` | TCP and UDP sockets (HTTP is `Zevic.Http`) |
+| `Zevic.Net` | TCP and UDP sockets (HTTP is in the packages `Curl` and `Httpd`) |
 | `Zevic.Thread` | OS threads (the base of `Async`) |
 | `Zevic.Async` | tasks, channels and mutexes, built on `Thread` |
 | `Zevic.BigInt` | arbitrary-precision integers (the `BigInt` type) |

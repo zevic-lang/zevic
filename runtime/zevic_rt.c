@@ -2087,7 +2087,7 @@ void zevic_cond_broadcast(void *c) { pthread_cond_broadcast(c); }
 
 #ifndef __wasi__
 /* ---------------------------------------------------------------------------------------------
- * Sockets (Zevic.Http): TCP over POSIX sockets, or Winsock. A socket is an I64. A failing call returns -1 (or 0
+ * Sockets (Zevic.Net): TCP over POSIX sockets, or Winsock. A socket is an I64. A failing call returns -1 (or 0
  * for zevic_net_write) and leaves the reason for zevic_net_failed() / zevic_net_errmsg().
  * ------------------------------------------------------------------------------------------- */
 #ifdef _WIN32
