@@ -1,0 +1,32 @@
+module Kernel
+
+import Zevic.Unsafe
+
+// The UART of QEMU's `virt` machine for RISC-V. A volatile write is a store the compiler must keep.
+let UartBase: U64 = 0x10000000
+
+fn putc(c: U8) {
+    unsafe {
+        Unsafe.At<U8>(UartBase).WriteVolatile(0, c)
+    }
+}
+
+// A string literal lives in the image, so it needs no heap. Len and ByteAt do not allocate either.
+fn print(s: String) {
+    mut i: I64 = 0
+    while (i < s.Len()) {
+        putc(s.ByteAt(i))
+        i += 1
+    }
+}
+
+// What a failed check does: there is nobody to tell, so say it and stop.
+export "C" fn zevic_panic(msg: *U8, len: CLongLong, file: *U8, line: CInt) {
+    print("panic\n")
+    while (true) {}
+}
+
+// Called from native/boot.S once the stack is set.
+export "C" fn kmain() {
+    print("Hello, World!\n")
+}

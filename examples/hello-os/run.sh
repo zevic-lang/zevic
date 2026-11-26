@@ -1,11 +1,11 @@
 #!/bin/sh
 # Builds the kernel (a freestanding RISC-V image, no runtime, no GC) and checks the result.
 # With qemu-system-riscv64 installed, it also boots it and checks the output.
-# usage: examples/baremetal/run.sh [path-to-zevic]   (run from the repository root)
+# usage: examples/hello-os/run.sh [path-to-zevic]   (run from the repository root)
 set -eu
 ZEVIC=${1:-build/zevic}
-HERE=examples/baremetal
-OUT=${TMPDIR:-/tmp}/zevic-baremetal.$$
+HERE=examples/hello-os
+OUT=${TMPDIR:-/tmp}/zevic-hello-os.$$
 mkdir -p "$OUT"
 trap 'rm -rf "$OUT"' EXIT
 "$ZEVIC" --freestanding --target riscv64-unknown-elf -T $HERE/linker.ld --entry _start \
@@ -21,7 +21,7 @@ fi
 echo "built: no runtime, no GC"
 if command -v qemu-system-riscv64 >/dev/null 2>&1; then
     got=$(timeout 3 qemu-system-riscv64 -machine virt -bios none -kernel "$OUT/kernel.elf" -nographic -serial stdio 2>/dev/null | head -1 || true)
-    [ "$got" = "Zevic 2026" ] || { echo "unexpected output: $got"; exit 1; }
+    [ "$got" = "Hello, World!" ] || { echo "unexpected output: $got"; exit 1; }
     echo "booted: $got"
 else
     echo "qemu-system-riscv64 not found: boot check skipped"
