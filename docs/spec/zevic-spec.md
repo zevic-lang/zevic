@@ -1102,7 +1102,10 @@ unsafe {
 | `Unsafe.Cast<U>(p) -> *U` | the same address as another type |
 | `p.Read(i) -> T`, `p.Write(i, v)` | the `i`-th value (counted in values, not bytes) |
 | `p.Offset(n) -> *T` | the pointer `n` values further |
-| `p.IsNull() -> Bool` | the only operation of these that is allowed outside `unsafe` |
+| `p.IsNull() -> Bool` | allowed outside `unsafe` |
+| `Unsafe.At<T>(address: U64) -> *T` | the pointer at a fixed address (memory-mapped registers, a frame buffer); `unsafe` only |
+| `p.Address() -> U64` | the address as a number; allowed outside `unsafe` |
+| `p.ReadVolatile(i) -> T`, `p.WriteVolatile(i, v)` | like `Read` and `Write`, but the compiler must not remove, merge or reorder them (device registers); numbers, `Bool`, `Char` and pointers only |
 
 - The pointer is the same `*T` as in the C interop. `Read`, `Write` and `Offset` work on a pointer that came from C too.
 - **No range check, no check of use after `Free`, no check of a second `Free`.** These are the programmer's.
@@ -1125,6 +1128,34 @@ let t: I64 = unsafe { Total(p, 3) }
 - Calling it anywhere else is a compile error, also inside a lambda written in an `unsafe` block (a lambda is not unsafe).
 - An `unsafe fn` cannot be used as a value (`let f = Danger`), because the call would then be unchecked.
 - A method of an `interface` cannot be `unsafe`, and a method that is `unsafe` does not satisfy an interface method: a value of the interface could be called outside `unsafe`.
+
+### Freestanding programs (no OS)
+
+`zevic --freestanding` compiles a program that does not use the runtime or the garbage collector, so that it can run without an operating system (a kernel, firmware, a boot loader).
+
+```
+zevic --freestanding --target riscv64-unknown-elf -T linker.ld --entry _start kernel.zev boot.S -o kernel.elf
+```
+
+- The runtime (`zevic_rt`) and the GC are not linked, no C library is linked, and `-ffreestanding -nostdlib -static` is used. Nothing starts `Main`: the entry point is yours (`--entry`, an assembly file, or a function written with `export "C"`).
+- `-T`/`--linker-script` gives the linker script, `--entry` the entry symbol. `--cflag` and `--ldflag` pass a flag to the C compiler or the linker. `.c`, `.s` and `.S` files can be given as inputs. With `-o name.o` (or `.obj`) only an object file is made, to be linked by your own build.
+- It is an error to use anything that needs the runtime: `String`, `Array`, `Map`, closures, `class` objects, interfaces, threads, tasks and the standard library modules that depend on them. `struct`, numbers, `Bool`, `Char`, tuples, enums, pointers, `unsafe`, `Zevic.Unsafe` and `extern "C"` work. The error names the function and what it needs.
+- **A panic handler is required** when the code can panic (division by zero, overflow, an array or range check, `unwrap`): define `export "C" fn zevic_panic(msg: *U8, len: CLongLong, file: *U8, line: CInt)`. It must not return.
+- RISC-V 64 targets get `-mcmodel=medany` (kernels live at high addresses), and code is compiled with `noredzone` and without stack protector, as kernel code must.
+- A package says the same in `zevic.toml`: `kind = "freestanding"` and a `[freestanding]` section (`target`, `linker_script`, `entry`, `cflags`, `ldflags`). `zevpm build` makes `build/<Name>.elf`; the `.s` and `.S` files in `native/` are assembled with it. `zevpm run` and `zevpm test` refuse such a package.
+
+### `zevic bind`: a module from a C header
+
+```
+zevic bind sqlite3.h --module Sqlite3 --strip-prefix sqlite3_ --strip-prefix SQLITE_ -o src/Sqlite3.zev
+```
+
+clang reads the header, and `zevic bind` writes a Zevic module: an `extern "C"` block with a public function for each C function (`sqlite3_open` is `Sqlite3.Open`), an `extern struct` for each plain struct, and `let` constants for enum values and for `#define`s that are numbers or strings. Only what the header itself declares is written, not what it includes.
+
+- Types become C types: `int` is `CInt`, `const char *` is `CString`, `size_t` is `CSizeT`, a pointer to a struct that is not written (an opaque handle such as `sqlite3 *`) is `*CVoid`, a function pointer is `fn(...) -> ...`, an enum is `CInt`.
+- `--strip-prefix` (can be given many times, the case does not matter) takes a prefix off the names. A name that would be a name of the prelude (`SQLITE_OK` is `Ok`) keeps its prefix (`SqliteOk`).
+- What cannot be bound is listed in a comment at the end of the file: variadic functions, functions that pass or return a struct by value (the compiler passes structs by pointer only), unions, bit fields, `long double`.
+- `-I`, `-D`: passed to clang. The module is plain text: edit it, or run `zevic bind` again.
 
 ### The boundary with C
 
@@ -1156,7 +1187,8 @@ fn Main() {
 ```
 
 - Declare C functions with `fn` in an `extern "C" { ... }` block. No body is written.
-- A declaration can be used **only inside that module**. It is not re-exported to other modules. To make it public, wrap it in a Zevic function.
+- A declaration can be used inside that module. A name that starts with a capital letter is public like any other Zevic name, so `fn Sum(v: *CInt, n: CULong) -> CInt = "pt_sum"` can be called as `Lib.Sum(...)` from another module; write the alias form when you want that. A name written as the C name (lowercase) stays inside the module.
+- `Null` can be passed where a callback (`fn(...)`) is expected, for the C functions that allow `NULL` there. It becomes a null function pointer.
 - The name is the C name as it is (no mangling). To change the C name, give an alias in the form `fn Foo() -> CInt = "c_name"`.
 - Calls are the same as for ordinary functions. But the parameters and the return value are **C types only**.
 
@@ -1957,7 +1989,7 @@ To grow the language over a long time, it is run as a GitHub organization. The n
 
 ### Future considerations (not included now)
 
-- A `NoGC` mode (and, with it, a way to write a kernel; `unsafe` blocks exist, see "Manual memory")
+- A `NoGC` mode for ordinary programs (a kernel can be written with `--freestanding`, see "Freestanding programs"; this item is about using manual memory and the standard library together)
 - `union`s and bit fields in `extern struct`
 - Macros as a language feature (function arguments are of fixed length, and variable length is only `params` and `Printf`)
 - Inheritance (the policy is not to add it; see whether composition and `interface` are enough while using the language)

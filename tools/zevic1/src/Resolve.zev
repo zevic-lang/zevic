@@ -108,6 +108,9 @@ fn reservedName(n: String) -> Bool {
     false
 }
 
+// The names of the prelude, which user code cannot define.
+fn ReservedName(n: String) -> Bool { reservedName(n) }
+
 fn isUpper(name: String) -> Bool {
     if (name.Len() == 0) { return false }
     let c: I32 = name.ByteAt(0).ToI32Wrap()

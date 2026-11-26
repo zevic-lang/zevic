@@ -5,6 +5,7 @@ import Zevic.Env
 import Zevic.Fs
 import Zevic.Text
 import Zevic1.Ast as Ast
+import Zevic1.Bind as Bind
 import Zevic1.Diag as Diag
 import Zevic1.Driver as Driver
 import Zevic1.Gen as Gen
@@ -313,8 +314,9 @@ fn baseNoExt(path: String) -> String {
 
 fn usage() {
     Console.Eprintln("usage: zevic [options] <file.zev>... [-o output]")
-    Console.Eprintln("  --target <name|triple>  --sysroot <dir>  --test  --lib  --pic  --emit-ll  --emit-header <f>  --keep-ll  -O0|-O1|-O2 (default -O0)  -g  --cc <path>  --cxx <path>")
-    Console.Eprintln("  -l<lib> -L<dir> -I<dir> -D<name>  and .c .cpp .o .a files to link")
+    Console.Eprintln("  --target <name|triple>  --sysroot <dir>  --test  --lib  --pic  --freestanding  --emit-ll  --emit-header <f>  --keep-ll  -O0|-O1|-O2 (default -O0)  -g  --cc <path>  --cxx <path>")
+    Console.Eprintln("  -l<lib> -L<dir> -I<dir> -D<name>  and .c .cpp .S .o .a files to link")
+    Console.Eprintln("  --freestanding (no runtime, no GC, no libc; -o name.o for an object file)  --linker-script|-T <file>  --entry <symbol>  --cflag <flag>  --ldflag <flag>")
 }
 
 fn compile(args: Array<String>) -> I32 {
@@ -338,6 +340,20 @@ fn compile(args: Array<String>) -> I32 {
             libMode = true
         } else if (a == "--pic") {
             opts.Pic = true
+        } else if (a == "--freestanding") {
+            opts.Freestanding = true
+        } else if ((a == "--linker-script" || a == "-T") && i + 1 < args.Len()) {
+            i += 1
+            opts.LinkerScript = args[i]
+        } else if (a == "--entry" && i + 1 < args.Len()) {
+            i += 1
+            opts.Entry = args[i]
+        } else if (a == "--cflag" && i + 1 < args.Len()) {
+            i += 1
+            opts.CFlags.Push(args[i])
+        } else if (a == "--ldflag" && i + 1 < args.Len()) {
+            i += 1
+            opts.LdFlags.Push(args[i])
         } else if (a == "--target" && i + 1 < args.Len()) {
             i += 1
             match (Driver.TargetTriple(args[i])) {
@@ -376,7 +392,7 @@ fn compile(args: Array<String>) -> I32 {
             opts.Defines.Push(a.Slice(2, a.Len()))
         } else if (endsWith(a, ".zev")) {
             files.Push(a)
-        } else if (endsWith(a, ".c") || endsWith(a, ".cpp") || endsWith(a, ".cc") || endsWith(a, ".o") || endsWith(a, ".a") || endsWith(a, ".obj") || endsWith(a, ".lib")) {
+        } else if (endsWith(a, ".c") || endsWith(a, ".cpp") || endsWith(a, ".cc") || endsWith(a, ".o") || endsWith(a, ".a") || endsWith(a, ".obj") || endsWith(a, ".lib") || endsWith(a, ".s") || endsWith(a, ".S")) {
             opts.Inputs.Push(a)
         } else if (Text.StartsWith(a, "-")) {
             Console.Eprintln("error: unknown option `${a}`")
@@ -387,6 +403,14 @@ fn compile(args: Array<String>) -> I32 {
             return 1
         }
         i += 1
+    }
+    if (opts.Freestanding && (testMode || libMode)) {
+        Console.Eprintln("error: --freestanding cannot be combined with ${if (testMode) { "--test (a test program needs the runtime)" } else { "--lib (a freestanding program is already a library: give -o name.o for an object file)" }}")
+        return 1
+    }
+    if (!opts.Freestanding && (opts.LinkerScript != "" || opts.Entry != "")) {
+        Console.Eprintln("error: --linker-script and --entry are for --freestanding programs")
+        return 1
     }
     if (!testMode) {
         mut kept: Array<String> = []
@@ -406,7 +430,8 @@ fn compile(args: Array<String>) -> I32 {
     }
     mut g: Gen.Gen = Gen.Gen.New(pg, diag, if (Driver.TargetWindows(opts)) { 4 } else { 8 })
     g.TestMode = testMode
-    g.LibMode = libMode
+    g.LibMode = libMode || opts.Freestanding
+    g.Freestanding = opts.Freestanding
     let ll: Option<String> = Program.GenProgram(g)
     let text: String = match (ll) {
         Some(t) => t,
@@ -458,7 +483,7 @@ fn compile(args: Array<String>) -> I32 {
     // For another target, the Zig that install.sh --with-zig put next to the compiler is used
     // unless a C compiler was asked for.
     mut cc: Option<String> = opts.Cc
-    if (opts.Target != "" && cc.IsNone() && Env.Get("ZEVIC_CLANG").IsNone()) {
+    if (opts.Target != "" && !opts.Freestanding && cc.IsNone() && Env.Get("ZEVIC_CLANG").IsNone()) {
         let bundled: String = "${home}/zig/zig${if (Driver.IsWindows()) { ".exe" } else { "" }}"
         if (Fs.Exists(bundled)) { cc = Some(bundled) }
     }
@@ -468,7 +493,7 @@ fn compile(args: Array<String>) -> I32 {
     }
     let exe: String = match (out) {
         Some(o) => o,
-        None => "${base}${Driver.ExeSuffix(opts)}",
+        None => if (opts.Freestanding) { "${base}.elf" } else { "${base}${Driver.ExeSuffix(opts)}" },
     }
     let llPath: String = "${exe}.zevic.ll"
     match (Fs.WriteAll(llPath, text)) {
@@ -478,7 +503,13 @@ fn compile(args: Array<String>) -> I32 {
             return 2
         },
     }
-    let rc: I32 = if (libMode) { Driver.BuildLib(clang, home, llPath, exe, opts) } else { Driver.Build(clang, home, llPath, exe, opts) }
+    let rc: I32 = if (opts.Freestanding) {
+        Driver.BuildFreestanding(clang, llPath, exe, opts)
+    } else if (libMode) {
+        Driver.BuildLib(clang, home, llPath, exe, opts)
+    } else {
+        Driver.Build(clang, home, llPath, exe, opts)
+    }
     if (!opts.KeepLl) {
         let r: Result<Unit, Error> = Fs.Remove(llPath)
     }
@@ -493,6 +524,9 @@ fn compile(args: Array<String>) -> I32 {
 }
 
 fn Main(args: Array<String>) {
+    if (args.Len() >= 1 && args[0] == "bind") {
+        Env.Exit(Bind.Run(args.Slice(1, args.Len())))
+    }
     if (args.Len() == 1 && args[0] == "--version") {
         Console.Println("zevic ${Version.Current}")
         Env.Exit(0)

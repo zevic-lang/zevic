@@ -33,6 +33,13 @@ class Manifest {
     mut LibDirs: Array<String> = []
     mut IncDirs: Array<String> = []
     mut Defines: Array<String> = []
+    // [freestanding] (only for `kind = "freestanding"`): the target, the linker script (relative to the package), the entry symbol
+    mut FsTarget: String = ""
+    mut FsScript: String = ""
+    mut FsEntry: String = ""
+    mut FsCFlags: Array<String> = []
+    mut FsLdFlags: Array<String> = []
+    mut HasFsSection: Bool = false
 
     fn Init(dir: String) {
         this.Dir = dir
@@ -303,7 +310,7 @@ fn Load(dir: String) -> Result<Manifest, Error> {
         Ok(t) => t,
         Err(_) => return Err(Error.New(ErrorKind.NotFound, "cannot read `${m.File}` (is this a Zevic package? `zevpm init` makes one)")),
     }
-    mut sect: I32 = 0 // 0 none, 1 package, 2 deps, 3 native
+    mut sect: I32 = 0 // 0 none, 1 package, 2 deps, 3 native, 4 freestanding
     mut seenPackage: Bool = false
     mut lineNo: I64 = 0
     for (raw in Text.Lines(text)) {
@@ -325,8 +332,11 @@ fn Load(dir: String) -> Result<Manifest, Error> {
                         sect = 2
                     } else if (name == "native") {
                         sect = 3
+                    } else if (name == "freestanding") {
+                        sect = 4
+                        m.HasFsSection = true
                     } else {
-                        return Err(c.Fail("unknown section `[${name}]` (expected [package], [deps] or [native])"))
+                        return Err(c.Fail("unknown section `[${name}]` (expected [package], [deps], [native] or [freestanding])"))
                     }
                 },
             }
@@ -357,6 +367,19 @@ fn Load(dir: String) -> Result<Manifest, Error> {
                 return Err(c.Fail("dependency `${key}` is listed twice"))
             }
             m.Deps.Push(makeDep(c, key, v)?)
+        } else if (sect == 4) {
+            if (key == "cflags" || key == "ldflags") {
+                if (v.Kind != 1) {
+                    return Err(c.Fail("`${key}` must be a list of strings"))
+                }
+                if (key == "cflags") { m.FsCFlags.Extend(v.Items) } else { m.FsLdFlags.Extend(v.Items) }
+            } else {
+                let s: String = wantString(c, v, "`${key}`")?
+                if (key == "target") { m.FsTarget = s }
+                else if (key == "linker_script") { m.FsScript = s }
+                else if (key == "entry") { m.FsEntry = s }
+                else { return Err(c.Fail("unknown key `${key}` in [freestanding] (expected target, linker_script, entry, cflags or ldflags)")) }
+            }
         } else {
             if (key != "libs" && key != "lib_dirs" && key != "include_dirs" && key != "defines") {
                 return Err(c.Fail("unknown key `${key}` in [native] (expected libs, lib_dirs, include_dirs or defines)"))
@@ -389,8 +412,11 @@ fn Load(dir: String) -> Result<Manifest, Error> {
     if (m.Kind.IsEmpty()) {
         m.Kind = "bin"
     }
-    if (m.Kind != "bin" && m.Kind != "lib") {
-        return Err(c1.Fail("`kind` must be \"bin\" or \"lib\", not \"${m.Kind}\""))
+    if (m.Kind != "bin" && m.Kind != "lib" && m.Kind != "freestanding") {
+        return Err(c1.Fail("`kind` must be \"bin\", \"lib\" or \"freestanding\", not \"${m.Kind}\""))
+    }
+    if (m.HasFsSection && m.Kind != "freestanding") {
+        return Err(c1.Fail("[freestanding] is only for `kind = \"freestanding\"`"))
     }
     Ok(m)
 }

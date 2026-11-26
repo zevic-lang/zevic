@@ -120,12 +120,12 @@ fn checkZevicVersion(zevic: String, m: Toml.Manifest) -> Result<Unit, Error> {
 
 // ---- building ----
 
-fn addSources(mut zev: Array<String>, mut native: Array<String>, pkgDir: String, withTests: Bool) {
+fn addSources(mut zev: Array<String>, mut native: Array<String>, pkgDir: String, withTests: Bool, asm: Bool) {
     zev.Extend(Os.Walk(Os.Join(pkgDir, "src"), [".zev"]))
     if (withTests) {
         zev.Extend(Os.Walk(Os.Join(pkgDir, "tests"), [".zev"]))
     }
-    native.Extend(Os.Walk(Os.Join(pkgDir, "native"), [".c", ".cpp", ".cc"]))
+    native.Extend(Os.Walk(Os.Join(pkgDir, "native"), if (asm) { [".c", ".cpp", ".cc", ".s", ".S"] } else { [".c", ".cpp", ".cc"] }))
 }
 
 // The flags for the `[native]` keys of one package: -L, -I and -D. A relative directory is relative to the package.
@@ -164,18 +164,22 @@ fn addLib(mut libs: Array<String>, name: String) {
 fn build(m: Toml.Manifest, release: Bool, test: Bool, target: String) -> Result<String, Error> {
     let zevic: String = findZevic()?
     checkZevicVersion(zevic, m)?
+    let fs: Bool = m.Kind == "freestanding"
+    if (fs && test) {
+        return Err(fatal("`${m.Name}` is a freestanding package: its tests cannot run here, so `zevpm test` does not work on it"))
+    }
     let pkgs: Array<Deps.Pkg> = Deps.Resolve(m, None)?
     mut zev: Array<String> = []
     mut native: Array<String> = []
     mut libs: Array<String> = []
     mut flags: Array<String> = []
-    addSources(zev, native, m.Dir, test)
+    addSources(zev, native, m.Dir, test, fs)
     nativeFlags(flags, m)
     for (l in m.Libs) {
         addLib(libs, l)
     }
     for (p in pkgs) {
-        addSources(zev, native, p.Dir, false)
+        addSources(zev, native, p.Dir, false, fs)
         nativeFlags(flags, p.M)
         for (l in p.M.Libs) {
             addLib(libs, l)
@@ -185,12 +189,18 @@ fn build(m: Toml.Manifest, release: Bool, test: Bool, target: String) -> Result<
     if (zev.IsEmpty()) {
         return Err(fatal("there are no .zev files in ${Os.Join(m.Dir, "src")}"))
     }
+    mut tgt: String = target
+    if (fs && tgt == "") {
+        tgt = m.FsTarget
+    }
     let dir: String = if (target == "") { "build" } else { "build/${target}" }
     Os.Mkdirs(dir)?
     let win: Bool = if (target == "") { Os.IsWindows() } else { Text.Contains(target, "windows") || Text.Contains(target, "mingw") }
     mut out: String = ""
     if (test) {
         out = "${dir}/${m.Name}-test${if (win) { ".exe" } else { "" }}"
+    } else if (fs) {
+        out = "${dir}/${m.Name}.elf"
     } else if (isLib) {
         out = if (win) { "${dir}/${m.Name}.lib" } else { "${dir}/lib${m.Name}.a" }
     } else {
@@ -203,9 +213,28 @@ fn build(m: Toml.Manifest, release: Bool, test: Bool, target: String) -> Result<
         a.Push("-O2")
     }
     a.Extend(flags)
-    if (target != "") {
+    if (tgt != "") {
         a.Push("--target")
-        a.Push(target)
+        a.Push(tgt)
+    }
+    if (fs) {
+        a.Push("--freestanding")
+        if (!m.FsScript.IsEmpty()) {
+            a.Push("--linker-script")
+            a.Push(inPackage(m, m.FsScript))
+        }
+        if (!m.FsEntry.IsEmpty()) {
+            a.Push("--entry")
+            a.Push(m.FsEntry)
+        }
+        for (f in m.FsCFlags) {
+            a.Push("--cflag")
+            a.Push(f)
+        }
+        for (f in m.FsLdFlags) {
+            a.Push("--ldflag")
+            a.Push(f)
+        }
     }
     for (l in libs) {
         a.Push("-l${l}")
@@ -375,6 +404,9 @@ fn cmdRun(args: Array<String>) -> Result<I32, Error> {
     let m: Toml.Manifest = loadHere()?
     if (m.Kind == "lib") {
         return Err(fatal("`${m.Name}` is a library; there is nothing to run (try `zevpm test`)"))
+    }
+    if (m.Kind == "freestanding") {
+        return Err(fatal("`${m.Name}` is a freestanding package (it runs without an OS); `zevpm build` makes the image, start it with an emulator or on the board"))
     }
     let out: String = build(m, release, false, "")?
     mut a: Array<String> = [Os.Join(".", out)]

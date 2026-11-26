@@ -72,6 +72,8 @@ class Gen {
     mut StrConst: Map<String, String> = Map.New()
     mut TestMode: Bool = false
     mut LibMode: Bool = false
+    // `--freestanding`: no runtime, no garbage collector, no libc; the program is a library (no Main)
+    mut Freestanding: Bool = false
     mut NLambda: I64 = 0
     // wrapper functions already written (thunks and C callbacks), by name
     mut Thunks: Map<String, String> = Map.New()

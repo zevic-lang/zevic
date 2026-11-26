@@ -1,0 +1,766 @@
+module Zevic1.Bind
+
+// `zevic bind`: writes a Zevic module from a C header (proposal 0012, first stage).
+// clang reads the header (`-ast-dump=json` for functions, structs, enums and typedefs; `-dD -E` for `#define`s), and the
+// result is an `extern "C"` block, public wrapper functions, `extern struct`s and constants.
+
+import Zevic.Console
+import Zevic.Env
+import Zevic.Fs
+import Zevic.Json
+import Zevic.Path
+import Zevic.Process
+import Zevic.Text
+import Zevic1.Driver as Driver
+import Zevic1.Resolve as Resolve
+
+// ---- what is read from the header ----
+
+class Typedef {
+    mut Under: String
+    mut RecId: String
+
+    fn Init(under: String, recId: String) {
+        this.Under = under
+        this.RecId = recId
+    }
+}
+
+class Rec {
+    mut Id: String
+    mut Tag: String
+    mut Complete: Bool
+    mut Ok: Bool = true
+    mut InTarget: Bool
+    mut FieldNames: Array<String> = []
+    mut FieldTypes: Array<String> = []
+
+    fn Init(id: String, tag: String, complete: Bool, inTarget: Bool) {
+        this.Id = id
+        this.Tag = tag
+        this.Complete = complete
+        this.InTarget = inTarget
+    }
+}
+
+class State {
+    mut Typedefs: Map<String, Typedef> = Map.New()
+    mut RecById: Map<String, Rec> = Map.New()
+    mut RecByTag: Map<String, Rec> = Map.New()
+    mut Recs: Array<Rec> = []
+    // the name a typedef gives to a struct (by the id of the struct)
+    mut Aliases: Map<String, String> = Map.New()
+    mut Funcs: Array<Json.Value> = []
+    mut Enums: Array<Json.Value> = []
+    mut Prefixes: Array<String> = []
+    mut Skipped: Array<String> = []
+    mut StructNames: Array<String> = []
+}
+
+fn cName(st: State, r: Rec) -> String {
+    match (st.Aliases.Get(r.Id)) {
+        Some(a) => a,
+        None => r.Tag,
+    }
+}
+
+// Can it be written as an `extern struct`?
+fn usable(st: State, r: Rec) -> Bool { r.Complete && r.Ok && r.InTarget && !cName(st, r).IsEmpty() }
+
+fn field(v: Json.Value, key: String) -> Json.Value {
+    match (v.Get(key)) {
+        Some(x) => x,
+        None => Json.Value.Null,
+    }
+}
+
+fn text(v: Json.Value) -> String {
+    match (v.AsString()) {
+        Some(s) => s,
+        None => "",
+    }
+}
+
+fn items(v: Json.Value) -> Array<Json.Value> {
+    match (v.AsArray()) {
+        Some(a) => a,
+        None => [],
+    }
+}
+
+fn isTrue(v: Json.Value) -> Bool {
+    match (v.AsBool()) {
+        Some(b) => b,
+        None => false,
+    }
+}
+
+fn kindOf(n: Json.Value) -> String { text(field(n, "kind")) }
+
+fn nameOf(n: Json.Value) -> String { text(field(n, "name")) }
+
+fn qualType(n: Json.Value) -> String { text(field(field(n, "type"), "qualType")) }
+
+// clang writes the `file` of a location only when it differs from the location it wrote before, so the last file
+// has to be followed through every location, in the order they are written: for a location in a macro, the spelling
+// first, then the expansion. The file of a declaration is where its `loc` ends up.
+fn visitLoc(loc: Json.Value, last: String) -> String {
+    mut cur: String = last
+    let spelling: Json.Value = field(loc, "spellingLoc")
+    let expansion: Json.Value = field(loc, "expansionLoc")
+    for (l in [loc, spelling, expansion]) {
+        let f: String = text(field(l, "file"))
+        if (!f.IsEmpty()) { cur = f }
+    }
+    cur
+}
+
+fn sameFile(a: String, b: String) -> Bool {
+    a == b || Path.FileName(a) == Path.FileName(b)
+}
+
+// ---- names ----
+
+fn isKeyword(s: String) -> Bool {
+    let words: Array<String> = ["fn", "let", "mut", "if", "else", "while", "for", "in", "match", "return", "break", "continue",
+        "true", "false", "struct", "class", "enum", "interface", "import", "module", "extern", "export", "unsafe", "static",
+        "this", "type", "where", "const", "yield", "impl", "macro", "union", "volatile", "pub", "try", "as", "loop", "async",
+        "await", "defer", "Null"]
+    words.Contains(s)
+}
+
+fn isUpperWord(s: String) -> Bool {
+    mut i: I64 = 0
+    mut letters: I64 = 0
+    while (i < s.Len()) {
+        let b: U8 = s.ByteAt(i)
+        if (b >= b'a' && b <= b'z') { return false }
+        if (b >= b'A' && b <= b'Z') { letters += 1 }
+        i += 1
+    }
+    letters > 1
+}
+
+// Takes off the first of the prefixes that the name starts with (the letters may differ in case).
+fn stripPrefix(name: String, prefixes: Array<String>) -> String {
+    for (prefix in prefixes) {
+        if (!prefix.IsEmpty() && name.Len() > prefix.Len() && Text.ToLower(name.Slice(0, prefix.Len())) == Text.ToLower(prefix)) {
+            return Text.TrimPrefix(name.Slice(prefix.Len(), name.Len()), "_")
+        }
+    }
+    name
+}
+
+// `sqlite3_open` is `Sqlite3Open`, `SQLITE_OK` is `SqliteOk`, `x` is `X`.
+fn pascal(name: String) -> String {
+    mut out: String = ""
+    for (part in Text.Split(name, "_")) {
+        if (part.IsEmpty()) { continue }
+        let rest: String = part.Slice(1, part.Len())
+        if (isUpperWord(part)) {
+            out = out + Text.ToUpper(part.Slice(0, 1)) + Text.ToLower(rest)
+        } else {
+            out = out + Text.ToUpper(part.Slice(0, 1)) + rest
+        }
+    }
+    if (out.IsEmpty()) { return "X" }
+    let b: U8 = out.ByteAt(0)
+    if (b >= b'0' && b <= b'9') { return "N" + out }
+    out
+}
+
+// The Zevic name of a C name: the prefixes taken off, in PascalCase. When that is a name of the prelude (`SQLITE_ERROR`
+// would be `Error`), the prefix stays.
+fn ident(st: State, raw: String) -> String {
+    let p: String = pascal(stripPrefix(raw, st.Prefixes))
+    if (Resolve.ReservedName(p) || isKeyword(p)) { return pascal(raw) }
+    p
+}
+
+fn paramName(name: String, i: I64) -> String {
+    if (name.IsEmpty() || isKeyword(name)) { return "a${i}" }
+    let b: U8 = name.ByteAt(0)
+    if (b >= b'A' && b <= b'Z') { return Text.ToLower(name.Slice(0, 1)) + name.Slice(1, name.Len()) }
+    if (b >= b'0' && b <= b'9') { return "a${i}" }
+    name
+}
+
+// ---- types ----
+
+fn builtin(base: String) -> Option<String> {
+    if (base == "void") { return Some("CVoid") }
+    if (base == "char") { return Some("CChar") }
+    if (base == "signed char") { return Some("CSChar") }
+    if (base == "unsigned char") { return Some("CUChar") }
+    if (base == "short" || base == "short int" || base == "signed short") { return Some("CShort") }
+    if (base == "unsigned short" || base == "unsigned short int") { return Some("CUShort") }
+    if (base == "int" || base == "signed int" || base == "signed") { return Some("CInt") }
+    if (base == "unsigned int" || base == "unsigned") { return Some("CUInt") }
+    if (base == "long" || base == "long int" || base == "signed long") { return Some("CLong") }
+    if (base == "unsigned long" || base == "unsigned long int") { return Some("CULong") }
+    if (base == "long long" || base == "long long int" || base == "signed long long") { return Some("CLongLong") }
+    if (base == "unsigned long long" || base == "unsigned long long int") { return Some("CULongLong") }
+    if (base == "float") { return Some("CFloat") }
+    if (base == "double") { return Some("CDouble") }
+    if (base == "_Bool" || base == "bool") { return Some("CBool") }
+    if (base == "size_t") { return Some("CSizeT") }
+    if (base == "ssize_t") { return Some("CSSizeT") }
+    if (base == "ptrdiff_t") { return Some("CPtrDiff") }
+    if (base == "intptr_t") { return Some("CIntPtr") }
+    if (base == "uintptr_t") { return Some("CUIntPtr") }
+    None
+}
+
+fn clean(t: String) -> String {
+    mut s: String = " " + t + " "
+    for (w in ["const", "volatile", "restrict", "__restrict", "__restrict__"]) {
+        s = Text.Replace(s, " ${w} ", " ")
+        s = Text.Replace(s, " ${w}*", " *")
+        s = Text.Replace(s, "*${w} ", "* ")
+    }
+    s = Text.Replace(s, "*", " * ")
+    mut out: String = ""
+    mut space: Bool = false
+    for (w in Text.Words(s)) {
+        out = out + (if (space) { " " } else { "" }) + w
+        space = true
+    }
+    // pointers stay together: `char **`
+    Text.Replace(out, "* *", "**")
+}
+
+fn stars(n: I64) -> String { Text.Repeat("*", n) }
+
+// The Zevic spelling of a C type, or None when there is none.
+fn zevType(st: State, q: String, depthGuard: I64) -> Option<String> {
+    if (depthGuard > 12) { return None }
+    mut t: String = Text.Trim(q)
+    let constChar: Bool = Text.StartsWith(t, "const char *") || Text.StartsWith(t, "char const *")
+    if (Text.Contains(t, "(*)")) {
+        return fnType(st, t, depthGuard)
+    }
+    if (Text.Contains(t, "(")) { return None }
+    if (t.Len() > 0 && t.ByteAt(t.Len() - 1) == b']') {
+        match (Text.LastIndexOf(t, "[")) {
+            Some(i) => { t = t.Slice(0, i) + " *" },
+            None => return None,
+        }
+    }
+    t = clean(t)
+    mut depth: I64 = 0
+    while (t.Len() > 0 && t.ByteAt(t.Len() - 1) == b'*') {
+        depth += 1
+        t = Text.Trim(t.Slice(0, t.Len() - 1))
+    }
+    if (constChar && depth >= 1 && t == "char") {
+        return Some(stars(depth - 1) + "CString")
+    }
+    baseType(st, t, depth, depthGuard)
+}
+
+// `base` is a type without pointers; the result is the Zevic type with `depth` pointers in front of it.
+fn baseType(st: State, base: String, depth: I64, depthGuard: I64) -> Option<String> {
+    match (builtin(base)) {
+        Some(b) => return Some(stars(depth) + b),
+        None => {},
+    }
+    // a type that is not known is usable only behind a pointer
+    let opaque: Option<String> = if (depth >= 1) { Some(stars(depth) + "CVoid") } else { None }
+    if (Text.StartsWith(base, "struct ")) {
+        match (st.RecByTag.Get(base.Slice(7, base.Len()))) {
+            Some(r) => { return if (usable(st, r)) { Some(stars(depth) + structName(st, r)) } else { opaque } },
+            None => { return opaque },
+        }
+    }
+    if (Text.StartsWith(base, "union ")) { return opaque }
+    if (Text.StartsWith(base, "enum ")) { return Some(stars(depth) + "CInt") }
+    match (st.Typedefs.Get(base)) {
+        Some(td) => {
+            if (!td.RecId.IsEmpty()) {
+                match (st.RecById.Get(td.RecId)) {
+                    Some(r) => { return if (usable(st, r)) { Some(stars(depth) + structName(st, r)) } else { opaque } },
+                    None => { return opaque },
+                }
+            }
+            if (Text.StartsWith(td.Under, "enum ")) { return Some(stars(depth) + "CInt") }
+            if (Text.Contains(td.Under, "(*)")) {
+                if (depth > 0) { return None }
+                return fnType(st, td.Under, depthGuard + 1)
+            }
+            return zevType(st, td.Under + " " + stars(depth), depthGuard + 1)
+        },
+        None => { return opaque },
+    }
+}
+
+fn structName(st: State, r: Rec) -> String {
+    ident(st, cName(st, r))
+}
+
+// `void (*)(int, void *)` is `fn(CInt, *CVoid) -> CVoid`.
+fn fnType(st: State, t: String, depthGuard: I64) -> Option<String> {
+    let at: I64 = match (Text.IndexOf(t, "(*)")) {
+        Some(i) => i,
+        None => return None,
+    }
+    let ret: String = Text.Trim(t.Slice(0, at))
+    let rest: String = Text.Trim(t.Slice(at + 3, t.Len()))
+    if (!Text.StartsWith(rest, "(") || !Text.EndsWith(rest, ")")) { return None }
+    let inner: String = Text.Trim(rest.Slice(1, rest.Len() - 1))
+    mut args: Array<String> = []
+    if (!inner.IsEmpty() && inner != "void") {
+        mut depth: I64 = 0
+        mut start: I64 = 0
+        mut i: I64 = 0
+        while (i < inner.Len()) {
+            let b: U8 = inner.ByteAt(i)
+            if (b == b'(') { depth += 1 }
+            if (b == b')') { depth -= 1 }
+            if (b == b',' && depth == 0) {
+                args.Push(inner.Slice(start, i))
+                start = i + 1
+            }
+            i += 1
+        }
+        args.Push(inner.Slice(start, inner.Len()))
+    }
+    mut parts: Array<String> = []
+    for (a in args) {
+        if (Text.Trim(a) == "...") { return None }
+        match (zevType(st, a, depthGuard + 1)) {
+            Some(z) => { parts.Push(z) },
+            None => return None,
+        }
+    }
+    let r: String = match (zevType(st, ret, depthGuard + 1)) {
+        Some(z) => z,
+        None => return None,
+    }
+    Some("fn(${Text.Join(parts, ", ")}) -> ${r}")
+}
+
+// ---- reading the AST ----
+
+fn collect(mut st: State, root: Json.Value, header: String) {
+    mut cur: String = ""
+    for (n in items(field(root, "inner"))) {
+        cur = visitLoc(field(n, "loc"), cur)
+        let declFile: String = cur
+        cur = visitLoc(field(field(n, "range"), "begin"), cur)
+        cur = visitLoc(field(field(n, "range"), "end"), cur)
+        let inTarget: Bool = sameFile(declFile, header)
+        let kind: String = kindOf(n)
+        if (kind == "RecordDecl" && text(field(n, "tagUsed")) == "struct") {
+            let id: String = text(field(n, "id"))
+            let complete: Bool = isTrue(field(n, "completeDefinition"))
+            mut r: Rec = Rec.New(id, nameOf(n), complete, inTarget)
+            for (f in items(field(n, "inner"))) {
+                let fk: String = kindOf(f)
+                if (fk == "FieldDecl") {
+                    if (isTrue(field(f, "isBitfield"))) { r.Ok = false }
+                    r.FieldNames.Push(nameOf(f))
+                    r.FieldTypes.Push(qualType(f))
+                } else if (fk == "RecordDecl" || fk == "EnumDecl") {
+                    r.Ok = false
+                }
+            }
+            st.RecById.Set(id, r)
+            if (!r.Tag.IsEmpty() && (complete || !st.RecByTag.Contains(r.Tag))) {
+                st.RecByTag.Set(r.Tag, r)
+            }
+            st.Recs.Push(r)
+        } else if (kind == "TypedefDecl") {
+            mut recId: String = ""
+            let inner: Array<Json.Value> = items(field(n, "inner"))
+            if (inner.Len() > 0) {
+                // clang before 20 says `ElaboratedType` with an `ownedTagDecl`; clang 20 says `RecordType` with a `decl`
+                mut owned: Json.Value = field(inner[0], "ownedTagDecl")
+                if (text(field(owned, "kind")) != "RecordDecl") { owned = field(inner[0], "decl") }
+                if (text(field(owned, "kind")) == "RecordDecl") { recId = text(field(owned, "id")) }
+            }
+            st.Typedefs.Set(nameOf(n), Typedef.New(qualType(n), recId))
+            if (!recId.IsEmpty()) {
+                match (st.RecById.Get(recId)) {
+                    Some(r) => { if (r.Tag.IsEmpty() || inTarget) { st.Aliases.Set(recId, nameOf(n)) } },
+                    None => {},
+                }
+            }
+        } else if (kind == "FunctionDecl" && inTarget) {
+            st.Funcs.Push(n)
+        } else if (kind == "EnumDecl" && inTarget) {
+            st.Enums.Push(n)
+        }
+    }
+}
+
+// ---- writing the module ----
+
+fn parseInt(s: String) -> Option<I64> {
+    mut v: String = s
+    mut neg: Bool = false
+    if (Text.StartsWith(v, "-")) {
+        neg = true
+        v = Text.Trim(v.Slice(1, v.Len()))
+    }
+    while (v.Len() > 0 && (v.ByteAt(v.Len() - 1) == b'u' || v.ByteAt(v.Len() - 1) == b'U' || v.ByteAt(v.Len() - 1) == b'l' || v.ByteAt(v.Len() - 1) == b'L')) {
+        v = v.Slice(0, v.Len() - 1)
+    }
+    if (v.IsEmpty()) { return None }
+    mut hex: Bool = false
+    if (Text.StartsWith(v, "0x") || Text.StartsWith(v, "0X")) {
+        hex = true
+        v = v.Slice(2, v.Len())
+        if (v.IsEmpty() || v.Len() > 15) { return None }
+    } else if (v.Len() > 18) {
+        return None
+    }
+    mut n: I64 = 0
+    mut i: I64 = 0
+    while (i < v.Len()) {
+        let b: U8 = v.ByteAt(i)
+        mut d: I64 = 0
+        if (b >= b'0' && b <= b'9') {
+            d = (b - b'0').ToI64()
+        } else if (hex && b >= b'a' && b <= b'f') {
+            d = (b - b'a').ToI64() + 10
+        } else if (hex && b >= b'A' && b <= b'F') {
+            d = (b - b'A').ToI64() + 10
+        } else {
+            return None
+        }
+        n = n * (if (hex) { 16 } else { 10 }) + d
+        i += 1
+    }
+    Some(if (neg) { 0 - n } else { n })
+}
+
+fn intLet(name: String, v: I64) -> String {
+    let t: String = if (v >= -2147483648 && v <= 2147483647) { "I32" } else { "I64" }
+    "let ${name}: ${t} = ${v}"
+}
+
+// The `let` for a `#define NAME value`, or "" when the value is not a plain number or string.
+fn macroLet(name: String, value: String) -> String {
+    mut v: String = Text.Trim(value)
+    while (v.Len() > 2 && Text.StartsWith(v, "(") && Text.EndsWith(v, ")")) {
+        v = Text.Trim(v.Slice(1, v.Len() - 1))
+    }
+    if (v.IsEmpty()) { return "" }
+    if (v.ByteAt(0) == b'"') {
+        let body: String = v.Slice(1, v.Len() - 1)
+        if (v.Len() >= 2 && v.ByteAt(v.Len() - 1) == b'"' && !Text.Contains(body, "\"") && !Text.Contains(body, "\\")) {
+            return "let ${name}: String = ${v}"
+        }
+        return ""
+    }
+    match (parseInt(v)) {
+        Some(n) => { return intLet(name, n) },
+        None => {},
+    }
+    // 1.5 and 2.5f
+    mut f: String = v
+    if (Text.EndsWith(f, "f") || Text.EndsWith(f, "F")) { f = f.Slice(0, f.Len() - 1) }
+    let parts: Array<String> = Text.Split(f, ".")
+    if (parts.Len() == 2 && parts[0].Len() > 0 && parts[1].Len() > 0) {
+        mut ok: Bool = true
+        for (p in parts) {
+            mut i: I64 = 0
+            while (i < p.Len()) {
+                if (!(p.ByteAt(i) >= b'0' && p.ByteAt(i) <= b'9')) { ok = false }
+                i += 1
+            }
+        }
+        if (ok) { return "let ${name}: F64 = ${f}" }
+    }
+    ""
+}
+
+fn writeStructs(mut st: State, mut out: Array<String>, mut used: Array<String>) {
+    for (r in st.Recs) {
+        if (!usable(st, r)) {
+            if (r.InTarget && !cName(st, r).IsEmpty()) {
+                st.Skipped.Push("struct ${cName(st, r)}: ${if (!r.Complete) { "it is only declared here, not defined" } else { "it has a bit field or a nested type" }}")
+            }
+            continue
+        }
+        let name: String = structName(st, r)
+        if (used.Contains(name)) { continue }
+        mut fields: Array<String> = []
+        mut ok: Bool = true
+        for (i, fname in r.FieldNames) {
+            match (zevType(st, r.FieldTypes[i], 0)) {
+                Some(z) => {
+                    if (z == "CVoid") {
+                        ok = false
+                    } else {
+                        fields.Push("${pascal(fname)}: ${z}")
+                    }
+                },
+                None => {
+                    ok = false
+                },
+            }
+        }
+        if (!ok || fields.IsEmpty()) {
+            st.Skipped.Push("struct ${cName(st, r)}: a field has no Zevic type (it is used only through pointers)")
+            continue
+        }
+        used.Push(name)
+        st.StructNames.Push(name)
+        out.Push("    struct ${name} { ${Text.Join(fields, ", ")} }")
+    }
+}
+
+fn writeFunctions(mut st: State, mut ext: Array<String>, mut used: Array<String>) {
+    mut seen: Array<String> = []
+    for (n in st.Funcs) {
+        let cname: String = nameOf(n)
+        if (cname.IsEmpty() || Text.StartsWith(cname, "__") || seen.Contains(cname)) { continue }
+        seen.Push(cname)
+        if (text(field(n, "storageClass")) == "static") { continue }
+        let q: String = qualType(n)
+        if (Text.EndsWith(q, "...)")) {
+            st.Skipped.Push("${cname}: variadic (declare it by hand with `...`)")
+            continue
+        }
+        let open: I64 = match (Text.IndexOf(q, "(")) {
+            Some(i) => i,
+            None => continue,
+        }
+        if (open + 1 < q.Len() && q.ByteAt(open + 1) == b'*') {
+            st.Skipped.Push("${cname}: returns a function pointer")
+            continue
+        }
+        let ret: String = match (zevType(st, q.Slice(0, open), 0)) {
+            Some(z) => z,
+            None => {
+                st.Skipped.Push("${cname}: the return type `${Text.Trim(q.Slice(0, open))}` has no Zevic type")
+                continue
+            },
+        }
+        if (st.StructNames.Contains(ret)) {
+            st.Skipped.Push("${cname}: returns a struct by value (the compiler passes structs by pointer only)")
+            continue
+        }
+        mut params: Array<String> = []
+        mut ok: Bool = true
+        mut i: I64 = 0
+        for (p in items(field(n, "inner"))) {
+            if (kindOf(p) != "ParmVarDecl") { continue }
+            match (zevType(st, qualType(p), 0)) {
+                Some(z) => {
+                    let pn: String = paramName(nameOf(p), i)
+                    if (st.StructNames.Contains(z)) {
+                        st.Skipped.Push("${cname}: takes a struct by value (the compiler passes structs by pointer only)")
+                        ok = false
+                    }
+                    params.Push("${pn}: ${z}")
+                },
+                None => {
+                    st.Skipped.Push("${cname}: the parameter type `${qualType(p)}` has no Zevic type")
+                    ok = false
+                },
+            }
+            i += 1
+        }
+        if (!ok) { continue }
+        let wname: String = ident(st, cname)
+        if (used.Contains(wname)) {
+            st.Skipped.Push("${cname}: the name `${wname}` is already taken")
+            continue
+        }
+        used.Push(wname)
+        let sig: String = "(${Text.Join(params, ", ")}) -> ${ret}"
+        ext.Push("    fn ${wname}${sig} = \"${cname}\"")
+    }
+}
+
+fn writeConstants(st: State, mut out: Array<String>, mut used: Array<String>, macros: Array<String>) {
+    for (e in st.Enums) {
+        mut next: I64 = 0
+        for (c in items(field(e, "inner"))) {
+            if (kindOf(c) != "EnumConstantDecl") { continue }
+            for (x in items(field(c, "inner"))) {
+                if (kindOf(x) == "ConstantExpr") {
+                    match (parseInt(text(field(x, "value")))) {
+                        Some(v) => { next = v },
+                        None => {},
+                    }
+                }
+            }
+            let name: String = ident(st, nameOf(c))
+            if (!used.Contains(name)) {
+                used.Push(name)
+                out.Push(intLet(name, next))
+            }
+            next += 1
+        }
+    }
+    for (m in macros) {
+        match (Text.IndexOf(m, " ")) {
+            Some(sp) => {
+                let name: String = ident(st, m.Slice(0, sp))
+                let l: String = macroLet(name, m.Slice(sp + 1, m.Len()))
+                if (!l.IsEmpty() && !used.Contains(name)) {
+                    used.Push(name)
+                    out.Push(l)
+                }
+            },
+            None => {},
+        }
+    }
+}
+
+// The `#define`s that the header itself makes: "NAME value" for each, without function-like macros.
+fn headerMacros(dump: String, header: String) -> Array<String> {
+    mut cur: String = ""
+    mut macros: Array<String> = []
+    for (line in Text.Lines(dump)) {
+        if (Text.StartsWith(line, "# ")) {
+            // # 12 "file" flags
+            match (Text.IndexOf(line, "\"")) {
+                Some(a) => {
+                    match (Text.IndexFrom(line, "\"", a + 1)) {
+                        Some(b) => { cur = line.Slice(a + 1, b) },
+                        None => {},
+                    }
+                },
+                None => {},
+            }
+        } else if (Text.StartsWith(line, "#define ") && sameFile(cur, header)) {
+            let rest: String = line.Slice(8, line.Len())
+            match (Text.IndexOf(rest, " ")) {
+                Some(sp) => {
+                    let name: String = rest.Slice(0, sp)
+                    if (!Text.Contains(name, "(") && !Text.StartsWith(name, "_")) {
+                        macros.Push("${name} ${rest.Slice(sp + 1, rest.Len())}")
+                    }
+                },
+                None => {},
+            }
+        }
+    }
+    macros
+}
+
+fn usage() {
+    Console.Eprintln("usage: zevic bind <header.h> [-o Name.zev] [--module Name] [--strip-prefix PREFIX]... [-I dir] [-D name[=value]]")
+    Console.Eprintln("  Reads a C header with clang and writes a Zevic module: an `extern \"C\"` block, a public function for each")
+    Console.Eprintln("  C function, `extern struct`s, and constants from enums and plain `#define`s.")
+}
+
+fn fail(msg: String) -> I32 {
+    Console.Eprintln("zevic: error: ${msg}")
+    2
+}
+
+fn Run(args: Array<String>) -> I32 {
+    mut header: String = ""
+    mut outPath: String = ""
+    mut modName: String = ""
+    mut st: State = State.New()
+    mut flags: Array<String> = []
+    mut i: I64 = 0
+    while (i < args.Len()) {
+        let a: String = args[i]
+        if ((a == "-o" || a == "--module" || a == "--strip-prefix" || a == "-I" || a == "-D") && i + 1 >= args.Len()) {
+            return fail("`${a}` needs a value")
+        }
+        if (a == "-o") {
+            i += 1
+            outPath = args[i]
+        } else if (a == "--module") {
+            i += 1
+            modName = args[i]
+        } else if (a == "--strip-prefix") {
+            i += 1
+            st.Prefixes.Push(args[i])
+        } else if (a == "-I" || a == "-D") {
+            i += 1
+            flags.Push(a)
+            flags.Push(args[i])
+        } else if (Text.StartsWith(a, "-I") || Text.StartsWith(a, "-D")) {
+            flags.Push(a)
+        } else if (a == "-h" || a == "--help") {
+            usage()
+            return 0
+        } else if (Text.StartsWith(a, "-")) {
+            return fail("unknown option `${a}`")
+        } else if (header.IsEmpty()) {
+            header = a
+        } else {
+            return fail("only one header (to use several, write a header that includes them)")
+        }
+        i += 1
+    }
+    if (header.IsEmpty()) {
+        usage()
+        return 2
+    }
+    if (!Fs.IsFile(header)) { return fail("cannot read ${header}") }
+    if (modName.IsEmpty()) { modName = pascal(Path.Stem(header)) }
+    let clang: String = match (Driver.FindClang(None)) {
+        Some(c) => c,
+        None => return fail("cannot find clang (zevic bind uses it to read the header)"),
+    }
+    mut astArgs: Array<String> = ["-Xclang", "-ast-dump=json", "-fsyntax-only", "-x", "c"]
+    astArgs.Extend(flags)
+    astArgs.Push(header)
+    let ast: Process.Output = match (Process.Run(clang, astArgs)) {
+        Ok(o) => o,
+        Err(e) => return fail("cannot run clang: ${e.Message()}"),
+    }
+    if (ast.Code != 0) {
+        Console.Eprint(ast.Stderr)
+        return fail("clang cannot read ${header}")
+    }
+    let root: Json.Value = match (Json.Parse(ast.Stdout)) {
+        Ok(v) => v,
+        Err(e) => return fail("cannot read the syntax tree from clang: ${e.Message()}"),
+    }
+    mut ppArgs: Array<String> = ["-dD", "-E", "-x", "c"]
+    ppArgs.Extend(flags)
+    ppArgs.Push(header)
+    let pp: Process.Output = match (Process.Run(clang, ppArgs)) {
+        Ok(o) => o,
+        Err(e) => return fail("cannot run clang: ${e.Message()}"),
+    }
+    collect(st, root, header)
+    mut used: Array<String> = []
+    mut structs: Array<String> = []
+    mut ext: Array<String> = []
+    mut consts: Array<String> = []
+    writeStructs(st, structs, used)
+    writeFunctions(st, ext, used)
+    writeConstants(st, consts, used, headerMacros(pp.Stdout, header))
+    mut lines: Array<String> = []
+    lines.Push("// Made by `zevic bind ${Path.FileName(header)}`. Edit it by hand if you like; run `zevic bind` again to make it anew.")
+    lines.Push("module ${modName}\n")
+    if (!structs.IsEmpty() || !ext.IsEmpty()) {
+        lines.Push("extern \"C\" {")
+        lines.Extend(structs)
+        lines.Extend(ext)
+        lines.Push("}\n")
+    }
+    if (!consts.IsEmpty()) {
+        lines.Extend(consts)
+        lines.Push("")
+    }
+    if (!st.Skipped.IsEmpty()) {
+        lines.Push("// Not bound:")
+        for (s in st.Skipped) {
+            lines.Push("//   ${s}")
+        }
+    }
+    let result: String = Text.Join(lines, "\n") + "\n"
+    if (outPath.IsEmpty()) {
+        Console.Print(result)
+    } else {
+        match (Fs.WriteAll(outPath, result)) {
+            Ok(_) => {},
+            Err(_) => return fail("cannot write ${outPath}"),
+        }
+        Console.Eprintln("zevic bind: wrote ${outPath} (${ext.Len()} functions, ${consts.Len()} constants, ${structs.Len()} structs, ${st.Skipped.Len()} not bound)")
+    }
+    0
+}

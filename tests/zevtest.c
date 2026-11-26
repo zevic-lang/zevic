@@ -1094,6 +1094,84 @@ static void sc_target(const char *tmp) {
 #endif
 }
 
+static void sc_freestanding(const char *tmp) {
+    /* kind = "freestanding": an image without the runtime and the GC; no run, no test */
+    pm(tmp, true, "new", "kern", NULL);
+    char *k = join(tmp, "kern");
+    wr(join(k, "zevic.toml"),
+       "[package]\nname = \"Kern\"\nversion = \"0.1.0\"\nkind = \"freestanding\"\n\n[freestanding]\ntarget = \"riscv64-unknown-elf\"\nentry = \"_start\"\nlinker_script = \"linker.ld\"\n");
+    wr(join(k, "linker.ld"), "ENTRY(_start)\nSECTIONS { . = 0x80000000; .text : { *(.text.boot) *(.text*) } .data : { *(.data*) } .bss : { *(.bss*) } }\n");
+    wr(join(k, "native/boot.S"), ".section .text.boot\n.global _start\n_start:\n    call kmain\n1:  wfi\n    j 1b\n");
+    wr(join(k, "src/Main.zev"),
+       "module Kern\n\nexport \"C\" fn zevic_panic(msg: *U8, len: CLongLong, file: *U8, line: CInt) {\n    while (true) {}\n}\n\nexport \"C\" fn kmain() {\n    let x: I32 = 1\n    while (x > 0) {}\n}\n");
+    Run p;
+#ifndef _WIN32
+    /* linking the image needs lld; where it is missing, only the checks before the link are made */
+    if (system("command -v ld.lld >/dev/null 2>&1") == 0) {
+        p = pm(k, false, "build", NULL);
+        expect(p.code == 0 && exists(join(k, "build/Kern.elf")), "a freestanding build makes build/Kern.elf: %s%s", p.out, p.err);
+    }
+#endif
+    p = pm(k, false, "test", NULL);
+    expect(p.code != 0 && contains(p.err, "freestanding package"), "test refuses a freestanding package: %s", p.err);
+    p = pm(k, false, "run", NULL);
+    expect(p.code != 0 && contains(p.err, "freestanding package"), "run refuses a freestanding package: %s", p.err);
+    /* without zevic_panic the build must fail with a hint */
+    wr(join(k, "src/Main.zev"), "module Kern\n\nexport \"C\" fn kmain() {\n    let x: I32 = 1\n    let y: I32 = 10 / (x - 1)\n    while (y > 5) {}\n}\n");
+    p = pm(k, false, "build", NULL);
+    expect(p.code != 0 && contains(p.err, "zevic_panic"), "a missing panic handler is reported: %s%s", p.out, p.err);
+    /* [freestanding] belongs to the freestanding kind only */
+    pm(tmp, true, "new", "plain", NULL);
+    char *pl = join(tmp, "plain");
+    append_file(join(pl, "zevic.toml"), "\n[freestanding]\nentry = \"x\"\n");
+    p = pm(pl, false, "build", NULL);
+    expect(p.code != 0 && contains(p.err, "only for `kind = \"freestanding\"`"), "[freestanding] needs the kind: %s", p.err);
+}
+
+static void sc_bind(const char *tmp) {
+    /* `zevic bind` reads a C header; the module it writes is used with the C code and no shim */
+    pm(tmp, true, "new", "app", NULL);
+    char *app = join(tmp, "app");
+    wr(join(app, "native/lib.h"),
+       "typedef struct { int x, y; } Pt;\n"
+       "enum Color { RED, GREEN = 10 };\n"
+       "#define LIMIT 7\n"
+       "#define NAME \"pt\"\n"
+       "Pt pt_add(Pt a, Pt b);\n"
+       "int pt_sum(const int *v, unsigned long n);\n"
+       "int pt_run(int (*cb)(int));\n"
+       "int pt_fill(int *out);\n"
+       "int pt_log(const char *fmt, ...);\n");
+    wr(join(app, "native/lib.c"),
+       "#include \"lib.h\"\n"
+       "Pt pt_add(Pt a, Pt b) { Pt r = { a.x + b.x, a.y + b.y }; return r; }\n"
+       "int pt_sum(const int *v, unsigned long n) { int s = 0; for (unsigned long i = 0; i < n; i++) s += v[i]; return s; }\n"
+       "int pt_run(int (*cb)(int)) { return cb ? cb(5) : -1; }\n"
+       "int pt_fill(int *out) { *out = 99; return 0; }\n"
+       "int pt_log(const char *fmt, ...) { return 0; }\n");
+    Run p = sh(app, false, g_zevic, "bind", "native/lib.h", "--module", "Lib", "--strip-prefix", "pt_", "-o", "src/Lib.zev", NULL);
+    expect(p.code == 0, "zevic bind: %s%s", p.out, p.err);
+    char *lib = rd(join(app, "src/Lib.zev"));
+    expect(contains(lib, "struct Pt { X: CInt, Y: CInt }"), "the struct is written: %s", lib);
+    expect(contains(lib, "fn Sum(v: *CInt, n: CULong) -> CInt = \"pt_sum\""), "a function is written: %s", lib);
+    expect(contains(lib, "fn Run(cb: fn(CInt) -> CInt) -> CInt = \"pt_run\""), "a callback is written: %s", lib);
+    expect(contains(lib, "let Green: I32 = 10") && contains(lib, "let Limit: I32 = 7") && contains(lib, "let Name: String = \"pt\""),
+           "constants are written: %s", lib);
+    expect(contains(lib, "pt_add: ") && contains(lib, "pt_log: variadic"), "what is not bound is said: %s", lib);
+    wr(join(app, "src/Main.zev"),
+       "module Main\n\nimport Lib\nimport Zevic.Console\nimport Zevic.Unsafe\n\n"
+       "fn twice(i: CInt) -> CInt {\n    (i.ToI32() * 2).ToCInt()\n}\n\n"
+       "fn Main() {\n"
+       "    Console.Println(\"${Lib.Limit} ${Lib.Green} ${Lib.Name}\")\n"
+       "    Console.Println(\"${Lib.Run(Null).ToI32()} ${Lib.Run(twice).ToI32()}\")\n"
+       "    unsafe {\n        let p: *CInt = Unsafe.Alloc<CInt>(1)\n        let rc: CInt = Lib.Fill(p)\n"
+       "        Console.Println(\"${p.Read(0).ToI32()} ${rc.ToI32()}\")\n    }\n}\n");
+    p = pm(app, false, "run", NULL);
+    expect(p.code == 0 && strcmp(strip(no_cr(p.out)), "7 10 pt\n-1 10\n99 0") == 0, "the generated module works: %s%s", p.out, p.err);
+    p = sh(app, false, g_zevic, "bind", "no-such.h", NULL);
+    expect(p.code != 0 && contains(p.err, "cannot read"), "a missing header: %s", p.err);
+}
+
 static void sc_native_keys(const char *tmp) {
     /* include_dirs (relative and absolute) and defines of a dependency, and lib_dirs of the app */
     char *nat = join(tmp, "nat");
@@ -1258,6 +1336,8 @@ static void test_zevpm(void) {
     scenario("native_in_dependency", sc_native_in_dependency);
     scenario("native_keys", sc_native_keys);
     scenario("target", sc_target);
+    scenario("freestanding", sc_freestanding);
+    scenario("bind", sc_bind);
     scenario("library_for_c", sc_library_for_c);
     scenario("git_dependencies", sc_git_dependencies);
     scenario("git_update", sc_git_update);

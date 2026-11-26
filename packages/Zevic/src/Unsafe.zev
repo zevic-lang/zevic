@@ -5,12 +5,16 @@ module Zevic.Unsafe
 //   Alloc<T>(n: I64) -> *T      // room for n values of T, zero-filled. A null pointer if there is no memory
 //   Free(p: *T)                 // gives the memory back; only for what `Alloc` returned
 //   Cast<U>(p: *T) -> *U        // the same address, seen as another type
+//   At<T>(address: U64) -> *T   // the pointer to a fixed address (a hardware register, memory of a kernel)
 //
 // A pointer `*T` has these methods (also only inside `unsafe`, except `IsNull`):
 //
 //   p.Read(i: I64) -> T         // the i-th value; there is no range check
 //   p.Write(i: I64, v: T)
 //   p.Offset(n: I64) -> *T      // the pointer n values further
+//   p.ReadVolatile(i: I64) -> T // like Read, but the access is never removed, merged or reordered by the
+//   p.WriteVolatile(i, v)       // compiler: for hardware registers. T is a number, `Bool`, `Char` or a pointer
+//   p.Address() -> U64          // the address as a number (not unsafe)
 //   p.IsNull() -> Bool
 //
 // T has to be something the garbage collector has nothing to do with: a number, `Bool`, `Char`, a
@@ -20,4 +24,5 @@ extern "intrinsic" {
     fn Alloc<T>(n: I64) -> *T
     fn Free<T>(p: *T)
     fn Cast<U>(p: *CVoid) -> *U
+    fn At<T>(address: U64) -> *T
 }

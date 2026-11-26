@@ -1,0 +1,3 @@
+`ReadVolatile` works on a number, a `Bool`, a `Char` or a pointer, not on `Main.P`
+`WriteVolatile` works on a number, a `Bool`, a `Char` or a pointer, not on `Main.P`
+a pointer has no method `ReadVolatile` that takes 0 argument(s)

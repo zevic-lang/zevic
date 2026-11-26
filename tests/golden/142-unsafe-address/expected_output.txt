@@ -1,0 +1,4 @@
+42 7 false
+42 true
+the address 0 is null: true
+4096

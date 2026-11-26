@@ -1073,10 +1073,14 @@ fn genIdent(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Va
                 if (e.Kind == Types.TKind.Ptr || (e.Kind == Types.TKind.CType && e.Ll == "ptr")) {
                     return Ctx.Val.New(e, "null")
                 }
+                // a callback that C allows to be absent: it becomes a null function pointer when passed to C
+                if (e.Kind == Types.TKind.Fn) {
+                    return Ctx.Val.New(e, "zeroinitializer")
+                }
             },
             None => {},
         }
-        g.Diag.Error(n.Pos, "`Null` is a pointer value; use it where a pointer type (`*T` or `CString`) is expected")
+        g.Diag.Error(n.Pos, "`Null` is a pointer value; use it where a pointer type (`*T`, `CString`) or a callback type (`fn(...)` passed to C) is expected")
         return F.ErrVal()
     }
     match (dOpt) {
@@ -2854,6 +2858,9 @@ fn cExtAttr(t: Types.Type) -> String {
 // with a null environment. Only a named function or a lambda that captures nothing can be passed.
 fn cCallback(mut F: Ctx.FnCtx, v: Ctx.Val) -> Option<String> {
     mut g: Gen.Gen = F.G
+    if (v.V == "zeroinitializer") {
+        return Some("null")
+    }
     mut target: Option<String> = None
     let pre: String = "{ ptr @\"thunk."
     let post: String = "\", ptr null }"
@@ -4021,7 +4028,7 @@ fn checkRawElem(mut F: Ctx.FnCtx, pos: Token.Pos, et: Types.Type) -> Bool {
     true
 }
 
-// Unsafe.Alloc<T>(n), Unsafe.Free(p), Unsafe.Cast<U>(p)
+// Unsafe.Alloc<T>(n), Unsafe.Free(p), Unsafe.Cast<U>(p), Unsafe.At<T>(address)
 fn genUnsafeIntrinsic(mut F: Ctx.FnCtx, call: Ast.Node, d: Resolve.Decl, last: Ast.Node) -> Ctx.Val {
     mut g: Gen.Gen = F.G
     let what: String = "`Unsafe.${d.Name}`"
@@ -4070,6 +4077,27 @@ fn genUnsafeIntrinsic(mut F: Ctx.FnCtx, call: Ast.Node, d: Resolve.Decl, last: A
         F.Emit("call void @free(ptr ${p.V})")
         return F.UnitVal()
     }
+    if (d.Name == "At") {
+        if (call.List.Len() != 1 || last.List2.Len() != 1) {
+            g.Diag.Error(call.Pos, "`Unsafe.At` needs the type and the address: `Unsafe.At<T>(address)`")
+            return F.ErrVal()
+        }
+        let t: Types.Type = Gen.ResolveType(g, F.File, F.Env, last.List2[0])
+        if (!checkRawElem(F, call.Pos, t)) {
+            return F.ErrVal()
+        }
+        let av: Ctx.Val = genExpr(F, call.List[0], Some(g.Tt.U64))
+        let addr: Ctx.Val = coerce(F, call.List[0].Pos, av, g.Tt.U64, "the address of `Unsafe.At`")
+        if (addr.T.Id == g.Tt.Never.Id) {
+            return F.NeverVal(None)
+        }
+        if (g.IsErr(addr.T)) {
+            return F.ErrVal()
+        }
+        let p: String = F.Tmp()
+        F.Emit("${p} = inttoptr i64 ${addr.V} to ptr")
+        return Ctx.Val.New(g.Tt.Ptr(t), p)
+    }
     if (d.Name == "Cast") {
         if (call.List.Len() != 1 || last.List2.Len() != 1) {
             g.Diag.Error(call.Pos, "`Unsafe.Cast` needs the new pointee type: `Unsafe.Cast<T>(p)`")
@@ -4096,7 +4124,7 @@ fn genUnsafeIntrinsic(mut F: Ctx.FnCtx, call: Ast.Node, d: Resolve.Decl, last: A
     F.ErrVal()
 }
 
-// p.Read(i), p.Write(i, v), p.Offset(n), p.IsNull()
+// p.Read(i), p.Write(i, v), p.ReadVolatile(i), p.WriteVolatile(i, v), p.Offset(n), p.Address(), p.IsNull()
 fn genPtrMethod(mut F: Ctx.FnCtx, call: Ast.Node, recv: Ctx.Val, name: String) -> Ctx.Val {
     mut g: Gen.Gen = F.G
     let et: Types.Type = recv.T.Args[0]
@@ -4106,9 +4134,15 @@ fn genPtrMethod(mut F: Ctx.FnCtx, call: Ast.Node, recv: Ctx.Val, name: String) -
         F.Emit("${r} = icmp eq ptr ${recv.V}, null")
         return Ctx.Val.New(g.Tt.Bool, r)
     }
+    if (name == "Address" && nargs == 0) {
+        let r: String = F.Tmp()
+        F.Emit("${r} = ptrtoint ptr ${recv.V} to i64")
+        return Ctx.Val.New(g.Tt.U64, r)
+    }
     let known: Bool = (name == "Read" && nargs == 1) || (name == "Write" && nargs == 2) || (name == "Offset" && nargs == 1)
+        || (name == "ReadVolatile" && nargs == 1) || (name == "WriteVolatile" && nargs == 2)
     if (!known) {
-        g.Diag.Error(call.Pos, "a pointer has no method `${name}` that takes ${nargs} argument(s) (it has `Read(i)`, `Write(i, v)`, `Offset(n)` and `IsNull()`)")
+        g.Diag.Error(call.Pos, "a pointer has no method `${name}` that takes ${nargs} argument(s) (it has `Read(i)`, `Write(i, v)`, `ReadVolatile(i)`, `WriteVolatile(i, v)`, `Offset(n)`, `Address()` and `IsNull()`)")
         genArgsForErrors(F, call)
         return F.ErrVal()
     }
@@ -4126,20 +4160,34 @@ fn genPtrMethod(mut F: Ctx.FnCtx, call: Ast.Node, recv: Ctx.Val, name: String) -
     if (name == "Offset") {
         return Ctx.Val.New(recv.T, elemPtr(F, et, recv.V, i.V))
     }
-    if (name == "Read") {
+    let isVol: Bool = Text.EndsWith(name, "Volatile")
+    if (isVol) {
+        // a volatile access is for a register: one number, `Bool` or pointer, never a struct or a tuple
+        let ll: String = F.LlOf(et)
+        if (Text.StartsWith(ll, "{") || Text.StartsWith(ll, "[") || Text.StartsWith(ll, "%")) {
+            g.Diag.Error(call.Pos, "`${name}` works on a number, a `Bool`, a `Char` or a pointer, not on `${et.Name}`")
+            genArgsForErrors(F, call)
+            return F.ErrVal()
+        }
+    }
+    if (name == "Read" || name == "ReadVolatile") {
         let r: String = F.Tmp()
-        F.Emit("${r} = load ${F.LlOf(et)}, ptr ${elemPtr(F, et, recv.V, i.V)}")
+        F.Emit("${r} = load ${if (isVol) { "volatile " } else { "" }}${F.LlOf(et)}, ptr ${elemPtr(F, et, recv.V, i.V)}")
         return Ctx.Val.New(et, r)
     }
     mut v: Ctx.Val = genExpr(F, call.List[1], Some(et))
-    v = coerce(F, call.List[1].Pos, v, et, "the value of `Write`")
+    v = coerce(F, call.List[1].Pos, v, et, "the value of `${name}`")
     if (v.T.Id == g.Tt.Never.Id) {
         return F.NeverVal(None)
     }
     if (g.IsErr(v.T)) {
         return F.ErrVal()
     }
-    F.StoreTo(et, v, elemPtr(F, et, recv.V, i.V))
+    if (isVol) {
+        F.Emit("store volatile ${F.LlOf(et)} ${v.V}, ptr ${elemPtr(F, et, recv.V, i.V)}")
+    } else {
+        F.StoreTo(et, v, elemPtr(F, et, recv.V, i.V))
+    }
     F.UnitVal()
 }
 
