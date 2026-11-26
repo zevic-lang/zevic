@@ -1,0 +1,9 @@
+[package]
+name = "Kernel"
+version = "0.1.0"
+kind = "freestanding"
+
+[freestanding]
+target = "riscv64-unknown-elf"
+linker_script = "linker.ld"
+entry = "_start"
