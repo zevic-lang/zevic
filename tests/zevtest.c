@@ -1167,7 +1167,7 @@ static void sc_bind(const char *tmp) {
        "    unsafe {\n        let p: *CInt = Unsafe.Alloc<CInt>(1)\n        let rc: CInt = Lib.Fill(p)\n"
        "        Console.Println(\"${p.Read(0).ToI32()} ${rc.ToI32()}\")\n    }\n}\n");
     p = pm(app, false, "run", NULL);
-    expect(p.code == 0 && strcmp(strip(p.out), "7 10 pt\n-1 10\n99 0") == 0, "the generated module works: %s%s", p.out, p.err);
+    expect(p.code == 0 && strcmp(strip(no_cr(p.out)), "7 10 pt\n-1 10\n99 0") == 0, "the generated module works: %s%s", p.out, p.err);
     p = sh(app, false, g_zevic, "bind", "no-such.h", NULL);
     expect(p.code != 0 && contains(p.err, "cannot read"), "a missing header: %s", p.err);
 }
