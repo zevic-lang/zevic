@@ -108,6 +108,99 @@ fn findMain(mut g: Gen.Gen) -> Option<Resolve.Decl> {
 }
 
 // The text of the LLVM IR, or None when there were errors.
+// The name of the function a line of LLVM IR is in: `define ... @"name"(...) {` gives `name`.
+fn definedName(line: String) -> String {
+    match (Text.IndexOf(line, "@\"")) {
+        Some(i) => {
+            let rest: String = line.Slice(i + 2, line.Len())
+            match (Text.IndexOf(rest, "\"")) {
+                Some(j) => rest.Slice(0, j),
+                None => "",
+            }
+        },
+        None => "",
+    }
+}
+
+// Where a function of the program is written (to report an error there).
+fn posOfFunction(g: Gen.Gen, irName: String) -> Token.Pos {
+    for (inst in g.Worklist) {
+        if (inst.Name == irName) {
+            return inst.D.Node.Pos
+        }
+    }
+    Token.Pos.New(0, 1, 1)
+}
+
+// `--freestanding`: the runtime and the garbage collector are not linked, so the program must not need them.
+// A runtime function in the LLVM IR (`@zevic_...`, written without quotes) is an error that points at the function;
+// the checks that can panic are allowed when the program defines the handler itself:
+//
+//     export "C" fn zevic_panic(msg: *U8, len: CLongLong, file: *U8, line: CInt) { ... never returns ... }
+//
+// The functions of LLVM IR get the attribute `noredzone` (a kernel cannot use the red zone below the stack pointer).
+fn freestandingCheck(mut g: Gen.Gen, ir: String) -> Option<String> {
+    let hasPanic: Bool = Text.Contains(ir, "define void @\"zevic_panic\"(")
+    mut text: String = ir
+    if (hasPanic) {
+        text = Text.Replace(text, "declare void @zevic_panic(ptr, i64, ptr, i32) noreturn\n", "")
+    }
+    mut current: String = ""
+    mut panicSaid: Bool = false
+    mut seen: Map<String, Bool> = Map.New()
+    mut out: Array<String> = []
+    for (line in Text.Split(text, "\n")) {
+        if (Text.StartsWith(line, "define ")) {
+            current = definedName(line)
+            if (Text.EndsWith(line, " {")) {
+                out.Push("${line.Slice(0, line.Len() - 2)} #0 {")
+            } else {
+                out.Push(line)
+            }
+            continue
+        }
+        out.Push(line)
+        if (Text.StartsWith(line, "declare ") || !Text.Contains(line, "@zevic_")) {
+            continue
+        }
+        // the name of the runtime function: the letters, digits and `_` after the `@`
+        mut from: I64 = 0
+        loop {
+            let at: I64 = match (Text.IndexFrom(line, "@zevic_", from)) {
+                Some(i) => i,
+                None => break,
+            }
+            mut end: I64 = at + 1
+            while (end < line.Len()) {
+                let c: U8 = line.ByteAt(end)
+                if ((c >= b'a' && c <= b'z') || (c >= b'A' && c <= b'Z') || (c >= b'0' && c <= b'9') || c == b'_') {
+                    end += 1
+                } else {
+                    break
+                }
+            }
+            let sym: String = line.Slice(at + 1, end)
+            from = end
+            if (sym == "zevic_panic") {
+                if (!hasPanic && !panicSaid) {
+                    panicSaid = true
+                    g.Diag.Error(posOfFunction(g, current), "this function can panic (an overflow check, an array index, a division, ...) and a `--freestanding` program has no runtime to do it: define the handler `export \"C\" fn zevic_panic(msg: *U8, len: CLongLong, file: *U8, line: CInt)` (it must never return: loop or halt)")
+                }
+            } else if (!seen.Contains("${current} ${sym}")) {
+                seen.Set("${current} ${sym}", true)
+                g.Diag.Error(posOfFunction(g, current), "a `--freestanding` program cannot use the runtime, and this function needs `${sym}` (the garbage collector, `String`, `Array`, `Map`, closures, `class` objects and the standard library modules need it; `struct`, numbers, pointers, `unsafe` and `Zevic.Unsafe` do not)")
+            }
+        }
+    }
+    if (Text.Contains(text, "call void @free(")) {
+        g.Diag.Error(posOfFunction(g, ""), "a `--freestanding` program cannot call `Unsafe.Free`: it needs the C library (and `Unsafe.Alloc` needs the runtime)")
+    }
+    if (g.Diag.Errors > 0) {
+        return None
+    }
+    Some("${Text.Join(out, "\n")}attributes #0 = { noredzone }\n")
+}
+
 fn GenProgram(mut g: Gen.Gen) -> Option<String> {
     let mdOpt: Option<Resolve.Decl> = if (g.TestMode || g.LibMode) { None } else { findMain(g) }
     mut mainIn: Option<Gen.Inst> = None
@@ -201,6 +294,9 @@ fn GenProgram(mut g: Gen.Gen) -> Option<String> {
         }
         return Some("${out}  %rc = call i32 @zevic_test_main()\n  ret i32 %rc\n}\n")
     }
+    if (g.Freestanding) {
+        return freestandingCheck(g, out)
+    }
     if (g.LibMode) {
         return Some(out)
     }
@@ -273,7 +369,7 @@ fn GenHeader(mut g: Gen.Gen, guard: String) -> String {
     mut out: Array<String> = []
     out.Push("/* generated by zevic0: the `export \"C\"` functions of this program */\n#ifndef ${guard}\n#define ${guard}\n\n")
     out.Push("#include <stddef.h>\n#include <stdint.h>\n\n#ifdef __cplusplus\nextern \"C\" {\n#endif\n\n")
-    if (g.LibMode) {
+    if (g.LibMode && !g.Freestanding) {
         out.Push("/* Call this once before any other function of the library. */\nvoid zevic_init(int argc, char **argv);\n\n")
     }
     mut seen: Map<String, Bool> = Map.New()
