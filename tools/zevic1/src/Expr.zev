@@ -1073,10 +1073,14 @@ fn genIdent(mut F: Ctx.FnCtx, n: Ast.Node, expect: Option<Types.Type>) -> Ctx.Va
                 if (e.Kind == Types.TKind.Ptr || (e.Kind == Types.TKind.CType && e.Ll == "ptr")) {
                     return Ctx.Val.New(e, "null")
                 }
+                // a callback that C allows to be absent: it becomes a null function pointer when passed to C
+                if (e.Kind == Types.TKind.Fn) {
+                    return Ctx.Val.New(e, "zeroinitializer")
+                }
             },
             None => {},
         }
-        g.Diag.Error(n.Pos, "`Null` is a pointer value; use it where a pointer type (`*T` or `CString`) is expected")
+        g.Diag.Error(n.Pos, "`Null` is a pointer value; use it where a pointer type (`*T`, `CString`) or a callback type (`fn(...)` passed to C) is expected")
         return F.ErrVal()
     }
     match (dOpt) {
@@ -2854,6 +2858,9 @@ fn cExtAttr(t: Types.Type) -> String {
 // with a null environment. Only a named function or a lambda that captures nothing can be passed.
 fn cCallback(mut F: Ctx.FnCtx, v: Ctx.Val) -> Option<String> {
     mut g: Gen.Gen = F.G
+    if (v.V == "zeroinitializer") {
+        return Some("null")
+    }
     mut target: Option<String> = None
     let pre: String = "{ ptr @\"thunk."
     let post: String = "\", ptr null }"
