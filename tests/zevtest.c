@@ -1094,6 +1094,34 @@ static void sc_target(const char *tmp) {
 #endif
 }
 
+static void sc_freestanding(const char *tmp) {
+    /* kind = "freestanding": an image without the runtime and the GC; no run, no test */
+    pm(tmp, true, "new", "kern", NULL);
+    char *k = join(tmp, "kern");
+    wr(join(k, "zevic.toml"),
+       "[package]\nname = \"Kern\"\nversion = \"0.1.0\"\nkind = \"freestanding\"\n\n[freestanding]\ntarget = \"riscv64-unknown-elf\"\nentry = \"_start\"\nlinker_script = \"linker.ld\"\n");
+    wr(join(k, "linker.ld"), "ENTRY(_start)\nSECTIONS { . = 0x80000000; .text : { *(.text.boot) *(.text*) } .data : { *(.data*) } .bss : { *(.bss*) } }\n");
+    wr(join(k, "native/boot.S"), ".section .text.boot\n.global _start\n_start:\n    call kmain\n1:  wfi\n    j 1b\n");
+    wr(join(k, "src/Main.zev"),
+       "module Kern\n\nexport \"C\" fn zevic_panic(msg: *U8, len: CLongLong, file: *U8, line: CInt) {\n    while (true) {}\n}\n\nexport \"C\" fn kmain() {\n    let x: I32 = 1\n    while (x > 0) {}\n}\n");
+    Run p = pm(k, false, "build", NULL);
+    expect(p.code == 0 && exists(join(k, "build/Kern.elf")), "a freestanding build makes build/Kern.elf: %s%s", p.out, p.err);
+    p = pm(k, false, "test", NULL);
+    expect(p.code != 0 && contains(p.err, "freestanding package"), "test refuses a freestanding package: %s", p.err);
+    p = pm(k, false, "run", NULL);
+    expect(p.code != 0 && contains(p.err, "freestanding package"), "run refuses a freestanding package: %s", p.err);
+    /* without zevic_panic the build must fail with a hint */
+    wr(join(k, "src/Main.zev"), "module Kern\n\nexport \"C\" fn kmain() {\n    let x: I32 = 1\n    let y: I32 = 10 / (x - 1)\n    while (y > 5) {}\n}\n");
+    p = pm(k, false, "build", NULL);
+    expect(p.code != 0 && contains(p.err, "zevic_panic"), "a missing panic handler is reported: %s%s", p.out, p.err);
+    /* [freestanding] belongs to the freestanding kind only */
+    pm(tmp, true, "new", "plain", NULL);
+    char *pl = join(tmp, "plain");
+    append_file(join(pl, "zevic.toml"), "\n[freestanding]\nentry = \"x\"\n");
+    p = pm(pl, false, "build", NULL);
+    expect(p.code != 0 && contains(p.err, "only for `kind = \"freestanding\"`"), "[freestanding] needs the kind: %s", p.err);
+}
+
 static void sc_native_keys(const char *tmp) {
     /* include_dirs (relative and absolute) and defines of a dependency, and lib_dirs of the app */
     char *nat = join(tmp, "nat");
@@ -1258,6 +1286,7 @@ static void test_zevpm(void) {
     scenario("native_in_dependency", sc_native_in_dependency);
     scenario("native_keys", sc_native_keys);
     scenario("target", sc_target);
+    scenario("freestanding", sc_freestanding);
     scenario("library_for_c", sc_library_for_c);
     scenario("git_dependencies", sc_git_dependencies);
     scenario("git_update", sc_git_update);
