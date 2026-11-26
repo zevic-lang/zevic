@@ -1144,6 +1144,19 @@ zevic --freestanding --target riscv64-unknown-elf -T linker.ld --entry _start ke
 - RISC-V 64 targets get `-mcmodel=medany` (kernels live at high addresses), and code is compiled with `noredzone` and without stack protector, as kernel code must.
 - A package says the same in `zevic.toml`: `kind = "freestanding"` and a `[freestanding]` section (`target`, `linker_script`, `entry`, `cflags`, `ldflags`). `zevpm build` makes `build/<Name>.elf`; the `.s` and `.S` files in `native/` are assembled with it. `zevpm run` and `zevpm test` refuse such a package.
 
+### `zevic bind`: a module from a C header
+
+```
+zevic bind sqlite3.h --module Sqlite3 --strip-prefix sqlite3_ --strip-prefix SQLITE_ -o src/Sqlite3.zev
+```
+
+clang reads the header, and `zevic bind` writes a Zevic module: an `extern "C"` block with a public function for each C function (`sqlite3_open` is `Sqlite3.Open`), an `extern struct` for each plain struct, and `let` constants for enum values and for `#define`s that are numbers or strings. Only what the header itself declares is written, not what it includes.
+
+- Types become C types: `int` is `CInt`, `const char *` is `CString`, `size_t` is `CSizeT`, a pointer to a struct that is not written (an opaque handle such as `sqlite3 *`) is `*CVoid`, a function pointer is `fn(...) -> ...`, an enum is `CInt`.
+- `--strip-prefix` (can be given many times, the case does not matter) takes a prefix off the names. A name that would be a name of the prelude (`SQLITE_OK` is `Ok`) keeps its prefix (`SqliteOk`).
+- What cannot be bound is listed in a comment at the end of the file: variadic functions, functions that pass or return a struct by value (the compiler passes structs by pointer only), unions, bit fields, `long double`.
+- `-I`, `-D`: passed to clang. The module is plain text: edit it, or run `zevic bind` again.
+
 ### The boundary with C
 
 The rules for passing GC-managed memory to C are collected in "The boundary with the GC" in the chapter "C and C++ interop". The main points are:
@@ -1174,7 +1187,8 @@ fn Main() {
 ```
 
 - Declare C functions with `fn` in an `extern "C" { ... }` block. No body is written.
-- A declaration can be used **only inside that module**. It is not re-exported to other modules. To make it public, wrap it in a Zevic function.
+- A declaration can be used inside that module. A name that starts with a capital letter is public like any other Zevic name, so `fn Sum(v: *CInt, n: CULong) -> CInt = "pt_sum"` can be called as `Lib.Sum(...)` from another module; write the alias form when you want that. A name written as the C name (lowercase) stays inside the module.
+- `Null` can be passed where a callback (`fn(...)`) is expected, for the C functions that allow `NULL` there. It becomes a null function pointer.
 - The name is the C name as it is (no mangling). To change the C name, give an alias in the form `fn Foo() -> CInt = "c_name"`.
 - Calls are the same as for ordinary functions. But the parameters and the return value are **C types only**.
 
