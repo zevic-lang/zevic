@@ -168,6 +168,10 @@ class TcpListener {
         Ok(TcpStream.New(c))
     }
 
+    // Makes an `Accept` that waits in another thread return an error, and the next ones too. It can be called on a
+    // listener that is not `mut` (so a server can be stopped from the task that did not start it); call `Close` to free the socket.
+    fn Shutdown() { zevic_net_shutdown(this.fd) }
+
     // Stops the listener: an `Accept` waiting in another thread returns an error.
     mut fn Close() {
         if (!this.closed) {

@@ -1,5 +1,0 @@
-[package]
-name = "Http"
-version = "0.5.0"
-kind = "bin"
-zevic = ">=0.4"

@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+- **Breaking:** the standard library has no `Zevic.Http` any more. The HTTP client is the package [`zevic-lang/curl`](https://github.com/zevic-lang/curl) (`Curl.Get`, `Curl.Request`, `Curl.Response`; HTTPS, redirects and proxies work there), and the HTTP server is the package [`zevic-lang/httpd`](https://github.com/zevic-lang/httpd). `Zevic.Net` (TCP and UDP) stays. See `docs/proposals/0003-http.md`
+- `Net.TcpListener.Shutdown()` makes an `Accept` that waits in another task return an error, and it can be called on a listener that is not `mut`
 - `zevpm new` writes `zevic = ">=X.Y"` for the version of Zevic that made the package, not the fixed `">=0.1"` (the package itself still starts at `version = "0.1.0"`)
 
 ## 0.5.0

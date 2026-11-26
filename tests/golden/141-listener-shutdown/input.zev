@@ -1,0 +1,14 @@
+// TcpListener.Shutdown ends an Accept that waits in another task, and it works on a listener that is not `mut`.
+module Main
+
+import Zevic.Async
+import Zevic.Console
+import Zevic.Net
+
+fn Main() {
+    let l: Net.TcpListener = Net.Listen("127.0.0.1", 0).Unwrap()
+    let t: Async.Task<Bool> = async { l.Accept().IsErr() }
+    l.Shutdown()
+    Console.Println("accept ended with an error: ${await t}")
+    Console.Println("and the next one too: ${l.Accept().IsErr()}")
+}
