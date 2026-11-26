@@ -28,6 +28,14 @@ class BuildOpts {
     // The LLVM triple to build for; empty means the machine zevic runs on.
     mut Target: String = ""
     mut Sysroot: String = ""
+    // --freestanding: the runtime, the garbage collector and the C library are not linked
+    mut Freestanding: Bool = false
+    // --linker-script and --entry (freestanding programs)
+    mut LinkerScript: String = ""
+    mut Entry: String = ""
+    // --cflag and --ldflag: passed to clang as they are
+    mut CFlags: Array<String> = []
+    mut LdFlags: Array<String> = []
 }
 
 // The triple of a target name (`linux-arm64`), or of a full triple given as it is. None for an unknown name.
@@ -360,6 +368,42 @@ fn prepareRuntime(clang: String, home: String, pic: Bool, o: BuildOpts) -> Runti
     rt.RtObj = cachedObject(clang, "zevic_rt", rt.RtSrc, [rt.RtSrc, "${home}/runtime/zevic_rt.h"], cflags)
     rt.GcObj = cachedObject(clang, "bgc", rt.GcSrc, ["${home}/runtime/third_party/bgc/VENDORED.txt"], cflags)
     rt
+}
+
+// A program without the runtime: no `Main`, no garbage collector, no C library (an operating system kernel, firmware,
+// a bootloader). `-o name.o` gives the object file of the Zevic part; any other name is linked with the files given on
+// the command line (.c, .S, .o), `-nostdlib` and `-static`, with the linker script and the entry point if they were given.
+fn BuildFreestanding(clang: String, llPath: String, outPath: String, o: BuildOpts) -> I32 {
+    mut args: Array<String> = [match (o.Opt) { Some(x) => x, None => "-O0" }, "-w", "-Wno-override-module", "-ffreestanding", "-fno-stack-protector"]
+    if (o.Debug) { args.Push("-g") }
+    for (f in targetFlags(o)) { args.Push(f) }
+    // RISC-V kernels live at high addresses (QEMU's `virt` starts at 0x80000000): the code model has to reach them
+    if (Text.Contains(o.Target, "riscv64")) { args.Push("-mcmodel=medany") }
+    for (f in o.CFlags) { args.Push(f) }
+    if (endsWith(outPath, ".o") || endsWith(outPath, ".obj")) {
+        if (o.Inputs.Len() > 0) {
+            Console.Eprintln("error: `-o ${outPath}` is the object file of the Zevic part only: to link .c, .S or .o files too, name an output that is not .o (an ELF file), or build them separately")
+            return 1
+        }
+        args.Push("-c")
+        args.Push(llPath)
+        args.Push("-o")
+        args.Push(outPath)
+        return run(clang, args)
+    }
+    args.Push("-nostdlib")
+    args.Push("-static")
+    args.Push("-fuse-ld=lld")
+    if (o.LinkerScript != "") { args.Push("-Wl,-T,${o.LinkerScript}") }
+    if (o.Entry != "") { args.Push("-Wl,-e,${o.Entry}") }
+    for (f in o.LdFlags) { args.Push(f) }
+    args.Push(llPath)
+    for (f in o.Inputs) { args.Push(f) }
+    for (d in o.IncDirs) { args.Push("-I${d}") }
+    for (d in o.Defines) { args.Push("-D${d}") }
+    args.Push("-o")
+    args.Push(outPath)
+    run(clang, args)
 }
 
 fn Build(clang: String, home: String, llPath: String, outPath: String, o: BuildOpts) -> I32 {
