@@ -1,0 +1,21 @@
+// Unsafe.At (a pointer to an address), p.Address(), and the volatile reads and writes of registers.
+module Main
+
+import Zevic.Console
+import Zevic.Unsafe
+
+fn Main() {
+    unsafe {
+        let p: *I32 = Unsafe.Alloc<I32>(4)
+        p.WriteVolatile(2, 42)
+        p.Write(0, 7)
+        let a: U64 = p.Address()
+        let q: *I32 = Unsafe.At<I32>(a)
+        Console.Println("${q.ReadVolatile(2)} ${q.Read(0)} ${p.IsNull()}")
+        let r: *I32 = Unsafe.At<I32>(a + 8)
+        Console.Println("${r.ReadVolatile(0)} ${a == q.Address()}")
+        Console.Println("the address 0 is null: ${Unsafe.At<U8>(0).IsNull()}")
+        Console.Println("${Unsafe.At<U8>(4096).Address()}")
+        Unsafe.Free(p)
+    }
+}

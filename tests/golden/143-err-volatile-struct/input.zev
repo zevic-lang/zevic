@@ -1,0 +1,24 @@
+module Main
+
+import Zevic.Unsafe
+
+struct P {
+    mut X: I32
+    mut Y: I32
+
+    fn Init() {
+        this.X = 0
+        this.Y = 0
+    }
+}
+
+fn Main() {
+    unsafe {
+        let p: *P = Unsafe.Alloc<P>(1)
+        let v: P = p.ReadVolatile(0)
+        p.WriteVolatile(0, v)
+        let q: *I32 = Unsafe.At<I32>(4096)
+        let w: I32 = q.ReadVolatile()
+        let z: *I32 = p.Address()
+    }
+}
