@@ -373,7 +373,9 @@ fn collect(mut st: State, root: Json.Value, header: String) {
             mut recId: String = ""
             let inner: Array<Json.Value> = items(field(n, "inner"))
             if (inner.Len() > 0) {
-                let owned: Json.Value = field(inner[0], "ownedTagDecl")
+                // clang before 20 says `ElaboratedType` with an `ownedTagDecl`; clang 20 says `RecordType` with a `decl`
+                mut owned: Json.Value = field(inner[0], "ownedTagDecl")
+                if (text(field(owned, "kind")) != "RecordDecl") { owned = field(inner[0], "decl") }
                 if (text(field(owned, "kind")) == "RecordDecl") { recId = text(field(owned, "id")) }
             }
             st.Typedefs.Set(nameOf(n), Typedef.New(qualType(n), recId))
@@ -475,7 +477,12 @@ fn macroLet(name: String, value: String) -> String {
 
 fn writeStructs(mut st: State, mut out: Array<String>, mut used: Array<String>) {
     for (r in st.Recs) {
-        if (!usable(st, r)) { continue }
+        if (!usable(st, r)) {
+            if (r.InTarget && !cName(st, r).IsEmpty()) {
+                st.Skipped.Push("struct ${cName(st, r)}: ${if (!r.Complete) { "it is only declared here, not defined" } else { "it has a bit field or a nested type" }}")
+            }
+            continue
+        }
         let name: String = structName(st, r)
         if (used.Contains(name)) { continue }
         mut fields: Array<String> = []
