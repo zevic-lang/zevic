@@ -1128,6 +1128,50 @@ static void sc_freestanding(const char *tmp) {
     expect(p.code != 0 && contains(p.err, "only for `kind = \"freestanding\"`"), "[freestanding] needs the kind: %s", p.err);
 }
 
+static void sc_bind(const char *tmp) {
+    /* `zevic bind` reads a C header; the module it writes is used with the C code and no shim */
+    pm(tmp, true, "new", "app", NULL);
+    char *app = join(tmp, "app");
+    wr(join(app, "native/lib.h"),
+       "typedef struct { int x, y; } Pt;\n"
+       "enum Color { RED, GREEN = 10 };\n"
+       "#define LIMIT 7\n"
+       "#define NAME \"pt\"\n"
+       "Pt pt_add(Pt a, Pt b);\n"
+       "int pt_sum(const int *v, unsigned long n);\n"
+       "int pt_run(int (*cb)(int));\n"
+       "int pt_fill(int *out);\n"
+       "int pt_log(const char *fmt, ...);\n");
+    wr(join(app, "native/lib.c"),
+       "#include \"lib.h\"\n"
+       "Pt pt_add(Pt a, Pt b) { Pt r = { a.x + b.x, a.y + b.y }; return r; }\n"
+       "int pt_sum(const int *v, unsigned long n) { int s = 0; for (unsigned long i = 0; i < n; i++) s += v[i]; return s; }\n"
+       "int pt_run(int (*cb)(int)) { return cb ? cb(5) : -1; }\n"
+       "int pt_fill(int *out) { *out = 99; return 0; }\n"
+       "int pt_log(const char *fmt, ...) { return 0; }\n");
+    Run p = sh(app, false, g_zevic, "bind", "native/lib.h", "--module", "Lib", "--strip-prefix", "pt_", "-o", "src/Lib.zev", NULL);
+    expect(p.code == 0, "zevic bind: %s%s", p.out, p.err);
+    char *lib = rd(join(app, "src/Lib.zev"));
+    expect(contains(lib, "struct Pt { X: CInt, Y: CInt }"), "the struct is written: %s", lib);
+    expect(contains(lib, "fn Sum(v: *CInt, n: CULong) -> CInt = \"pt_sum\""), "a function is written: %s", lib);
+    expect(contains(lib, "fn Run(cb: fn(CInt) -> CInt) -> CInt = \"pt_run\""), "a callback is written: %s", lib);
+    expect(contains(lib, "let Green: I32 = 10") && contains(lib, "let Limit: I32 = 7") && contains(lib, "let Name: String = \"pt\""),
+           "constants are written: %s", lib);
+    expect(contains(lib, "pt_add: ") && contains(lib, "pt_log: variadic"), "what is not bound is said: %s", lib);
+    wr(join(app, "src/Main.zev"),
+       "module Main\n\nimport Lib\nimport Zevic.Console\nimport Zevic.Unsafe\n\n"
+       "fn twice(i: CInt) -> CInt {\n    (i.ToI32() * 2).ToCInt()\n}\n\n"
+       "fn Main() {\n"
+       "    Console.Println(\"${Lib.Limit} ${Lib.Green} ${Lib.Name}\")\n"
+       "    Console.Println(\"${Lib.Run(Null).ToI32()} ${Lib.Run(twice).ToI32()}\")\n"
+       "    unsafe {\n        let p: *CInt = Unsafe.Alloc<CInt>(1)\n        let rc: CInt = Lib.Fill(p)\n"
+       "        Console.Println(\"${p.Read(0).ToI32()} ${rc.ToI32()}\")\n    }\n}\n");
+    p = pm(app, false, "run", NULL);
+    expect(p.code == 0 && strcmp(strip(p.out), "7 10 pt\n-1 10\n99 0") == 0, "the generated module works: %s%s", p.out, p.err);
+    p = sh(app, false, g_zevic, "bind", "no-such.h", NULL);
+    expect(p.code != 0 && contains(p.err, "cannot read"), "a missing header: %s", p.err);
+}
+
 static void sc_native_keys(const char *tmp) {
     /* include_dirs (relative and absolute) and defines of a dependency, and lib_dirs of the app */
     char *nat = join(tmp, "nat");
@@ -1293,6 +1337,7 @@ static void test_zevpm(void) {
     scenario("native_keys", sc_native_keys);
     scenario("target", sc_target);
     scenario("freestanding", sc_freestanding);
+    scenario("bind", sc_bind);
     scenario("library_for_c", sc_library_for_c);
     scenario("git_dependencies", sc_git_dependencies);
     scenario("git_update", sc_git_update);
