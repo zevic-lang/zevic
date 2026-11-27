@@ -5,7 +5,7 @@ A minimal RISC-V kernel for QEMU's `virt` machine, built with `--freestanding` (
 - `native/boot.S`: the entry point; sets the stack and calls `kmain`
 - `src/Main.zev`: the UART output (`Unsafe.At` and `WriteVolatile`), `zevic_panic`, and `kmain`
 - `linker.ld`: the memory map (RAM starts at `0x80000000`)
-- `zevic.toml`: `kind = "freestanding"`
+- `zevic.toml`: the `[freestanding]` section (target, linker script, entry)
 
 ```
 zevpm build                       # build/Kernel.elf

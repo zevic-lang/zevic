@@ -164,7 +164,7 @@ fn addLib(mut libs: Array<String>, name: String) {
 fn build(m: Toml.Manifest, release: Bool, test: Bool, target: String) -> Result<String, Error> {
     let zevic: String = findZevic()?
     checkZevicVersion(zevic, m)?
-    let fs: Bool = m.Kind == "freestanding"
+    let fs: Bool = m.Freestanding
     if (fs && test) {
         return Err(fatal("`${m.Name}` is a freestanding package: its tests cannot run here, so `zevpm test` does not work on it"))
     }
@@ -405,7 +405,7 @@ fn cmdRun(args: Array<String>) -> Result<I32, Error> {
     if (m.Kind == "lib") {
         return Err(fatal("`${m.Name}` is a library; there is nothing to run (try `zevpm test`)"))
     }
-    if (m.Kind == "freestanding") {
+    if (m.Freestanding) {
         return Err(fatal("`${m.Name}` is a freestanding package (it runs without an OS); `zevpm build` makes the image, start it with an emulator or on the board"))
     }
     let out: String = build(m, release, false, "")?

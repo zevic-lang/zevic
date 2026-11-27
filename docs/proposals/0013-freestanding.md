@@ -19,7 +19,7 @@ zevic --freestanding --target riscv64-unknown-elf -T linker.ld --entry _start ke
 - Panics (division by zero, overflow, bounds, `unwrap`) call `zevic_panic(msg, len, file, line)`, which the program must define with `export "C"`. If the code can panic and the function is missing, it is a compile error with the exact signature.
 - The code is compiled with `noredzone` (interrupts use the stack) and without stack protector. RISC-V 64 uses `-mcmodel=medany`.
 - Memory-mapped I/O: `Unsafe.At<T>(address)`, `p.Address()`, `p.ReadVolatile(i)`, `p.WriteVolatile(i, v)`.
-- In `zevic.toml`: `kind = "freestanding"` and `[freestanding]` with `target`, `linker_script`, `entry`, `cflags`, `ldflags`. `zevpm build` makes `build/<Name>.elf`; `native/*.S` is assembled. `zevpm run` and `zevpm test` refuse.
+- In `zevic.toml`: a `[freestanding]` section (its presence is what makes the package freestanding, because `kind` says bin or lib, not what the code runs on) with `target`, `linker_script`, `entry`, `cflags`, `ldflags`. `zevpm build` makes `build/<Name>.elf`; `native/*.S` is assembled. `zevpm run` and `zevpm test` refuse.
 
 ## Not in this proposal
 

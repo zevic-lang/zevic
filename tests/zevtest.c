@@ -1095,11 +1095,11 @@ static void sc_target(const char *tmp) {
 }
 
 static void sc_freestanding(const char *tmp) {
-    /* kind = "freestanding": an image without the runtime and the GC; no run, no test */
+    /* a [freestanding] section: an image without the runtime and the GC; no run, no test */
     pm(tmp, true, "new", "kern", NULL);
     char *k = join(tmp, "kern");
     wr(join(k, "zevic.toml"),
-       "[package]\nname = \"Kern\"\nversion = \"0.1.0\"\nkind = \"freestanding\"\n\n[freestanding]\ntarget = \"riscv64-unknown-elf\"\nentry = \"_start\"\nlinker_script = \"linker.ld\"\n");
+       "[package]\nname = \"Kern\"\nversion = \"0.1.0\"\nkind = \"bin\"\n\n[freestanding]\ntarget = \"riscv64-unknown-elf\"\nentry = \"_start\"\nlinker_script = \"linker.ld\"\n");
     wr(join(k, "linker.ld"), "ENTRY(_start)\nSECTIONS { . = 0x80000000; .text : { *(.text.boot) *(.text*) } .data : { *(.data*) } .bss : { *(.bss*) } }\n");
     wr(join(k, "native/boot.S"), ".section .text.boot\n.global _start\n_start:\n    call kmain\n1:  wfi\n    j 1b\n");
     wr(join(k, "src/Main.zev"),
@@ -1120,12 +1120,12 @@ static void sc_freestanding(const char *tmp) {
     wr(join(k, "src/Main.zev"), "module Kern\n\nexport \"C\" fn kmain() {\n    let x: I32 = 1\n    let y: I32 = 10 / (x - 1)\n    while (y > 5) {}\n}\n");
     p = pm(k, false, "build", NULL);
     expect(p.code != 0 && contains(p.err, "zevic_panic"), "a missing panic handler is reported: %s%s", p.out, p.err);
-    /* [freestanding] belongs to the freestanding kind only */
+    /* a library cannot be freestanding yet */
     pm(tmp, true, "new", "plain", NULL);
     char *pl = join(tmp, "plain");
-    append_file(join(pl, "zevic.toml"), "\n[freestanding]\nentry = \"x\"\n");
+    wr(join(pl, "zevic.toml"), "[package]\nname = \"Plain\"\nversion = \"0.1.0\"\nkind = \"lib\"\n\n[freestanding]\n");
     p = pm(pl, false, "build", NULL);
-    expect(p.code != 0 && contains(p.err, "only for `kind = \"freestanding\"`"), "[freestanding] needs the kind: %s", p.err);
+    expect(p.code != 0 && contains(p.err, "freestanding library is not supported"), "a freestanding lib is refused: %s", p.err);
 }
 
 static void sc_bind(const char *tmp) {

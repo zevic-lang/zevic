@@ -1,7 +1,7 @@
 [package]
 name = "Kernel"
 version = "0.1.0"
-kind = "freestanding"
+kind = "bin"
 
 [freestanding]
 target = "riscv64-unknown-elf"
