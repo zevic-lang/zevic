@@ -10,9 +10,9 @@ extern "C" {
 
 fn Main() {
     unsafe {
-        let first: *CVoid = signal(10.ToCInt(), Null)
-        let second: *CVoid = signal(10.ToCInt(), Unsafe.CallbackAt<fn(CInt) -> CVoid>(1))
-        let third: *CVoid = signal(10.ToCInt(), Null)
+        let first: *CVoid = signal(2.ToCInt(), Null)
+        let second: *CVoid = signal(2.ToCInt(), Unsafe.CallbackAt<fn(CInt) -> CVoid>(1))
+        let third: *CVoid = signal(2.ToCInt(), Null)
         Console.Println("${first.Address()} ${second.Address()} ${third.Address()}")
     }
 }
