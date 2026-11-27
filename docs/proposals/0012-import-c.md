@@ -1,6 +1,6 @@
 # Proposal 0012: `import C` and `zevic bind` (no border with C)
 
-- Status: stage 1 implemented (`zevic bind`); stage 2 (`import C`) accepted, not yet implemented
+- Status: stage 1 (`zevic bind`) and the core of stage 2 (`import C`) implemented; structs by value, variadic functions and non-trivial macros still open
 - Date: 2026-11-26
 
 ## Motivation
@@ -17,7 +17,9 @@ Zevic aims to be used, and a language is used when its libraries are there. C ha
 - `Null` for a callback.
 - Checked with `sqlite3.h` (Open, Exec, Prepare, Step, Close from Zevic) and `zlib.h`.
 
-## Stage 2: `import C`
+## Stage 2: `import C` (core implemented)
+
+`import C "header.h" as Name strip "prefix_", "PREFIX_"` works: the same generator as `zevic bind` runs inside the compiler and the module `C.Name` is loaded as if it were a file. `sqlite3.h` needs no wrapper and no C. What follows is the design for the rest.
 
 ```
 import C "sqlite3.h" as Sqlite3 (prefix: "sqlite3_", constants: "SQLITE_")
