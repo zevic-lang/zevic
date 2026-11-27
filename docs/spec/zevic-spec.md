@@ -1154,7 +1154,8 @@ clang reads the header, and `zevic bind` writes a Zevic module: an `extern "C"` 
 
 - Types become C types: `int` is `CInt`, `const char *` is `CString`, `size_t` is `CSizeT`, a pointer to a struct that is not written (an opaque handle such as `sqlite3 *`) is `*CVoid`, a function pointer is `fn(...) -> ...`, an enum is `CInt`.
 - `--strip-prefix` (can be given many times, the case does not matter) takes a prefix off the names. A name that would be a name of the prelude (`SQLITE_OK` is `Ok`) keeps its prefix (`SqliteOk`).
-- What cannot be bound is listed in a comment at the end of the file: variadic functions, functions that pass or return a struct by value (the compiler passes structs by pointer only), unions, bit fields, `long double`.
+- What cannot be bound is listed in a comment at the end of the file: variadic functions, unions, bit fields, `long double`.
+- A function that passes or returns a struct by value is bound through a C shim: a C function that takes pointers and calls the real one (`void zevic_shim_f(T *a, R *out) { *out = f(*a); }`), so the C compiler does the calling convention. The Zevic function has the plain signature. `zevic bind` writes the shims to the file of `--shims file.c`, which is compiled with the program; `import C` does it by itself. A function that also takes a callback, or a parameter type that is an array or function pointer written inside a struct-by-value function, is listed as not bound.
 - `-I`, `-D`: passed to clang. The module is plain text: edit it, or run `zevic bind` again.
 
 ### `import C`: the header is the declaration
