@@ -5,6 +5,7 @@ import Zevic.Console
 interface Shape {
     fn Area() -> F64
     fn Name() -> String
+
     fn Describe() -> String {
         "${this.Name()} with area ${this.Area()}"
     }

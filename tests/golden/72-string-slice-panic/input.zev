@@ -1,5 +1,7 @@
 module Main
+
 import Zevic.Console
+
 fn Main() {
     let s: String = "héllo wörld"
     Console.Println(s.Slice(0, 6))

@@ -1,7 +1,7 @@
 module Main
 
-import Zevic.Console
 import Zevic.Async
+import Zevic.Console
 import Zevic.Thread
 
 fn Main() {

@@ -1,7 +1,7 @@
 module Main
 
-import Zevic.Console
 import Zevic.BigInt
+import Zevic.Console
 
 fn Main() {
     let neg5: BigInt.BigInt = BigInt.FromI64(-5)

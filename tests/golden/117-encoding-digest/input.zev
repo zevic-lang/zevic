@@ -1,9 +1,9 @@
 module Main
 
-import Zevic.Console
 import Zevic.Bytes
-import Zevic.Encoding
+import Zevic.Console
 import Zevic.Digest
+import Zevic.Encoding
 
 fn Main() {
     Console.Println("${Encoding.HexEncode([1, 255, 16])} ${Encoding.HexEncodeUpper([171, 205])} ${Encoding.HexEncodeString("Zevic")}")

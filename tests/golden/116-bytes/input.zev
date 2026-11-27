@@ -1,7 +1,7 @@
 module Main
 
-import Zevic.Console
 import Zevic.Bytes
+import Zevic.Console
 import Zevic.Fs
 import Zevic.Path
 

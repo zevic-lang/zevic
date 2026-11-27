@@ -1,9 +1,9 @@
 module Main
 
 import Zevic.Console
+import Zevic.Env
 import Zevic.Fs
 import Zevic.Path
-import Zevic.Env
 import Zevic.Text
 
 // the tests run on every system: show paths with "/" whatever the system uses
