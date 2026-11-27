@@ -1,0 +1,89 @@
+module Zevic1.BindCmd
+
+// `zevic bind header.h`: the command line of the Zevic1.Bind generator.
+
+import Zevic.Console
+import Zevic.Fs
+import Zevic.Path
+import Zevic.Text
+import Zevic1.Bind as Bind
+import Zevic1.Driver as Driver
+
+fn usage() {
+    Console.Eprintln("usage: zevic bind <header.h> [-o Name.zev] [--module Name] [--strip-prefix PREFIX]... [-I dir] [-D name[=value]]")
+    Console.Eprintln("  Reads a C header with clang and writes a Zevic module: an `extern \"C\"` block with a public function for each")
+    Console.Eprintln("  C function, `extern struct`s, and constants from enums and plain `#define`s.")
+}
+
+fn fail(msg: String) -> I32 {
+    Console.Eprintln("zevic: error: ${msg}")
+    2
+}
+
+fn Run(args: Array<String>) -> I32 {
+    mut header: String = ""
+    mut outPath: String = ""
+    mut modName: String = ""
+    mut prefixes: Array<String> = []
+    mut flags: Array<String> = []
+    mut i: I64 = 0
+    while (i < args.Len()) {
+        let a: String = args[i]
+        if ((a == "-o" || a == "--module" || a == "--strip-prefix" || a == "-I" || a == "-D") && i + 1 >= args.Len()) {
+            return fail("`${a}` needs a value")
+        }
+        if (a == "-o") {
+            i += 1
+            outPath = args[i]
+        } else if (a == "--module") {
+            i += 1
+            modName = args[i]
+        } else if (a == "--strip-prefix") {
+            i += 1
+            prefixes.Push(args[i])
+        } else if (a == "-I" || a == "-D") {
+            i += 1
+            flags.Push(a)
+            flags.Push(args[i])
+        } else if (Text.StartsWith(a, "-I") || Text.StartsWith(a, "-D")) {
+            flags.Push(a)
+        } else if (a == "-h" || a == "--help") {
+            usage()
+            return 0
+        } else if (Text.StartsWith(a, "-")) {
+            return fail("unknown option `${a}`")
+        } else if (header.IsEmpty()) {
+            header = a
+        } else {
+            return fail("only one header (to use several, write a header that includes them)")
+        }
+        i += 1
+    }
+    if (header.IsEmpty()) {
+        usage()
+        return 2
+    }
+    if (!Fs.IsFile(header)) { return fail("cannot read ${header}") }
+    if (modName.IsEmpty()) { modName = Bind.Pascal(Path.Stem(header)) }
+    let clang: String = match (Driver.FindClang(None)) {
+        Some(c) => c,
+        None => return fail("cannot find clang (zevic bind uses it to read the header)"),
+    }
+    mut o: Bind.Options = Bind.Options.New(clang, header, modName)
+    o.Prefixes.Extend(prefixes)
+    o.Flags.Extend(flags)
+    let out: Bind.Output = match (Bind.Generate(o)) {
+        Ok(x) => x,
+        Err(msg) => return fail(msg),
+    }
+    if (outPath.IsEmpty()) {
+        Console.Print(out.Text)
+    } else {
+        match (Fs.WriteAll(outPath, out.Text)) {
+            Ok(_) => {},
+            Err(_) => return fail("cannot write ${outPath}"),
+        }
+        Console.Eprintln("zevic bind: wrote ${outPath} (${out.Functions} functions, ${out.Constants} constants, ${out.Structs} structs, ${out.Skipped} not bound)")
+    }
+    0
+}

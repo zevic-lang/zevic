@@ -5,7 +5,7 @@ import Zevic.Env
 import Zevic.Fs
 import Zevic.Text
 import Zevic1.Ast as Ast
-import Zevic1.Bind as Bind
+import Zevic1.BindCmd as BindCmd
 import Zevic1.Diag as Diag
 import Zevic1.Driver as Driver
 import Zevic1.Gen as Gen
@@ -525,7 +525,7 @@ fn compile(args: Array<String>) -> I32 {
 
 fn Main(args: Array<String>) {
     if (args.Len() >= 1 && args[0] == "bind") {
-        Env.Exit(Bind.Run(args.Slice(1, args.Len())))
+        Env.Exit(BindCmd.Run(args.Slice(1, args.Len())))
     }
     if (args.Len() == 1 && args[0] == "--version") {
         Console.Println("zevic ${Version.Current}")
