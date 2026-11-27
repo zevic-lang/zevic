@@ -1,0 +1,18 @@
+module Main
+
+import Zevic.Console
+import Zevic.Unsafe
+
+// C code uses a few numbers as callbacks: SIG_IGN is 1. `Null` (SIG_DFL) and `Unsafe.CallbackAt` give them to C.
+extern "C" {
+    fn signal(sig: CInt, handler: fn(CInt) -> CVoid) -> *CVoid
+}
+
+fn Main() {
+    unsafe {
+        let first: *CVoid = signal(10.ToCInt(), Null)
+        let second: *CVoid = signal(10.ToCInt(), Unsafe.CallbackAt<fn(CInt) -> CVoid>(1))
+        let third: *CVoid = signal(10.ToCInt(), Null)
+        Console.Println("${first.Address()} ${second.Address()} ${third.Address()}")
+    }
+}

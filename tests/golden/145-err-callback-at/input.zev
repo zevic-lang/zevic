@@ -1,0 +1,11 @@
+module Main
+
+import Zevic.Unsafe
+
+fn Main() {
+    unsafe {
+        let n: I32 = 3
+        let a: I32 = Unsafe.CallbackAt<I32>(1)
+        let b: fn() = Unsafe.CallbackAt<fn()>(n.ToI64())
+    }
+}

@@ -1205,7 +1205,7 @@ fn Main() {
 
 - Declare C functions with `fn` in an `extern "C" { ... }` block. No body is written.
 - A declaration can be used inside that module. A name that starts with a capital letter is public like any other Zevic name, so `fn Sum(v: *CInt, n: CULong) -> CInt = "pt_sum"` can be called as `Lib.Sum(...)` from another module; write the alias form when you want that. A name written as the C name (lowercase) stays inside the module.
-- `Null` can be passed where a callback (`fn(...)`) is expected, for the C functions that allow `NULL` there. It becomes a null function pointer.
+- `Null` can be passed where a callback (`fn(...)`) is expected, for the C functions that allow `NULL` there. It becomes a null function pointer. For the callbacks that C code defines by a number (`SQLITE_TRANSIENT` is `-1`, `SIG_IGN` is `1`), `Unsafe.CallbackAt<fn(...) -> ...>(-1)` gives that value; it must be a constant, and it can only be passed to C (`unsafe`).
 - The name is the C name as it is (no mangling). To change the C name, give an alias in the form `fn Foo() -> CInt = "c_name"`.
 - Calls are the same as for ordinary functions. But the parameters and the return value are **C types only**.
 
