@@ -1142,7 +1142,7 @@ zevic --freestanding --target riscv64-unknown-elf -T linker.ld --entry _start ke
 - It is an error to use anything that needs the runtime: `String`, `Array`, `Map`, closures, `class` objects, interfaces, threads, tasks and the standard library modules that depend on them. `struct`, numbers, `Bool`, `Char`, tuples, enums, pointers, `unsafe`, `Zevic.Unsafe` and `extern "C"` work. The error names the function and what it needs.
 - **A panic handler is required** when the code can panic (division by zero, overflow, an array or range check, `unwrap`): define `export "C" fn zevic_panic(msg: *U8, len: CLongLong, file: *U8, line: CInt)`. It must not return.
 - RISC-V 64 targets get `-mcmodel=medany` (kernels live at high addresses), and code is compiled with `noredzone` and without stack protector, as kernel code must.
-- A package says the same in `zevic.toml`: `kind = "freestanding"` and a `[freestanding]` section (`target`, `linker_script`, `entry`, `cflags`, `ldflags`). `zevpm build` makes `build/<Name>.elf`; the `.s` and `.S` files in `native/` are assembled with it. `zevpm run` and `zevpm test` refuse such a package.
+- A package says the same in `zevic.toml`: a `[freestanding]` section (its presence makes the package freestanding; `kind` stays `"bin"`; a freestanding library is not supported yet) with the keys `target`, `linker_script`, `entry`, `cflags`, `ldflags`). `zevpm build` makes `build/<Name>.elf`; the `.s` and `.S` files in `native/` are assembled with it. `zevpm run` and `zevpm test` refuse such a package.
 
 ### `zevic bind`: a module from a C header
 

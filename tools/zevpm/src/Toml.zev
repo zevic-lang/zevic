@@ -33,13 +33,13 @@ class Manifest {
     mut LibDirs: Array<String> = []
     mut IncDirs: Array<String> = []
     mut Defines: Array<String> = []
-    // [freestanding] (only for `kind = "freestanding"`): the target, the linker script (relative to the package), the entry symbol
+    // [freestanding]: its presence makes the package freestanding (no runtime, no GC); the target, the linker script (relative to the package), the entry symbol
     mut FsTarget: String = ""
     mut FsScript: String = ""
     mut FsEntry: String = ""
     mut FsCFlags: Array<String> = []
     mut FsLdFlags: Array<String> = []
-    mut HasFsSection: Bool = false
+    mut Freestanding: Bool = false
 
     fn Init(dir: String) {
         this.Dir = dir
@@ -334,7 +334,7 @@ fn Load(dir: String) -> Result<Manifest, Error> {
                         sect = 3
                     } else if (name == "freestanding") {
                         sect = 4
-                        m.HasFsSection = true
+                        m.Freestanding = true
                     } else {
                         return Err(c.Fail("unknown section `[${name}]` (expected [package], [deps], [native] or [freestanding])"))
                     }
@@ -412,11 +412,11 @@ fn Load(dir: String) -> Result<Manifest, Error> {
     if (m.Kind.IsEmpty()) {
         m.Kind = "bin"
     }
-    if (m.Kind != "bin" && m.Kind != "lib" && m.Kind != "freestanding") {
-        return Err(c1.Fail("`kind` must be \"bin\", \"lib\" or \"freestanding\", not \"${m.Kind}\""))
+    if (m.Kind != "bin" && m.Kind != "lib") {
+        return Err(c1.Fail("`kind` must be \"bin\" or \"lib\", not \"${m.Kind}\""))
     }
-    if (m.HasFsSection && m.Kind != "freestanding") {
-        return Err(c1.Fail("[freestanding] is only for `kind = \"freestanding\"`"))
+    if (m.Freestanding && m.Kind == "lib") {
+        return Err(c1.Fail("a freestanding library is not supported yet: [freestanding] is for `kind = \"bin\"` (the image of a kernel or firmware)"))
     }
     Ok(m)
 }

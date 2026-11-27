@@ -6,7 +6,7 @@
 - **`zevic bind header.h`** (proposal 0012, first stage): writes a Zevic module from a C header: functions, structs, enum and `#define` constants. `sqlite3.h` (283 functions) and `zlib.h` (79 functions) bind and work with no C written by hand
 - `extern` functions whose names start with a capital letter (`fn Sum(...) = "pt_sum"`) are public to other modules; `Null` can be passed for a callback
 - **`zevic --freestanding`** (proposal 0013): compile without the runtime and the GC, to write a kernel or firmware. `-T`/`--linker-script`, `--entry`, `--cflag`, `--ldflag`, and `.S`/`.s`/`.c` inputs; `-o x.o` makes only an object. Anything that needs the runtime (`String`, `Array`, classes, closures…) is a compile error, and `export "C" fn zevic_panic(...)` is required when the code can panic. RISC-V gets `-mcmodel=medany`
-- `zevic.toml`: `kind = "freestanding"` with a `[freestanding]` section (`target`, `linker_script`, `entry`, `cflags`, `ldflags`); `zevpm build` makes `build/<Name>.elf`, `zevpm run` and `zevpm test` refuse it
+- `zevic.toml`: a `[freestanding]` section makes a `kind = "bin"` package freestanding (`target`, `linker_script`, `entry`, `cflags`, `ldflags`); `zevpm build` makes `build/<Name>.elf`, `zevpm run` and `zevpm test` refuse it
 - `Unsafe.At<T>(address)`, `p.Address()`, `p.ReadVolatile(i)` and `p.WriteVolatile(i, v)` for memory-mapped registers. `volatile` was already reserved
 - `zevpm new` writes `zevic = ">=X.Y"` for the version of Zevic that made the package, not the fixed `">=0.1"` (the package itself still starts at `version = "0.1.0"`)
 
