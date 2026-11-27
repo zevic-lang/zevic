@@ -1149,7 +1149,7 @@ static void sc_bind(const char *tmp) {
        "int pt_run(int (*cb)(int)) { return cb ? cb(5) : -1; }\n"
        "int pt_fill(int *out) { *out = 99; return 0; }\n"
        "int pt_log(const char *fmt, ...) { return 0; }\n");
-    Run p = sh(app, false, g_zevic, "bind", "native/lib.h", "--module", "Lib", "--strip-prefix", "pt_", "-o", "src/Lib.zev", NULL);
+    Run p = sh(app, false, g_zevic, "bind", "native/lib.h", "--module", "Lib", "--strip-prefix", "pt_", "--shims", "native/shim.c", "-o", "src/Lib.zev", NULL);
     expect(p.code == 0, "zevic bind: %s%s", p.out, p.err);
     char *lib = rd(join(app, "src/Lib.zev"));
     expect(contains(lib, "struct Pt { X: CInt, Y: CInt }"), "the struct is written: %s", lib);
@@ -1157,17 +1157,18 @@ static void sc_bind(const char *tmp) {
     expect(contains(lib, "fn Run(cb: fn(CInt) -> CInt) -> CInt = \"pt_run\""), "a callback is written: %s", lib);
     expect(contains(lib, "let Green: I32 = 10") && contains(lib, "let Limit: I32 = 7") && contains(lib, "let Name: String = \"pt\""),
            "constants are written: %s", lib);
-    expect(contains(lib, "pt_add: ") && contains(lib, "pt_log: variadic"), "what is not bound is said: %s", lib);
+    expect(contains(lib, "pt_log: variadic") && contains(lib, "fn Add(a: Pt, b: Pt) -> Pt {") && contains(rd(join(app, "native/shim.c")), "zevic_shim_pt_add"),
+           "what is not bound is said, and a struct by value gets a shim: %s", lib);
     wr(join(app, "src/Main.zev"),
        "module Main\n\nimport Lib\nimport Zevic.Console\nimport Zevic.Unsafe\n\n"
        "fn twice(i: CInt) -> CInt {\n    (i.ToI32() * 2).ToCInt()\n}\n\n"
        "fn Main() {\n"
-       "    Console.Println(\"${Lib.Limit} ${Lib.Green} ${Lib.Name}\")\n"
+       "    Console.Println(\"${Lib.Limit} ${Lib.Green} ${Lib.Name} ${Lib.Add(Lib.Pt.New(1.ToCInt(), 2.ToCInt()), Lib.Pt.New(3.ToCInt(), 4.ToCInt())).Y.ToI32()}\")\n"
        "    Console.Println(\"${Lib.Run(Null).ToI32()} ${Lib.Run(twice).ToI32()}\")\n"
        "    unsafe {\n        let p: *CInt = Unsafe.Alloc<CInt>(1)\n        let rc: CInt = Lib.Fill(p)\n"
        "        Console.Println(\"${p.Read(0).ToI32()} ${rc.ToI32()}\")\n    }\n}\n");
     p = pm(app, false, "run", NULL);
-    expect(p.code == 0 && strcmp(strip(no_cr(p.out)), "7 10 pt\n-1 10\n99 0") == 0, "the generated module works: %s%s", p.out, p.err);
+    expect(p.code == 0 && strcmp(strip(no_cr(p.out)), "7 10 pt 6\n-1 10\n99 0") == 0, "the generated module works: %s%s", p.out, p.err);
     p = sh(app, false, g_zevic, "bind", "no-such.h", NULL);
     expect(p.code != 0 && contains(p.err, "cannot read"), "a missing header: %s", p.err);
 }
@@ -1198,6 +1199,37 @@ static void sc_import_c(const char *tmp) {
        "module Main\n\nimport C \"missing.h\" as Lib\n\nfn Main() {}\n");
     p = pm(app, false, "build", NULL);
     expect(p.code != 0 && contains(p.err, "cannot read the header `missing.h`"), "import C of a missing header: %s", p.err);
+}
+
+static void sc_import_c_struct(const char *tmp) {
+    /* structs passed and returned by value get C shims written while compiling */
+    pm(tmp, true, "new", "app", NULL);
+    char *app = join(tmp, "app");
+    wr(join(app, "zevic.toml"),
+       "[package]\nname = \"App\"\nversion = \"0.1.0\"\n\n[native]\ninclude_dirs = [\"native\"]\n");
+    wr(join(app, "native/vec.h"),
+       "typedef struct { float x, y; } Vec;\n"
+       "typedef struct { unsigned char r, g, b, a; } Rgba;\n"
+       "Vec vec_add(Vec a, Vec b);\n"
+       "float vec_len2(Vec v);\n"
+       "void vec_show(Rgba c, int n);\n"
+       "Rgba vec_fade(Rgba c, float alpha);\n");
+    wr(join(app, "native/vec.c"),
+       "#include <stdio.h>\n#include \"vec.h\"\n"
+       "Vec vec_add(Vec a, Vec b) { Vec r = { a.x + b.x, a.y + b.y }; return r; }\n"
+       "float vec_len2(Vec v) { return v.x * v.x + v.y * v.y; }\n"
+       "void vec_show(Rgba c, int n) { printf(\"%d %d\\n\", c.r, n); }\n"
+       "Rgba vec_fade(Rgba c, float alpha) { c.a = (unsigned char)(255 * alpha); return c; }\n");
+    wr(join(app, "src/Main.zev"),
+       "module Main\n\nimport C \"vec.h\" as V strip \"vec_\"\nimport Zevic.Console\n\n"
+       "fn Main() {\n"
+       "    let a: V.Vec = V.Vec.New(1.0.ToCFloat(), 2.0.ToCFloat())\n"
+       "    let s: V.Vec = V.Add(a, a)\n"
+       "    let c: V.Rgba = V.Fade(V.Rgba.New(9.ToCUChar(), 0.ToCUChar(), 0.ToCUChar(), 255.ToCUChar()), 0.5.ToCFloat())\n"
+       "    V.Show(c, 3.ToCInt())\n"
+       "    Console.Println(\"${s.X.ToF64()} ${s.Y.ToF64()} ${V.Len2(s).ToF64()} ${c.A.ToI32()}\")\n}\n");
+    Run p = pm(app, false, "run", NULL);
+    expect(p.code == 0 && strcmp(strip(no_cr(p.out)), "9 3\n2.0 4.0 20.0 127") == 0, "import C with structs by value: %s%s", p.out, p.err);
 }
 
 static void sc_native_keys(const char *tmp) {
@@ -1367,6 +1399,7 @@ static void test_zevpm(void) {
     scenario("freestanding", sc_freestanding);
     scenario("bind", sc_bind);
     scenario("import_c", sc_import_c);
+    scenario("import_c_struct", sc_import_c_struct);
     scenario("library_for_c", sc_library_for_c);
     scenario("git_dependencies", sc_git_dependencies);
     scenario("git_update", sc_git_update);
