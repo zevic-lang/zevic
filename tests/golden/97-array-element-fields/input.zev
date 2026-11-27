@@ -20,6 +20,7 @@ struct Pt {
 struct Seg {
     mut From: Pt
     mut To: Pt
+
     fn Init(a: Pt, b: Pt) {
         this.From = a
         this.To = b

@@ -1,0 +1,2 @@
+`Unsafe.CallbackAt` makes a callback; the type must be a `fn(...)` type, found `I32`
+the value of `Unsafe.CallbackAt` must be a constant number

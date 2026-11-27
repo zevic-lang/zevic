@@ -74,7 +74,7 @@ fn Main() {
     Console.Println(Regex.Compile("").Unwrap().Split("abc").Join("|"))
     Console.Println(Regex.Compile("a*").Unwrap().FindAll("baaac").Map((x: Regex.Match) => "[${x.Text()}]").Join(""))
     Console.Println(Regex.Compile("\\d+").Unwrap().ReplaceAll("a1b22c333", "#"))
-    Console.Println(Regex.Compile("^\\w+", ).Unwrap().ReplaceAll("hello world", "X"))
+    Console.Println(Regex.Compile("^\\w+",).Unwrap().ReplaceAll("hello world", "X"))
     Console.Println(Regex.Compile("(?m)^\\w+").Unwrap().ReplaceAll("hello world\nbye now", "X"))
     Console.Println(Regex.Compile("(?m)\\w+$").Unwrap().FindAll("hello world\nbye now").Map((x: Regex.Match) => x.Text()).Join(","))
     Console.Println("${Regex.Compile("\\A\\w+").Unwrap().FindAll("ab cd").Len()}")

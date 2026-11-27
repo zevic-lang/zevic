@@ -1,8 +1,8 @@
 module Main
 
+import Zevic.Chars
 import Zevic.Console
 import Zevic.Text
-import Zevic.Chars
 
 fn Main() {
     let s: String = "héllo, 世界!"

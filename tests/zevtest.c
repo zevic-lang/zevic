@@ -1172,6 +1172,34 @@ static void sc_bind(const char *tmp) {
     expect(p.code != 0 && contains(p.err, "cannot read"), "a missing header: %s", p.err);
 }
 
+static void sc_import_c(const char *tmp) {
+    /* `import C "header.h" as Name`: the module is written from the header while compiling, with no file */
+    pm(tmp, true, "new", "app", NULL);
+    char *app = join(tmp, "app");
+    wr(join(app, "zevic.toml"),
+       "[package]\nname = \"App\"\nversion = \"0.1.0\"\n\n[native]\ninclude_dirs = [\"native\"]\n");
+    wr(join(app, "native/lib.h"),
+       "enum Color { RED, GREEN = 10 };\n"
+       "#define LIMIT 7\n"
+       "int pt_sum(const int *v, unsigned long n);\n"
+       "int pt_run(int (*cb)(int));\n");
+    wr(join(app, "native/lib.c"),
+       "#include \"lib.h\"\n"
+       "int pt_sum(const int *v, unsigned long n) { int s = 0; for (unsigned long i = 0; i < n; i++) s += v[i]; return s; }\n"
+       "int pt_run(int (*cb)(int)) { return cb ? cb(5) : -1; }\n");
+    wr(join(app, "src/Main.zev"),
+       "module Main\n\nimport C \"lib.h\" as Lib strip \"pt_\"\nimport Zevic.Console\n\n"
+       "fn twice(i: CInt) -> CInt {\n    (i.ToI32() * 2).ToCInt()\n}\n\n"
+       "fn Main() {\n"
+       "    Console.Println(\"${Lib.Limit} ${Lib.Green} ${Lib.Run(Null).ToI32()} ${Lib.Run(twice).ToI32()}\")\n}\n");
+    Run p = pm(app, false, "run", NULL);
+    expect(p.code == 0 && strcmp(strip(no_cr(p.out)), "7 10 -1 10") == 0, "import C: %s%s", p.out, p.err);
+    wr(join(app, "src/Main.zev"),
+       "module Main\n\nimport C \"missing.h\" as Lib\n\nfn Main() {}\n");
+    p = pm(app, false, "build", NULL);
+    expect(p.code != 0 && contains(p.err, "cannot read the header `missing.h`"), "import C of a missing header: %s", p.err);
+}
+
 static void sc_native_keys(const char *tmp) {
     /* include_dirs (relative and absolute) and defines of a dependency, and lib_dirs of the app */
     char *nat = join(tmp, "nat");
@@ -1338,6 +1366,7 @@ static void test_zevpm(void) {
     scenario("target", sc_target);
     scenario("freestanding", sc_freestanding);
     scenario("bind", sc_bind);
+    scenario("import_c", sc_import_c);
     scenario("library_for_c", sc_library_for_c);
     scenario("git_dependencies", sc_git_dependencies);
     scenario("git_update", sc_git_update);

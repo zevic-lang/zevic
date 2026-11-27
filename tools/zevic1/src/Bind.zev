@@ -11,8 +11,7 @@ import Zevic.Json
 import Zevic.Path
 import Zevic.Process
 import Zevic.Text
-import Zevic1.Driver as Driver
-import Zevic1.Resolve as Resolve
+import Zevic1.Names as Names
 
 // ---- what is read from the header ----
 
@@ -152,6 +151,9 @@ fn stripPrefix(name: String, prefixes: Array<String>) -> String {
 }
 
 // `sqlite3_open` is `Sqlite3Open`, `SQLITE_OK` is `SqliteOk`, `x` is `X`.
+// `sqlite3_open` is `Sqlite3Open`.
+fn Pascal(name: String) -> String { pascal(name) }
+
 fn pascal(name: String) -> String {
     mut out: String = ""
     for (part in Text.Split(name, "_")) {
@@ -173,7 +175,7 @@ fn pascal(name: String) -> String {
 // would be `Error`), the prefix stays.
 fn ident(st: State, raw: String) -> String {
     let p: String = pascal(stripPrefix(raw, st.Prefixes))
-    if (Resolve.ReservedName(p) || isKeyword(p)) { return pascal(raw) }
+    if (Names.ReservedName(p) || isKeyword(p)) { return pascal(raw) }
     p
 }
 
@@ -643,87 +645,58 @@ fn headerMacros(dump: String, header: String) -> Array<String> {
     macros
 }
 
-fn usage() {
-    Console.Eprintln("usage: zevic bind <header.h> [-o Name.zev] [--module Name] [--strip-prefix PREFIX]... [-I dir] [-D name[=value]]")
-    Console.Eprintln("  Reads a C header with clang and writes a Zevic module: an `extern \"C\"` block, a public function for each")
-    Console.Eprintln("  C function, `extern struct`s, and constants from enums and plain `#define`s.")
+// What to bind and how.
+class Options {
+    mut Clang: String
+    // the file to read (the header itself, or a file that includes it)
+    mut Header: String
+    // the header whose declarations are written; by default the same as Header
+    mut Target: String
+    mut Module: String
+    mut Prefixes: Array<String> = []
+    mut Flags: Array<String> = []
+
+    fn Init(clang: String, header: String, modName: String) {
+        this.Clang = clang
+        this.Header = header
+        this.Target = header
+        this.Module = modName
+    }
 }
 
-fn fail(msg: String) -> I32 {
-    Console.Eprintln("zevic: error: ${msg}")
-    2
+class Output {
+    mut Text: String = ""
+    mut Functions: I64 = 0
+    mut Constants: I64 = 0
+    mut Structs: I64 = 0
+    mut Skipped: I64 = 0
 }
 
-fn Run(args: Array<String>) -> I32 {
-    mut header: String = ""
-    mut outPath: String = ""
-    mut modName: String = ""
+// Reads the header with clang and writes the Zevic module (`Ok`), or says why it cannot (`Err`).
+fn Generate(o: Options) -> Result<Output, String> {
+    let header: String = o.Target
     mut st: State = State.New()
-    mut flags: Array<String> = []
-    mut i: I64 = 0
-    while (i < args.Len()) {
-        let a: String = args[i]
-        if ((a == "-o" || a == "--module" || a == "--strip-prefix" || a == "-I" || a == "-D") && i + 1 >= args.Len()) {
-            return fail("`${a}` needs a value")
-        }
-        if (a == "-o") {
-            i += 1
-            outPath = args[i]
-        } else if (a == "--module") {
-            i += 1
-            modName = args[i]
-        } else if (a == "--strip-prefix") {
-            i += 1
-            st.Prefixes.Push(args[i])
-        } else if (a == "-I" || a == "-D") {
-            i += 1
-            flags.Push(a)
-            flags.Push(args[i])
-        } else if (Text.StartsWith(a, "-I") || Text.StartsWith(a, "-D")) {
-            flags.Push(a)
-        } else if (a == "-h" || a == "--help") {
-            usage()
-            return 0
-        } else if (Text.StartsWith(a, "-")) {
-            return fail("unknown option `${a}`")
-        } else if (header.IsEmpty()) {
-            header = a
-        } else {
-            return fail("only one header (to use several, write a header that includes them)")
-        }
-        i += 1
-    }
-    if (header.IsEmpty()) {
-        usage()
-        return 2
-    }
-    if (!Fs.IsFile(header)) { return fail("cannot read ${header}") }
-    if (modName.IsEmpty()) { modName = pascal(Path.Stem(header)) }
-    let clang: String = match (Driver.FindClang(None)) {
-        Some(c) => c,
-        None => return fail("cannot find clang (zevic bind uses it to read the header)"),
-    }
+    st.Prefixes.Extend(o.Prefixes)
     mut astArgs: Array<String> = ["-Xclang", "-ast-dump=json", "-fsyntax-only", "-x", "c"]
-    astArgs.Extend(flags)
-    astArgs.Push(header)
-    let ast: Process.Output = match (Process.Run(clang, astArgs)) {
-        Ok(o) => o,
-        Err(e) => return fail("cannot run clang: ${e.Message()}"),
+    astArgs.Extend(o.Flags)
+    astArgs.Push(o.Header)
+    let ast: Process.Output = match (Process.Run(o.Clang, astArgs)) {
+        Ok(out) => out,
+        Err(e) => return Err("cannot run clang: ${e.Message()}"),
     }
     if (ast.Code != 0) {
-        Console.Eprint(ast.Stderr)
-        return fail("clang cannot read ${header}")
+        return Err("clang cannot read ${o.Header}:\n${ast.Stderr}")
     }
     let root: Json.Value = match (Json.Parse(ast.Stdout)) {
         Ok(v) => v,
-        Err(e) => return fail("cannot read the syntax tree from clang: ${e.Message()}"),
+        Err(e) => return Err("cannot read the syntax tree from clang: ${e.Message()}"),
     }
     mut ppArgs: Array<String> = ["-dD", "-E", "-x", "c"]
-    ppArgs.Extend(flags)
-    ppArgs.Push(header)
-    let pp: Process.Output = match (Process.Run(clang, ppArgs)) {
-        Ok(o) => o,
-        Err(e) => return fail("cannot run clang: ${e.Message()}"),
+    ppArgs.Extend(o.Flags)
+    ppArgs.Push(o.Header)
+    let pp: Process.Output = match (Process.Run(o.Clang, ppArgs)) {
+        Ok(out) => out,
+        Err(e) => return Err("cannot run clang: ${e.Message()}"),
     }
     collect(st, root, header)
     mut used: Array<String> = []
@@ -735,7 +708,7 @@ fn Run(args: Array<String>) -> I32 {
     writeConstants(st, consts, used, headerMacros(pp.Stdout, header))
     mut lines: Array<String> = []
     lines.Push("// Made by `zevic bind ${Path.FileName(header)}`. Edit it by hand if you like; run `zevic bind` again to make it anew.")
-    lines.Push("module ${modName}\n")
+    lines.Push("module ${o.Module}\n")
     if (!structs.IsEmpty() || !ext.IsEmpty()) {
         lines.Push("extern \"C\" {")
         lines.Extend(structs)
@@ -752,15 +725,11 @@ fn Run(args: Array<String>) -> I32 {
             lines.Push("//   ${s}")
         }
     }
-    let result: String = Text.Join(lines, "\n") + "\n"
-    if (outPath.IsEmpty()) {
-        Console.Print(result)
-    } else {
-        match (Fs.WriteAll(outPath, result)) {
-            Ok(_) => {},
-            Err(_) => return fail("cannot write ${outPath}"),
-        }
-        Console.Eprintln("zevic bind: wrote ${outPath} (${ext.Len()} functions, ${consts.Len()} constants, ${structs.Len()} structs, ${st.Skipped.Len()} not bound)")
-    }
-    0
+    mut out: Output = Output.New()
+    out.Text = Text.Join(lines, "\n") + "\n"
+    out.Functions = ext.Len()
+    out.Constants = consts.Len()
+    out.Structs = structs.Len()
+    out.Skipped = st.Skipped.Len()
+    Ok(out)
 }

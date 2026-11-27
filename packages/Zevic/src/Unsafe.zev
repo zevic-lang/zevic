@@ -6,6 +6,7 @@ module Zevic.Unsafe
 //   Free(p: *T)                 // gives the memory back; only for what `Alloc` returned
 //   Cast<U>(p: *T) -> *U        // the same address, seen as another type
 //   At<T>(address: U64) -> *T   // the pointer to a fixed address (a hardware register, memory of a kernel)
+//   CallbackAt<F>(value: I64) -> F   // a callback that C code defines by a number (SQLITE_TRANSIENT is -1, SIG_IGN is 1); only to pass to C
 //
 // A pointer `*T` has these methods (also only inside `unsafe`, except `IsNull`):
 //
@@ -25,4 +26,5 @@ extern "intrinsic" {
     fn Free<T>(p: *T)
     fn Cast<U>(p: *CVoid) -> *U
     fn At<T>(address: U64) -> *T
+    fn CallbackAt<F>(value: I64) -> F
 }

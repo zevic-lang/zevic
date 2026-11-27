@@ -2861,6 +2861,10 @@ fn cCallback(mut F: Ctx.FnCtx, v: Ctx.Val) -> Option<String> {
     if (v.V == "zeroinitializer") {
         return Some("null")
     }
+    if (Text.StartsWith(v.V, "{ ptr inttoptr (i64 ")) {
+        // from Unsafe.CallbackAt: the address itself
+        return Some(v.V.Slice(6, v.V.Len() - 12))
+    }
     mut target: Option<String> = None
     let pre: String = "{ ptr @\"thunk."
     let post: String = "\", ptr null }"
@@ -4097,6 +4101,32 @@ fn genUnsafeIntrinsic(mut F: Ctx.FnCtx, call: Ast.Node, d: Resolve.Decl, last: A
         let p: String = F.Tmp()
         F.Emit("${p} = inttoptr i64 ${addr.V} to ptr")
         return Ctx.Val.New(g.Tt.Ptr(t), p)
+    }
+    if (d.Name == "CallbackAt") {
+        if (call.List.Len() != 1 || last.List2.Len() != 1) {
+            g.Diag.Error(call.Pos, "`Unsafe.CallbackAt` needs the callback type and a constant: `Unsafe.CallbackAt<fn(*CVoid) -> CVoid>(-1)`")
+            return F.ErrVal()
+        }
+        let t: Types.Type = Gen.ResolveType(g, F.File, F.Env, last.List2[0])
+        if (g.IsErr(t)) {
+            return F.ErrVal()
+        }
+        if (t.Kind != Types.TKind.Fn) {
+            g.Diag.Error(call.Pos, "`Unsafe.CallbackAt` makes a callback; the type must be a `fn(...)` type, found `${t.Name}`")
+            return F.ErrVal()
+        }
+        let av: Ctx.Val = genExpr(F, call.List[0], Some(g.Tt.I64))
+        let addr: Ctx.Val = coerce(F, call.List[0].Pos, av, g.Tt.I64, "the value of `Unsafe.CallbackAt`")
+        if (g.IsErr(addr.T)) {
+            return F.ErrVal()
+        }
+        // C code uses a few special values as callbacks (SQLITE_TRANSIENT is -1, SIG_IGN is 1): only a constant, only for C
+        let c0: U8 = if (addr.V.Len() > 0) { addr.V.ByteAt(0) } else { b'x' }
+        if (!(c0 == b'-' || (c0 >= b'0' && c0 <= b'9'))) {
+            g.Diag.Error(call.List[0].Pos, "the value of `Unsafe.CallbackAt` must be a constant number")
+            return F.ErrVal()
+        }
+        return Ctx.Val.New(t, "{ ptr inttoptr (i64 ${addr.V} to ptr), ptr null }")
     }
     if (d.Name == "Cast") {
         if (call.List.Len() != 1 || last.List2.Len() != 1) {

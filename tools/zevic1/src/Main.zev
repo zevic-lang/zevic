@@ -5,7 +5,7 @@ import Zevic.Env
 import Zevic.Fs
 import Zevic.Text
 import Zevic1.Ast as Ast
-import Zevic1.Bind as Bind
+import Zevic1.BindCmd as BindCmd
 import Zevic1.Diag as Diag
 import Zevic1.Driver as Driver
 import Zevic1.Gen as Gen
@@ -81,7 +81,7 @@ fn dumpAst(path: String) -> I32 {
 }
 
 // Loads the files and the standard library and resolves the imports; the error is the exit code.
-fn loadProgram(files: Array<String>, mut diag: Diag.Diag) -> Result<Resolve.Program, I32> {
+fn loadProgram(files: Array<String>, cflags: Array<String>, mut diag: Diag.Diag) -> Result<Resolve.Program, I32> {
     let home: String = match (Home.Find()) {
         Some(h) => h,
         None => {
@@ -92,6 +92,23 @@ fn loadProgram(files: Array<String>, mut diag: Diag.Diag) -> Result<Resolve.Prog
     mut pg: Resolve.Program = Resolve.Program.New("${home}/packages/Zevic/src")
     pg.SearchDirs.Push(Home.DirOf(files[0]))
     pg.SearchDirs.Push(".")
+    pg.CFlags.Extend(cflags)
+    // clang is looked for only when a file says `import C`
+    mut usesC: Bool = false
+    for (f in files) {
+        match (Fs.ReadAll(f)) {
+            Ok(t) => {
+                if (Text.Contains(t, "import C \"")) { usesC = true }
+            },
+            Err(_) => {},
+        }
+    }
+    if (usesC) {
+        match (Driver.FindClang(None)) {
+            Some(c) => { pg.Clang = c },
+            None => {},
+        }
+    }
     for (f in files) {
         match (Resolve.LoadFile(pg, diag, f, false)) {
             Some(_) => {},
@@ -112,7 +129,7 @@ fn loadProgram(files: Array<String>, mut diag: Diag.Diag) -> Result<Resolve.Prog
 
 fn dumpTypes(files: Array<String>) -> I32 {
     mut diag: Diag.Diag = Diag.Diag.New()
-    let pg: Resolve.Program = match (loadProgram(files, diag)) {
+    let pg: Resolve.Program = match (loadProgram(files, [], diag)) {
         Ok(p) => p,
         Err(c) => return c,
     }
@@ -123,7 +140,7 @@ fn dumpTypes(files: Array<String>) -> I32 {
 
 fn dumpModules(files: Array<String>) -> I32 {
     mut diag: Diag.Diag = Diag.Diag.New()
-    let pg: Resolve.Program = match (loadProgram(files, diag)) {
+    let pg: Resolve.Program = match (loadProgram(files, [], diag)) {
         Ok(p) => p,
         Err(c) => return c,
     }
@@ -424,7 +441,16 @@ fn compile(args: Array<String>) -> I32 {
         return 1
     }
     mut diag: Diag.Diag = Diag.Diag.New()
-    let pg: Resolve.Program = match (loadProgram(files, diag)) {
+    mut cflags: Array<String> = []
+    for (d in opts.IncDirs) {
+        cflags.Push("-I")
+        cflags.Push(d)
+    }
+    for (d in opts.Defines) {
+        cflags.Push("-D")
+        cflags.Push(d)
+    }
+    let pg: Resolve.Program = match (loadProgram(files, cflags, diag)) {
         Ok(p) => p,
         Err(c) => return c,
     }
@@ -525,7 +551,7 @@ fn compile(args: Array<String>) -> I32 {
 
 fn Main(args: Array<String>) {
     if (args.Len() >= 1 && args[0] == "bind") {
-        Env.Exit(Bind.Run(args.Slice(1, args.Len())))
+        Env.Exit(BindCmd.Run(args.Slice(1, args.Len())))
     }
     if (args.Len() == 1 && args[0] == "--version") {
         Console.Println("zevic ${Version.Current}")

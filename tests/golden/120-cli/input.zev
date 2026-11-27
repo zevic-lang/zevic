@@ -1,7 +1,7 @@
 module Main
 
-import Zevic.Console
 import Zevic.Cli
+import Zevic.Console
 
 fn build() -> Cli.Command {
     mut app: Cli.Command = Cli.Command.New("greet", "Say hello")

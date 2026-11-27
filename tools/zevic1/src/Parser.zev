@@ -287,6 +287,18 @@ class Parser {
 
     // ---- expressions ----
 
+    // The text of a string that has no `${...}` in it.
+    mut fn plainString(t: T.Token, what: String) -> Result<String, Error> {
+        mut out: String = ""
+        for (sp in t.Parts) {
+            if (sp.IsExpr) {
+                return Err(this.perr(t.Pos, "${what} must be a plain string, without an interpolation"))
+            }
+            out = out + sp.Text
+        }
+        Ok(out)
+    }
+
     mut fn parseStringNode(t: T.Token) -> Result<Ast.Node, Error> {
         mut n: Ast.Node = newNode(Ast.NK.Str, t.Pos)
         for (sp in t.Parts) {
@@ -1521,9 +1533,28 @@ class Parser {
         this.skipNl()
         while (this.kind() == T.Tk.Import) {
             mut im: Ast.Node = newNode(Ast.NK.Import, this.next().Pos)
-            this.parseDotted(im.Path, "a module name")?
-            if (this.accept(T.Tk.As)) {
-                im.SetName(this.expectIdent("an alias name")?)
+            if (this.kind() == T.Tk.Ident && this.peek().Text == "C" && this.peekAt(1).Kind == T.Tk.Str) {
+                // import C "header.h" as Name strip "prefix_", "PREFIX_"
+                this.skip()
+                im.Flag = true
+                im.Name2 = this.plainString(this.next(), "the header name")?
+                this.expect(T.Tk.As, "`as` and a name: import C \"header.h\" as Name")?
+                im.SetName(this.expectIdent("a module name")?)
+                if (this.kind() == T.Tk.Ident && this.peek().Text == "strip") {
+                    this.skip()
+                    while (true) {
+                        let t: T.Token = this.expect(T.Tk.Str, "a prefix to strip, as a string")?
+                        mut pre: Ast.Node = newNode(Ast.NK.StrLit, t.Pos)
+                        pre.SetName(this.plainString(t, "a prefix")?)
+                        im.List.Push(pre)
+                        if (!this.accept(T.Tk.Comma)) { break }
+                    }
+                }
+            } else {
+                this.parseDotted(im.Path, "a module name")?
+                if (this.accept(T.Tk.As)) {
+                    im.SetName(this.expectIdent("an alias name")?)
+                }
             }
             sf.Imports.Push(im)
             this.skipNl()

@@ -24,6 +24,7 @@ struct Point {
         this.X = x
         this.Y = y
     }
+
     fn Sum() -> I32 { this.X + this.Y }
     mut fn MoveBy(dx: I32) { this.X += dx }
 }

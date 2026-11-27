@@ -7,7 +7,9 @@ import Zevic.Env
 import Zevic.Fs
 import Zevic.Text
 import Zevic1.Ast as Ast
+import Zevic1.Bind as Bind
 import Zevic1.Diag as Diag
+import Zevic1.Names as Names
 import Zevic1.Parser as Parser
 import Zevic1.Token as Token
 import Zevic1.Types as Types
@@ -80,6 +82,9 @@ class Program {
     // the directory holding the standard library, e.g. .../packages/Zevic/src
     mut StdDir: String
     mut SearchDirs: Array<String> = []
+    // for `import C`: clang, and the -I and -D flags of the build ("" when clang was not found)
+    mut Clang: String = ""
+    mut CFlags: Array<String> = []
 
     fn Init(stdDir: String) {
         this.StdDir = stdDir
@@ -99,17 +104,6 @@ class Program {
         m
     }
 }
-
-fn reservedName(n: String) -> Bool {
-    let names: Array<String> = ["I8", "I16", "I32", "I64", "U8", "U16", "U32", "U64", "F32", "F64", "Bool", "Char", "String", "Unit", "Array", "Map", "Option", "Result", "Error", "ErrorKind", "StringBuilder", "Some", "None", "Ok", "Err", "Panic", "Same"]
-    for (x in names) {
-        if (x == n) { return true }
-    }
-    false
-}
-
-// The names of the prelude, which user code cannot define.
-fn ReservedName(n: String) -> Bool { reservedName(n) }
 
 fn isUpper(name: String) -> Bool {
     if (name.Len() == 0) { return false }
@@ -160,12 +154,16 @@ fn LoadFile(mut pg: Program, mut diag: Diag.Diag, path: String, isStd: Bool) -> 
         Ok(t) => t,
         Err(_) => return None,
     }
+    Some(loadText(pg, diag, path, text, isStd))
+}
+
+fn loadText(mut pg: Program, mut diag: Diag.Diag, path: String, text: String, isStd: Bool) -> FileInfo {
     let file: I32 = diag.AddSource(path, text)
     mut sf: Ast.SourceFile = Parser.ParseFile(diag, file, text)
     sf.IsStd = isStd
     mut info: FileInfo = FileInfo.New(sf)
     pg.Files.Push(info)
-    if (!sf.HasModule) { return Some(info) }
+    if (!sf.HasModule) { return info }
     // user code cannot define the reserved `Zevic` root
     if (!isStd && (sf.Module == "Zevic" || Text.StartsWith(sf.Module, "Zevic."))) {
         diag.Error(sf.ModulePos, "module names starting with `Zevic` are reserved for the standard library")
@@ -180,12 +178,12 @@ fn LoadFile(mut pg: Program, mut diag: Diag.Diag, path: String, isStd: Bool) -> 
             }
             continue
         }
-        if (!isStd && d.HasName && reservedName(d.Name)) {
+        if (!isStd && d.HasName && Names.ReservedName(d.Name)) {
             diag.Error(d.Pos, "`${d.Name}` is a reserved name (it is part of the prelude)")
         }
         addDecl(diag, m, info, d, None)
     }
-    Some(info)
+    info
 }
 
 fn toSlashPath(dotted: String) -> String { Text.Replace(dotted, ".", "/") }
@@ -234,6 +232,67 @@ fn tryLoadModule(mut pg: Program, mut diag: Diag.Diag, name: String) {
     }
 }
 
+fn dirOfPath(path: String) -> String {
+    mut i: I64 = path.Len() - 1
+    while (i >= 0) {
+        let b: U8 = path.ByteAt(i)
+        if (b == b'/' || b == b'\\') { return path.Slice(0, i) }
+        i -= 1
+    }
+    "."
+}
+
+// `import C "header.h" as Name`: the module `C.Name`, written from the header (what `zevic bind` writes) and loaded.
+fn importC(mut pg: Program, mut diag: Diag.Diag, info: FileInfo, im: Ast.Node) -> Option<Module> {
+    let modName: String = "C.${im.Name}"
+    let known: Option<Module> = pg.FindModule(modName)
+    if (known.IsSome()) { return known }
+    if (pg.Clang.IsEmpty()) {
+        diag.Error(im.Pos, "cannot find clang, which `import C` uses to read `${im.Name2}`")
+        return None
+    }
+    let here: String = dirOfPath(diag.Name(info.Sf.Pos.File))
+    mut header: String = im.Name2
+    mut target: String = im.Name2
+    if (Fs.IsFile("${here}/${im.Name2}")) {
+        header = "${here}/${im.Name2}"
+    } else if (!Fs.IsFile(im.Name2)) {
+        // a header of the system or of an include directory: a file that includes it
+        let tmp: String = match (Fs.MakeTempDir("zevic-c")) {
+            Ok(d) => d,
+            Err(_) => {
+                diag.Error(im.Pos, "cannot make a temporary directory")
+                return None
+            },
+        }
+        header = "${tmp}/import.h"
+        match (Fs.WriteAll(header, "#include <${im.Name2}>\n")) {
+            Ok(_) => {},
+            Err(_) => {
+                diag.Error(im.Pos, "cannot write a temporary file")
+                return None
+            },
+        }
+    }
+    mut o: Bind.Options = Bind.Options.New(pg.Clang, header, modName)
+    o.Target = target
+    o.Flags.Extend(pg.CFlags)
+    o.Flags.Push("-I")
+    o.Flags.Push(here)
+    for (p in im.List) {
+        o.Prefixes.Push(p.Name)
+    }
+    let out: Bind.Output = match (Bind.Generate(o)) {
+        Ok(x) => x,
+        Err(msg) => {
+            diag.Error(im.Pos, "cannot read the header `${im.Name2}`: ${msg}")
+            return None
+        },
+    }
+    let r: FileInfo = loadText(pg, diag, "<import C \"${im.Name2}\">", out.Text, false)
+    pg.FindModule(modName)
+}
+
 fn resolveFileImports(mut pg: Program, mut diag: Diag.Diag, mut info: FileInfo) {
     let sf: Ast.SourceFile = info.Sf
     mut self: Module = match (info.Mod) {
@@ -241,6 +300,23 @@ fn resolveFileImports(mut pg: Program, mut diag: Diag.Diag, mut info: FileInfo) 
         None => return,
     }
     for (im in sf.Imports) {
+        if (im.Flag) {
+            let cm: Module = match (importC(pg, diag, info, im)) {
+                Some(x) => x,
+                None => continue,
+            }
+            if (info.ImportMap.Contains(im.Name)) {
+                diag.Error(im.Pos, "`${im.Name}` is already imported (or the name is used by another import)")
+                continue
+            }
+            info.ImportMap.Set(im.Name, cm)
+            mut seenC: Bool = false
+            for (d in self.Deps) {
+                if (d.Id == cm.Id) { seenC = true }
+            }
+            if (!seenC) { self.Deps.Push(cm) }
+            continue
+        }
         let name: String = Ast.PathJoin(im.Path, ".")
         if (!sf.IsStd && Text.StartsWith(name, "Zevic.Intrinsics")) {
             diag.Error(im.Pos, "`Zevic.Intrinsics` is only for the standard library")

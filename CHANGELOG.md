@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+- `Unsafe.CallbackAt<fn(...)>(value)`: the callbacks that C defines by a number (`SQLITE_TRANSIENT`, `SIG_IGN`), to pass to C. With it the `Sqlite` package needs no C file: its 64 lines of shim are replaced by `import C "sqlite3.h"`
+- **`import C "header.h" as Name strip "prefix_"`** (proposal 0012, second stage): the module is made from the C header while compiling; no file, no C shim. `sqlite3.h` is used from Zevic with one line
 - **Breaking:** the standard library has no `Zevic.Http` any more. The HTTP client is the package [`zevic-lang/curl`](https://github.com/zevic-lang/curl) (`Curl.Get`, `Curl.Request`, `Curl.Response`; HTTPS, redirects and proxies work there), and the HTTP server is the package [`zevic-lang/httpd`](https://github.com/zevic-lang/httpd). `Zevic.Net` (TCP and UDP) stays. See `docs/proposals/0003-http.md`
 - `Net.TcpListener.Shutdown()` makes an `Accept` that waits in another task return an error, and it can be called on a listener that is not `mut`
 - **`zevic bind header.h`** (proposal 0012, first stage): writes a Zevic module from a C header: functions, structs, enum and `#define` constants. `sqlite3.h` (283 functions) and `zlib.h` (79 functions) bind and work with no C written by hand

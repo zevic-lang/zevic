@@ -11,6 +11,7 @@ class Countdown : Iterable<I32> {
 class CountdownIter : Iterator<I32> {
     mut n: I32
     fn Init(n: I32) { this.n = n }
+
     mut fn Next() -> Option<I32> {
         if (this.n <= 0) { return None }
         let v: I32 = this.n
