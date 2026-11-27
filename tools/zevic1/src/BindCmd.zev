@@ -10,7 +10,7 @@ import Zevic1.Bind as Bind
 import Zevic1.Driver as Driver
 
 fn usage() {
-    Console.Eprintln("usage: zevic bind <header.h> [-o Name.zev] [--module Name] [--strip-prefix PREFIX]... [-I dir] [-D name[=value]]")
+    Console.Eprintln("usage: zevic bind <header.h> [-o Name.zev] [--module Name] [--strip-prefix PREFIX]... [--shims file.c] [-I dir] [-D name[=value]]")
     Console.Eprintln("  Reads a C header with clang and writes a Zevic module: an `extern \"C\"` block with a public function for each")
     Console.Eprintln("  C function, `extern struct`s, and constants from enums and plain `#define`s.")
 }
@@ -24,17 +24,21 @@ fn Run(args: Array<String>) -> I32 {
     mut header: String = ""
     mut outPath: String = ""
     mut modName: String = ""
+    mut shimPath: String = ""
     mut prefixes: Array<String> = []
     mut flags: Array<String> = []
     mut i: I64 = 0
     while (i < args.Len()) {
         let a: String = args[i]
-        if ((a == "-o" || a == "--module" || a == "--strip-prefix" || a == "-I" || a == "-D") && i + 1 >= args.Len()) {
+        if ((a == "-o" || a == "--shims" || a == "--module" || a == "--strip-prefix" || a == "-I" || a == "-D") && i + 1 >= args.Len()) {
             return fail("`${a}` needs a value")
         }
         if (a == "-o") {
             i += 1
             outPath = args[i]
+        } else if (a == "--shims") {
+            i += 1
+            shimPath = args[i]
         } else if (a == "--module") {
             i += 1
             modName = args[i]
@@ -75,6 +79,16 @@ fn Run(args: Array<String>) -> I32 {
     let out: Bind.Output = match (Bind.Generate(o)) {
         Ok(x) => x,
         Err(msg) => return fail(msg),
+    }
+    if (!out.Shims.IsEmpty()) {
+        if (shimPath.IsEmpty()) {
+            return fail("the header passes structs by value, which needs a C file: give `--shims file.c` (it is compiled with the program)")
+        }
+        let inc: String = Path.Absolute(header)
+        match (Fs.WriteAll(shimPath, "// Written by `zevic bind ${Path.FileName(header)}`: C functions for what the header passes by value.\n#include \"${inc}\"\n${out.Shims}\n")) {
+            Ok(_) => {},
+            Err(_) => return fail("cannot write ${shimPath}"),
+        }
     }
     if (outPath.IsEmpty()) {
         Console.Print(out.Text)

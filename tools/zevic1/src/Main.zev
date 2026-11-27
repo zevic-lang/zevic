@@ -454,6 +454,25 @@ fn compile(args: Array<String>) -> I32 {
         Ok(p) => p,
         Err(c) => return c,
     }
+    if (!pg.CShims.IsEmpty()) {
+        // the C functions that `import C` wrote for structs by value are compiled with the program
+        let dir: String = match (Fs.MakeTempDir("zevic-shim")) {
+            Ok(d) => d,
+            Err(_) => {
+                Console.Eprintln("zevic: error: cannot make a temporary directory for the C functions of `import C`")
+                return 2
+            },
+        }
+        let cpath: String = "${dir}/import_c.c"
+        match (Fs.WriteAll(cpath, "// Written by the compiler for `import C`.\n" + Text.Join(pg.CShims, "\n"))) {
+            Ok(_) => {},
+            Err(_) => {
+                Console.Eprintln("zevic: error: cannot write ${cpath}")
+                return 2
+            },
+        }
+        opts.Inputs.Push(cpath)
+    }
     mut g: Gen.Gen = Gen.Gen.New(pg, diag, if (Driver.TargetWindows(opts)) { 4 } else { 8 })
     g.TestMode = testMode
     g.LibMode = libMode || opts.Freestanding
