@@ -1,6 +1,7 @@
 # Changelog
 
-## Unreleased
+## 0.6.0
+- **Moving code from 0.5.x** (this release has a breaking change, before 1.0): `Zevic.Http` is gone. Use the package `zevic-lang/curl` for the client (`Curl.Get`, `Curl.Request`) and `zevic-lang/httpd` for the server; `Zevic.Net` stays
 - **Structs by value** in `zevic bind` and `import C`: a function that takes or returns a struct by value (`Vector2Add`, `ClearBackground(Color)`) is bound through a small C shim that the compiler writes and compiles; the Zevic function keeps the plain signature (`fn Vector2Add(a: Vector2, b: Vector2) -> Vector2`). `zevic bind` needs `--shims file.c` for it. A function that mixes a callback with a struct by value, or has an array parameter, is still listed as not bound
 - `Unsafe.CallbackAt<fn(...)>(value)`: the callbacks that C defines by a number (`SQLITE_TRANSIENT`, `SIG_IGN`), to pass to C. With it the `Sqlite` package needs no C file: its 64 lines of shim are replaced by `import C "sqlite3.h"`
 - **`import C "header.h" as Name strip "prefix_"`** (proposal 0012, second stage): the module is made from the C header while compiling; no file, no C shim. `sqlite3.h` is used from Zevic with one line

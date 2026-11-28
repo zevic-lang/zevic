@@ -1,5 +1,5 @@
 [package]
 name = "Calc"
-version = "0.5.0"
+version = "0.6.0"
 kind = "bin"
 zevic = ">=0.4"
