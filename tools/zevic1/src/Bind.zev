@@ -54,6 +54,9 @@ class State {
     mut Prefixes: Array<String> = []
     mut Skipped: Array<String> = []
     mut StructNames: Array<String> = []
+    mut Shims: Array<String> = []
+    mut Wrappers: Array<String> = []
+    mut NeedsUnsafe: Bool = false
 }
 
 fn cName(st: State, r: Rec) -> String {
@@ -540,32 +543,60 @@ fn writeFunctions(mut st: State, mut ext: Array<String>, mut used: Array<String>
                 continue
             },
         }
-        if (st.StructNames.Contains(ret)) {
-            st.Skipped.Push("${cname}: returns a struct by value (the compiler passes structs by pointer only)")
-            continue
-        }
+        let retC: String = Text.Trim(q.Slice(0, open))
+        let retStruct: Bool = st.StructNames.Contains(ret)
+        // a struct that C takes or gives by value is passed through a small C function (a shim) that takes pointers
+        mut anyStruct: Bool = retStruct
         mut params: Array<String> = []
+        mut names: Array<String> = []
+        mut shimParams: Array<String> = []
+        mut cParams: Array<String> = []
+        mut cArgs: Array<String> = []
+        mut copies: Array<String> = []
+        mut wArgs: Array<String> = []
         mut ok: Bool = true
+        mut shimIssues: Array<String> = []
         mut i: I64 = 0
         for (p in items(field(n, "inner"))) {
             if (kindOf(p) != "ParmVarDecl") { continue }
-            match (zevType(st, qualType(p), 0)) {
+            let pq: String = qualType(p)
+            match (zevType(st, pq, 0)) {
                 Some(z) => {
                     let pn: String = paramName(nameOf(p), i)
-                    if (st.StructNames.Contains(z)) {
-                        st.Skipped.Push("${cname}: takes a struct by value (the compiler passes structs by pointer only)")
-                        ok = false
-                    }
                     params.Push("${pn}: ${z}")
+                    names.Push(pn)
+                    if (st.StructNames.Contains(z)) {
+                        anyStruct = true
+                        shimParams.Push("${pn}: *${z}")
+                        cParams.Push("${pq} *${pn}")
+                        cArgs.Push("*${pn}")
+                        copies.Push("    mut ${pn}Copy: ${z} = ${pn}")
+                        wArgs.Push("&${pn}Copy")
+                    } else {
+                        shimParams.Push("${pn}: ${z}")
+                        cParams.Push("${pq} ${pn}")
+                        cArgs.Push(pn)
+                        wArgs.Push(pn)
+                        if (Text.StartsWith(z, "fn(")) {
+                            shimIssues.Push("${cname}: takes a callback and a struct by value together")
+                        }
+                        if (Text.Contains(pq, "(") || Text.Contains(pq, "[")) {
+                            shimIssues.Push("${cname}: the parameter type `${pq}` cannot be written in a shim")
+                        }
+                    }
                 },
                 None => {
-                    st.Skipped.Push("${cname}: the parameter type `${qualType(p)}` has no Zevic type")
+                    st.Skipped.Push("${cname}: the parameter type `${pq}` has no Zevic type")
                     ok = false
                 },
             }
             i += 1
         }
         if (!ok) { continue }
+        if (anyStruct && !shimIssues.IsEmpty()) {
+            st.Skipped.Extend(shimIssues)
+            continue
+        }
         let wname: String = ident(st, cname)
         if (used.Contains(wname)) {
             st.Skipped.Push("${cname}: the name `${wname}` is already taken")
@@ -573,7 +604,51 @@ fn writeFunctions(mut st: State, mut ext: Array<String>, mut used: Array<String>
         }
         used.Push(wname)
         let sig: String = "(${Text.Join(params, ", ")}) -> ${ret}"
-        ext.Push("    fn ${wname}${sig} = \"${cname}\"")
+        if (!anyStruct) {
+            ext.Push("    fn ${wname}${sig} = \"${cname}\"")
+            continue
+        }
+        let shimName: String = "zevic_shim_${cname}"
+        mut shimDecl: Array<String> = []
+        shimDecl.Extend(shimParams)
+        mut cDecl: Array<String> = []
+        cDecl.Extend(cParams)
+        mut call: String = "${cname}(${Text.Join(cArgs, ", ")})"
+        mut cRet: String = retC
+        mut shimRet: String = ret
+        mut body: String = "return ${call};"
+        if (retStruct) {
+            shimDecl.Push("zevicOut: *${ret}")
+            cDecl.Push("${retC} *zevicOut")
+            cRet = "void"
+            shimRet = "CVoid"
+            body = "*zevicOut = ${call};"
+        } else if (ret == "CVoid") {
+            body = "${call};"
+        }
+        st.Shims.Push("${cRet} ${shimName}(${if (cDecl.IsEmpty()) { "void" } else { Text.Join(cDecl, ", ") }}) { ${body} }")
+        ext.Push("    fn zshim${wname}(${Text.Join(shimDecl, ", ")}) -> ${shimRet} = \"${shimName}\"")
+        mut w: Array<String> = []
+        let wsig: String = Text.TrimSuffix(sig, " -> CVoid")
+        w.Push("fn ${wname}${wsig} {")
+        w.Extend(copies)
+        if (retStruct) {
+            st.NeedsUnsafe = true
+            mut callArgs: Array<String> = []
+            callArgs.Extend(wArgs)
+            callArgs.Push("zevicOut")
+            w.Push("    unsafe {")
+            w.Push("        let zevicOut: *${ret} = Unsafe.Alloc<${ret}>(1)")
+            w.Push("        zshim${wname}(${Text.Join(callArgs, ", ")})")
+            w.Push("        let zevicResult: ${ret} = zevicOut.Read(0)")
+            w.Push("        Unsafe.Free(zevicOut)")
+            w.Push("        return zevicResult")
+            w.Push("    }")
+        } else {
+            w.Push("    zshim${wname}(${Text.Join(wArgs, ", ")})")
+        }
+        w.Push("}\n")
+        st.Wrappers.Push(Text.Join(w, "\n"))
     }
 }
 
@@ -670,6 +745,8 @@ class Output {
     mut Constants: I64 = 0
     mut Structs: I64 = 0
     mut Skipped: I64 = 0
+    // C functions for what C takes or gives by value (the bodies only; the caller adds the #include of the header)
+    mut Shims: String = ""
 }
 
 // Reads the header with clang and writes the Zevic module (`Ok`), or says why it cannot (`Err`).
@@ -709,6 +786,9 @@ fn Generate(o: Options) -> Result<Output, String> {
     mut lines: Array<String> = []
     lines.Push("// Made by `zevic bind ${Path.FileName(header)}`. Edit it by hand if you like; run `zevic bind` again to make it anew.")
     lines.Push("module ${o.Module}\n")
+    if (st.NeedsUnsafe) {
+        lines.Push("import Zevic.Unsafe\n")
+    }
     if (!structs.IsEmpty() || !ext.IsEmpty()) {
         lines.Push("extern \"C\" {")
         lines.Extend(structs)
@@ -719,6 +799,7 @@ fn Generate(o: Options) -> Result<Output, String> {
         lines.Extend(consts)
         lines.Push("")
     }
+    lines.Extend(st.Wrappers)
     if (!st.Skipped.IsEmpty()) {
         lines.Push("// Not bound:")
         for (s in st.Skipped) {
@@ -727,6 +808,7 @@ fn Generate(o: Options) -> Result<Output, String> {
     }
     mut out: Output = Output.New()
     out.Text = Text.Join(lines, "\n") + "\n"
+    out.Shims = Text.Join(st.Shims, "\n")
     out.Functions = ext.Len()
     out.Constants = consts.Len()
     out.Structs = structs.Len()

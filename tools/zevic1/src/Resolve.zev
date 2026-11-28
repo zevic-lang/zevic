@@ -5,6 +5,7 @@ module Zevic1.Resolve
 import Zevic.Console
 import Zevic.Env
 import Zevic.Fs
+import Zevic.Path
 import Zevic.Text
 import Zevic1.Ast as Ast
 import Zevic1.Bind as Bind
@@ -85,6 +86,8 @@ class Program {
     // for `import C`: clang, and the -I and -D flags of the build ("" when clang was not found)
     mut Clang: String = ""
     mut CFlags: Array<String> = []
+    // C code the compiler wrote for `import C` (for structs by value): each entry is an #include and the functions
+    mut CShims: Array<String> = []
 
     fn Init(stdDir: String) {
         this.StdDir = stdDir
@@ -288,6 +291,10 @@ fn importC(mut pg: Program, mut diag: Diag.Diag, info: FileInfo, im: Ast.Node) -
             diag.Error(im.Pos, "cannot read the header `${im.Name2}`: ${msg}")
             return None
         },
+    }
+    if (!out.Shims.IsEmpty()) {
+        let inc: String = if (header == im.Name2 || header == "${here}/${im.Name2}") { "#include \"${Path.Absolute(header)}\"" } else { "#include <${im.Name2}>" }
+        pg.CShims.Push("${inc}\n${out.Shims}\n")
     }
     let r: FileInfo = loadText(pg, diag, "<import C \"${im.Name2}\">", out.Text, false)
     pg.FindModule(modName)

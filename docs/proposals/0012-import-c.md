@@ -1,6 +1,6 @@
 # Proposal 0012: `import C` and `zevic bind` (no border with C)
 
-- Status: stage 1 (`zevic bind`) and the core of stage 2 (`import C`) implemented; structs by value, variadic functions and non-trivial macros still open
+- Status: stage 1 (`zevic bind`) and the core of stage 2 (`import C`) implemented; variadic functions and non-trivial macros still open
 - Date: 2026-11-26
 
 ## Motivation
@@ -27,7 +27,7 @@ import C "sqlite3.h" as Sqlite3 (prefix: "sqlite3_", constants: "SQLITE_")
 
 The compiler does what `zevic bind` does, at compile time, and no file is committed: the header is read by clang (found by `-I`, `[native] include_dirs`), and the names are used as members of the module `Sqlite3`. The mapping is the one of stage 1, with these additions, which stage 1 cannot do because they need the compiler:
 
-1. **Structs by value.** The compiler generates a small C file (a shim) next to the user's code: for `Vector2 Vector2Add(Vector2 a, Vector2 b)` it writes `void zevic_shim_Vector2Add(Vector2 *a, Vector2 *b, Vector2 *out) { *out = Vector2Add(*a, *b); }`, compiles it with clang, and calls it. The C compiler does the calling convention of the platform, which is the part that is hard to get right by hand. The user never sees the shim.
+1. **Structs by value** (implemented). The compiler generates a small C file (a shim) next to the user's code: for `Vector2 Vector2Add(Vector2 a, Vector2 b)` it writes `void zevic_shim_Vector2Add(Vector2 *a, Vector2 *b, Vector2 *out) { *out = Vector2Add(*a, *b); }`, compiles it with clang, and calls it. The C compiler does the calling convention of the platform, which is the part that is hard to get right by hand. The user never sees the shim.
 2. **Out-parameters** (`int *out`, `sqlite3 **db`): the pointer form works today. A later step may offer `(T, CInt)` results.
 3. **Callbacks with a `void *user`**: the `Handle` convention of the spec stays; `import C` types the callback.
 4. **Macros** that are not plain numbers (`SQLITE_ABORT_ROLLBACK`, a constant expression of other macros): evaluated by clang (`__builtin_constant_p` or a generated `static const`).
