@@ -1,5 +1,5 @@
 [package]
 name = "Zevic1"
-version = "0.5.0"
+version = "0.6.0"
 kind = "bin"
 zevic = ">=0.4"
